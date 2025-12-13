@@ -1,0 +1,34 @@
+﻿<script type="text/javascript">
+
+
+    $(document).ready(function () {
+
+        // Formun submit olayı
+        $('#_VeriEkle').on('submit', function (e) {
+             console.log("veriekle0");
+            e.preventDefault(); // Formun varsayılan submit davranışını engeller
+            console.log("veriekle1");
+            var form = $(this);
+            var actionUrl = form.attr('action'); // asp-action ile belirtilen URL'yi alır
+            var formData = form.serialize(); // Form verilerini alır
+             console.log("veriekle2");
+            $.ajax({
+                type: 'POST',
+                url: actionUrl,
+                data: formData,
+                success: function (response) {
+                    $('#ModalVeri').modal('hide');
+                    toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 2000);
+                },
+                error: function (xhr, status, error) {
+
+                    toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+                }
+            });
+        });
+    });
+
+</script>

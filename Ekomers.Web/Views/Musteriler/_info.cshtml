@@ -1,0 +1,111 @@
+﻿@model MusterilerVM
+<style>
+    .control-label {
+        font-weight:bold !important;
+        margin-right:10px;
+        margin-bottom: 15px;
+    }
+</style>
+<div class="form-group row">
+    
+    @if (Model.IsKurum)
+    {
+        <div class="col-lg-12">
+            <label class="control-label">Müşteri Türü</label>:Şirket/Kurum
+        </div>
+    }
+    else
+    {
+          <div class="col-lg-12">
+            <label class="control-label">Müşteri Türü</label>:Kişi
+         </div>
+    }
+  
+  
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="TipAd" class="control-label"></label>:@Model.TipAd
+    </div>
+    <div class="col-lg-12">
+        <label asp-for="AdSoyad" class="control-label"></label>:@Model.AdSoyad
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Telefon" class="control-label"></label>:@Model.Telefon
+    </div>
+    <div class="col-lg-12">
+        <label asp-for="Eposta" class="control-label"></label>:@Model.Eposta
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Sehir" class="control-label"></label>:@Model.Sehir
+    </div>
+    <div class="col-lg-12">
+        <label asp-for="Ilce" class="control-label"></label>:@Model.Ilce
+    </div>
+    <div class="col-lg-12">
+        <label asp-for="Mahalle" class="control-label"></label>:@Model.Mahalle
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Ulke" class="control-label"></label>:@Model.Ulke
+    </div>
+    <div class="col-lg-12">
+        <label asp-for="PostaKod" class="control-label"></label>:@Model.PostaKod
+    </div>
+</div>
+@if (Model.IsKurum)
+{
+   <div class="form-group row">
+    <div class="col-lg-12">
+            <label asp-for="SirketUnvan" class="control-label"></label> :@Model.SirketUnvan
+    </div>
+</div>
+
+<div class="form-group row">
+    <div class="col-lg-12">
+            <label asp-for="BizimHesapNo" class="control-label"></label> :@Model.BizimHesapNo
+    </div>
+    <div class="col-lg-12">
+            <label asp-for="VergiDairesi" class="control-label"></label> :@Model.VergiDairesi
+    </div>
+    <div class="col-lg-12">
+            <label asp-for="VergiNo" class="control-label"></label> :@Model.VergiNo
+    </div>
+</div> 
+}
+
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Adres" class="control-label"></label>:@Model.Adres
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Not" class="control-label"></label>:@Model.Not
+    </div>
+</div> 
+<div class="form-group row">
+    <div class="col-lg-12">
+        <div class="small">
+            Kayıt Oluşturan: @Model.CreateUserName
+            Oluşturma Tarihi:@Model.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+        </div>
+    </div>
+</div>
+@if (Model.IsDelete)
+{
+    <div class="form-group row">
+        <div class="col-lg-12">
+            <div class="small">
+                Kayıt Silen: @Model.DeleteUserName
+                Silme Tarihi:@Model.DeleteDate?.ToString("dd.MM.yyyy HH:mm")
+            </div>
+        </div>
+    </div>
+}
+<script src="js/select2.js?v=7.0.5"></script>

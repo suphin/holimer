@@ -1,0 +1,9 @@
+﻿@media print {
+    @page {
+        size: landscape; /* Sayfayı yatay yapar */
+    }
+
+    body {
+        writing-mode: horizontal-tb; /* Yazıyı yatay hizalar */
+    }
+}

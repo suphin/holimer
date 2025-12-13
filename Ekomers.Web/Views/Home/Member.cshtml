@@ -1,0 +1,90 @@
+﻿@model Kullanici 
+@{
+    ViewData["Title"] = "Portal Ana Sayfa";
+    var fileName = "";
+    // SignUpVM userdata = (SignUpVM)ViewBag.UserData;
+}
+<style>
+    
+    .counter {
+        font-size: 12px;
+        font-weight: bold;
+    }
+</style>
+ 
+    @if (User.Identity.IsAuthenticated)
+   {
+          fileName = @User?.Identity.Name + ".jpg";
+  
+            <div class="card o-hidden border-0 shadow-lg my-5">
+                <div class="card-body p-0">
+                    <div class="row">
+                <div class="col-lg-4 col-md-6">
+                            <div class="p-4">
+
+
+
+                        <img src="~/img/user/@fileName" width="100%" alt="Kullanıcı"
+                             onerror="this.onerror=null; this.src='/img/user/default.jpg';" />
+                            
+                            </div>
+                            </div>
+                <div class="col-lg-8 col-md-6">
+                            <div class="p-4">
+                                <div class="text-left">
+                                   
+                                       
+                                     
+                                        <h4 class="text-gray-900 mb-4">Hoşgeldiniz</h4>
+                                        <h4 class="text-gray-900 mb-4">Ad Soyad: @Model.AdSoyad</h4>
+                                        <h4 class="text-gray-900 mb-4">Departman: @Model.Departman </h4>
+                                        <h4 class="text-gray-900 mb-4">Ünvan: @Model.Unvan</h4>
+                                        <h4 class="text-gray-900 mb-4">Son Giriş Tarihi: @Model.SonGirisTarihi.ToString("dd.MM.yyyy HH:mm:ss")
+
+
+                                            <span class="counter">(Geçen Süre: <span id="timeElapsed"></span>)</span>
+
+                                        </h4>
+                                            @*  <span class="mr-2 d-none d-lg-inline text-gray-600 small">@ViewBag.UserData.AdSoyad</span> *@
+ 
+                                     
+                                </div>
+ 
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+ 
+}
+ 
+
+ 
+ 
+
+
+@section JSSection 
+{
+<script>
+    // Son giriş tarihini ayarla 
+        const lastLoginDate = new Date('@Model.SonGirisTarihi.ToString("yyyy-MM-ddTHH:mm:ss")');
+    function updateTimeElapsed() {
+        const now = new Date();
+        const timeDiff = now - lastLoginDate;
+
+        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+        document.getElementById('timeElapsed').textContent =
+            `${hours} saat, ${minutes} dakika, ${seconds} saniye`;
+    }
+
+    // Sayaç her saniye güncellensin
+    setInterval(updateTimeElapsed, 1000);
+
+    // Sayfa yüklendiğinde sayaç başlasın
+    updateTimeElapsed();
+</script>
+}

@@ -1,0 +1,198 @@
+﻿.width10 {
+    width: 10px;
+}
+
+.width50
+{
+    width:50px;
+}
+.width75 {
+    width: 75px;
+}
+.width100 {
+    width: 100px;
+}
+.width150 {
+    width: 150px;
+}
+.width175 {
+    width: 175px;
+}
+.width200 {
+    width: 200px;
+}
+.width250 {
+    width: 250px;
+}
+.width300 {
+    width: 300px;
+}
+
+.width100_ {
+    width: 100%;
+}
+
+.modal-xl {
+    max-width: 1340px !important;
+}
+
+
+
+
+.TableSmallFont {
+    font-size: 12px;
+}
+
+.hide {
+    display: none;
+}
+.text-center-align {
+    text-align: center;
+    vertical-align: middle!important;
+}
+
+.tblsm {
+    width: 100%; 
+    margin: 0 auto;
+    border-collapse: collapse;
+    background-color: #f9f9f9  ;
+    font-size: 11px;
+}
+ 
+    .tblsm th, .tblsm td {
+       /* padding: 10px;*/
+        border: 1px solid #ddd;
+        text-align: left;
+    }
+
+    .tblsm th {
+        background-color: #4CAF50;
+        color: white;
+    }
+
+    .tblsm tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+  /*  .tblsm tr:hover {
+        background-color: #ddd;
+    }*/
+
+    .tblsm thead th {
+        padding: 0 !important;
+        height: 30px !important; /* Thead yüksekliği */
+        text-align: center;
+        margin: 0 !important;
+        vertical-align: middle !important;
+    }
+
+
+    .falan {
+        background-color: #63eae2  ;
+    }
+
+    .bold{
+        font-weight:bold!important;
+    }
+
+.bootstrap-select button {
+    height: 32px !important; /* Thead yüksekliği */
+}
+.login-form {
+    margin: 20px;
+}
+
+.deleted {
+    text-decoration: line-through;
+    color: gray; /* İsteğe bağlı olarak metin rengini gri yapabilirsiniz */
+}
+
+/* Select2 bileşeninin form-control-sm görünümüne uyum sağlaması için */
+.select2-container .select2-selection--single {
+    height: calc(1.5em + .5rem + 8px) !important; /* form-control-sm yüksekliği */
+    padding: .25rem .5rem !important;
+    font-size: .875rem !important; /* form-control-sm yazı boyutu */
+    line-height: 1.5 !important;
+    /*border: 1px solid #ced4da !important;*/ /* form-control kenarlık rengi */
+    border-radius: .2rem !important; /* form-control kenar yuvarlaklığı */
+    box-sizing: border-box !important;
+}
+
+/* Select2'nin seçili metin alanının yüksekliğini ayarla */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: calc(1.5em + .5rem + 8px) !important; /* form-control-sm yüksekliğine uyumlu */
+}
+
+/* Select2'nin aşağı ok simgesinin yüksekliğini ayarla */
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: calc(1.5em + .5rem + 8px) !important; /* form-control-sm yüksekliğine uyumlu */
+}
+
+#kt_datatable1 .form-control {
+    height: 18px !important;
+}
+
+.crudBtnRow{
+    width:145px!important;
+}
+
+.form-group {
+    margin-bottom: 1rem!important;
+}
+
+.fullscreen-enabled {
+    z-index: 1050; /* Ensure it's on top */
+}
+
+.Baslik {
+    font-weight:bold!important;
+    color:#171717 !important;
+
+}
+
+.row.g-3.align-items-start.border.rounded.p-3.mb-3:hover {
+    background-color: rgba(var(--bs-primary-rgb, 13,110,253), .06);
+    border-color: rgba(var(--bs-primary-rgb, 13,110,253), .5);
+}
+
+#results {
+    /* border: 1px solid #ddd; */
+    max-height: 150px;
+    overflow-y: auto;
+    list-style-type: none; /* Liste işaretlerini kaldırır */
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    z-index: 1000;
+    /*  border: solid 2px; */
+    background: aliceblue;
+}
+
+    #results li {
+        padding: 8px;
+        cursor: pointer;
+    }
+
+        #results li:hover {
+            background-color: #f0f0f0;
+            color: black;
+        }
+#results-urun {
+    /* border: 1px solid #ddd; */
+    max-height: 150px;
+    overflow-y: auto;
+    list-style-type: none; /* Liste işaretlerini kaldırır */
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    z-index: 1000;
+    /*  border: solid 2px; */
+    background: aliceblue;
+}
+.aside-menu .menu-nav > .menu-item .menu-submenu .menu-item.menu-item-active > .menu-heading, .aside-menu .menu-nav > .menu-item .menu-submenu .menu-item.menu-item-active > .menu-link {
+    background-color: #03030a !important;
+}
+
+.no-padding {
+    padding: 0 !important;
+}

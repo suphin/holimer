@@ -1,0 +1,38 @@
+﻿ 
+@{
+}
+<script>
+    $(document).ready(function() {
+        $(".crudBtn").click(function () {
+            // Butonun 'data-id' değerini al
+            var dataId = $(this).attr("data-id");
+
+            // Aynı 'data-id' değerine sahip satırı bul
+            var row = $("tr[data-id='" + dataId + "']");
+            var checkbox = row.find("input[type='checkbox']");
+
+            // Eğer checkbox zaten seçiliyse, seçimi kaldır
+            // if (checkbox.prop("checked")) {
+            //     row.removeClass("selected");
+            //     checkbox.prop("checked", false);
+            // } else {
+                // Tüm satırlardan 'selected' sınıfını kaldır
+                $("tr").removeClass("selected");
+
+                // Tüm checkbox'ları temizle
+                $("input[type='checkbox']").prop("checked", false);
+
+                // Tıklanan satıra 'selected' sınıfını ekle
+                row.addClass("selected");
+
+                // Tıklanan satırdaki checkbox'ı işaretle
+                checkbox.prop("checked", true);
+         //   }
+
+            
+        });
+
+    });
+
+
+</script>

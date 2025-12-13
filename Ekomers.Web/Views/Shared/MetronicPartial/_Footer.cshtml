@@ -1,0 +1,112 @@
+﻿
+<link href="~/css/ScrollBar.css" rel="stylesheet" />
+
+
+
+<!-- BEGIN PRE-FOOTER -->
+<div class="page-prefooter">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3 col-sm-6 col-xs-12 footer-block">
+                <h2>Hakkında</h2>
+                <p> Afyon Et Satınalma ve Sevkiyat Yönetim Portalı </p>
+            </div>
+            <div class="col-md-2 col-sm-6 col-xs12 footer-block">
+                <h2>Güvenlik</h2>
+                <div class="subscribe-form">
+                    <img src="@Url.Content("~/img/comodo-ssl-logo.png")" alt="logo" class="logo-default saga-al" width="150px">
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-6 col-xs-12 footer-block">
+                <h2>E-TİCARET</h2>
+                <img src="@Url.Content("~/img/kartlogo.png")" alt="logo" class="logo-default saga-al" height="45">
+                <img src="@Url.Content("~/img/visamaster.png")" alt="logo" class="logo-default saga-al" height="45">
+            </div>
+            <div class="col-md-3 col-sm-6 col-xs-12 footer-block">
+                <h2>İLETİŞİM</h2>
+                <address class="margin-bottom-40">
+                    Telefon: 0272 221 18 28
+                    <br> Email:
+                    <a href="mailto:info@orucogluyem.com.tr">info@afyonet.com.tr</a>
+                </address>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- END PRE-FOOTER -->
+<!-- BEGIN INNER FOOTER -->
+<div class="page-footer">
+    <div class="container">
+        2023 &copy; Afyon Et. ||
+        <a onclick="Politika(1)" id="GizlilikVeGuvenlik" data-target="#_b2b" data-toggle="modal">Gizlilik ve Güvenlik Politikası</a> ||
+        <a onclick="Politika(2)" id="GizlilikVeGuvenlik" data-target="#_b2b" data-toggle="modal">Mesafeli Satış Sözleşmesi</a> ||
+        @*<a onclick="Politika(3)" id="GizlilikVeGuvenlik" data-target="#_b2b" data-toggle="modal">İptal Şartları</a> ||*@
+        <a onclick="Politika(4)" id="GizlilikVeGuvenlik" data-target="#_b2b" data-toggle="modal">İade Şartları</a> ||
+        <a onclick="Politika(5)" id="GizlilikVeGuvenlik" data-target="#_b2b" data-toggle="modal">Cayma Şartları</a>
+    </div>
+</div>
+<div class="scroll-to-top">
+    <i class="icon-arrow-up"></i>
+</div>
+<!-- END INNER FOOTER -->
+
+
+
+
+<script type="text/javascript">
+
+
+
+    function Politika(id) {
+        if (id == 1) {
+            $("#_b2b_area").html(yukleniyor);
+            setTimeout(function () {
+                GetAjax("/Home/_b2b_gizlilik_guvenlik", "_b2b_area");
+            }, 1000);
+        }
+        else if (id == 2) {
+            $("#_b2b_area").html(yukleniyor);
+            setTimeout(function () {
+                GetAjax("/Home/_b2b_mesafeli_satis_sozlesmesi", "_b2b_area");
+            }, 1000);
+        }
+        else if (id == 3) {
+            $("#_b2b_area").html(yukleniyor);
+            setTimeout(function () {
+                GetAjax("/Home/_b2b_Iptal", "_b2b_area");
+            }, 1000);
+        }
+        else if (id == 4) {
+            $("#_b2b_area").html(yukleniyor);
+            setTimeout(function () {
+                GetAjax("/Home/_b2b_Iade", "_b2b_area");
+            }, 1000);
+        }
+        else if (id == 5) {
+            $("#_b2b_area").html(yukleniyor);
+            setTimeout(function () {
+                GetAjax("/Home/_b2b_cayma", "_b2b_area");
+            }, 1000);
+        }
+
+    }
+
+
+
+</script>
+
+<div class="modal fade bs-modal-lg" id="_b2b" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+            </div>
+            <div class="modal-body scrollbar xHidden style-2" id="_b2b_area" style="height:350px">
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>

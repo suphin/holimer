@@ -1,0 +1,415 @@
+﻿@model UretimVM
+@{
+    ViewData["Title"] = "Üretim Planlama";
+    ViewData["Description"] = "Üretim Planlama - Reçete";
+
+}
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #EklenenUrunlerTablo tbody tr:hover {
+        background-color: #f0f0f0;
+    }
+</style>
+<style>
+
+
+    #EklenenUrunlerTablo th {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 2px !important;
+    }
+
+    #EklenenUrunlerTablo td {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 4px !important;
+    }
+</style>
+
+<div class="card card-custom">
+    <div class="card-header card-header-tabs-line">
+        <div class="card-title">
+
+
+            <h3 class="card-label">@Model.ModalTitle</h3>
+        </div>
+        <div class="card-toolbar">
+
+            <ul class="nav nav-tabs nav-bold nav-tabs-line">
+                <li class="nav-item">
+                    <a class="nav-link active" data-toggle="tab" href="#kt_tab_pane_1_4">
+                        <span class="nav-icon"><i class="flaticon2-search"></i></span>
+                        <span class="nav-text">Detaylar</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#kt_tab_pane_2_4">
+                        <span class="nav-icon"><i class="flaticon2-document"></i></span>
+                        <span class="nav-text">Dosyalar</span>
+                    </a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="kt_tab_pane_1_4" role="tabpanel" aria-labelledby="kt_tab_pane_1_4">
+                <form asp-controller="@Model.ControllerName" asp-action="VeriEkle" method="post" name="_VeriEkle2" id="_VeriEkle2">
+
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group row">
+
+                                <div class="col-lg-12 mb-2">
+                                    <label asp-for="UrunAd" class="control-label"></label>
+                                    <input asp-for="UrunAd" class="form-control form-control-sm" />
+                                    <span asp-validation-for="UrunAd" class="text-danger"></span>
+                                </div>
+                                <div class="col-lg-12 mb-2">
+                                    <label asp-for="Not" class="control-label"></label>
+                                    <textarea asp-for="Not" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+                                    <span asp-validation-for="Not" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-lg-4 mb-2">
+                                    <label asp-for="SiparisTarihi" class="control-label"></label>
+                                    <input asp-for="SiparisTarihi" class="form-control form-control-sm" type="date" />
+                                    <span asp-validation-for="SiparisTarihi" class="text-danger"></span>
+                                </div>
+                                <div class="col-lg-4 mb-2">
+                                    <label asp-for="PartiNo" class="control-label"></label>
+                                    <input asp-for="PartiNo" class="form-control form-control-sm" />
+                                    <span asp-validation-for="PartiNo" class="text-danger"></span>
+                                </div>
+                                <div class="col-lg-4 mb-2">
+                                    <label asp-for="TerminSuresi" class="control-label"></label>
+                                    <input asp-for="TerminSuresi" class="form-control form-control-sm" type="date" />
+                                    <span asp-validation-for="TerminSuresi" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-lg-12">
+                                    <label asp-for="Uretici" class="control-label"></label>
+                                    <select asp-for="UreticiID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.UreticiListe, "ID", "Ad"))"></select>
+                                    <span asp-validation-for="Uretici" class="text-danger"></span>
+                                </div>
+
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="form-group row">
+                                <div class="col-lg-6">
+                                    <h4>
+                                        Üretim Parametreleri
+                                    </h4>
+                                    <div>
+                                        @{
+                                            var parametreler = ViewBag.ReceteParametreListe as List<ReceteParametre>;
+                                            var seciliParametreIdler = Model.UretimParametreDeger?.Select(x => x.ParametreID).ToList() ?? new List<int>();
+                                            var index = 0;
+                                        }
+                                        <div class="form-group row mb-1">
+                                            <label class="col-sm-6 col-form-label">Hm Maliyet Çarpanı</label>
+                                            <div class="col-sm-6">
+                                                <input asp-for="HmCarpan" class="form-control form-control-sm text-right" />
+                                            </div>
+                                         
+                                        </div>  
+                                        <hr class="success" />
+                                        @foreach (var parametre in Model.UretimParametreDeger)
+                                        {
+                                            
+
+                                            
+                                                <div class="form-group row mb-1">
+                                                    <label class="col-sm-6 col-form-label">@parametre.ParametreAd</label>
+                                                    <div class="col-sm-6">
+                                                    <input type="hidden" name="UretimParametreDeger[@index].ParametreID" value="@parametre.ParametreID" />
+                                                        <input type="hidden" name="UretimParametreDeger[@index].ID" value="@parametre.ID" />
+                                                        <input type="text"
+                                                               name="UretimParametreDeger[@index].Deger"
+                                                               value="@parametre.Deger"
+                                                               class="form-control form-control-sm text-right"
+                                                               placeholder="Değer giriniz..." />
+                                                    </div>
+                                                </div>
+
+                                                index++;
+                                             
+                                        }
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <h4>
+                                        Üretim Parametreleri
+                                    </h4>
+                                    <div> 
+                                            <div class="form-group row mb-1">
+                                                <label class="col-sm-6 col-form-label">Kayıp Fire</label>
+                                                <div class="col-sm-6">
+                                                <input asp-for="KayipFireMiktar" readonly class="form-control form-control-sm text-right" />
+                                                </div>
+                                            </div>
+                                        <div class="form-group row mb-1">
+                                            <label class="col-sm-6 col-form-label">
+                                                Kayıp/Fire (Hammadde)
+                                            </label>
+                                            <div class="col-sm-6">
+                                                <input asp-for="KayipFireOran" readonly class="form-control form-control-sm text-right" />
+                                            </div>
+                                        </div>
+                                        <div class="form-group row mb-1">
+                                            <label class="col-sm-6 col-form-label">
+                                                Kayıp Kaynaklı Parasal Değer
+                                            </label>
+                                            <div class="col-sm-6">
+                                                <input asp-for="ParasalDeger" readonly class="form-control form-control-sm text-right" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="UrunlerDiv">
+                        <table class="table table-sm table-bordered TableSmallFont" id="EklenenUrunlerTablo" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Sıra No</th>
+                                    <th>Grup</th>
+                                    <th>Alt Grup</th>
+                                    <th>Ürün Kodu</th>
+                                    <th>Ürün Adı</th>
+
+                                    <th style="width:100px">Miktar</th>
+                                    <th>Birim</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var sayac = 1;
+                                    index = 0;
+                                }
+                                @foreach (UretimUrunlerVM item in Model.UretimUrunlerVMListe)
+                                {
+                                    <tr class="@(item.IsDelete ? "deleted" : "")">
+                                        <td>@(sayac + 1)</td>
+                                        <td>@item.Grup</td>
+                                        <td>@item.AltGrup</td>
+                                        <td>@item.UrunKod</td>
+                                        <td>@item.UrunAd</td>
+
+                                        <td>
+                                            <!-- UrunID'yi gizli olarak gönderiyoruz -->
+                                            <input type="hidden" name="UretimUrunler[@index].UrunID" value="@item.UrunID" />
+                                            <input type="hidden" name="UretimUrunler[@index].ID" value="@item.ID" />
+
+                                            <!-- Miktar kullanıcıdan alınacak -->
+                                            <input type="text"
+                                                   name="UretimUrunler[@index].Deger"
+                                                   value="@item.Deger"
+                                                   class="form-control form-control-sm text-right"
+                                                   placeholder="Değer giriniz..." />
+                                        </td>
+
+                                        <td>@item.BirimAd</td>
+                                    </tr>
+
+                                    index++;
+                                }
+
+                                <tr>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>Üretim Miktarı Hesaplanan Tahmini</td>
+                                    <td><input type="text" asp-for="HesaplananMiktar" class="form-control form-control-sm text-right" /></td>
+                                    <td></td>
+
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>Teslim Alınan Miktar</td>
+                                    <td><input type="text" asp-for="GerceklesenMiktar" class="form-control form-control-sm text-right" /></td>
+                                    <td></td>
+
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>Teslim Alınan Tarih</td>
+                                    <td><input type="date" asp-for="TeslimTarihi" class="form-control form-control-sm" /></td>
+                                    <td></td>
+
+                                </tr>
+                            </tbody>
+
+
+
+                        </table>
+                    </div>
+
+                    <div class="text-right mt-3">
+                        <input type="hidden" asp-for="ID" />
+                        <input type="hidden" asp-for="ReceteID" />
+                        <input type="hidden" asp-for="UrunID" />
+                        <input type="hidden" asp-for="CreateDate" />
+                        <input type="hidden" asp-for="UpdateDate" value="@DateTime.Now" />
+                        <input type="hidden" asp-for="IsActive" value="true" />
+                        <input type="hidden" asp-for="IsDelete" value="false" />
+                        <input type="hidden" asp-for="CreateUserID" value="@Model.CreateUserID" />
+                        <input type="hidden" asp-for="UpdateUserID" value="@Model.UserID" />
+                        <button type="button" class="btn btn-danger" onclick="javascript:history.back()">Geri Dön</button>
+                        <button type="submit" class="btn btn-success">Kaydet</button>
+                    </div>
+                </form>
+            </div>
+            <div class="tab-pane fade" id="kt_tab_pane_2_4" role="tabpanel" aria-labelledby="kt_tab_pane_2_4">
+                @{
+                    @await Component.InvokeAsync("CrmDosyaYonetimi",
+                    new { VeriID = Model.ID, ModulID = (int)ModulEnum.Uretim, DosyaYolu = "Uretim" })
+                                }
+            </div>
+        </div>
+    </div>
+</div>
+<br />
+<div class="card card-custom">
+    <div class="card-header card-header-tabs-line">
+        <div class="card-title">
+
+
+            <h3 class="card-label">Kısmi Teslimat</h3>
+        </div>
+        <div class="card-toolbar">
+ 
+        </div>
+    </div>
+    <div class="card-body col-lg-6">
+        <table class="table table-sm table-bordered">
+            <tr>
+                <td></td>
+                <td>Tarih</td>
+                <td>Miktar</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td class="text-right"><input type="date" class="form-control form-control-sm width150" name="TeslimatTarih" id="TeslimatTarih" /></td>
+                <td class="text-right"><input type="text" class="form-control form-control-sm width150" name="TeslimatMiktar" id="TeslimatMiktar" /></td>
+                <td><button class="btn btn-sm btn-success" onclick="KismiTeslimatEkle()">Ekle</button></td>
+            </tr>
+            <tfoot id="TeslimatEklenenListe">
+                 
+                    @{
+                    await Html.RenderPartialAsync("_TeslimatEklenenListe", Model);
+                    }
+                 
+            </tfoot>
+        </table>
+    </div>
+</div>
+@{
+    await Html.RenderPartialAsync("_PartialModalDosya",
+    new AuthorizeCrudVM { Controller = "Uretim", HaritaEkle = false });
+}
+
+
+@section JSSection {    
+
+    <script src="js/select2.js?v=7.0.5"></script>
+
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+
+            $('#_VeriEkle2').on('submit', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                var actionUrl = form.attr('action');
+                var formData = form.serialize();
+                $.ajax({
+                    type: 'POST',
+                    url: actionUrl,
+                    data: formData,
+                    success: function (response) {
+                        toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+
+                    },
+                    error: function (xhr, status, error) {
+
+                        toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+                    }
+                });
+            });
+        });
+
+    </script>
+    <script>
+
+        function KismiTeslimatEkle() {
+            var Tarih = $('#TeslimatTarih').val();
+            var Miktar = $('#TeslimatMiktar').val();
+            var UretimID=@(Model.ID);
+ 
+            if(Miktar==""){
+                alert("Miktar giriniz!");
+               return false;
+           }
+            $.ajax({
+                url: '@Url.Action("KismiTeslimatEkle", "Uretim")',
+                type: 'GET',
+                dataType: "html",
+                data: {
+                    Tarih: Tarih,
+                    Miktar: Miktar,
+                    UretimID:UretimID
+                },
+                success: function(response) {
+                    $('#TeslimatEklenenListe').html(response);
+                     
+                    $('#Miktar').val(''); 
+                    toastr.success('Kayıt eklendi.', 'Başarılı');
+                },
+                error: function(error) {
+                   toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+                }
+            });
+        }
+
+
+    </script>
+    <script>
+        $(document).on('click', '.remove-item', function() {
+            var teslimatId = $(this).data('id');
+             if (!confirm("Bu ürünü listeden çıkarmak istediğinize emin misiniz?")) {
+            return; // kullanıcı iptal etti, AJAX çalışmaz
+        }
+            $.ajax({
+                url: '@Url.Action("TeslimatCikar", "Uretim")',
+                type: 'POST',
+                dataType: "html",
+                data: { teslimatId: teslimatId ,UretimID:@(Model.ID) },
+                success: function(response) {
+                    $('#TeslimatEklenenListe').html(response);
+
+                },
+                error: function() {
+                    alert('Bir hata oluştu. Lütfen tekrar deneyin.'+ respon.error);
+                }
+            });
+        });
+    </script>
+}
+
+

@@ -1,0 +1,33 @@
+﻿@model ErrorViewModel
+ 
+
+ 
+
+@{
+    ViewData["Title"] = "Error";
+    Layout = null;// "~/Views/Shared/_Layout.cshtml"; // Eğer farklı bir layout kullanıyorsanız, burayı değiştirin.
+}
+
+
+<!-- Page Heading -->
+<div class="card shadow">
+    <div class="card-body">
+        <div class="form-group text-left">
+            <h1 class="h3 mb-0 text-gray-800">Hata Sayfası</h1>
+            <br />
+            <br />
+            <h1 class="text-danger">Hata! Bir şeyler ters gitti.</h1>
+            <p>İsteğinizi işlerken bir hata oluştu.</p>
+            <p><a asp-action="Member" asp-controller="Home">Ana Sayfaya Git</a></p>
+
+            @if (Model != null)
+            {
+                <h4>Exception Details:</h4>
+                <p>@Model.exception</p>
+            }
+        </div>
+    </div>
+</div>
+<br />
+
+ 

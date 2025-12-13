@@ -1,0 +1,102 @@
+﻿@model AddUserClaimVM;
+
+@{
+    ViewData["Title"] = "Add User Claim";
+   // Layout = "_LayoutMetronic1";
+}
+ 
+ 
+    <!-- Page Heading -->
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="form-group text-left">
+                <h1 class="h4 mb-0 text-gray-800">Rol Talebi Ekleme</h1>
+                <h5 class="mb-0 text-gray-800">Add Claim to @Model.UserName</h5>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="card shadow">
+        <div class="card-header py-2">
+            <div class="row">
+                <div class="col-md-3"><span class="font-weight-bold"> LİSTE </span></div>
+                <div class="col-md-9 text-right">
+                    <a asp-action="UserList" asp-controller="Admin" class="btn btn-primary btn-sm">Listeye Dön</a>
+                    
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <form asp-action="AddUserClaim" method="post">
+                    <input type="hidden" asp-for="UserId" />
+                    <input type="hidden" asp-for="UserName" />
+                    <div class="form-group">
+                        <label asp-for="ClaimType">Claim Type</label>
+                        <input asp-for="ClaimType" class="form-control" />
+                        <span asp-validation-for="ClaimType" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="ClaimValue">Claim Value</label>
+                        <input asp-for="ClaimValue" class="form-control" />
+                        <span asp-validation-for="ClaimValue" class="text-danger"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Claim</button>
+                </form>
+                <br />
+                <hr />
+                <h3>Existing Claims for @Model.UserName</h3>
+
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>Claim Type</th>
+                            <th>Claim Value</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var claim in Model.ExistingClaims)
+                        {
+                            <tr>
+                                <td>@claim.Type</td>
+                                <td>@claim.Value</td>
+                                <td>
+                                    <a href="@Url.Action("DeleteClaimFromUser", "Admin", new { userId = Model.UserId, claimType = claim.Type, claimValue = claim.Value })" class="btn btn-danger btn-sm">
+                                        Delete
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <br />
+                <hr />
+                <h3>Roles for @Model.UserName</h3>
+
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>Role Name</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var role in Model.UserRoles)
+                        {
+                            <tr>
+                                <td>@role</td>
+                                <td>
+                                    <a href="@Url.Action("DeleteRoleFromUser", "Admin", new { userId = Model.UserId, roleName = role })" class="btn btn-danger btn-sm">
+                                        Delete
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+ 

@@ -1,0 +1,128 @@
+﻿@model MapVM
+@{
+}
+<link href="~/assets1/plugins/global/plugins.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+<link href="~/assets1/plugins/custom/prismjs/prismjs.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+<link href="~/assets1/css/style.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+
+<!--begin::Leaflet Main-->
+<link rel="stylesheet" href="~/Leaflet/leaflet.css" />
+<script src="~/Leaflet/leaflet.js"></script> 
+<!--end::Leaflet Main-->
+<!--begin::Leaflet PlugIn style-->
+<link href="~/leaflet/plugin/control.geocoder/control.geocoder.css" rel="stylesheet" />
+<link href="~/leaflet/plugin/draw/leaflet.draw.css" rel="stylesheet" />
+<link href="~/leaflet/plugin/fullscreen/leaflet.fullscreen.css" rel="stylesheet" />
+<link href="~/leaflet/plugin/markercluster/markercluster.css" rel="stylesheet" />
+<link href="~/leaflet/plugin/markercluster/markercluster.default.css" rel="stylesheet" />
+<!--end::Leaflet PlugIn style-->
+<!--begin::custom style-->
+<link href="~/map/mapstyle.css" rel="stylesheet" />
+<!--end::custom style-->
+
+<div id="map" style="height: 100%;width:100%"></div>
+ 
+@if (Model.KayitID != 0)
+{
+    <div class="container-fluid mt-2 mb-2">
+        <div class="row justify-content-center align-items-center">
+            <div class="col-auto d-flex align-items-center">
+                <label for="Latitude" class="form-label me-2">Ada/Parsel:</label>
+                <input type="text" id="AdaParsel" class="form-control" placeholder="Ada/Parsel">
+                <button class="btn btn-info mr-2" onclick="AdaParselAra()">Ara</button>
+            </div>
+            <div class="col-auto d-flex align-items-center">
+                <label for="Latitude" class="form-label me-2">Enlem:</label>
+                <input type="text" id="Latitude" class="form-control" placeholder="Enlem">
+            </div>
+            <div class="col-auto d-flex align-items-center">
+                <label for="Longitude" class="form-label me-2">Boylam:</label>
+                <input type="text" id="Longitude" class="form-control" placeholder="Boylam">
+            </div>
+            <div class="col-auto d-flex gap-2">
+                 
+                <input type="file" id="fileInput" accept=".geojson,.json,.kml" class="btn btn-info"/>
+            </div>
+            <div class="col-auto d-flex gap-2">
+                <button class="btn btn-primary mr-2" onclick="downloadGeoJSON()">Çizimleri İndir</button>
+                <button class="btn btn-success mr-2" onclick="saveGeoJSON('@Model.KayitID','@Model.ModulID')">Çizimleri Kaydet</button>
+            </div>
+        </div>
+    </div>
+}
+<div id="Goruntu360" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            @* <div class="modal-header">
+				<h5 class="modal-title">Görüntüle</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+			</div> *@
+            <div class="modal-body">
+                
+                <iframe id="iframeContent" name="iframeContent" src="" width="100%" height="650px" frameborder="0"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="ModalKapat('Goruntu360')">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="ResultModal" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            @* <div class="modal-header">
+				<h5 class="modal-title">Görüntüle</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+			</div> *@
+            <div class="modal-body" id="result">
+
+                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="ModalKapat('ResultModal')">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--begin::Global Config(global config for global JS scripts)-->
+<script>var KTAppSettings = { "breakpoints": { "sm": 576, "md": 768, "lg": 992, "xl": 1200, "xxl": 1400 }, "colors": { "theme": { "base": { "white": "#ffffff", "primary": "#3699FF", "secondary": "#E5EAEE", "success": "#1BC5BD", "info": "#8950FC", "warning": "#FFA800", "danger": "#F64E60", "light": "#E4E6EF", "dark": "#181C32" }, "light": { "white": "#ffffff", "primary": "#E1F0FF", "secondary": "#EBEDF3", "success": "#C9F7F5", "info": "#EEE5FF", "warning": "#FFF4DE", "danger": "#FFE2E5", "light": "#F3F6F9", "dark": "#D6D6E0" }, "inverse": { "white": "#ffffff", "primary": "#ffffff", "secondary": "#3F4254", "success": "#ffffff", "info": "#ffffff", "warning": "#ffffff", "danger": "#ffffff", "light": "#464E5F", "dark": "#ffffff" } }, "gray": { "gray-100": "#F3F6F9", "gray-200": "#EBEDF3", "gray-300": "#E4E6EF", "gray-400": "#D1D3E0", "gray-500": "#B5B5C3", "gray-600": "#7E8299", "gray-700": "#5E6278", "gray-800": "#3F4254", "gray-900": "#181C32" } }, "font-family": "Poppins" };</script>
+<!--end::Global Config-->
+<script src="~/assets1/plugins/global/plugins.bundle.js?v=7.0.5"></script>
+<script src="~/assets1/plugins/custom/prismjs/prismjs.bundle.js?v=7.0.5"></script>
+<script src="~/assets1/js/scripts.bundle.js?v=7.0.5"></script>
+
+
+
+
+<!--begin::Leaflet PlugIn Config-->
+<script src="~/leaflet/plugin/control.geocoder/control.geocoder.js"></script> 
+<script src="~/leaflet/plugin/draw/leaflet.draw.js"></script>
+<script src="~/leaflet/plugin/fullscreen/leaflet.fullscreen.min.js"></script>
+<script src="~/leaflet/plugin/omnivore/leaflet-omnivore.min.js"></script>
+<script src="~/leaflet/plugin/markercluster/leaflet.markercluster-src.js"></script>
+<script src="~/leaflet/plugin/geoserver/l.geoserver.js"></script>
+<!--end::Leaflet PlugIn Config-->
+<!--begin::custom Config-->
+<script src="~/map/mapscript.js"></script>
+<!--end::custom Config-->
+
+
+
+<script>
+    if(@(Model.KayitID)==0)
+    {
+        getGeoJSONAll('@Model.ModulID');
+        getImageAll('@Model.ModulID');
+    }
+    else{
+        getGeoJSON('@Model.KayitID','@Model.ModulID');
+        getImage('@Model.KayitID','@Model.ModulID');
+    }
+    function ModalKapat(modal)
+    {
+            $("#"+modal).modal('hide');
+    }
+     
+</script>
+
+ 

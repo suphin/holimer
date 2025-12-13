@@ -1,0 +1,171 @@
+﻿@model SignUpVM;
+@{
+    ViewData["Title"] = "Profil Bilgileri";
+   // Layout = "~/Views/Shared/_Layout.cshtml";
+}
+ 
+   
+    <!-- Content Row -->
+<div class="card card-custom gutter-b">
+    <div class="card-header">
+        <div class="card-title">
+            <h3 class="card-label">Kullanıcı Bilgileri</h3>
+        </div>
+    </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <div class="col-md-6 offset-md-2">
+                    <form asp-action="Profile" method="post">
+                         @if (TempData["Message"] != null)
+                        {
+                            <div class="alert alert-info" role="alert">@TempData["Message"]</div>
+                        }
+                    @if (TempData["MessageError"] != null)
+                    {
+                        <div class="alert alert-danger" role="alert">@TempData["MessageError"]</div>
+                    }
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="form-group">
+                        <label asp-for="SirketID" class="control-label"></label>
+                        <select asp-for="SirketID" class="form-control" asp-items="@(new SelectList(ViewBag.SirketListe, "ID", "SirketAdi"))">
+                            <option value="0">Şirket Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="SirketID" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Departman" class="control-label"></label>
+                        <select asp-for="DepartmanID" class="form-control" asp-items="@(new SelectList(ViewBag.IlgiliMudurlukListe, "ID", "Ad"))"><option value="0">Departman Seçiniz</option></select>
+                        <input asp-for="Departman" class="form-control" type="hidden" />
+                    </div>
+                        <div class="form-group">
+                            <label asp-for="UserName" class="control-label"></label>
+                            <input asp-for="UserName" class="form-control" disabled />
+                            <span asp-validation-for="UserName" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="AdSoyad" class="control-label"></label>
+                            <input asp-for="AdSoyad" class="form-control" />
+                            <span asp-validation-for="AdSoyad" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="PhoneNumber" class="control-label"></label>
+                            <input asp-for="PhoneNumber" class="form-control" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="Email" class="control-label"></label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                    <div class="form-group">
+                        <label asp-for="Bolum" class="control-label"></label>
+                        <input asp-for="Bolum" class="form-control" />
+                        <span asp-validation-for="Bolum" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Unvan" class="control-label"></label>
+                        <input asp-for="Unvan" class="form-control" />
+                        <span asp-validation-for="Unvan" class="text-danger"></span>
+                    </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Güncelle</button>
+                        <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#DetaylarDiv">Şifre Değişikliği</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@{
+    var fileName = "";
+}
+@if (User.Identity.IsAuthenticated)
+{
+    fileName = @User.Identity.Name + ".jpg";
+     
+}
+   
+
+    <div class="card card-custom gutter-b">
+        <div class="card-header">
+            <div class="card-title">
+            <h3 class="card-label">Kullanıcı Fotoğraf</h3>
+            </div> 
+        </div>
+        <!--begin::Form-->
+       
+    @using (Html.BeginForm("UploadAndSave", "Home", FormMethod.Post, new { enctype = "multipart/form-data" }))
+    {
+        <div class="card-body">
+            <div class="form-group row">
+                <label class="col-xl-3 col-lg-3 col-form-label text-right">@Model.AdSoyad</label>
+                <div class="col-lg-9 col-xl-6">
+                    <div class="image-input image-input-outline" id="kt_image_1">
+                        <div class="image-input-wrapper" style="background-image: url(/img/user/@fileName)"></div>
+                        <label class="btn btn-xs btn-icon btn-circle btn-white btn-hover-text-primary btn-shadow" data-action="change" data-toggle="tooltip" title="" data-original-title="Fotoğraf Değiştir">
+                            <i class="fa fa-pen icon-sm text-muted"></i>
+                        <input type="file" name="file" accept=".png, .jpg, .jpeg">
+                            <input type="hidden" name="profile_avatar_remove">
+                        </label>
+                        <span class="btn btn-xs btn-icon btn-circle btn-white btn-hover-text-primary btn-shadow" data-action="cancel" data-toggle="tooltip" title="" data-original-title="İptal Et">
+                            <i class="ki ki-bold-close icon-xs text-muted"></i>
+                        </span>
+                    </div>
+                <span>@ViewBag.Message</span>
+                    <span class="form-text text-muted">İzin verilen dosya türleri: png, jpg, jpeg.</span>
+                <br />
+                <input type="submit" value="Yükle ve Kaydet" class="btn btn-success" />
+                </div>
+            </div>
+        </div>
+    }
+          
+        
+</div>
+<div id="DetaylarDiv" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <form asp-controller="Home" asp-action="SifreDegistir" method="post" name="SifreDegistir" id="SifreDegistir">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Şifre Değiştir</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered TableSmallFont" width="100%" cellspacing="0">
+
+                            <tr>
+                                <td><label asp-for="Password1" class="control-label"></label></td>
+                                <td>
+                                    <input asp-for="Password1" class="form-control form-control-sm" required />
+                                    <span asp-validation-for="Password1" class="text-danger"></span>
+                                </td>
+
+
+                            </tr>
+                            <tr>
+                                <td><label asp-for="Password2" class="control-label"></label></td>
+                                <td>
+                                    <input asp-for="Password2" class="form-control form-control-sm" required />
+                                    <span asp-validation-for="Password1" class="text-danger"></span>
+                                </td>
+
+
+                            </tr>
+
+                        </table>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+@section JSSection 
+{
+<script src="assets1/js/pages/crud/file-upload/image-input.js?v=7.0.5"></script>
+}

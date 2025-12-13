@@ -1,0 +1,331 @@
+﻿@using Ekomers.Models.ViewModels
+
+@{
+
+
+	ViewData["Title"] = "Sayfa Adı";
+	//Layout = "~/Views/Shared/_LayoutMetronic1.cshtml";
+
+}
+
+@section js_firstScripts
+{
+
+}
+@section css_firstStyles
+{
+
+}
+@section css_plugins
+{
+
+}
+
+
+
+<div class="content d-flex flex-column flex-column-fluid" id="kt_content">
+	<!--begin::Subheader-->
+	<div class="subheader py-2 py-lg-4 subheader-solid" id="kt_subheader">
+		<div class="container-fluid d-flex align-items-center justify-content-between flex-wrap flex-sm-nowrap">
+			<!--begin::Info-->
+			<div class="d-flex align-items-center flex-wrap mr-1">
+				<!--begin::Page Heading-->
+				<div class="d-flex align-items-baseline flex-wrap mr-5">
+					<!--begin::Page Title-->
+					<h5 class="text-dark font-weight-bold my-1 mr-5">Select2</h5>
+					<!--end::Page Title-->
+					<!--begin::Breadcrumb-->
+					<ul class="breadcrumb breadcrumb-transparent breadcrumb-dot font-weight-bold p-0 my-2 font-size-sm">
+						<li class="breadcrumb-item">
+							<a href="" class="text-muted">Crud</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="" class="text-muted">Forms &amp; Controls</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="" class="text-muted">Form Widgets</a>
+						</li>
+						<li class="breadcrumb-item">
+							<a href="" class="text-muted">Select2</a>
+						</li>
+					</ul>
+					<!--end::Breadcrumb-->
+				</div>
+				<!--end::Page Heading-->
+			</div>
+			<!--end::Info-->
+			<!--begin::Toolbar-->
+			@{
+			//await Html.RenderPartialAsync("metronic1/toolbar");
+			}
+			<!--end::Toolbar-->
+		</div>
+	</div>
+	<!--end::Subheader-->
+	<!--begin::Entry-->
+	<div class="d-flex flex-column-fluid">
+		<!--begin::Container-->
+		<div class="container">
+			<!--begin::Notice-->
+			<div class="alert alert-custom alert-white alert-shadow gutter-b" role="alert">
+				<div class="alert-icon">
+					<span class="svg-icon svg-icon-primary svg-icon-xl">
+						<!--begin::Svg Icon | path:assets/media/svg/icons/Tools/Compass.svg-->
+						<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+							<g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+								<rect x="0" y="0" width="24" height="24" />
+								<path d="M7.07744993,12.3040451 C7.72444571,13.0716094 8.54044565,13.6920474 9.46808594,14.1079953 L5,23 L4.5,18 L7.07744993,12.3040451 Z M14.5865511,14.2597864 C15.5319561,13.9019016 16.375416,13.3366121 17.0614026,12.6194459 L19.5,18 L19,23 L14.5865511,14.2597864 Z M12,3.55271368e-14 C12.8284271,3.53749572e-14 13.5,0.671572875 13.5,1.5 L13.5,4 L10.5,4 L10.5,1.5 C10.5,0.671572875 11.1715729,3.56793164e-14 12,3.55271368e-14 Z" fill="#000000" opacity="0.3" />
+								<path d="M12,10 C13.1045695,10 14,9.1045695 14,8 C14,6.8954305 13.1045695,6 12,6 C10.8954305,6 10,6.8954305 10,8 C10,9.1045695 10.8954305,10 12,10 Z M12,13 C9.23857625,13 7,10.7614237 7,8 C7,5.23857625 9.23857625,3 12,3 C14.7614237,3 17,5.23857625 17,8 C17,10.7614237 14.7614237,13 12,13 Z" fill="#000000" fill-rule="nonzero" />
+							</g>
+						</svg>
+						<!--end::Svg Icon-->
+					</span>
+				</div>
+				<div class="alert-text">
+					Select2 is a jQuery based replacement for select boxes. It supports searching, remote data sets, and infinite scrolling of results. Select2 gives you a customizable select box with support for searching, tagging, remote data sets, infinite scrolling, and many other highly used options.
+					<br />For more info please visit the plugin's
+					<a class="font-weight-bold" href="https://select2.org/getting-started/basic-usage" target="_blank">Demo Page</a>or
+					<a class="font-weight-bold" href="https://github.com/select2/select2" target="_blank">Github Repo</a>.
+				</div>
+			</div>
+			<!--end::Notice-->
+			<!--begin::Card-->
+			<div class="card card-custom gutter-b example example-compact">
+				<div class="card-header">
+					<h3 class="card-title">Select2 Examples</h3>
+					<div class="card-toolbar">
+						<div class="example-tools justify-content-center">
+							<span class="example-toggle" data-toggle="tooltip" title="View code"></span>
+						</div>
+					</div>
+				</div>
+				<!--begin::Form-->
+				<form class="form">
+					<div class="card-body">
+						<div class="form-group row">
+							<label class="col-form-label text-right col-lg-3 col-sm-12">Basic Example</label>
+							<div class="col-lg-4 col-md-9 col-sm-12">
+								<select class="form-control select2" id="kt_select2_1" name="param">
+									<option value="AK">Alaska</option>
+									<option value="HI">Hawaii</option>
+									<option value="CA">California</option>
+									<option value="NV">Nevada</option>
+									<option value="OR">Oregon</option>
+									<option value="WA">Washington</option>
+									<option value="AZ">Arizona</option>
+									<option value="CO">Colorado</option>
+									<option value="ID">Idaho</option>
+									<option value="MT">Montana</option>
+									<option value="NE">Nebraska</option>
+									<option value="NM">New Mexico</option>
+									<option value="ND">North Dakota</option>
+									<option value="UT">Utah</option>
+									<option value="WY">Wyoming</option>
+									<option value="AL">Alabama</option>
+									<option value="AR">Arkansas</option>
+									<option value="IL">Illinois</option>
+									<option value="IA">Iowa</option>
+									<option value="KS">Kansas</option>
+									<option value="KY">Kentucky</option>
+									<option value="LA">Louisiana</option>
+									<option value="MN">Minnesota</option>
+									<option value="MS">Mississippi</option>
+									<option value="MO">Missouri</option>
+									<option value="OK">Oklahoma</option>
+									<option value="SD">South Dakota</option>
+									<option value="TX">Texas</option>
+									<option value="TN">Tennessee</option>
+									<option value="WI">Wisconsin</option>
+									<option value="CT">Connecticut</option>
+									<option value="DE">Delaware</option>
+									<option value="FL">Florida</option>
+									<option value="GA">Georgia</option>
+									<option value="IN">Indiana</option>
+									<option value="ME">Maine</option>
+									<option value="MD">Maryland</option>
+									<option value="MA">Massachusetts</option>
+									<option value="MI">Michigan</option>
+									<option value="NH">New Hampshire</option>
+									<option value="NJ">New Jersey</option>
+									<option value="NY">New York</option>
+									<option value="NC">North Carolina</option>
+									<option value="OH">Ohio</option>
+									<option value="PA">Pennsylvania</option>
+									<option value="RI">Rhode Island</option>
+									<option value="SC">South Carolina</option>
+									<option value="VT">Vermont</option>
+									<option value="VA">Virginia</option>
+									<option value="WV">West Virginia</option>
+								</select>
+							</div>
+						</div>
+
+						<div class="form-group row">
+							<label class="col-form-label text-right col-lg-3 col-sm-12">Modal Demos</label>
+							<div class="col-lg-4 col-md-9 col-sm-12">
+								<a href="" class="btn btn-light-primary font-weight-bold" data-toggle="modal" data-target="#kt_select2_modal">Launch modal select2</a>
+							</div>
+						</div>
+						<!--begin: Code-->
+						<!--end: Code-->
+					</div>
+					<div class="card-footer">
+						<div class="row">
+							<div class="col-lg-9 ml-lg-auto">
+								<button type="reset" class="btn btn-primary mr-2">Submit</button>
+								<button type="reset" class="btn btn-secondary">Cancel</button>
+							</div>
+						</div>
+					</div>
+				</form>
+				<!--end::Form-->
+			</div>
+			<!--end::Card-->
+			<!--begin: Code-->
+			<div class="example-code mt-10">
+				@* 	<ul class="example-nav nav nav-tabs nav-bold nav-tabs-line nav-tabs-line-2x">
+				<li class="nav-item">
+				<a class="nav-link active" data-toggle="tab" href="#example_code_html">HTML</a>
+				</li>
+				<li class="nav-item">
+				<a class="nav-link" data-toggle="tab" href="#example_code_js">JS</a>
+				</li>
+				</ul> *@
+				<span class="example-copy" data-toggle="tooltip" title="Copy code"></span>
+				@* <div class="tab-content">
+				<div class="tab-pane active" id="example_code_html" role="tabpanel">
+				<div class="example-highlight">
+
+				</div>
+				</div>
+				<div class="tab-pane" id="example_code_js">
+				<div class="example-highlight">
+
+				</div>
+				</div>
+				</div> *@
+			</div>
+			<!--end: Code-->
+
+		</div>
+		<!--end::Container-->
+	</div>
+	<!--end::Entry-->
+</div>
+
+<div class="card card-custom gutter-b example example-compact">
+	<div class="card-header">
+		<h3 class="card-title">Select2 Examples</h3>
+		<div class="card-toolbar">
+			<div class="example-tools justify-content-center">
+			</div>
+		</div>
+	</div>
+	<!--begin::Form-->
+	<form class="form">
+		<div class="card-body">
+			<div class="form-group row">
+				<label class="col-form-label text-right col-lg-3 col-sm-12">Basic Example</label>
+				<div class="col-lg-4 col-md-9 col-sm-12">
+					<select class="form-control select2" id="kt_select2_1" name="param">
+						<option value="AK">Alaska</option>
+						<option value="HI">Hawaii</option>
+						<option value="CA">California</option>
+						<option value="NV">Nevada</option>
+						<option value="OR">Oregon</option>
+						<option value="WA">Washington</option>
+						<option value="AZ">Arizona</option>
+						<option value="CO">Colorado</option>
+						<option value="ID">Idaho</option>
+						<option value="MT">Montana</option>
+						<option value="NE">Nebraska</option>
+						<option value="NM">New Mexico</option>
+						<option value="ND">North Dakota</option>
+						<option value="UT">Utah</option>
+						<option value="WY">Wyoming</option>
+						<option value="AL">Alabama</option>
+						<option value="AR">Arkansas</option>
+						<option value="IL">Illinois</option>
+						<option value="IA">Iowa</option>
+						<option value="KS">Kansas</option>
+						<option value="KY">Kentucky</option>
+						<option value="LA">Louisiana</option>
+						<option value="MN">Minnesota</option>
+						<option value="MS">Mississippi</option>
+						<option value="MO">Missouri</option>
+						<option value="OK">Oklahoma</option>
+						<option value="SD">South Dakota</option>
+						<option value="TX">Texas</option>
+						<option value="TN">Tennessee</option>
+						<option value="WI">Wisconsin</option>
+						<option value="CT">Connecticut</option>
+						<option value="DE">Delaware</option>
+						<option value="FL">Florida</option>
+						<option value="GA">Georgia</option>
+						<option value="IN">Indiana</option>
+						<option value="ME">Maine</option>
+						<option value="MD">Maryland</option>
+						<option value="MA">Massachusetts</option>
+						<option value="MI">Michigan</option>
+						<option value="NH">New Hampshire</option>
+						<option value="NJ">New Jersey</option>
+						<option value="NY">New York</option>
+						<option value="NC">North Carolina</option>
+						<option value="OH">Ohio</option>
+						<option value="PA">Pennsylvania</option>
+						<option value="RI">Rhode Island</option>
+						<option value="SC">South Carolina</option>
+						<option value="VT">Vermont</option>
+						<option value="VA">Virginia</option>
+						<option value="WV">West Virginia</option>
+					</select>
+				</div>
+			</div>
+
+
+			<!--begin: Code-->
+			<div class="example-code mt-10">
+				@* 	<ul class="example-nav nav nav-tabs nav-bold nav-tabs-line nav-tabs-line-2x">
+				<li class="nav-item">
+				<a class="nav-link active" data-toggle="tab" href="#example_code_html">HTML</a>
+				</li>
+				<li class="nav-item">
+				<a class="nav-link" data-toggle="tab" href="#example_code_js">JS</a>
+				</li>
+				</ul> *@
+				<span class="example-copy" data-toggle="tooltip" title="Copy code"></span>
+				@* <div class="tab-content">
+				<div class="tab-pane active" id="example_code_html" role="tabpanel">
+				<div class="example-highlight">
+
+				</div>
+				</div>
+				<div class="tab-pane" id="example_code_js">
+				<div class="example-highlight">
+
+				</div>
+				</div>
+				</div> *@
+			</div>
+			<!--end: Code-->
+		</div>
+
+	</form>
+	<!--end::Form-->
+</div>
+
+@section js_plugins
+{
+
+}
+@section js_scripts
+{
+	<!--begin::Page Scripts(used by this page)-->
+	<!--end::Page Scripts-->
+
+	<script>
+
+
+
+	</script>
+}

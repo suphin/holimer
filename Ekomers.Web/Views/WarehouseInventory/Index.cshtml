@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Depo Seç";
+}
+
+<h2>Depo Seç</h2>
+
+<form asp-action="EditAll" method="get">
+    <div class="mb-3">
+        <label for="warehouseId">Depo</label>
+        <select id="warehouseId" name="warehouseId" class="form-select" required>
+            <option value="">Depo Seçiniz...</option>
+            @foreach (var w in ViewBag.Warehouses)
+            {
+                <option value="@w.Id">@w.Name</option>
+            }
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Ürünleri Getir</button>
+</form>
+
+@if (TempData["success"] != null)
+{
+    <div class="alert alert-success mt-3">@TempData["success"]</div>
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Google Maps KML Example</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBIUbtSrDO-GRMSZ7_M3pV-YBPqTZNkpmk"></script>
+    <script>
+      function initMap() {
+        // Haritanın merkez koordinatları
+        var map = new google.maps.Map(document.getElementById('map'), {
+     		center: { lat: 38.7713194030716, lng: 30.517908254915028 },
+     		zoom: 16,
+ 		});
+
+        // KML katmanı ekleme
+        var kmlLayer = new google.maps.KmlLayer({
+          url: 'kml.kml',
+          map: map
+        });
+	// KML katmanı yükleme hatası durumunda hata mesajı
+        google.maps.event.addListener(kmlLayer, 'status_changed', function() {
+          if (kmlLayer.getStatus() !== google.maps.KmlLayerStatus.OK) {
+            console.error('KML dosyası yüklenirken bir hata oluştu: ' + kmlLayer.getStatus());
+          }
+        });
+      }
+    </script>
+    <style>
+      /* Haritanın boyutları */
+      #map {
+        height: 100%;
+        width: 100%;
+      }
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body onload="initMap()">
+    <div id="map"></div>
+  </body>
+</html>

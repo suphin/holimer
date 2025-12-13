@@ -1,0 +1,8 @@
+﻿@{
+}
+<option value="">Seçiniz</option>
+@foreach (SehirlerVM item in ViewBag.IlcelerListe)
+{
+   
+    <option value="@item.ID">@item.Ad</option>
+}

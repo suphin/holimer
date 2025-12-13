@@ -1,0 +1,357 @@
+﻿@model MalzemeDepoVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Depolar";
+}
+@section CSSection {
+    <link href="~/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+}
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #AnaTablo tr:hover {
+        background-color: #f0f0f0;
+    }
+    /* Seçili satırın arka plan rengini değiştir */
+    #AnaTablo tr.selected {
+        background-color: #d0e4f1;
+    }
+
+    #AnaTablo .form-control {
+        height: 18px !important;
+    }
+
+    .modal-xl {
+        max-width: 1340px !important;
+    }
+</style>
+<div class="card shadow">
+    <div class="card-body">
+        <div class="text-left">
+            <h1 class="h4 mb-0 text-gray-800">Depolar</h1>
+            <h5 class="mb-0 text-gray-800">Depoların giriş safyası.</h5>
+        </div>
+    </div>
+</div>
+
+<br />
+
+<div class="card shadow">
+    <div class="card-header">
+        Arama Seçenekleri
+    </div>
+    <div class="card-body">
+       @*  <div class="table-responsive"> *@
+            <form asp-action="Depolar" asp-controller="Iade" class="form" method="post" name="VeriFiltre" id="VeriFiltre">
+                <div class="form-group row">
+                    <div class="col-lg-4">
+                        <label asp-for="DepartmanID" class="control-label"></label>
+                    <select asp-for="DepartmanID" class="form-control  form-control-sm selectpicker" data-live-search="true" data-size="5" asp-items="@ViewBag.DepartmanListe" required></select>
+                        
+                    </div>
+                    <div class="col-lg-3">
+                        <label asp-for="Kod" class="control-label"></label>
+                    <input asp-for="Kod" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-lg-3">
+                        <label asp-for="Ad" class="control-label"></label>
+                    <input asp-for="Ad" class="form-control form-control-sm" />
+                         
+                    </div>
+                    <div class="col-lg-2">
+                        <label class="control-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary btn-sm form-control">Ara</button>
+
+                    </div>
+                </div>
+             @*    <table class="table table-bordered table-sm TableSmallFont" width="100%" cellspacing="0">
+                    <tr>
+                        <td>
+                            <div class="form-group">
+                            <label asp-for="DepartmanID" class="control-label"></label>
+                                <select asp-for="DepartmanID" class="form-control" asp-items="@ViewBag.DepartmanListe" required></select>
+                            </div>
+                        </td>
+                         
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="Kod" class="control-label"></label>
+                                <input asp-for="Kod" class="form-control form-control-sm" />
+
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="Ad" class="control-label"></label>
+                                <input asp-for="Ad" class="form-control form-control-sm" />
+
+                            </div>
+                        </td>                       
+                        <td>
+                            <div class="form-group">
+                                <label class="control-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary form-control btn-sm">Ara</button>
+
+                            </div>
+                        </td>
+                    </tr>
+                </table> *@
+            </form>
+      @*   </div> *@
+    </div>
+</div>
+<br />
+<div class="card card-custom card-sticky" id="kt_page_sticky_card">
+    <div class="card-header py-2">
+        <div class="card-title">
+            <h3 class="card-label">KAYIT LİSTESİ</h3>
+        </div>
+        <div class="card-toolbar">
+             
+            @{
+                await Html.RenderPartialAsync("_PartialCrud");
+            }
+            <!--begin::Button-->
+            @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Add") || a.Value == "Admin"))
+            {
+                <button type="button" class="btn btn-info  btn-sm" data-toggle="modal" data-target="#DetaylarDiv">Yeni Depo Ekle</button>
+            }
+            <!--end::Button-->
+        </div>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered TableSmallFont" id="AnaTablo" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th class="no-print" style="width:30px"></th>
+                        <th style="width:70px">Kayıt No</th> 
+                        <th>Departman</th> 
+                        <th>Kod</th>
+                        <th>Ad</th>
+                        <th>Adres</th>
+                        <th>Özellik</th> 
+                        <th>Açıklama</th> 
+                        @* <th class="no-print" style="width:130px">Düzenle</th> *@
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var sayac = 1;
+                    }
+                    @foreach (MalzemeDepoVM item in Model.MalzemeDepoVMListe)
+                    {
+
+                        <tr data-id="@item.ID">
+                            <td class="no-print"><input type="checkbox" class="form-control" /></td>
+                            <td>@sayac</td> 
+                            <td>@item.Departman</td> 
+                            <td>@item.Kod</td>
+                            <td>@item.Ad</td>
+                            <td>@item.Adres</td>
+                            <td>@item.Ozellik</td> 
+                            <td>@item.Aciklama</td> 
+                            @*  <td class="no-print">
+                        <a href="#" onclick="VeriGoruntule('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Görüntüle">
+                        <i class="fas fa-search text-warning mr-2"></i>
+                        </a>
+
+                        @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Edit") || a.Value == "Admin"))
+                        {
+
+                        <a href="#" onclick="VeriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Düzenle">
+                        <i class="far fa-edit text-success mr-2"></i>
+                        </a>
+                        }
+                        @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Delete") || a.Value == "Admin"))
+                        {
+                        <a href="#" onclick="SilinecekVerileriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Sil">
+                        <i class="fas fa-trash text-danger mr-2"></i>
+                        </a>
+                        }
+                        @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Copy") || a.Value == "Admin"))
+                        {
+                        <a href="#" onclick="KopyalanacakVerileriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Kopyala">
+                        <i class="far fa-clone text-primary "></i>
+                        </a>
+                        }
+                        </td> *@
+                        </tr>
+                        sayac = sayac + 1;
+                    }
+
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+<br />
+
+<div id="ModalGoruntule" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div id="goruntuleFormDiv"></div>
+    </div>
+</div>
+<div id="DetaylarDiv" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-md">
+        <form asp-controller="Iade" asp-action="Depo_VeriEkle" class="form" method="post" name="Depo_VeriEkle" id="Depo_VeriEkle">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Depo Yeni Kayıt</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                   @*  <div class="table-responsive"> *@
+                        <div class="form-group row">
+                        <label asp-for="Departman" class="control-label col-md-3"></label>
+                            <div class="col-lg-9 col-md-9 col-sm-12">
+                                <select asp-for="DepartmanID" class="form-control selectpicker" data-live-search="true" data-size="5" asp-items="@ViewBag.DepartmanListe" id="DepartmanListe"></select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                        <label asp-for="Kod" class="control-label col-md-3"></label>
+                            <div class="col-lg-9 col-md-9 col-sm-12">
+                                <input asp-for="Kod" class="form-control form-control-sm" required />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                        <label asp-for="Ad" class="control-label col-md-3"></label>
+                            <div class="col-lg-9 col-md-9 col-sm-12">
+                                <input asp-for="Ad" class="form-control form-control-sm" required />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                        <label asp-for="Adres" class="control-label col-md-3"></label>
+                            <div class="col-lg-9 col-md-9 col-sm-12">
+                                <input asp-for="Adres" class="form-control form-control-sm" required />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                        <label asp-for="Ozellik" class="control-label col-md-3"></label>
+                            <div class="col-lg-9 col-md-9 col-sm-12">
+                                <input asp-for="Ozellik" class="form-control form-control-sm" required />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                        <label asp-for="Aciklama" class="control-label col-md-3"></label>
+                            <div class="col-lg-9 col-md-9 col-sm-12">
+                            <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+                            </div>
+                        </div>
+                @*         <table class="table table-sm table-bordered TableSmallFont" width="100%" cellspacing="0">
+                            <tr>
+                                <td> <label asp-for="Departman" class="control-label"></label></td>
+                                <td>
+                                    <select asp-for="DepartmanID" class="form-control selectpicker" data-size="7" asp-items="@ViewBag.DepartmanListe" id="DepartmanListe"></select>
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td><label asp-for="Kod" class="control-label"></label></td>
+                                <td><input asp-for="Kod" class="form-control form-control-sm" required /></td>
+                            </tr>
+                            <tr>
+                                <td><label asp-for="Ad" class="control-label"></label></td>
+                                <td><input asp-for="Ad" class="form-control form-control-sm" required /></td>
+                            </tr>
+                            <tr>
+                                <td><label asp-for="Adres" class="control-label"></label></td>
+                                <td><input asp-for="Adres" class="form-control form-control-sm" required /></td>
+                            </tr>
+                            <tr>
+                                <td><label asp-for="Ozellik" class="control-label"></label></td>
+                                <td><input asp-for="Ozellik" class="form-control form-control-sm" required /></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label">Açıklama</label></td>
+                                <td>
+
+                                    <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+
+                                </td>
+                            </tr> 
+                        </table> *@
+                   @*  </div> *@
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+ 
+ 
+@section JSSection {
+
+    <script src="~/assets1/js/pages/crud/forms/widgets/bootstrap-select.js?v=7.0.5"></script>
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        $.extend($.fn.dataTable.defaults, {
+            ordering: false,
+            iDisplayLength: 50
+        });
+        $(document).ready(function() {
+                   $('#AnaTablo').DataTable({
+                          language: { url: '/js/i18n/DataTables-TR.json' },
+                          paging: false,        // sayfalama kapalı
+                          pageLength: 50,       // (ileride paging açılırsa) varsayılan 50
+                          lengthChange: false   // kullanıcı "10/25/50..." menüsünü görmesin
+                    });
+        });
+
+    </script>
+    @{
+        await Html.RenderPartialAsync("_PartialCrudScript");
+    }
+    <script>
+        $(document).ready(function() {
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <text>
+                        toastr.success('@TempData["SuccessMessage"]', 'Başarılı');
+            </text>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <text>
+                        toastr.error('@TempData["ErrorMessage"]', 'Hata');
+            </text>
+        }
+                });
+    </script>@* toastr *@
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Fonksiyonu her select element için çağırıyoruz
+            removeZeroValueOptions("DepartmanListe"); 
+        });
+    </script>
+    <script>
+        function VeriGoruntule(id) {
+            GetAjax('Iade/Depo_VeriGoruntule?DepoID=' + id, 'goruntuleFormDiv');
+        }
+        function VeriGetir(id) {
+            GetAjax('Iade/Depo_VeriGetir?DepoID=' + id, 'goruntuleFormDiv');
+        }
+        function SilinecekVerileriGetir(id) {
+            GetAjax('Iade/Depo_SilinecekVerileriGetir?DepoID=' + id, 'goruntuleFormDiv');
+        }
+        function KopyalanacakVerileriGetir(id) {
+            GetAjax('Iade/Depo_KopyalanacakVerileriGetir?DepoID=' + id, 'goruntuleFormDiv');
+        }
+        
+       
+    </script>
+
+}
+
+

@@ -1,0 +1,125 @@
+﻿@model TeklifUrunlerVM
+
+@{
+}
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #EklenenUrunlerTablo tbody tr:hover {
+        background-color: #f0f0f0;
+    }
+</style>
+<style>
+
+
+    #EklenenUrunlerTablo th {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 2px !important;
+    }
+
+    #EklenenUrunlerTablo td {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 4px !important;
+    }
+</style>
+<div class="card">
+    <div class="card-body">
+
+<table class="table table-sm table-bordered TableSmallFont" id="EklenenUrunlerTablo" width="100%" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Sıra No</th>
+            <th>Ürün Kodu</th>
+            <th>Ürün Adı</th>
+            <th>Birim</th>
+            <th>Miktar</th>
+            <th>Fiyat</th>
+            <th>Toplam</th>
+            <th>İskonto</th>
+            <th>Kdv</th>
+            @if (!Model.TeklifIsLocked)
+            {
+                    <th>Çıkar</th>
+            }
+          
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            var sayac = 1;
+            double T1 = 0;
+            double T2 = 0;
+            double T3 = 0;
+            double T4 = 0;
+        }
+        @foreach (TeklifUrunlerVM item in Model.TeklifUrunlerVMListe)
+        {
+
+            <tr class="@(item.IsDelete ? "deleted" : "")">
+                <td>@sayac</td>
+                <td>@item.UrunKod</td>
+                <td>@item.UrunAd</td>
+                <td>@item.BirimAd</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Miktar)</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Fiyat) @item.DovizTurAd</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Miktar * item.Fiyat)</td>
+                <td class="text-right">%@String.Format("{0:n0}", item.Iskonto)</td>
+                <td class="text-right">%@String.Format("{0:n0}", item.Kdv)</td>
+                        @if (!Model.TeklifIsLocked)
+                        {
+                               <td>
+                                    @if (!item.IsDelete)
+                                    {
+                                        <a href="javascript:void(0);" class="remove-item" data-id="@item.ID">Çıkar</a>
+                                    }
+                             </td>
+                        }
+                      
+            </tr>
+            sayac = sayac + 1;
+                    if (!item.IsDelete)
+                    {
+                        T1 = T1 + (item.Miktar * item.Fiyat);
+                        T2 = T2 + ((item.Miktar * item.Fiyat) * item.Iskonto / 100);
+                        T3 = T3 + ((item.Miktar * item.Fiyat) * item.Kdv / 100); 
+                    }
+           
+        }
+
+    </tbody>
+    @if (Model.TeklifUrunlerVMListe.Count > 0)
+    {
+        <tfoot>
+            <tr>
+                <td colspan="5"> </td>
+                <td class="text-right" colspan="4">
+                    <table width="100%" class="table-borderless">
+                        <tr>
+                            <td class="text-right">Toplam      :</td>
+                            <td class="text-right">@String.Format("{0:n2}", T1) <input name="SiparisToplam" type="hidden" value="@T1"/></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">Kdv         :</td>
+                                    <td class="text-right">@String.Format("{0:n2}", T2) <input name="KdvToplam" type="hidden" value="@T2" /></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">İskonto     :</td>
+                                    <td class="text-right">@String.Format("{0:n2}", T3) <input name="IskontoToplam" type="hidden" value="@T3" /></td>
+                        </tr>
+                    </table>
+
+                </td>
+                <td> </td>
+            </tr>
+        </tfoot>
+    }
+
+
+</table>
+    </div>
+</div>
+
+@* <div class="text-right">
+    <button onclick="UrunKaydet('4')" class="btn btn-sm btn-success font-weight-bold" type="button">Ürünleri Kaydet</button>
+</div> *@

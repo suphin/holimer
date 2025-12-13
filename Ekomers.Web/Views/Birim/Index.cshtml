@@ -1,0 +1,87 @@
+﻿@model IEnumerable<Ekomers.Models.Ekomers.DepartmanBirim>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+
+    <!-- Page Heading -->
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="text-left">
+                <h1 class="h4 mb-0 text-gray-800">TANIMLAMALAR</h1>
+                <h5 class="mb-0 text-gray-800">Kayıtlarının giriş safyası.</h5>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="card shadow">
+        <div class="card-header py-2">
+            <div class="row">
+                <div class="col-md-3"><span class="font-weight-bold"> LİSTE </span></div>
+                <div class="col-md-9 text-right"> 
+                    <a asp-action="Create" class="btn btn-success btn-sm">Yeni Kayıt</a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>
+                                @Html.DisplayNameFor(model => model.Ad)
+                            </th>
+                            <th>
+                                @Html.DisplayNameFor(model => model.Aciklama)
+                            </th>
+                            <th>
+                                @Html.DisplayNameFor(model => model.IsActive)
+                            </th>
+                            <th>
+                                @Html.DisplayNameFor(model => model.IsDelete)
+                            </th>
+                            <th>
+                                @Html.DisplayNameFor(model => model.CreateDate)
+                            </th>
+                            <th>
+                                @Html.DisplayNameFor(model => model.DeleteDate)
+                            </th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.Ad)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.Aciklama)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.IsActive)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.IsDelete)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.CreateDate)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.DeleteDate)
+                                </td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@item.ID">Düzenle</a> |
+                                    @* <a asp-action="Details" asp-route-id="@item.ID">Details</a> | *@
+                                    <a asp-action="Delete" asp-route-id="@item.ID">Sil</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+

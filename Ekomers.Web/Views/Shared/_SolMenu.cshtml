@@ -1,0 +1,116 @@
+﻿@using System.Security.Claims;
+@if (User.Identity!.IsAuthenticated)
+{
+    string controllerName = Context.Request.RouteValues["controller"]!.ToString()!;
+    string actionName = Context.Request.RouteValues["action"]!.ToString()!;
+     
+    @if (User.HasClaim(a => a.Type == ClaimTypes.Role && a.Value == "Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#colYonetim" aria-expanded="true" aria-controls="col1">
+                <i class="fas fa-fw fa-folder"></i>
+                <span>Yönetim</span>
+            </a>
+            <div id="colYonetim" class="collapse @(controllerName=="Admin" ? "show" : "")" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a asp-controller="Admin" asp-action="UserList" class="collapse-item @(actionName=="UserList" ? "active" : "")">Kullanıcı Listesi</a>
+                    <a asp-controller="Admin" asp-action="RoleList" class="collapse-item @(actionName=="RoleList" ? "active" : "")">Rol Listesi</a>
+                    <a asp-controller="Home" asp-action="MemberHome" class="collapse-item @(actionName=="MemberHome" ? "active" : "")">Yeni Tasarım</a>
+                </div>
+            </div>
+        </li>
+    }
+
+    @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Yardim") || a.Value == "Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#colYardimMasasi" aria-expanded="true" aria-controls="col1">
+                <i class="fas fa-fw fa-folder"></i>
+                <span>Muhtarlık-Yardım Birimi</span>
+            </a>
+            <div id="colYardimMasasi" class="collapse @(controllerName=="Yardim" ? "show" : "")" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded"> 
+                    <a asp-controller="Yardim" asp-action="GirisDurumu" class="collapse-item @(actionName=="GirisDurumu" ? "active" : "")">Giriş Durumu</a>
+                    <a asp-controller="Yardim" asp-action="CikisDurumu" class="collapse-item @(actionName=="CikisDurumu" ? "active" : "")">Çıkış Durumu</a>
+                    <a asp-controller="Yardim" asp-action="DepoDurumu" class="collapse-item @(actionName=="DepoDurumu" ? "active" : "")">Depo Durumu</a>
+                    <a asp-controller="Yardim" asp-action="YardimYapanKisi" class="collapse-item @(actionName=="YardimYapanKisi" ? "active" : "")">Yardım Yapan Kişi Listesi</a>
+                    <a asp-controller="Yardim" asp-action="Raporlar" class="collapse-item @(actionName=="Raporlar" ? "active" : "")">Raporlar</a>
+                </div>
+            </div>
+        </li>
+    }  
+    @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "ImarRuhsat") || a.Value == "Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#colImar" aria-expanded="true" aria-controls="col1">
+                <i class="fas fa-fw fa-folder"></i>
+                <span>İmar-Ruhsat</span>
+            </a>
+            <div id="colImar" class="collapse @(controllerName=="ImarRuhsat" ? "show" : "")" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                   
+                    <a asp-controller="ImarRuhsat" asp-action="YapiRuhsat" class="collapse-item @(actionName=="YapiRuhsat" ? "active" : "")">Yapı Ruhsat Kayıtlar</a>
+                    <a asp-controller="ImarRuhsat" asp-action="YapiRuhsatArsiv" class="collapse-item @(actionName=="YapiRuhsatArsiv" ? "active" : "")">Yapı Ruhsat Arşiv</a>
+                    
+                </div>
+            </div>
+        </li>
+    }
+    @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "ImarKullandirma") || a.Value == "Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#colImarKullan" aria-expanded="true" aria-controls="col1">
+                <i class="fas fa-fw fa-folder"></i>
+                <span>İmar-Yapı Kullandırma</span>
+            </a>
+            <div id="colImarKullan" class="collapse @(controllerName=="ImarKullandirma" ? "show" : "")" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a asp-controller="ImarKullandirma" asp-action="YapiKullanma" class="collapse-item @(actionName=="YapiKullanma" ? "active" : "")">Yapı Kullanma Birimi</a>
+
+                    <a asp-controller="ImarKullandirma" asp-action="HarcParametre" class="collapse-item @(actionName=="HarcParametre" ? "active" : "")">Harç Parametreler</a>
+                </div>
+            </div>
+        </li>
+    }
+    @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Tanimlamalar") || a.Value == "Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#colTanimlamalar" aria-expanded="true" aria-controls="col1">
+                <i class="fas fa-fw fa-folder"></i>
+                <span>Tanimlamalar</span>
+            </a>
+            <div id="colTanimlamalar" class="collapse @(controllerName=="Tanimlamalar" ? "show" : "")" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a asp-controller="Tanimlamalar" asp-action="Imar" class="collapse-item @(actionName=="Imar" ? "active" : "")">İmar Tanımlamalar</a>
+                    <a asp-controller="Tanimlamalar" asp-action="Yardim" class="collapse-item @(actionName=="Yardim" ? "active" : "")">Yardım Tanımlamalar</a>
+                    <a asp-controller="Tanimlamalar" asp-action="Protokol" class="collapse-item @(actionName=="Protokol" ? "active" : "")">Protokol Tanımlamalar</a>
+                </div>
+            </div>
+        </li>
+    }
+    @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Protokol") || a.Value == "Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#colProtokol" aria-expanded="true" aria-controls="col1">
+                <i class="fas fa-fw fa-folder"></i>
+                <span>Protokoller</span>
+            </a>
+            <div id="colProtokol" class="collapse @(controllerName=="Protokol" ? "show" : "")" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a asp-controller="Protokol" asp-action="ProtokolListesi" class="collapse-item @(actionName=="ProtokolListesi" ? "active" : "")">Protokol Listesi</a>
+                </div>
+            </div>
+        </li>
+    }
+    @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Management") || a.Value == "Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="/Yardim/Management">
+                <i class="fas fa-fw fa-bars"></i>
+                <span>Yardım Dashboard</span>
+            </a>
+            
+        </li>
+    }
+    }
+    <br/>

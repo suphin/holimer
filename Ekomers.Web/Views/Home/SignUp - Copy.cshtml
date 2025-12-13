@@ -1,0 +1,94 @@
+﻿@model SignUpVM;
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Afyonkarahisar Belediyesi</title>
+    <link href="@Url.Content("/vendor/fontawesome-free/css/all.min.css")" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="@Url.Content("/css/sb-admin-2.min.css")" rel="stylesheet" type="text/css">
+</head>
+<body class="bg-lacivert">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-xl-12 col-lg-12 col-md-9">
+                <div class="card o-hidden border-0 shadow-lg my-5">
+                    <div class="card-body p-0">
+                        <div class="row">
+                            <div class="col-lg-4 d-none d-lg-block"></div>
+                            <div class="col-lg-8">
+                                <div class="p-5">
+                                    <div class="col-md-10 offset-md-2">
+                                        <h4>Üyelik Formu</h4>
+                                        <hr />
+                                        <form asp-action="SignUp" method="post">
+                                            @if (TempData["Message"] != null)
+                                            {
+                                                <div class="alert alert-info" role="alert">@TempData["Message"]</div>
+                                            }
+                                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                                            <div class="form-group">
+                                                <label asp-for="Departman" class="control-label"></label>
+                                                <select asp-for="DepartmanID" class="form-control" asp-items="@ViewBag.IlgiliMudurlukListe"></select>
+
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="UserName" class="control-label"></label>
+                                                <input asp-for="UserName" class="form-control" autocomplete="off" placeholder="adiniz.soyadiniz şeklinde giriniz!" />
+                                                <span asp-validation-for="UserName" class="text-danger"></span>
+                                            </div>
+                                   
+                                            <div class="form-group">
+                                                <label asp-for="AdSoyad" class="control-label"></label>
+                                                <input asp-for="AdSoyad" class="form-control" />
+                                                <span asp-validation-for="AdSoyad" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="PhoneNumber" class="control-label"></label>
+                                                <input asp-for="PhoneNumber" class="form-control" value="0272"/>
+                                                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="Email" class="control-label"></label>
+                                                <input asp-for="Email" class="form-control" value="@("@afyon.bel.tr")" placeholder="adiniz.soyadiniz@afyon.bel.tr şeklinde giriniz!" />
+                                                <span asp-validation-for="Email" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label asp-for="Password" class="control-label"></label>
+                                                <input asp-for="Password" class="form-control" autocomplete="off" placeholder="harf ve sayı bulunmalı!" />
+                                                <span asp-validation-for="Password" class="text-danger"></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <input type="submit" value="Üye oluştur" class="btn btn-success" />
+                                                
+                                            </div>
+                                        </form>
+                                        <br />
+                                        <hr>
+                                        <br />
+                                        <div class="text-center">
+                                             <a href="SignIn2" class="small">Giriş Sayfası</a>
+                                             
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="@Url.Content("/vendor/jquery/jquery.min.js")"></script>
+    <script src="@Url.Content("/vendor/bootstrap/js/bootstrap.bundle.min.js")"></script>
+    <script src="@Url.Content("/vendor/jquery-easing/jquery.easing.min.js")"></script>
+    <script src="@Url.Content("/js/sb-admin-2.min.js")"></script>
+</body>
+</html>

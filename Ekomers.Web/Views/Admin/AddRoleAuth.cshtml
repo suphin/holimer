@@ -1,0 +1,106 @@
+﻿@model AddRoleClaimVM
+@{
+    ViewData["Title"] = "Rol Yetkileri";
+    var groups = Model.Yetkiler
+        .GroupBy(p => new { p.KategoriID, p.KategoriAd })
+        .OrderBy(g => g.Key.KategoriAd)
+        .ToList();
+}
+ 
+<div class="card shadow">
+    <div class="card-header py-2">
+        <div class="row">
+            <div class="col-md-6"><span class="font-weight-bold">   <strong>Rol:</strong> @Model.RoleName (@Model.RoleId) </span></div>
+            <div class="col-md-6 text-right">
+                <a asp-action="RoleList" asp-controller="Admin" class="btn btn-primary btn-sm">Listeye Dön</a>
+
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <form asp-action="AddRoleAuth" method="post">
+          
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="RoleId" />
+
+        @* Index bazlı binding için alanları gizli taşıyoruz *@
+        @for (int i = 0; i < Model.Yetkiler.Count; i++)
+        {
+            <input type="hidden" asp-for="Yetkiler[@i].KategoriID" />
+            <input type="hidden" asp-for="Yetkiler[@i].KategoriAd" />
+            <input type="hidden" asp-for="Yetkiler[@i].Ad" />
+            <input type="hidden" asp-for="Yetkiler[@i].ClaimType" />
+            <input type="hidden" asp-for="Yetkiler[@i].ClaimName" />
+        }
+<div class="row">
+        @foreach (var g in groups)
+        { 
+                <div class="col-lg-6">
+            <fieldset class="mb-4 border rounded p-3">
+                <legend class="fw-bold">@g.Key.KategoriAd</legend>
+
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input category-toggle"
+                           data-kid="@g.Key.KategoriID" id="cat_@g.Key.KategoriID" />
+                    <label class="form-check-label" for="cat_@g.Key.KategoriID">
+                        Tümünü seç/kaldır
+                    </label>
+                </div>
+
+                @foreach (var item in g)
+                {
+                    var idx = Model.Yetkiler.FindIndex(p =>
+                    p.KategoriID == item.KategoriID &&
+                    p.ClaimType == item.ClaimType &&
+                    p.ClaimName == item.ClaimName);
+
+                    <div class="form-check">
+                        <input class="form-check-input perm-checkbox"
+                               type="checkbox"
+                               asp-for="Yetkiler[@idx].Selected"
+                               data-kid="@item.KategoriID"
+                               id="perm_@idx" />
+                        <label class="form-check-label" for="perm_@idx">
+                            @item.Ad
+                            <small class="text-muted">(@item.ClaimType:@item.ClaimName)</small>
+                        </label>
+                    </div>
+                }
+                        </fieldset>
+                    </div>
+               
+        }
+
+            </div>
+           
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+</form>
+    </div>
+</div>
+@section JSSection {
+    <script>
+        $(document).ready(function() {
+
+        @if (TempData["Message"] != null)
+        {
+                    <text>
+                                    toastr.success('@TempData["Message"]', 'Başarılı');
+                    </text>
+        }
+
+
+        });
+    </script>
+    <script>
+        // Kategori bazında tümünü seç/kaldır
+        document.querySelectorAll('.category-toggle').forEach(function (cat) {
+            cat.addEventListener('change', function () {
+                var kid = this.getAttribute('data-kid');
+                var check = this.checked;
+                document.querySelectorAll('.perm-checkbox[data-kid="' + kid + '"]')
+                        .forEach(function (cb) { cb.checked = check; });
+            });
+        });
+    </script>
+}
+

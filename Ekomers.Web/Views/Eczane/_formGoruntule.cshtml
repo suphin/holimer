@@ -1,0 +1,85 @@
+﻿@model EczaneVM
+
+<div class="form-group row">
+    <div class="col-lg-6 ">
+        <label asp-for="Ad" class="control-label"></label>:@Model.Ad
+    </div>
+    <div class="col-lg-4 ">
+        <label asp-for="MusteriAdi" class="control-label"></label>:@Model.MusteriAdi
+    </div>
+    <div class="col-lg-2 ">
+        <label asp-for="BayiMi" class="control-label"></label> :@(Model.BayiMi == true ? "Evet" : "Hayır")
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4">
+        <label asp-for="Sehir" class="control-label"></label> :@Model.Sehir
+    </div>
+    <div class="col-lg-64 ">
+        <label asp-for="Il" class="control-label"></label>:@Model.Il
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="Ilce" class="control-label"></label>:@Model.Ilce
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-3 ">
+        <label asp-for="Telefon" class="control-label"></label> :@Model.Telefon
+    </div>
+    <div class="col-lg-3 ">
+        <label asp-for="Telefon2" class="control-label"></label> :@Model.Telefon2
+    </div>
+    <div class="col-lg-3 ">
+        <label asp-for="Email1" class="control-label"></label> :@Model.Email1
+    </div>
+    <div class="col-lg-3 ">
+        <label asp-for="Email2" class="control-label"></label> :@Model.Email2
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4 ">
+        <label asp-for="Konum" class="control-label"></label> :@Model.Konum
+    </div>
+    <div class="col-lg-4 ">
+        <label asp-for="Enlem" class="control-label"></label> :@Model.Enlem
+    </div>
+    <div class="col-lg-4 ">
+        <label asp-for="Boylam" class="control-label"></label> :Model.Boylam
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Adres" class="control-label"></label>:@Model.Adres
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="AciklamaAdres" class="control-label"></label>:@Model.AciklamaAdres
+    </div>
+</div>
+ 
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Aciklama" class="control-label"></label>:@Model.Aciklama
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <div class="small">
+            Kayıt Oluşturan: @Model.CreateUserName
+            Oluşturma Tarihi:@Model.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+        </div>
+    </div>
+</div>
+@if (Model.IsDelete)
+{
+    <div class="form-group row">
+        <div class="col-lg-12">
+            <div class="small">
+                Kayıt Silen: @Model.DeleteUserName
+                Silme Tarihi:@Model.DeleteDate?.ToString("dd.MM.yyyy HH:mm")
+            </div>
+        </div>
+    </div>
+}
+<script src="js/select2.js?v=7.0.5"></script>

@@ -1,0 +1,155 @@
+﻿@model SozlesmelerVM;
+@{
+    ViewData["Title"] = "Sözleşme Raporu";
+}
+@section CSSection {
+ 
+}
+
+<div class="card shadow">
+    <div class="card-header">
+        Arama Seçenekleri
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <form asp-action="Rapor" asp-controller="Sozlesmeler" method="post" name="VeriFiltre" id="VeriFiltre">
+                <table class="table table-bordered table-sm TableSmallFont" width="100%" cellspacing="0">
+                    <tr>
+                        <td>
+                            <div class="form-group">
+                                <label class="control-label">Genel Arama</label>
+                                <input asp-for="Aciklama" class="form-control form-control-sm" />
+                            </div>
+                        </td>
+                           <td>
+                            <div class="form-group">
+                                <label asp-for="Taraf1" class="control-label"></label>
+                                 <select asp-for="Taraf1ID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SirketlerListe, "ID", "SirketAdi"))">
+                                     <option value="0">Tümü</option>
+                                 </select> 
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="Konu" class="control-label"></label>
+                                <select asp-for="KonuID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.KonuListe, "ID", "Ad"))"> 
+                                    <option value="0">Tümü</option>
+                                </select>
+                            </div>
+                        </td>
+                        <td>
+                            <label asp-for="Durum" class="control-label"></label>
+                            <select asp-for="DurumID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.DurumListe, "ID", "Ad"))"> 
+                                <option value="0">Tümü</option>
+                            </select>
+                             
+                        </td>
+                        <td>
+                            <div class="form-group">
+                                <label class="control-label"></label>
+                                <button type="submit" class="btn btn-primary form-control btn-sm">Ara</button>
+
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+</div>
+<br />
+
+<div class="card card-custom">
+    <div class="card-header">
+        <div class="card-title">
+            <h3 class="card-label">
+                Sözleşme Rapor
+            </h3>
+        </div>
+        <div class="card-toolbar">
+           
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-hover">
+           <thead>
+               <tr>
+                    <th>Sözleşme Konusu</th>
+                    <th>Sözleşme Adı</th>
+                    <th>Taraf 1</th>                    
+                    <th>Taraf 2</th>                    
+                    <th>Başlangıç Tarihi</th>
+                    <th>Bitiş Tarihi</th>
+                    <th>Durumu</th>
+                    <th>İncele</th>
+                    <th>Dosyalar</th>
+               </tr>
+           </thead>
+           <tbody>
+                @foreach (SozlesmelerVM item in Model.SozlesmelerVMListe)
+                {
+                    <tr>
+                        <td>@item.Konu</td>
+                        <td>@item.Baslik</td>
+                        <td>@item.Taraf1</td>
+                        <td>@item.Taraf2</td>
+                        <td>@item.BaslangicTarih?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@item.BitisTarih?.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@item.Durum</td>
+                        <td>
+                            <a href="#" class="btn btn-icon btn-light btn-hover-warning btn-sm mr-1 crudBtn" onclick="VeriGoruntule('@item.ID')" data-toggle="modal" data-target="#ModalVeri" title="Görüntüle" data-id="1">
+                                <span class="svg-icon svg-icon-warning svg-icon-2x ">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\General\Search.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24"></rect>
+                                            <path d="M14.2928932,16.7071068 C13.9023689,16.3165825 13.9023689,15.6834175 14.2928932,15.2928932 C14.6834175,14.9023689 15.3165825,14.9023689 15.7071068,15.2928932 L19.7071068,19.2928932 C20.0976311,19.6834175 20.0976311,20.3165825 19.7071068,20.7071068 C19.3165825,21.0976311 18.6834175,21.0976311 18.2928932,20.7071068 L14.2928932,16.7071068 Z" fill="#000000" fill-rule="nonzero" opacity="0.3"></path>
+                                            <path d="M11,16 C13.7614237,16 16,13.7614237 16,11 C16,8.23857625 13.7614237,6 11,6 C8.23857625,6 6,8.23857625 6,11 C6,13.7614237 8.23857625,16 11,16 Z M11,18 C7.13400675,18 4,14.8659932 4,11 C4,7.13400675 7.13400675,4 11,4 C14.8659932,4 18,7.13400675 18,11 C18,14.8659932 14.8659932,18 11,18 Z" fill="#000000" fill-rule="nonzero"></path>
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                        </a></td>
+                        <td>
+                            <a href="#" onclick="DosyaGetir('@item.ID')" data-toggle="modal" data-target="#ModalDosyaEkle" class="btn btn-icon btn-light btn-hover-info btn-sm mr-1 crudBtn" data-id="1">
+                                <span class="svg-icon svg-icon-info svg-icon-md">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\General\Clip.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24"></rect>
+                                            <path d="M14,16 L12,16 L12,12.5 C12,11.6715729 11.3284271,11 10.5,11 C9.67157288,11 9,11.6715729 9,12.5 L9,17.5 C9,19.4329966 10.5670034,21 12.5,21 C14.4329966,21 16,19.4329966 16,17.5 L16,7.5 C16,5.56700338 14.4329966,4 12.5,4 L12,4 C10.3431458,4 9,5.34314575 9,7 L7,7 C7,4.23857625 9.23857625,2 12,2 L12.5,2 C15.5375661,2 18,4.46243388 18,7.5 L18,17.5 C18,20.5375661 15.5375661,23 12.5,23 C9.46243388,23 7,20.5375661 7,17.5 L7,12.5 C7,10.5670034 8.56700338,9 10.5,9 C12.4329966,9 14,10.5670034 14,12.5 L14,16 Z" fill="#000000" fill-rule="nonzero" transform="translate(12.500000, 12.500000) rotate(-315.000000) translate(-12.500000, -12.500000) "></path>
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            </a>
+                        </td>
+                         
+                     </tr>
+                }
+            </tbody> 
+       </table>
+    </div>
+</div>
+@{ 
+    await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+
+@{
+    await Html.RenderPartialAsync("_PartialModalDosya",
+    new AuthorizeCrudVM { Controller = "Sozlesmeler", HaritaEkle = false });
+}
+
+@section JSSection {
+
+
+    @{
+        await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+        new AuthorizeCrudVM
+        {
+            Controller = "Sozlesmeler",
+            ModulID = (int)ModulEnum.Sozlesmeler,
+            DosyaYolu = "Sozlesmeler"
+        });
+    }
+
+
+}

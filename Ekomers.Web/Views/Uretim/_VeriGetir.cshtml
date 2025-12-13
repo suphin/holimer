@@ -1,0 +1,104 @@
+﻿@model UretimVM
+ 
+<form asp-controller="@Model.ControllerName" asp-action="VeriEkle" method="post" name="_VeriEkle2" id="_VeriEkle2">
+	<div class="modal-content">
+	@* 	<div class="modal-header">
+            <h5 class="modal-title">@Model.ModalTitle</h5>
+			<button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+		</div> *@
+        <div class="modal-body no-padding">
+            <div class="card card-custom">
+                <div class="card-header card-header-tabs-line">
+                    <div class="card-title">
+                        <h3 class="card-label">@Model.ModalTitle</h3>
+                    </div>
+                    <div class="card-toolbar">
+                        <ul class="nav nav-tabs nav-bold nav-tabs-line">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-toggle="tab" href="#kt_tab_pane_1_4">
+                                    <span class="nav-icon"><i class="flaticon2-search"></i></span>
+                                    <span class="nav-text">Detaylar</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#kt_tab_pane_2_4">
+                                    <span class="nav-icon"><i class="flaticon2-document"></i></span>
+                                    <span class="nav-text">Dosyalar</span>
+                                </a>
+                            </li>
+
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="kt_tab_pane_1_4" role="tabpanel" aria-labelledby="kt_tab_pane_1_4">
+                            @{
+                                await Html.RenderPartialAsync("_form", Model);
+                            }
+                        </div>
+                        <div class="tab-pane fade" id="kt_tab_pane_2_4" role="tabpanel" aria-labelledby="kt_tab_pane_2_4">
+                            @{
+                                @await Component.InvokeAsync("CrmDosyaYonetimi",
+                                new { VeriID = Model.ID, ModulID = (int)ModulEnum.Recete, DosyaYolu = "Recete" })
+                                                        }
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+		<div class="modal-footer">
+			<input type="hidden" asp-for="ID" />
+			<input type="hidden" asp-for="CreateDate"  />
+			<input type="hidden" asp-for="UpdateDate" value="@DateTime.Now" />
+			<input type="hidden" asp-for="IsActive" value="true" />
+			<input type="hidden" asp-for="IsDelete" value="false" />
+			<input type="hidden" asp-for="CreateUserID" value="@Model.CreateUserID" />
+			<input type="hidden" asp-for="UpdateUserID" value="@Model.UserID" />
+			<button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+			<button type="submit" class="btn btn-primary">Kaydet</button>
+		</div>
+	</div>
+</form>
+
+<script type="text/javascript">
+
+
+    $(document).ready(function () {
+
+        // Formun submit olayı
+        $('#_VeriEkle2').on('submit', function (e) {
+            e.preventDefault();
+            var form = $(this);
+            var actionUrl = form.attr('action');
+            var formData = form.serialize();
+            $.ajax({
+                type: 'POST',
+                url: actionUrl,
+                data: formData,
+                success: function (response) {
+                    // $('#cardBody').html(response);
+                    // $('#ModalVeri').modal('hide');
+                    toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+
+                },
+                error: function (xhr, status, error) {
+
+                    toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+                }
+            });
+        });
+    });
+
+</script>
+@section JSSection {
+
+	<script src="js/select2.js?v=7.0.5"></script>
+    <script>
+         function UrunSeciniz(id) {
+            GetAjax('Recete/UrunEkle?ReceteID=' + id , 'UrunlerDiv');
+        }
+    </script>
+}

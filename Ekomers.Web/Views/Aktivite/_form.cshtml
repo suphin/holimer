@@ -1,0 +1,102 @@
+﻿@model AktiviteVM
+
+<div class="form-group row">
+    <div class="col-6">
+        <label class="control-label">Yapılacak </label>
+        <input asp-for="IsDone" type="radio" value="false" name="IsDone" />
+    </div>
+    <div class="col-6">
+        <label class="control-label">Yapıldı </label>
+        <input asp-for="IsDone" type="radio" value="true" name="IsDone" />
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-6">
+        <label asp-for="TurAd" class="control-label"></label>
+        <select asp-for="TurID"  class="kt_select2" data-live-search="true" data-size="5" asp-items="@ViewBag.AktiviteTurListe"></select>
+        <span asp-validation-for="TurAd" class="text-danger"></span>
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="TarihSaat" class="control-label"></label>
+        <input asp-for="TarihSaat" type="datetime-local" class="form-control form-control-sm" required />
+        <span asp-validation-for="TarihSaat" class="text-danger"></span>
+    </div>
+  
+</div>
+<div class="form-group row">
+    <div class="col-lg-6">
+    @{
+        await Html.RenderPartialAsync("~/Views/Musteriler/_selectList.cshtml",Model?.Musteri??new Musteriler());
+    }
+    </div>
+
+ @*    <div class="col-lg-6">
+        <label asp-for="MusteriAd" class="control-label"></label>
+        <select asp-for="MusteriID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@ViewBag.MusterilerListe" required></select>
+        <span asp-validation-for="MusteriAd" class="text-danger"></span>
+    </div> *@
+    
+    <div class="col-lg-6">
+        <label asp-for="FirsatAd" class="control-label"></label> 
+        <select asp-for="FirsatID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@ViewBag.FirsatListe"></select>
+        <span asp-validation-for="FirsatID" class="text-danger"></span>
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="TeklifAd" class="control-label  mt-2"></label>
+        <select asp-for="TeklifID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@ViewBag.TeklifListe" ></select>
+        <span asp-validation-for="TeklifID" class="text-danger"></span>
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="SiparisAd" class="control-label  mt-2"></label>
+        <select asp-for="SiparisID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@ViewBag.SiparisListe" ></select>
+        <span asp-validation-for="SiparisID" class="text-danger"></span>
+    </div>
+</div>
+ 
+ 
+ 
+ 
+ 
+
+ 
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Not" class="control-label"></label>
+        <textarea asp-for="Not" type="text" class="form-control form-control-sm" rows="4" required></textarea>
+        <span asp-validation-for="Not" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <div class="small">
+            Kayıt Oluşturan: @Model.CreateUserName
+            Oluşturma Tarihi:@Model.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+        </div>
+    </div>
+</div>
+@if (Model.IsDelete)
+{
+    <div class="form-group row">
+        <div class="col-lg-12">
+            <div class="small">
+                Kayıt Silen: @Model.DeleteUserName
+                Silme Tarihi:@Model.DeleteDate?.ToString("dd.MM.yyyy HH:mm")
+            </div>
+        </div>
+    </div>
+}
+@if (Model.UpdateUserID!=null)
+{
+    <div class="form-group row">
+        <div class="col-lg-12">
+            <div class="small">
+                Kayıt Güncelleyen: @Model.UpdateUserName
+                Güncelleme Tarihi:@Model.UpdateDate?.ToString("dd.MM.yyyy HH:mm")
+            </div>
+        </div>
+    </div>
+}
+<script src="js/select2.js?v=7.0.5"></script>
+
+ 
+ 

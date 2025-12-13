@@ -1,0 +1,57 @@
+﻿@model MusterilerVM
+
+@{
+}
+<form asp-controller="@Model.ControllerName" asp-action="VeriEkle" method="post" name="_VeriEkle2" id="_VeriEkle2">
+	<div class="modal-content">
+		<div class="modal-header">
+            <h5 class="modal-title">@Model.ModalTitle</h5>
+			<button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+		</div>
+		<div class="modal-body">
+
+			@{
+				await Html.RenderPartialAsync("_form", Model);
+			}
+		 
+
+		</div>
+		<div class="modal-footer"> 
+			<input type="hidden" asp-for="CreateDate" value="@DateTime.Now" />
+			<input type="hidden" asp-for="IsActive" value="true" />
+			<input type="hidden" asp-for="IsDelete" value="false" />
+			<input type="hidden" asp-for="CreateUserID" value="@Model.UserID" /> 
+			<button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+			<button type="submit" class="btn btn-success width100">Kaydet</button>
+		</div>
+	</div>
+</form>
+<script src="js/select2.js?v=7.0.5"></script>
+<script type="text/javascript">
+
+
+    $(document).ready(function () {        // Formun submit olayı
+        $('#_VeriEkle2').on('submit', function (e) {
+            e.preventDefault();
+            var form = $(this);
+            var actionUrl = form.attr('action');
+            var formData = form.serialize();
+            $.ajax({
+                type: 'POST',
+                url: actionUrl,
+                data: formData,
+                success: function (response)
+                {
+                    $('#cardBody').html(response);
+                    $('#ModalVeri').modal('hide');
+                    toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+                },
+                error: function (xhr, status, error)
+                {
+                    toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+                }
+            });
+        });
+    });
+
+</script>

@@ -1,0 +1,80 @@
+﻿@model MalzemelerVM
+@{
+	ViewData["Title"] = "Malzene Listesi";
+	ViewData["Description"] = "Crm - Malzemeler ";
+	 
+}
+
+@section CSSection
+{
+
+}
+
+<!--begin::Card-->
+<div class="card card-custom">
+	<div class="card-header flex-wrap py-3">
+		<div class="card-title">
+			<h3 class="card-label">
+				Malzeme Tanımlama
+				<span class="d-block text-muted pt-2 font-size-sm">Detay</span>
+			</h3>
+		</div>
+		<div class="card-toolbar">
+			@{
+				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_AramaButton.cshtml", new AuthorizeCrudVM
+				{
+					Controller = "Malzeme",
+					Action = "Arama"
+				});
+			}
+			 @{
+				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_CreateButton.cshtml");
+			}
+			@{
+				await Html.RenderPartialAsync("_PartialHaritaGenel", new AuthorizeCrudVM
+				{
+					ModulID = (int)ModulEnum.Malzeme,
+					HaritaEkle = false
+				});
+
+			}
+		</div>
+	</div>
+	<div class="card-body " id="cardBody">
+		<!--begin: Datatable-->
+		@{
+			await Html.RenderPartialAsync("_List", Model);
+		}
+		<!--end: Datatable-->
+	</div>
+</div>
+<!--end::Card-->
+@{
+	//await Html.RenderPartialAsync("_PartialModalVeri");
+	await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+
+@{
+	await Html.RenderPartialAsync("_PartialModalDosya",
+	new AuthorizeCrudVM { Controller = "Malzeme", HaritaEkle = true });
+}
+ 
+@section JSSection {
+
+	<script src="js/select2.js?v=7.0.5"></script>
+	@{
+		await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+		new AuthorizeCrudVM
+		{
+			Controller = "Malzeme",
+			ModulID = (int)ModulEnum.Malzeme,
+			DosyaYolu = "Malzeme"
+		});
+	}
+	@{
+		await Html.RenderPartialAsync("_PartialMapScript");
+	}
+
+}
+
+

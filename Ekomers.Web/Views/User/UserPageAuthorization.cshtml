@@ -1,0 +1,102 @@
+﻿@{
+    ViewData["Title"] = "Sayfa Yetkilendirme";
+    Layout = "~/Views/Shared/_LayoutMetronic.cshtml";
+}
+
+@section js_firstScripts
+{
+
+}
+@section css_firstStyles
+{
+
+}
+@section css_plugins
+{
+
+}
+@* sayfa gövde başlangıç *@
+
+<div class="page-content">
+    <div class="container">
+        <div class="page-content-inner">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="portlet light ">
+                        <div class="portlet-title">
+                            <div class="caption font-dark">
+                                <i class="icon-settings font-dark"></i>
+                                <span class="caption-subject bold uppercase">FİLTRE</span>
+                            </div>
+                            <div class="tools"> </div>
+                        </div>
+                        <div class="portlet-body">
+                            <div class="row">
+
+                                <div class="col-md-6">
+                                    <select id="UserID" name="UserID" class="form-control">
+                                        <option value="0">Kullanıcı Seçiniz</option>
+                                        @foreach (var item in @ViewBag.Users)
+                                        {
+                                            <option value="@item.Id">@item.AdSoyad</option>
+                                        }
+
+                                    </select>
+                                </div>
+
+
+                                <div class="col-md-2">
+                                    <button class="btn red GetUserPageAuthorization">Getir</button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="portlet light ">
+                        <div class="portlet-title">
+                            <div class="caption">
+                                <i class="icon-bubble font-green-sharp"></i>
+                                <span class="caption-subject font-green-sharp bold uppercase">Yetkilendirme</span>
+                            </div>
+                        </div>
+                        <div class="portlet-body" id="tab_2_2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* sayfa gövde son *@
+@section js_plugins
+{
+
+}
+@section js_scripts
+{
+    <script src="../assets/global/plugins/bootstrap-tabdrop/js/bootstrap-tabdrop.js" type="text/javascript"></script>
+
+    <script>
+        $(".GetUserPageAuthorization").click(function () {
+            var UserID = $("#UserID").val();
+
+            if (UserID != 0) {
+                //$("#tab_2_1").html(yukleniyor);
+                //setTimeout(function () {
+                //    GetAjax('/User/_GetUserMenuAuthorization?UserID=' + UserID, 'tab_2_1');
+                //}, 1000);
+                $("#tab_2_2").html(yukleniyor);
+                setTimeout(function () {
+                    GetAjax('/User/_GetUserSubMenuAuth?userID=' + UserID, 'tab_2_2');
+                }, 1000);
+            }
+
+
+        });
+
+
+    </script>
+}

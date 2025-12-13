@@ -1,0 +1,143 @@
+﻿ 
+@{
+}
+<script>
+    $(document).ready(function() {
+        $("tr").click(function() {
+            var checkbox = $(this).find("input[type='checkbox']");
+
+            // Eğer zaten seçiliyse, seçimi kaldır
+            if (checkbox.prop("checked")) {
+                $(this).removeClass("selected");
+                checkbox.prop("checked", false);
+            } else {
+                // Tüm satırlardan 'selected' sınıfını kaldır
+                $("tr").removeClass("selected");
+
+                // Tüm checkbox'ları temizle
+                $("input[type='checkbox']").prop("checked", false);
+
+                // Tıklanan satıra 'selected' sınıfını ekle
+                $(this).addClass("selected");
+
+                // Tıklanan satırdaki checkbox'ı işaretle
+                checkbox.prop("checked", true);
+            }
+
+            // Herhangi bir checkbox seçili mi kontrol et ve butonları güncelle
+            var anyChecked = $("input[type='checkbox']:checked").length > 0;
+            if (anyChecked) {
+                $("#View, #Edit, #Delete, #Copy").prop("disabled", false);
+                 $("#btn1, #btn2, #btn3, #btn4").prop("disabled", false);
+            } else {
+                $("#View, #Edit, #Delete, #Copy").prop("disabled", true);
+                $("#btn1, #btn2, #btn3, #btn4").prop("disabled", true);
+            }
+        });
+
+        // Eğer checkbox doğrudan tıklanırsa, satırı da seçili yap
+        $("input[type='checkbox']").click(function(e) {
+            e.stopPropagation(); // Tıklama olayının yayılmasını durdur
+
+            var checkbox = $(this);
+            var tr = checkbox.closest("tr");
+
+            // Eğer zaten seçiliyse, seçimi kaldır
+            if (checkbox.prop("checked")) {
+                tr.removeClass("selected");
+                checkbox.prop("checked", false);
+            } else {
+                // Tüm satırlardan 'selected' sınıfını kaldır
+                $("tr").removeClass("selected");
+
+                // Tüm checkbox'ları temizle
+                $("input[type='checkbox']").prop("checked", false);
+
+                // Tıklanan checkbox'ı ve ait olduğu satırı seçili yap
+                checkbox.prop("checked", true);
+                tr.addClass("selected");
+            }
+
+            // Herhangi bir checkbox seçili mi kontrol et ve butonları güncelle
+            var anyChecked = $("input[type='checkbox']:checked").length > 0;
+            if (anyChecked) {
+                $("#View, #Edit, #Delete, #Copy").prop("disabled", false);
+                $("#btn1, #btn2, #btn3, #btn4").prop("disabled", false);
+            } else {
+                $("#View, #Edit, #Delete, #Copy").prop("disabled", true);
+                $("#btn1, #btn2, #btn3, #btn4").prop("disabled", true);
+            }
+        });
+
+        // Button1'e tıklama olayını ekle
+        $("#View").click(function() {
+            var selectedRow = $("tr.selected");
+            if (selectedRow.length > 0) {
+                var id = selectedRow.data("id");
+                VeriGoruntule(id);
+            }
+        });
+
+        $("#Edit").click(function() {
+            var selectedRow = $("tr.selected");
+            if (selectedRow.length > 0) {
+                var id = selectedRow.data("id");
+                VeriGetir(id);
+            }
+        });
+
+        $("#Delete").click(function() {
+            var selectedRow = $("tr.selected");
+            if (selectedRow.length > 0) {
+                var id = selectedRow.data("id");
+                SilinecekVerileriGetir(id);
+            }
+        });
+
+        $("#Copy").click(function() {
+            var selectedRow = $("tr.selected");
+            if (selectedRow.length > 0) {
+                var id = selectedRow.data("id");
+                KopyalanacakVerileriGetir(id);
+            }
+        });
+
+        // Button1'e tıklama olayını ekle
+            $("#btn1").click(function () {
+                var selectedRow = $("tr.selected");
+                if (selectedRow.length > 0) {
+                    var id = selectedRow.data("id");
+                    IsyeriMeskenGetir(id);
+                }
+            });
+
+            // Button2'e tıklama olayını ekle
+            $("#btn2").click(function () {
+                var selectedRow = $("tr.selected");
+                if (selectedRow.length > 0) {
+                    var id = selectedRow.data("id");
+                    TahsilatHarciGetir(id);
+                }
+            });
+
+            // Button3'e tıklama olayını ekle
+            $("#btn3").click(function () {
+                var selectedRow = $("tr.selected");
+                if (selectedRow.length > 0) {
+                    var id = selectedRow.data("id");
+                    BelediyeHarcHesapla(id);
+                }
+            });
+             // Button4'e tıklama olayını ekle
+            $("#btn4").click(function () {
+                var selectedRow = $("tr.selected");
+                if (selectedRow.length > 0) {
+                    var id = selectedRow.data("id");
+                    NumaratajHarcHesapla(id);
+                }
+            });
+
+    });
+
+
+</script>

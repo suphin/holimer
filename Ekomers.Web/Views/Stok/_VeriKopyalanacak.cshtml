@@ -1,0 +1,193 @@
+﻿@model MalzemeStokVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<style>
+    #results {
+        /* border: 1px solid #ddd; */
+        max-height: 150px;
+        overflow-y: auto;
+        list-style-type: none; /* Liste işaretlerini kaldırır */
+        padding: 0;
+        margin: 0;
+    }
+
+        #results li {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+            #results li:hover {
+                background-color: #f0f0f0;
+            }
+</style>
+<form asp-controller="Stok" asp-action="_VeriEkle" class="form" method="post" name="_VeriEkle" id="_VeriEkle">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Malzeme Hareketi Kayıt Düzenle</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group row">
+
+                <div class="col-lg-5">
+                    <label asp-for="HareketTur" class="control-label"></label>
+                    <select asp-for="HareketTurID" class="form-control form-control-sm" asp-items="@ViewBag.HareketTurListe"></select>
+                    <input type="hidden" asp-for="HareketTurID" />
+                   
+                </div>
+                <div class="col-lg-5">
+                    <label asp-for="DepoAd" class="control-label"></label>
+                    <select asp-for="DepoID" class="form-control form-control-sm" asp-items="@ViewBag.DepoListe"></select>
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="Tarih" class="control-label"></label>
+                    <input asp-for="Tarih" class="form-control form-control-sm" type="date" required />
+                </div>
+
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-2">
+                    <label asp-for="SktTarih" class="control-label"></label>
+                    <input asp-for="SktTarih" class="form-control form-control-sm" type="date" required />
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="LotNumara" class="control-label"></label>
+                    <input asp-for="LotNumara" class="form-control form-control-sm" required />
+                </div>
+                <div class="col-lg-8">
+                    <label asp-for="Aciklama" class="control-label"></label>
+                    <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="1" required></textarea>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-4">
+                    <label class="control-label">Malzeme Seç</label>
+                    <input type="text" class="form-control form-control-sm" id="search-box" asp-for="MalzemeAd" placeholder="Malzeme Ara..." autocomplete="off" />
+                    <input type="hidden" asp-for="MalzemeID" />
+                    <ul class="col-md-12" id="results"></ul>
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="Miktar" class="control-label"></label>
+                    <input asp-for="Miktar" class="form-control form-control-sm" />
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="BirimAd" class="control-label"></label>
+                    <input asp-for="BirimAd" class="form-control form-control-sm" tabindex="-1" />
+                    <input asp-for="BirimID" type="hidden" />
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="Aciklama" class="control-label"></label>
+                    <input asp-for="MalzemeAciklama" class="form-control form-control-sm" />
+                </div>
+
+            </div>
+            <div id="MalzemeEklenenListe">
+                @{
+                    //await Html.RenderPartialAsync("_MalzemeEklenen", Model);
+                }
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+            <button type="submit" class="btn btn-success">Kaydet</button>
+        </div>
+    </div>
+
+</form>
+
+<script>
+    $(document).ready(function() {
+        $("#search-box").on("input", function() {
+            var query = $(this).val();
+            if (query.length >= 3) {
+                $.ajax({
+                    url: '/Stok/MalzemeAra',
+                    type: 'GET',
+                    data: { kelime: query },
+                    success: function(data) {
+                        var results = $("#results");
+                        results.empty();
+                        $.each(data, function(index, malzeme) {
+                            console.log("data:", data);
+                            results.append('<li data-id="' + malzeme.id + '" data-birim-id="' + malzeme.birimID + '" data-birim-ad="' + malzeme.birimAd + '">' + malzeme.kod + ' ' + malzeme.ad + '</li>');
+                        });
+                    }
+                });
+            } else {
+                $("#results").empty();
+            }
+        });
+
+        $(document).on("click", "#results li", function() {
+            var malzemeAd = $(this).text();
+            var malzemeId = $(this).data("id");
+            var malzemeBirimId = $(this).data("birim-id");
+            var malzemeBirimAd = $(this).data("birim-ad");
+
+            $("#BirimID").val(malzemeBirimId);
+            $("#BirimAd").val(malzemeBirimAd);
+            $("#search-box").val(malzemeAd);
+            $("#MalzemeID").val(malzemeId);
+            $("#results").empty();
+            // Miktar textbox'ına odaklanıyoruz
+            $("#Miktar").focus();
+        });
+    });
+</script>
+
+<script>
+    function MalzemeEkle() {
+        var MalzemeID = $('#MalzemeID').val();
+        var Miktar = $('#Miktar').val();
+        var MalzemeAciklama = $('#MalzemeAciklama').val();
+
+        $.ajax({
+            url: '@Url.Action("_MalzemeStokEkle", "Stok")',
+            type: 'GET',
+            dataType: "html",
+            data: {
+                MalzemeID: MalzemeID,
+                Miktar: Miktar,
+                MalzemeAciklama: MalzemeAciklama
+            },
+            success: function(response) {
+                $('#MalzemeEklenenListe').html(response);
+                $('#MalzemeID').val('');
+                $('#Miktar').val('');
+                $('#BirimAd').val('');
+                $('#BirimID').val('');
+                $('#MalzemeAciklama').val('');
+                $('#search-box').val('');
+                $('#search-box').focus();
+            },
+            error: function(error) {
+                alert('Kayıt ekleme başarısız oldu.');
+            }
+        });
+    }
+</script>
+<script>
+    $(document).on('click', '.remove-item', function() {
+        var malzemeId = $(this).data('id');
+
+        $.ajax({
+            url: '@Url.Action("MalzemeCikar", "Stok")',
+            type: 'POST',
+            type: 'GET',
+            dataType: "html",
+            data: { malzemeId: malzemeId },
+            success: function(response) {
+                $('#MalzemeEklenenListe').html(response);
+
+            },
+            error: function() {
+                alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+            }
+        });
+    });
+</script>
+

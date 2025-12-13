@@ -1,0 +1,54 @@
+﻿@{
+    ViewBag.Title = "Ayarlar";
+}
+
+<h2>Ayarlar</h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Ayar</th>
+            <th>Açıklama</th>
+            <th>İşlem</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Cache Belleğini Temizle</td>
+            <td>Uygulamadaki tüm memory cache verilerini temizler.</td>
+            <td>
+                <button id="btnCacheTemizle" class="btn btn-danger">
+                    Cache Temizle
+                </button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<div id="sonuc" class="mt-3"></div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $("#btnCacheTemizle").click(function () {
+
+        $.ajax({
+            url: '@Url.Action("CacheTemizle", "Ayarlar")',
+            type: 'POST',
+            success: function (res) {
+                if (res.success) {
+                    $("#sonuc").html(
+                        '<div class="alert alert-success">' + res.message + '</div>'
+                    );
+                }
+            },
+            error: function () {
+                $("#sonuc").html(
+                    '<div class="alert alert-danger">Bir hata oluştu.</div>'
+                );
+            }
+        });
+
+    });
+</script>
+

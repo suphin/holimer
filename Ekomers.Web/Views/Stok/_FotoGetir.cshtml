@@ -1,0 +1,28 @@
+﻿@model MalzemelerVM
+ 
+@{
+}
+@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "FileAdd") || a.Value == "Admin"))
+{
+    
+    <form asp-action="FotoYukle" asp-controller="Stok" method="post" enctype="multipart/form-data" id="uploadForm">
+        <div class="row">
+            <div class="col-md-9">
+
+                <input class="fileElement" name="dosya" type="file"   required>
+
+            </div>
+            <div class="col-md-3 text-right">
+                <button type="submit" class="btn btn-sm btn-success width100_">
+                    <i class="icon-xl fas fa-file-upload"></i> Seçilen Dosyayı Yükle
+                </button>
+                <input type="hidden" asp-for="ID" /> 
+            </div>
+
+        </div>
+
+
+    </form>
+    <br />
+}
+<img src="/StokUpload/malzeme/@Model.Fotograf" width="100px"/>

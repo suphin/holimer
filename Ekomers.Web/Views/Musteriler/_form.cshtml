@@ -1,0 +1,154 @@
+﻿@model MusterilerVM
+<div class="form-group row">
+    <div class="col-6">
+        <label class="control-label">Kişi </label>
+        <input asp-for="IsKurum" type="radio" value="false" name="IsKurum" />
+    </div>
+    <div class="col-6">
+        <label class="control-label">Şirket/Kurum </label>
+        <input asp-for="IsKurum" type="radio" value="true" name="IsKurum" />
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4">
+        <label asp-for="TipAd" class="control-label"></label>
+        <select asp-for="TipID" class="form-control form-control-sm" asp-items="@ViewBag.MusteriTipListe"></select>
+        <span asp-validation-for="TipID" class="text-danger"></span>
+    </div>
+    <div class="col-lg-8">
+        <label asp-for="AdSoyad" class="control-label"></label>
+        <input asp-for="AdSoyad" class="form-control form-control-sm" required />
+        <span asp-validation-for="AdSoyad" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4 ">
+        <label asp-for="Telefon" class="control-label"></label>
+        <input asp-for="Telefon" class="form-control form-control-sm" id="phoneNumber" required />
+        <span asp-validation-for="Telefon" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4 ">
+        <label asp-for="Eposta" class="control-label"></label>
+        <input asp-for="Eposta" class="form-control form-control-sm" />
+        <span asp-validation-for="Eposta" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4 ">
+        <label asp-for="Sehir" class="control-label"></label>
+        <select asp-for="SehirID" class="kt_select2" data-live-search="true" data-size="5" id="selectSehir" asp-items="@ViewBag.SehirlerListe" required></select>
+        <span asp-validation-for="SehirID" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4 ">
+        <label asp-for="Ilce" class="control-label"></label>
+        <select asp-for="IlceID" class="kt_select2" data-live-search="true" data-size="5" id="selectIlce" asp-items="@ViewBag.IlcelerListe" required></select>
+        <span asp-validation-for="IlceID" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4 ">
+        <label asp-for="Mahalle" class="control-label"></label>
+        <select asp-for="MahalleID" class="kt_select2" data-live-search="true" data-size="5" id="selectMahalle" asp-items="@ViewBag.MahalleListe" required></select>
+        <span asp-validation-for="Mahalle" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4 ">
+        <label asp-for="Ulke" class="control-label"></label>
+        <input asp-for="Ulke" class="form-control form-control-sm" required />
+        <span asp-validation-for="Ulke" class="text-danger"></span>
+    </div>  
+    <div class="col-lg-4 ">
+        <label asp-for="PostaKod" class="control-label"></label>
+        <input asp-for="PostaKod" class="form-control form-control-sm" />
+        <span asp-validation-for="PostaKod" class="text-danger"></span>
+    </div>
+</div>
+<!-- Şirket/Kurum alanları (sargı) -->
+<div id="kurumFields" style="display:@(Model?.IsKurum == true ? "block" : "none")">
+    <div class="form-group row">
+        <div class="col-lg-12">
+            <label asp-for="SirketUnvan" class="control-label"></label>
+            <input asp-for="SirketUnvan" class="form-control form-control-sm" />
+            <span asp-validation-for="SirketUnvan" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-lg-4">
+            <label asp-for="BizimHesapNo" class="control-label"></label>
+            <input asp-for="BizimHesapNo" class="form-control form-control-sm"  />
+            <span asp-validation-for="BizimHesapNo" class="text-danger"></span>
+        </div>
+        <div class="col-lg-4">
+            <label asp-for="VergiDairesi" class="control-label"></label>
+            <input asp-for="VergiDairesi" class="form-control form-control-sm" />
+            <span asp-validation-for="VergiDairesi" class="text-danger"></span>
+        </div>
+        <div class="col-lg-4">
+            <label asp-for="VergiNo" class="control-label"></label>
+            <input asp-for="VergiNo" class="form-control form-control-sm" r />
+            <span asp-validation-for="VergiNo" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Adres" class="control-label"></label>
+        <textarea asp-for="Adres" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+        <span asp-validation-for="Adres" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Not" class="control-label"></label>
+        <textarea asp-for="Not" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+        <span asp-validation-for="Not" class="text-danger"></span>
+    </div>
+</div>
+ 
+@* <script src="js/select2.js?v=7.0.5"></script> *@
+@{
+    await Html.RenderPartialAsync("~/Views/Sehirler/_SehirlerScript.cshtml");
+}
+<script>
+  //  removeZeroValueOptions("YilListe");
+</script>
+<script>
+    (function () {
+      function toggleKurumFields() {
+        // value "true" seçili mi?
+        var isKurum = document.querySelector('input[name="IsKurum"]:checked')?.value === 'true';
+        var wrap = document.getElementById('kurumFields');
+
+        if (!wrap) return;
+
+        // İçerideki form elemanları
+        var inputs = wrap.querySelectorAll('input, select, textarea');
+
+        if (isKurum) {
+          wrap.style.display = 'block';
+          inputs.forEach(function (el) {
+            el.disabled = false; // doğrulama/submit'e tekrar dahil et
+          });
+        } else {
+          wrap.style.display = 'none';
+          inputs.forEach(function (el) {
+            el.disabled = true;  // doğrulamadan ve submit'ten çıkar
+            // istersen değerleri de temizle:
+            // if (el.type !== 'hidden') el.value = '';
+          });
+          // Görsel hata mesajlarını temizlemek istersen:
+          wrap.querySelectorAll('.text-danger').forEach(function (s) { s.textContent = ''; });
+        }
+      }
+
+      // Değişimde çalıştır
+      document.addEventListener('change', function (e) {
+        if (e.target && e.target.name === 'IsKurum') {
+          toggleKurumFields();
+        }
+      });
+
+      // Sayfa yüklenince mevcut değere göre ilk ayar
+      document.addEventListener('DOMContentLoaded', toggleKurumFields);
+    })();
+</script>

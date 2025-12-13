@@ -1,0 +1,200 @@
+﻿@model RegisterVM;
+@{
+	Layout = null;
+}
+<!DOCTYPE html>
+<html lang="tr">
+<!--begin::Head-->
+<head>
+	<base href="../../../../">
+	<meta charset="utf-8" />
+	<title>Giriş Sayfası - Holimer İlaç</title>
+	<meta name="description" content="Giriş Sayfası - Holimer İlaç" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+	<!--begin::Fonts-->
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" />
+	<!--end::Fonts-->
+	<!--begin::Page Custom Styles(used by this page)-->
+	<link href="assets1/css/pages/login/login-4.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<!--end::Page Custom Styles-->
+	<!--begin::Global Theme Styles(used by all pages)-->
+	<link href="assets1/plugins/global/plugins.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<link href="assets1/plugins/custom/prismjs/prismjs.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<link href="assets1/css/style.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<link href="assets1/css/custom.css" rel="stylesheet" type="text/css" />
+	<!--end::Global Theme Styles-->
+	<!--begin::Layout Themes(used by all pages)-->
+	<link href="assets1/css/themes/layout/header/base/light.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<link href="assets1/css/themes/layout/header/menu/light.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<link href="assets1/css/themes/layout/brand/dark.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<link href="assets1/css/themes/layout/aside/dark.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<!--end::Layout Themes-->
+	@* <link rel="shortcut icon" href="assets1/media/logos/favicon.ico" /> *@
+	<link rel="shortcut icon" href="~/img/favicon.ico" />
+	<style>
+		.login-logo {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+			.login-logo img {
+				display: block;
+				margin: 0 auto;
+			}
+	</style>
+</head>
+<!--end::Head-->
+<!--begin::Body-->
+<body id="kt_body" class="header-fixed header-mobile-fixed subheader-enabled subheader-fixed aside-enabled aside-fixed aside-minimize-hoverable page-loading">
+	<!--begin::Main-->
+	<div class="d-flex flex-column flex-root">
+		<!--begin::Login-->
+		<div class="login login-4 wizard d-flex flex-column flex-lg-row flex-column-fluid">
+			<!--begin::Content-->
+			<div class="login-container order-2 order-lg-1 d-flex flex-center flex-row-fluid px-7 pt-lg-0 pb-lg-0 pt-4 pb-6 bg-white">
+				<!--begin::Wrapper-->
+				<div class="login-content d-flex flex-column pt-lg-0 pt-12">
+					<!--begin::Logo-->
+					<a href="#" class="login-logo pb-xl-20 pb-15">
+						<img src="img/holimer2025.png" class="max-h-120px" alt="" />
+					</a>
+					<!--end::Logo-->
+					<!--begin::Signin-->
+					<div class="login-form">
+						<!--begin::Form-->
+						<form asp-action="SignUp" method="post">
+							@if (TempData["Message"] != null)
+							{ 
+								<meta http-equiv="refresh" content="3;url=Home/SignIn">
+								<div class="alert alert-success" role="alert">
+									@TempData["Message"]
+									<p>Ana sayfaya yönlendiriliyorsunuz...</p>
+								</div>
+							}
+							@if (TempData["MessageError"] != null)
+							{
+								<div class="alert alert-danger" role="alert">@TempData["MessageError"]</div>
+							}
+							<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+							<div class="form-group">
+								<label asp-for="SirketID" class="control-label"></label>
+								<select asp-for="SirketID" class="form-control" asp-items="@(new SelectList(ViewBag.SirketListe, "ID", "SirketAdi"))">
+									<option value="0">Şirket Seçiniz</option>
+								</select>
+								<span asp-validation-for="SirketID" class="text-danger"></span>
+								<span class="form-text text-muted">Şirket Seçiniz </span>
+							</div>
+							<div class="form-group">
+								<label asp-for="DepartmanID" class="control-label"></label>
+								<select asp-for="DepartmanID" class="form-control"   asp-items="@(new SelectList(ViewBag.IlgiliMudurlukListe, "ID", "Ad"))">
+									<option value="0">Departman Seçiniz</option>
+								</select>
+								<span asp-validation-for="DepartmanID" class="text-danger"></span>
+								<span class="form-text text-muted">Departman Seçiniz </span>
+							</div>
+							<div class="form-group">
+								<label asp-for="UserName" class="control-label"></label>
+								<input asp-for="UserName" class="form-control" autocomplete="off" required placeholder="adiniz.soyadiniz şeklinde giriniz!" />
+								<span asp-validation-for="UserName" class="text-danger"></span>
+								<span class="form-text text-muted">Kullanıcı adınız "tugba.celik" şeklinde olmalı. </span>
+							</div>
+
+							<div class="form-group">
+								<label asp-for="AdSoyad" class="control-label"></label>
+								<input asp-for="AdSoyad" class="form-control" required/>
+								<span asp-validation-for="AdSoyad" class="text-danger"></span>
+								<span class="form-text text-muted">Adınız "Tuğba Çelik" şeklinde olmalı. </span>
+							</div>
+							<div class="form-group">
+								<label asp-for="PhoneNumber" class="control-label"></label>
+								<input asp-for="PhoneNumber" class="form-control" placeholder="0505 123 12 12" id="phoneNumber" required/>
+								<span asp-validation-for="PhoneNumber" class="text-danger"></span>
+								<span class="form-text text-muted">Telefon numaranız "0505 123 12 12" şeklinde olmalı. </span>
+							</div>
+							<div class="form-group">
+								<label asp-for="Email" class="control-label"></label>
+								<input asp-for="Email" class="form-control" placeholder="adiniz.soyadiniz@domain.com.tr şeklinde giriniz!" required/>
+								<span asp-validation-for="Email" class="text-danger"></span>
+								<span class="form-text text-muted">Eposta adresiniz "tugba.celik@domain.com.tr" şeklinde olmalı. </span>
+							</div>
+							<div class="form-group">
+								<label asp-for="Password" class="control-label"></label>
+								<input asp-for="Password" class="form-control" autocomplete="off" placeholder="harf ve sayı bulunmalı!" required/>
+								<span asp-validation-for="Password" class="text-danger"></span>
+								<span class="form-text text-muted">Şifreniz en az 8 karakter uzunluğunda olmalıdır. Büyük küçük harf, sayı ve özel karakter barındırmalıdır. </span>
+							</div>
+							<div class="form-group">
+								<label asp-for="ConfirmPassword" class="control-label"></label>
+								<input asp-for="ConfirmPassword" class="form-control" autocomplete="off" placeholder="harf ve sayı bulunmalı!" required />
+								<span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+								<span class="form-text text-muted">Şifreniz en az 8 karakter uzunluğunda olmalıdır. Büyük küçük harf, sayı ve özel karakter barındırmalıdır. </span>
+							</div>
+							<div class="form-group">
+								<input type="submit" value="Üye oluştur" class="btn btn-success" />
+
+							</div>
+						</form>
+						<br />
+						<hr>
+						<br />
+						<div class="text-center">
+							 
+							<a asp-controller="Home" asp-action="SignIn" class="small">Giriş Sayfası</a> 
+						</div>
+
+						<!--end::Form-->
+					</div>
+					<!--end::Signin-->
+				</div>
+				<!--end::Wrapper-->
+			</div>
+			<!--begin::Content-->
+			<!--begin::Aside-->
+			@{
+				await Html.RenderPartialAsync("metronic1/_PartialLoginPage");
+			}
+			<!--end::Aside-->
+		</div>
+		<!--end::Login-->
+	</div>
+	<!--end::Main-->
+	
+	<!--begin::Global Config(global config for global JS scripts)-->
+	<script>var KTAppSettings = { "breakpoints": { "sm": 576, "md": 768, "lg": 992, "xl": 1200, "xxl": 1400 }, "colors": { "theme": { "base": { "white": "#ffffff", "primary": "#3699FF", "secondary": "#E5EAEE", "success": "#1BC5BD", "info": "#8950FC", "warning": "#FFA800", "danger": "#F64E60", "light": "#E4E6EF", "dark": "#181C32" }, "light": { "white": "#ffffff", "primary": "#E1F0FF", "secondary": "#EBEDF3", "success": "#C9F7F5", "info": "#EEE5FF", "warning": "#FFF4DE", "danger": "#FFE2E5", "light": "#F3F6F9", "dark": "#D6D6E0" }, "inverse": { "white": "#ffffff", "primary": "#ffffff", "secondary": "#3F4254", "success": "#ffffff", "info": "#ffffff", "warning": "#ffffff", "danger": "#ffffff", "light": "#464E5F", "dark": "#ffffff" } }, "gray": { "gray-100": "#F3F6F9", "gray-200": "#EBEDF3", "gray-300": "#E4E6EF", "gray-400": "#D1D3E0", "gray-500": "#B5B5C3", "gray-600": "#7E8299", "gray-700": "#5E6278", "gray-800": "#3F4254", "gray-900": "#181C32" } }, "font-family": "Poppins" };</script>
+	<!--end::Global Config-->
+	<!--begin::Global Theme Bundle(used by all pages)-->
+	<script src="assets1/plugins/global/plugins.bundle.js?v=7.0.5"></script>
+	<script src="assets1/plugins/custom/prismjs/prismjs.bundle.js?v=7.0.5"></script>
+	<script src="assets1/js/scripts.bundle.js?v=7.0.5"></script>
+	<!--end::Global Theme Bundle-->
+	<script>
+		var KTInputmask = function () {
+    
+    // Private functions
+    var demos = function () {
+        // date format
+         // phone number format
+        $("#phoneNumber").inputmask("mask", {
+            "mask": "9999 999 99 99"
+        }); 
+    }
+
+    return {
+        // public functions
+        init: function() {
+            demos(); 
+        }
+    };
+}();
+
+jQuery(document).ready(function() {
+    KTInputmask.init();
+});
+	</script>
+	<!--begin::Page Scripts(used by this page)-->
+	<script src="assets1/js/pages/custom/login/login-4.js?v=7.0.5"></script>
+	<!--end::Page Scripts-->
+</body>
+<!--end::Body-->
+</html>

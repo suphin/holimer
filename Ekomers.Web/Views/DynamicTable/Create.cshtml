@@ -1,0 +1,71 @@
+﻿@model DynamicTableVM
+@{
+}
+<div class="card card-custom">
+	<div class="card-header flex-wrap py-3">
+		<div class="card-title">
+			<h3 class="card-label">
+				Dinamik Tablo
+				<span class="d-block text-muted pt-2 font-size-sm">Dinamik Tablo Oluşturma</span>
+			</h3>
+		</div>
+		<div class="card-toolbar">
+		 
+		</div>
+	</div>
+	<div class="card-body">
+		<!--begin: Datatable-->
+        <form asp-action="Create" method="post">
+            <label>Tablo Adı:</label>
+            <input type="text" asp-for="TableName" class="form-control" />
+            <hr />
+            <div id="columns" class="mt-2">
+                <div class="column-item">
+                    <label class="mt-2">Sütun Adı:</label>
+                    <input type="text" name="Columns[0].ColumnName" class="form-control" />
+                    <label class="mt-2">Sütun Tipi:</label>
+                    <select name="Columns[0].ColumnType" class="form-control">
+                        <option value="int">Tam Sayı</option>
+                        <option value="nvarchar(max)">Metin</option>
+                        <option value="datetime">Tarih</option>
+                        <option value="double">Ondalık Sayı</option>
+                    </select>
+                </div>
+            </div>
+            <hr />
+            <button type="button" class="btn btn-info mt-2" onclick="addColumn()">Sütun Ekle</button>
+            <button type="submit" class="btn btn-primary mt-2">Tablo Oluştur</button>
+        </form>
+		<!--end: Datatable-->
+	</div>
+</div>
+
+
+@section CSSection {
+    <script>
+        let columnCount = 1;
+
+        function addColumn() {
+            const columnsDiv = document.getElementById("columns");
+
+            const newColumn = document.createElement("div");
+            newColumn.classList.add("column-item");
+
+            newColumn.innerHTML = `
+                 <label class="mt-2">Sütun Adı: </label>
+                <input type="text" name="Columns[${columnCount}].ColumnName" class="form-control" />
+                <label class="mt-2">Sütun Tipi:</label>
+                <select name="Columns[${columnCount}].ColumnType" class="form-control">
+                    <option value="int">Tam Sayı</option>
+                    <option value="nvarchar(max)">Metin</option>
+                    <option value="datetime">Tarih</option>
+                    <option value="double">Ondalık Sayı</option>
+                </select>
+            `;
+
+            columnsDiv.appendChild(newColumn);
+            columnCount++;
+        }
+    </script>
+}
+

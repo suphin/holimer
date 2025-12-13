@@ -1,0 +1,23 @@
+﻿@model Malzeme
+
+
+
+
+<label id="MalzemeAd" name="MalzemeAd" class="control-label">Malzeme</label>
+    <div>
+        <div class="input-icon input-icon-right">
+        <input type="text" class="form-control form-control-sm col-md-12" placeholder="Malzeme Ara..." id="search-box" autocomplete="off" required value="@Model.Ad">
+        <ul class="col-md-12" id="results"></ul>
+            <span>
+                <i class="flaticon2-search-1 icon-md"></i>
+            </span>
+        </div>
+            @* <input type="text" class="form-control form-control-sm" id="search-box" placeholder="Müşteri Ara..." autocomplete="off" required value="@Model.AdSoyad"/> *@
+    <input type="hidden" name="UrunID" id="UrunID" value="@Model.ID" />
+
+            
+    </div>
+
+@{
+    await Html.RenderPartialAsync("~/Views/Malzeme/SelectList.Scripts.cshtml");
+}

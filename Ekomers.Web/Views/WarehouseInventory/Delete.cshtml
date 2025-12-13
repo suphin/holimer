@@ -1,0 +1,14 @@
+﻿@model WarehouseInventory
+
+<h2>Kaydı Sil</h2>
+
+<div class="alert alert-warning">
+    <p><strong>@Model.Warehouse?.Name</strong> deposundaki <strong>@Model.Product?.Name</strong> ürünü kaydını silmek istediğinize emin misiniz?</p>
+</div>
+
+<form asp-action="DeleteConfirmed" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Evet, Sil</button>
+    <a asp-action="Index" class="btn btn-secondary">Vazgeç</a>
+</form>
+

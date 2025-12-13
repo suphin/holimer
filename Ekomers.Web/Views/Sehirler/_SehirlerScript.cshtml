@@ -1,0 +1,15 @@
+﻿<script>
+
+    $('#selectSehir').change(function () {
+
+        var selectedDepartmentId = $(this).val(); // Get the selected department ID
+        GetAjax('Sehirler/GetIlceler?ParametreID=' + selectedDepartmentId, 'selectIlce');
+        var target = document.getElementById('selectMahalle');
+        target.innerHTML = '';
+    });
+        $('#selectIlce').change(function () {
+        var selectedDepartmentId = $(this).val(); // Get the selected department ID
+        GetAjax('Sehirler/GetMahalle?ParametreID=' + selectedDepartmentId, 'selectMahalle');
+    });
+
+</script>

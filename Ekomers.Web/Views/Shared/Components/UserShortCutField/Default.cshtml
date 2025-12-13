@@ -1,0 +1,15 @@
+﻿@model UserShortCutFieldVM
+
+
+@foreach (var item in Model.UserShortCutFieldVMListe)
+{
+	<li class="navi-item">
+		@* <a href="#" class="navi-link shortcut-link" data-alan="Alanaekle @item.Siralama"> *@
+			<a  class="navi-link shortcut-link" data-alanaekle="@item.Siralama">
+			<span class="navi-text">
+				<span class="label label-xl label-inline label-light-success">@item.Ad Ekle </span>
+			</span>
+		</a>
+	</li>
+}
+

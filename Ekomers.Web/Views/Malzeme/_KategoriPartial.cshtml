@@ -1,0 +1,53 @@
+﻿ 
+@model List<KategoriTreeItem>
+
+@* <ul>
+    @foreach (var kategori in Model)
+    {
+        <li data-jstree='@("{ \"opened\" : true }")'>
+            
+            <button type="button" class="btn btn-sm btn-hover-light-primary" onclick="KategoriGetir('@kategori.ID')">
+                 @kategori.Ad
+            </button>
+            @if (kategori.Children.Any())
+            {
+               
+                    @await Html.PartialAsync("_KategoriPartial", kategori.Children)
+                
+            }
+        </li>
+    }
+</ul> *@
+<ul>
+    @foreach (var kategori in Model)
+    {
+        @* Alt kategori sayısına göre icon belirliyoruz *@
+        var iconType = kategori.AltKategoriSayisi > 0 ? "folder" : "file";
+        //
+        <li data-jstree='@("{ \"type\" : \"" + iconType + "\", \"opened\" : false }")'>
+
+            @if (kategori.AltKategoriSayisi > 0)
+            {
+                <a href="javascript:void(0)" onclick="KategoriGetir('@kategori.ID','@kategori.FullPath)">
+                    @kategori.Kod   @kategori.Ad
+                </a>
+            }
+            else
+            {
+                @* <a href="#" onclick="MalzemeYap('@kategori.ID','@kategori.ParentID')"> *@
+                <a href="javascript:void(0)" onclick="KategoriGetir('@kategori.ID','@kategori.FullPath')">
+                    @kategori.Kod  @kategori.Ad
+                </a>
+            }
+
+
+            @* Alt kategorileri varsa recursive olarak gösteriyoruz *@
+            @if (kategori.Children.Any())
+            {
+              
+                    @await Html.PartialAsync("_KategoriPartial", kategori.Children)
+                
+            }
+        </li>
+    }
+</ul>

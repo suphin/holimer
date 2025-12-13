@@ -1,0 +1,492 @@
+﻿@model MalzemelerVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Malzemeler";
+}
+@section CSSection {
+   @*  <link href="~/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet"> *@
+    <link href="~/assets1/plugins/custom/datatables/datatables.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+}
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #AnaTablo tr:hover {
+        background-color: #f0f0f0;
+    }
+    /* Seçili satırın arka plan rengini değiştir */
+    #AnaTablo tr.selected {
+        background-color: #d0e4f1;
+    }
+
+    #AnaTablo .form-control {
+        height: 18px !important;
+    }
+
+    .modal-xl {
+        max-width: 1340px !important;
+    }
+</style>
+<div class="card shadow">
+    <div class="card-body">
+        <div class="text-left">
+            <h1 class="h4 mb-0 text-gray-800">Malzemeler</h1>
+            <h5 class="mb-0 text-gray-800">Malzemelerin giriş safyası.</h5>
+        </div>
+    </div>
+</div> 
+
+<br />
+
+<div class="card shadow">
+    <div class="card-header">
+        Arama Seçenekleri
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <form asp-action="Malzemeler" asp-controller="Stok" method="post" name="VeriFiltre" id="VeriFiltre">
+                <table class="table table-bordered table-sm TableSmallFont" width="100%" cellspacing="0">
+                    <tr>
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="Kod" class="control-label"></label>
+                                <input asp-for="Kod" class="form-control form-control-sm" />
+
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="Ad" class="control-label"></label>
+                                <input asp-for="Ad" class="form-control form-control-sm" />
+
+                            </div>
+                        </td> 
+                        <td>
+                            <label asp-for="Grup" class="control-label"></label>
+                            <select id="GrupID" name="GrupID" class="form-control form-control-sm" required>
+                                <option value="0">Tümü</option>
+                                    @foreach (var item in Model.MalzemeGrupListe.Where(p => p.ParentID == 0))
+                                    {
+                                    <optgroup label="@item.Ad">
+                                            @foreach (var sub in Model.MalzemeGrupListe.Where(p => p.ParentID == item.ID))
+                                            {
+                                                if (Model.GrupID==sub.ID)
+                                                {
+                                                <option value="@sub.ID" selected>@sub.Ad</option>
+                                                }
+                                                else
+                                                {
+                                                <option value="@sub.ID">@sub.Ad</option>
+                                                }
+
+                                            }
+                                    </optgroup>
+                                    }
+                            </select>
+                        </td>
+                   
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="BirimID" class="control-label"></label>
+                                <select asp-for="BirimID" class="form-control form-control-sm" asp-items="@ViewBag.MalzemeBirimListe"></select>
+
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="TipID" class="control-label"></label>
+                                <select asp-for="TipID" class="form-control form-control-sm" asp-items="@ViewBag.MalzemeTipiListe"></select>
+
+                            </div>
+                        </td> 
+                        <td>
+                            <div class="form-group">
+                                <label class="control-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary form-control btn-sm">Ara</button>
+
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+</div>
+<br />
+<div class="card card-custom card-sticky" id="kt_page_sticky_card">
+    <div class="card-header py-2">
+        <div class="card-title">
+            <h3 class="card-label">KAYIT LİSTESİ</h3>
+        </div>
+        <div class="card-toolbar">
+            @{
+                await Html.RenderPartialAsync("_PartialCrud");
+            }
+            <!--begin::Button-->
+            @if (User.HasClaim("Authorize", "Add") || User.IsInRole("Admin"))
+            {
+               @*  <button type="button" class="btn btn-info  btn-sm" data-toggle="modal" data-target="#DetaylarDiv">Yeni Malzeme Ekle</button> *@
+            }
+            @if (User.IsInRole("Admin"))
+            {
+                <a href="#" onclick="LogoMalzemeAktar()" class="btn btn-info  btn-sm ml-2" >Logodan Malzeme Aktar</a>
+            }
+            <!--end::Button-->
+        </div>
+
+    </div>
+    <div class="card-body">
+        
+            @* <table class="table table-sm table-bordered TableSmallFont" id="AnaTablo" width="100%" cellspacing="0"> *@
+            <table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+                <thead>
+                    <tr>
+                        <th class="no-print" style="width:30px"></th>
+                        <th style="width:70px">Kayıt No</th>
+                        <th>Fotograf</th>
+                        <th>Grup</th>
+                        <th>Alt Grup</th>
+                        <th>Malzeme Kod</th>
+                        <th>Malzeme Ad</th>
+                        <th>Malzeme Birim</th>
+                        <th>Malzeme Tip</th>
+                        <th>Kdv</th>
+                        <th>Fiyat</th>
+                        <th>Fiyat Değiştir</th>
+                        <th class="no-print">Foto Ekle</th>
+                        @* <th class="no-print" style="width:130px">Düzenle</th> *@
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var sayac = 1;
+                    }
+                    @foreach (MalzemelerVM item in Model.MalzemelerVMListe)
+                    {
+
+                        <tr data-id="@item.ID">
+                            <td class="no-print"><input type="checkbox" class="form-control" /></td>
+                        <td>@item.ID</td>
+                            <td><img src="/stokupload/malzeme/@item.Fotograf" height="35px" /></td>
+                            <td>@item.Grup</td>
+                            <td>@item.AltGrup</td>
+                            <td>@item.Kod</td>
+                            <td>@item.Ad</td>
+                            <td>@item.BirimAd</td>
+                            <td>@item.TipAd</td>
+                            <td>@item.Kdv</td> 
+                            <td class="text-right">@String.Format("{0:n2}", item.Fiyat) @item.DovizTurAd</td>
+                            <td>
+                                <a href="#" onclick="FiyatDegistir('@item.ID')" data-toggle="modal" data-target="#ModalFiyatDegistir" class="btn btn-sm btn-info">Fiyat Değiştir</a>
+                            </td>
+
+                            <td class="no-print"><a href="#" onclick="FotoGetir('@item.ID')" data-toggle="modal" data-target="#ModalFotoEkle"><i class="icon-x flaticon-attachment"></i>&nbsp; Foto</a></td>
+
+                           @*  <td class="no-print">
+                                <a href="#" onclick="VeriGoruntule('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Görüntüle"> 
+                                    <i class="fas fa-search text-warning mr-2"></i>
+                                </a>
+
+                                @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Edit") || a.Value == "Admin"))
+                                {
+
+                                    <a href="#" onclick="VeriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Düzenle">
+                                        <i class="far fa-edit text-success mr-2"></i>
+                                    </a>
+                                }
+                                @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Delete") || a.Value == "Admin"))
+                                {
+                                    <a href="#" onclick="SilinecekVerileriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Sil">
+                                        <i class="fas fa-trash text-danger mr-2"></i>
+                                    </a>
+                                }
+                                @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Copy") || a.Value == "Admin"))
+                                {
+                                    <a href="#" onclick="KopyalanacakVerileriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Kopyala">
+                                        <i class="far fa-clone text-primary "></i>
+                                    </a>
+                                }
+                            </td> *@
+                        </tr>
+                        sayac = sayac + 1;
+                    }
+
+                </tbody>
+
+            </table>
+        
+    </div>
+</div>
+<br />
+
+<div id="ModalGoruntule" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div id="goruntuleFormDiv"></div>
+    </div>
+</div>
+<div id="DetaylarDiv" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <form asp-controller="Stok" asp-action="Malzeme_VeriEkle" method="post" name="_MalzemeEkle" id="_MalzemeEkle">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Malzeme Yeni Kayıt</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered TableSmallFont" width="100%" cellspacing="0">
+                            <tr>
+                                <td><label asp-for="Grup" class="control-label"></label></td>
+                                <td>
+                                   
+                                    <select id="AltGrupID" name="AltGrupID" class="form-control form-control-sm" required>
+
+                                        @foreach (var item in Model.MalzemeGrupListe.Where(p => p.ParentID == 0))
+                                        {
+                                            <optgroup label="@item.Ad">
+                                                @foreach (var sub in Model.MalzemeGrupListe.Where(p => p.ParentID == item.ID))
+                                                {
+                                                   <option value="@sub.ID">@sub.Ad</option>                                                    
+                                                }
+                                            </optgroup>
+                                        }
+                                    </select>
+                                </td>
+                            </tr>
+                          
+                            <tr>
+                                <td> <label asp-for="BirimID" class="control-label"></label></td>
+                                <td>
+                                    <select asp-for="BirimID" class="form-control form-control-sm" asp-items="@ViewBag.MalzemeBirimListe" id="MalzemeBirimListe"></select>
+ 
+                                </td>
+                            </tr>
+                          <tr>
+                                <td><label asp-for="TipID" class="control-label"></label></td>
+                                <td>
+                                    <select asp-for="TipID" class="form-control form-control-sm" asp-items="@ViewBag.MalzemeTipiListe" id="MalzemeTipiListe"></select>
+ 
+                                </td>
+                          </tr>
+                            <tr>
+                                <td><label asp-for="Kod" class="control-label"></label></td>
+                                <td><input asp-for="Kod" class="form-control form-control-sm" required /></td>
+                            </tr>
+                            <tr>
+                                <td><label asp-for="Ad" class="control-label"></label></td>
+                                <td><input asp-for="Ad" class="form-control form-control-sm" required /></td>
+                            </tr>
+                            <tr>
+                                <td><label asp-for="KritikMiktar" class="control-label"></label></td>
+                                <td><input asp-for="KritikMiktar" class="form-control form-control-sm" required /></td>
+                            </tr>
+                            <tr>
+                                <td><label asp-for="Fiyat" class="control-label"></label></td>
+                                <td><input asp-for="Fiyat" class="form-control form-control-sm" required /></td>
+                            </tr>
+                            <tr>
+                                <td><label asp-for="Kdv" class="control-label"></label></td>
+                                <td><input asp-for="Kdv" class="form-control form-control-sm" required type="number" value="20" /></td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label">Döviz Kuru</label></td>
+                                <td>
+                                    <select asp-for="DovizTur" class="form-control form-control-sm" asp-items="@ViewBag.DovizTurListe" id="DovizTurListe"></select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label class="control-label">Açıklama</label></td>
+                                <td>
+
+                                    <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+                                   
+                                </td>
+                            </tr>
+                            
+                        </table>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="ModalFiyatDegistir" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Fiyat Ekle</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Kapat">
+                    <span aria-hidden="true">&times;</span>
+                    <i aria-hidden="true" class="ki ki-close"></i>
+                </button>
+            </div>
+            <form asp-controller="Stok" asp-action="_FiyatDegistir" method="post" name="_FiyatDegistir" id="_FiyatDegistir">
+                <div class="modal-body">
+
+                    <table class="table table-sm" width="100%" cellspacing="0">
+                        <tr>
+                            <td><label asp-for="Fiyat" class="control-label"></label></td>
+                            <td><input asp-for="Fiyat" class="form-control form-control-sm" required /></td>
+                        </tr>
+                        <tr>
+                            <td><label asp-for="Maliyet" class="control-label"></label></td>
+                            <td><input asp-for="Maliyet" class="form-control form-control-sm" required /></td>
+                        </tr>
+                        <tr>
+                            <td><label class="control-label">Döviz Kuru</label></td>
+                            <td>
+                                <select asp-for="DovizTur" class="form-control form-control-sm" asp-items="@ViewBag.DovizTurListe" id="DovizTurListe2"></select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Açıklama Gir :</td>
+                            <td>
+                                <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="1" required></textarea>
+                                <span asp-validation-for="Aciklama" class="text-danger"></span>
+                            </td>
+
+                        </tr>
+                    </table>
+
+                    <br />
+                    <div id="Fiyatlar"></div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Fiyat Değiştir</button>
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+                   
+                    <input type="hidden" asp-for="ID" id="UrunID" />
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<div id="ModalFotoEkle" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Foto Ekle</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Kapat">
+                    <span aria-hidden="true">&times;</span>
+                    <i aria-hidden="true" class="ki ki-close"></i>
+                </button>
+            </div>
+
+            <div class="modal-body" id="DetaylarFoto">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+@section JSSection {
+
+   @*  <script src="~/assets1/js/pages/crud/forms/widgets/select2.js?v=7.0.5"></script>
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script> *@
+    <script src="assets1/plugins/custom/datatables/datatables.bundle.js?v=7.0.5"></script>
+    <script src="assets1/js/pages/crud/datatables/extensions/buttonsCustom.js?v=7.0.5"></script>
+    <script src="js/select2.js?v=7.0.5"></script>
+
+@*     <script>
+        $.extend($.fn.dataTable.defaults, {
+            ordering: true,
+            iDisplayLength: 50
+        });
+        $(document).ready(function() {
+            $('#AnaTablo').DataTable({
+                language: {
+                    url: '/js/i18n/DataTables-TR.json'
+                }
+            });
+        });
+
+    </script> *@
+
+   
+    @{
+        await Html.RenderPartialAsync("_PartialCrudScript");
+    }
+    <script>
+        $(document).ready(function() {
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <text>
+                        toastr.success('@TempData["SuccessMessage"]', 'Başarılı');
+            </text>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <text>
+                        toastr.error('@TempData["ErrorMessage"]', 'Hata');
+            </text>
+        }
+        });
+    </script>@* toastr *@
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Fonksiyonu her select element için çağırıyoruz
+            removeZeroValueOptions("MalzemeBirimListe");
+            removeZeroValueOptions("MalzemeTipiListe"); 
+        });
+    </script>
+    <script type="text/javascript">
+    
+        function LogoMalzemeAktar(){    
+            
+                $.ajax({
+                    type: 'GET',
+                    url: 'Malzeme/LogoMalzemeAktar', 
+                    success: function (response) {
+                        // $('#cardBody').html(response);
+                        // $('#ModalVeri').modal('hide');
+                        toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+
+                    },
+                    error: function (xhr, status, error) {
+
+                        toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+                    }
+                }); 
+        }
+    </script>
+    <script>
+       
+        function VeriGoruntule(id) {
+            GetAjax('Stok/Malzeme_VeriGoruntule?MalzemeID=' + id, 'goruntuleFormDiv');
+        }
+        function VeriGetir(id) {
+
+            GetAjax('Stok/Malzeme_VeriGetir?MalzemeID=' + id, 'goruntuleFormDiv');
+        }
+        function SilinecekVerileriGetir(id) {
+            GetAjax('Stok/Malzeme_SilinecekVerileriGetir?MalzemeID=' + id, 'goruntuleFormDiv');
+        }
+        function KopyalanacakVerileriGetir(id) {
+            GetAjax('Stok/Malzeme_KopyalanacakVerileriGetir?MalzemeID=' + id, 'goruntuleFormDiv');
+        }
+        function FiyatDegistir(id) {
+            GetAjax('Stok/_FiyatGetir?UrunID=' + id, 'Fiyatlar');
+            $('#UrunID').val(id);
+        }
+        function FotoGetir(id) {
+            GetAjax('Stok/_FotoGetir?MalzemeID=' + id, 'DetaylarFoto');
+        }
+    </script>
+ 
+}
+

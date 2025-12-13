@@ -1,0 +1,196 @@
+﻿@model TeklifUrunlerVM
+
+@{
+    var kurlar = (KurlarVM)ViewBag.Kurlar;
+}
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #EklenenUrunlerTablo tbody tr:hover {
+        background-color: #f0f0f0;
+    }
+</style>
+<style>
+
+
+    #EklenenUrunlerTablo th {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 2px !important;
+    }
+
+    #EklenenUrunlerTablo td {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 4px !important;
+    }
+</style>
+
+
+<table class="table table-sm table-bordered TableSmallFont" id="EklenenUrunlerTablo" width="100%" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Sıra No</th>
+            <th>Ürün Kodu</th>
+            <th>Ürün Adı</th>
+            <th>Birim</th>
+            <th>Miktar</th>
+            <th>Fiyat</th>
+            <th>Toplam</th>
+            <th>İskonto</th>
+            <th>Kdv %</th>
+            <th>Kdv TL</th>
+            <th>Net</th>
+            <th>Çıkar</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            var sayac = 1;
+            double T1 = 0;
+            double T2 = 0;
+            double T3 = 0;
+            double T4 = 0;
+            double kur = 1;
+            double satirToplami = 0;
+            double satirIskontosu = 0;
+            double satirKdvsi = 0;
+            double satirNeti = 0;
+            double genelIskonto = 0;
+            double genelIskontoToplami = 0;
+        }
+        @foreach (TeklifUrunlerVM item in Model.TeklifUrunlerVMListe)
+        {
+            if (item.DovizTur == 1)
+            {
+                kur = 1;
+            }
+            else if (item.DovizTur == 2)
+            {
+                kur = Convert.ToDouble(kurlar.UsdSatis);
+            }
+            else if (item.DovizTur == 3)
+            {
+                kur = Convert.ToDouble(kurlar.EurSatis);
+            }
+
+
+            satirToplami = (item.Miktar * item.Fiyat * kur);
+            satirIskontosu = ((item.Miktar * item.Fiyat * kur) * item.Iskonto / 100);
+            satirKdvsi = ((satirToplami - satirIskontosu) * item.Kdv / 100);
+            satirNeti = satirToplami - satirIskontosu + satirKdvsi;
+            <tr class="@(item.IsDelete ? "deleted" : "")">
+                <td>@sayac</td>
+                <td>@item.UrunKod</td>
+                <td>@item.UrunAd</td>
+                <td>@item.BirimAd</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Miktar)</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Fiyat) @item.DovizTurAd</td>
+                <td class="text-right">@String.Format("{0:n2}", satirToplami) TL</td>
+                <td class="text-right">%@String.Format("{0:n0}", item.Iskonto)</td>
+                <td class="text-right">%@String.Format("{0:n0}", item.Kdv)</td>
+                <td class="text-right">@String.Format("{0:n2}", satirKdvsi) TL</td>
+                <td class="text-right">@String.Format("{0:n2}", satirNeti) TL</td>
+                <td>
+                    @if (!item.IsDelete)
+                    {
+                        <a href="javascript:void(0);" class="remove-item" data-id="@item.ID">Çıkar</a>
+                    }
+                </td>
+            </tr>
+            sayac = sayac + 1;
+            if (!item.IsDelete)
+            {
+                T1 = T1 + satirToplami;
+                T2 = T2 + satirIskontosu;
+                T3 = T3 + satirKdvsi;
+                T4 = T4 + satirNeti;
+            }
+
+        }
+
+    </tbody>
+    @if (Model.TeklifUrunlerVMListe.Count > 0)
+    {
+        <tfoot>
+            <tr>
+                <td colspan="5">
+                    <table width="300px" class="table-borderless">
+                        <thead>
+                            <tr>
+                                <th>İskonto Açıklama</th>
+                                <td>Oran</td>
+                                <td>İşlem</td>
+                            </tr>
+                        </thead>
+                        <tr>
+                            <td><input type="text" name="IskontoAd" id="IskontoAd" class="form-control form-control-sm" /></td>
+                            <td class="text-right" width="60px"><input type="number" name="IskontoOran" id="IskontoOran" class="form-control form-control-sm" /></td>
+                            <td class="text-right"><button onclick="IskontoEkle()" class="btn btn-sm btn-success">Ekle</button> </td>
+                        </tr>
+                        @foreach (var iskonto in Model.TeklifIskontoListe)
+                        {
+                            <tr>
+                                <td>@iskonto.Ad</td>
+                                <td class="text-right">@iskonto.Oran</td>
+                                <td class="text-right"> <a href="javascript:void(0);" class="Iskonto-Cikar" data-id="@iskonto.ID">Çıkar</a></td>
+                            </tr>
+                        }
+                    </table>
+                </td>
+                <td class="text-right" colspan="6">
+                    <table width="100%" class="table-borderless">
+                        <tr>
+                            <td class="text-right">Brüt Toplam      :</td>
+                            <td class="text-right">@String.Format("{0:n2}", T1) TL <input name="BrutToplam" type="hidden" value="@T1" /></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">Ürün Satır İskontosu     :</td>
+                            <td class="text-right">@String.Format("{0:n2}", T2) TL <input name="SatirIskontoToplam" type="hidden" value="@T2" /></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right">Kdv         :</td>
+                            <td class="text-right">@String.Format("{0:n2}", T3) TL <input name="KdvToplam" type="hidden" value="@T3" /></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><hr /></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right bold">Ara Toplam         :</td>
+                            <td class="text-right bold">@String.Format("{0:n2}", T4) TL <input name="aratoplam" type="hidden" value="@T4" /></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><hr /></td>
+                        </tr>
+                        @foreach (var iskonto in Model.TeklifIskontoListe)
+                        {
+                            sayac = 1;
+
+                            <tr>
+                                <td class="text-right">@iskonto.Ad     :</td>
+                                <td class="text-right">@String.Format("{0:n2}", (T4 - genelIskonto) * iskonto.Oran / 100) TL <input name="IskontoAd@(sayac)" type="hidden" value="@(T4* iskonto.Oran / 100)" /></td>
+                            </tr>
+                            genelIskonto = (T4 - genelIskonto) * iskonto.Oran / 100;
+                            genelIskontoToplami += genelIskonto;
+                        }
+                        <tr>
+                            <td colspan="2"><hr /><input name="IskontoToplam" type="hidden" value="@genelIskontoToplami" /></td>
+                        </tr>
+                        <tr>
+                            <td class="text-right bold">Toplam         :</td>
+                            <td class="text-right bold">@String.Format("{0:n2}", T1 - T2 + T3 - genelIskontoToplami) TL<input name="Toplam" type="hidden" value="@(T1 - T2 + T3 - genelIskontoToplami)" /></td>
+                        </tr>
+                    </table>
+
+                </td>
+                <td> </td>
+            </tr>
+        </tfoot>
+    }
+
+
+</table>
+
+
+@* <div class="text-right">
+    <button onclick="UrunKaydet('4')" class="btn btn-sm btn-success font-weight-bold" type="button">Ürünleri Kaydet</button>
+</div> *@

@@ -1,0 +1,77 @@
+﻿@model TableMetadataVM
+
+@* <div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Adres" class="control-label mr-2"></label> :@Model.Adres
+    </div>
+</div>
+<div class="form-group row">
+
+    <div class="col-lg-6">
+        <label asp-for="EgitimKonusu" class="control-label mr-2"></label>:@Model.EgitimKonusu
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="EgitimTuru" class="control-label mr-2"></label>:@Model.EgitimTuru
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-6">
+        <label asp-for="Egitmen" class="control-label mr-2"></label>:@Model.Egitmen
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="EgitimTarihi" class="control-label mr-2"></label>:@Model.EgitimTarihi?.ToString("dd.MM.yyyy HH:mm")
+    </div>
+
+</div>
+<div class="form-group row">
+    <div class="col-lg-6">
+        <label asp-for="EgitimVerilenKurum" class="control-label mr-2"></label>:@Model.EgitimVerilenKurum
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="KurumTuru" class="control-label mr-2"></label>:@Model.KurumTuru
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4">
+        <label asp-for="KatilanErkek" class="control-label mr-2"></label>:@Model.KatilanErkek
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="KatilanKadin" class="control-label mr-2"></label>:@Model.KatilanKadin
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="KatilanCocuk" class="control-label mr-2"></label>:@Model.KatilanCocuk
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-6">
+        <label asp-for="YasGrubu" class="control-label mr-2"></label> :@Model.YasGrubu
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="Ucret" class="control-label mr-2"></label> :@Model.Ucret
+    </div>
+
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Aciklama" class="control-label mr-2"></label> :@Model.Aciklama
+    </div>
+</div> *@
+@* <div class="form-group row">
+    <div class="col-lg-12">
+        <div class="small">
+            Kayıt Oluşturan: @Model.CreateUserName
+            Oluşturma Tarihi:@Model.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+        </div>
+    </div>
+</div>
+@if (Model.IsDelete)
+{
+    <div class="form-group row">
+        <div class="col-lg-12">
+            <div class="small">
+                Kayıt Silen: @Model.DeleteUserName
+                Silme Tarihi:@Model.DeleteDate?.ToString("dd.MM.yyyy HH:mm")
+            </div>
+        </div>
+    </div>
+} *@

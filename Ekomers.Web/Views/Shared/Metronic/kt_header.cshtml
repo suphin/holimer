@@ -1,0 +1,79 @@
+﻿
+<div id="kt_header" class="header header-fixed">
+	<!--begin::Container-->
+	<div class="container-fluid d-flex align-items-stretch justify-content-between">
+		<!--begin::Header Menu Wrapper-->
+		<div class="header-menu-wrapper header-menu-wrapper-left" id="kt_header_menu_wrapper">
+			<!--begin::Header Menu-->
+			<div id="kt_header_menu" class="header-menu header-menu-mobile header-menu-layout-default">
+				<!--begin::Header Nav-->
+				@{					 
+						//await Html.RenderPartialAsync("metronic/kt_header_menu_genel");				
+				 }
+				<!--end::Header Nav-->
+			</div>
+			<!--end::Header Menu-->
+		</div>
+		<!--end::Header Menu Wrapper-->
+		<!--begin::Topbar-->
+		<div class="topbar">
+			<!--begin::Search-->
+			@{
+				//await Html.RenderPartialAsync("metronic/kt_quick_search_toggle");
+			}
+			<!--end::Search-->
+			<!--begin::Notifications-->
+			@{
+				//await Html.RenderPartialAsync("metronic/kt_header_topbar_notifications");
+			}
+			<!--end::Notifications-->
+			<!--begin::Quick Actions-->
+			@{
+				//await Html.RenderPartialAsync("metronic/kt_header_topbar_quick_actions");
+			}
+			<!--end::Quick Actions-->
+			<!--begin::Cart-->
+			@{
+				//await Html.RenderPartialAsync("metronic/kt_header_topbar_cart");
+			}
+			<!--end::Cart-->
+			<!--begin::Quick panel-->
+			@{
+				//await Html.RenderPartialAsync("metronic/kt_header_topbar_quick_panel");
+			}
+			<!--end::Quick panel-->
+			<!--begin::Chat-->
+			@{
+				//await Html.RenderPartialAsync("metronic/kt_header_topbar_chat");
+			}
+			<!--end::Chat-->
+			<!--begin::Languages-->
+			@{
+				//await Html.RenderPartialAsync("metronic/kt_header_topbar_languages");
+			}
+			<!--end::Languages-->
+		 
+			<!--begin::User-->
+			@if (User.Identity.IsAuthenticated)
+			{
+				string name = User.Identity.Name;
+				var fileName = @User.Identity.Name + ".jpg";
+
+
+
+				<div class="topbar-item">
+					<div class="btn btn-icon w-auto btn-clean d-flex align-items-center btn-lg px-2" id="kt_quick_user_toggle">
+
+						<span class="text-dark-50 font-weight-bolder font-size-base d-none d-md-inline mr-3">@User.Identity.Name</span>
+						<span class="symbol symbol-35 symbol-light-success">
+							<span class="symbol-label font-size-h5 font-weight-bold">@name.Substring(0, 1).ToUpper()</span>
+						</span>
+					</div>
+				</div>
+			}
+			<!--end::User-->
+		</div>
+		<!--end::Topbar-->
+	</div>
+	<!--end::Container-->
+</div>

@@ -1,0 +1,38 @@
+﻿@model PagerModel
+@{
+    var total = Model.TotalPages;
+    var current = Model.PageIndex;
+    var max = Model.MaxPagesToShow;
+    int start = Math.Max(1, current - max / 2);
+    int end = Math.Min(total, start + max - 1);
+    start = Math.Max(1, end - max + 1);
+}
+
+@if (total > 1)
+{
+    <nav aria-label="Sayfalama">
+        <ul class="pagination justify-content-end flex-wrap gap-1">
+            <li class="page-item @(current == 1 ? "disabled" : "")">
+                <a href="#" class="page-link" data-page="1" aria-label="İlk">«</a>
+            </li>
+            <li class="page-item @(current == 1 ? "disabled" : "")">
+                <a href="#" class="page-link" data-page="@(current - 1)" aria-label="Önceki">‹</a>
+            </li>
+
+            @for (int i = start; i <= end; i++)
+            {
+                <li class="page-item @(i == current ? "active" : "")">
+                    <a href="#" class="page-link" data-page="@i">@i</a>
+                </li>
+            }
+
+            <li class="page-item @(current == total ? "disabled" : "")">
+                <a href="#" class="page-link" data-page="@(current + 1)" aria-label="Sonraki">›</a>
+            </li>
+            <li class="page-item @(current == total ? "disabled" : "")">
+                <a href="#" class="page-link" data-page="@total" aria-label="Son">»</a>
+            </li>
+        </ul>
+    </nav>
+}
+

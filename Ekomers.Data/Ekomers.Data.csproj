@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Data\Migrations\**" />
+    <EmbeddedResource Remove="Data\Migrations\**" />
+    <None Remove="Data\Migrations\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="lib\Crypto.cs" />
+    <Compile Remove="Repository\IRepository\IKullaniciGrupRepository.cs" />
+    <Compile Remove="Repository\IRepository\IKullaniciLogRepository.cs" />
+    <Compile Remove="Repository\IRepository\IMalzemeKullanimRepository.cs" />
+    <Compile Remove="Repository\IRepository\ISayfaKapsamRepository.cs" />
+    <Compile Remove="Repository\KullaniciGrupRepository.cs" />
+    <Compile Remove="Repository\KullaniciLogRepository.cs" />
+    <Compile Remove="Repository\MalzemeKullanimRepository.cs" />
+    <Compile Remove="Repository\SayfaKapsamRepository.cs" />
+    <Compile Remove="Services\IServices\IKullaniciService.cs" />
+    <Compile Remove="Services\KullaniciService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="15.1.0" />
+    <PackageReference Include="Azure.Identity" Version="1.17.1" />
+    <PackageReference Include="Dapper" Version="2.1.66" />
+    <PackageReference Include="EPPlus" Version="8.3.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="10.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Migrations\SecondDb\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ekomers.Models\Ekomers.Models.csproj" />
+  </ItemGroup>
+
+</Project>

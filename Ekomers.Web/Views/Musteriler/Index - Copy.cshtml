@@ -1,0 +1,119 @@
+﻿@model MusterilerVM
+@{
+	ViewData["Title"] = "Musteriler Tanımlama";
+	ViewData["Description"] = "Genel Ayarlar - Müşteri Tanımlama";
+}
+@section CSSection {
+	<!--begin::Page Vendors Styles(used by this page)-->
+	<link href="~/assets1/plugins/custom/datatables/datatables.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+
+	<!--end::Page Vendors Styles-->
+}
+
+<!--begin::Notice-->
+@{
+	//await Html.RenderPartialAsync("_PartialNotice",
+	//new NoticeVM { Baslik = "Musterilerler", Aciklama = "Musterilerler Bilgi Girişi" });
+}
+<!--end::Notice-->
+@* <br />
+<div class="card shadow">
+	<div class="card-header">
+		Arama Seçenekleri
+	</div>
+	<div class="card-body">
+		<div class="table-responsive">
+			<form asp-action="Index" asp-controller="Musteriler" method="post" name="VeriFiltre" id="VeriFiltre">
+				<table class="table table-bordered table-sm TableSmallFont" width="100%" cellspacing="0">
+					<tr>
+						<td>
+							<div class="form-group">
+								<label class="control-label">Genel Arama</label>
+								<input asp-for="Aciklama" class="form-control form-control-sm" />
+							</div>
+						</td>
+						 
+						<td>
+							<div class="form-group">
+								<label class="control-label">&nbsp;</label>
+								<button type="submit" class="btn btn-primary form-control btn-sm">Ara</button>
+
+							</div>
+						</td>
+					</tr>
+				</table>
+			</form>
+		</div>
+	</div>
+</div>
+<br /> *@
+<!--begin::Card-->
+<div class="card card-custom">
+	<div class="card-header flex-wrap py-3">
+		<div class="card-title">
+			<h3 class="card-label">
+				Musteriler Tanımlama
+				<span class="d-block text-muted pt-2 font-size-sm">Detay</span>
+			</h3>
+		</div>
+		<div class="card-toolbar">
+		 
+			 @{
+				await Html.RenderPartialAsync("_PartialAuthorizeCreate");
+			}
+			@{
+				await Html.RenderPartialAsync("_PartialHaritaGenel", new AuthorizeCrudVM
+				{
+					ModulID = (int)ModulEnum.Musteriler,
+					HaritaEkle = true
+				});
+
+			}
+		</div>
+	</div>
+	<div class="card-body" id="cardBody">
+		<!--begin: Datatable-->
+		@{
+			await Html.RenderPartialAsync("_VeriDatatable", Model.MusterilerVMListe);
+		}
+		<!--end: Datatable-->
+	</div>
+</div>
+<!--end::Card-->
+@{
+	//await Html.RenderPartialAsync("_PartialModalVeri");
+	await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "lg" });
+}
+
+@{
+	await Html.RenderPartialAsync("_PartialModalDosya",
+	new AuthorizeCrudVM { Controller = "Musteriler", HaritaEkle = true });
+}
+ 
+@section JSSection {
+
+	<script src="~/assets1/plugins/custom/datatables/datatables.bundle.js?v=7.0.5"></script>
+	<script src="~/assets1/js/pages/crud/datatables/extensions/buttonsCustom.js?v=7.0.5"></script>
+	 
+
+
+	<script src="js/select2.js?v=7.0.5"></script>
+	@{
+		await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+		new AuthorizeCrudVM
+		{
+			Controller = "Musteriler",
+			ModulID = (int)ModulEnum.Musteriler,
+			DosyaYolu = "Musteriler"
+		});
+	}
+	@{
+		await Html.RenderPartialAsync("_PartialDataTableScript");
+	}
+	@{
+		await Html.RenderPartialAsync("_PartialMapScript");
+	}
+ 
+}
+
+

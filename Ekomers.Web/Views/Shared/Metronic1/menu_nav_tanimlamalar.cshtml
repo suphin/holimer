@@ -1,0 +1,777 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+	string controllerName = Context.Request.RouteValues["controller"]!.ToString()!;
+	string actionName = Context.Request.RouteValues["action"]!.ToString()!;
+}
+@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Tanimlamalar") || a.Value == "Admin"))
+{
+	<li class="menu-section">
+		<h4 class="menu-text">Ayarlar</h4>
+		<i class="menu-icon ki ki-bold-more-hor icon-md"></i>
+	</li>
+	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "Tanimlamalar" ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+		<a href="javascript:;" class="menu-link menu-toggle">
+			<span class="svg-icon menu-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+					<g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+						<rect x="0" y="0" width="24" height="24" />
+						<path d="M5,5 L5,15 C5,15.5948613 5.25970314,16.1290656 5.6719139,16.4954176 C5.71978107,16.5379595 5.76682388,16.5788906 5.81365532,16.6178662 C5.82524933,16.6294602 15,7.45470952 15,7.45470952 C15,6.9962515 15,6.17801499 15,5 L5,5 Z M5,3 L15,3 C16.1045695,3 17,3.8954305 17,5 L17,15 C17,17.209139 15.209139,19 13,19 L7,19 C4.790861,19 3,17.209139 3,15 L3,5 C3,3.8954305 3.8954305,3 5,3 Z" fill="#000000" fill-rule="nonzero" transform="translate(10.000000, 11.000000) rotate(-315.000000) translate(-10.000000, -11.000000)" />
+						<path d="M20,22 C21.6568542,22 23,20.6568542 23,19 C23,17.8954305 22,16.2287638 20,14 C18,16.2287638 17,17.8954305 17,19 C17,20.6568542 18.3431458,22 20,22 Z" fill="#000000" opacity="0.3" />
+					</g>
+				</svg>
+			</span>
+			<span class="menu-text">Tanımlamalar</span>
+			<i class="menu-arrow"></i>
+		</a>
+		<div class="menu-submenu">
+			<i class="menu-arrow"></i>
+			<ul class="menu-subnav">
+				<li class="menu-item menu-item-parent" aria-haspopup="true">
+					<span class="menu-link">
+						<span class="menu-text">İmar</span>
+					</span>
+				</li>
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Imar") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu @((controllerName == "ImarBirimSorumlusu" || controllerName == "ImarBelediyeBaskanYardimcisi" || controllerName == "ImarInsaatTeknikeri" || controllerName == "ImarMimar" || controllerName == "ImarMuduru" || controllerName == "ImarTasinmazTur" || controllerName == "ImarYapiCinsi") ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">İmar</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "ImarBirimSorumlusu" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ImarBirimSorumlusu/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Birim Sorumlusu</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ImarBelediyeBaskanYardimcisi" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ImarBelediyeBaskanYardimcisi/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Başkan Yardımcısı</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ImarInsaatTeknikeri" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ImarInsaatTeknikeri/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">İnşaat Teknikeri</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ImarMimar" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ImarMimar/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Mimar</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ImarMuduru" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ImarMuduru/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">İmar Müdürü</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ImarTasinmazTur" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ImarTasinmazTur/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Taşınmaz Tür</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ImarYapiCinsi" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ImarYapiCinsi/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">İmar Yapı Cinsi</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ImarYapiSinifGrup" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ImarYapiSinifGrup/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">İmar Yapı Sınıf Grup</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ImarCezaKalemleri" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ImarCezaKalemleri/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">İmar Ceza Kalemleri</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Yardim") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu @((controllerName == "YardimCinsi" || controllerName == "TeslimAlanEden" || controllerName == "SosyalDurum" || controllerName == "YardimCinsi" || controllerName == "SosyalGuvence" || controllerName == "Mahalle") ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Yardım</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "TeslimAlanEden" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="TeslimAlanEden/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Teslim Alan Eden</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "SosyalGuvence" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="SosyalGuvence/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Sosyal Güvence</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "SosyalDurum" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="SosyalDurum/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Sosyal Durum</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "YardimCinsi" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="YardimCinsi/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Yardım Cinsi</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "Mahalle" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="Mahalle/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Mahalle</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "YardimYeri" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="YardimYeri/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Yardım Yeri</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "YardimProje" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="YardimProje/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Yardım Proje</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "YardimV2Cinsi" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="YardimV2Cinsi/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">YardımV2 Cinsi</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Protokol") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "Departman" || controllerName == "ProtokolDurum" || controllerName == "ProtokolKonu" || controllerName == "ProtokolTaraf") ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Protokol</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "Departman" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="Departman/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Departman</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "Birim" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="Birim/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Birim</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ProtokolDurum" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ProtokolDurum/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Protokol Durum</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ProtokolKonu" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ProtokolKonu/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Protokol Konu</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ProtokolTaraf" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ProtokolTaraf/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Protokol Taraf</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
+				
+				
+				
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Sozlesme") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "SozlesmeYapiTur" || controllerName == "SozlesmeDurum" || controllerName == "SozlesmeKonu" || controllerName == "SozlesmeTaraf") ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Sözleşme</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "SozlesmeYapiTur" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="SozlesmeYapiTur/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Yapı Cinsi</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "SozlesmeDurum" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="SozlesmeDurum/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Sözleşme Durum</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "SozlesmeKonu" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="SozlesmeKonu/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Sözleşme Konu</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "SozlesmeTaraf" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="SozlesmeTaraf/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Sözleşme Taraf</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "CV") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "Sektor" || controllerName == "EgitimSeviyesi" || controllerName == "Diller") ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Dijital CV</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "Sektor" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="Sektor/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Sektörler</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "EgitimSeviyesi" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="EgitimSeviyesi/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Eğitim Seviyesi</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "Diller" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="Diller/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Diller</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Mezarlik") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "MezarlikLokasyon" || controllerName == "MezarlikOlumNedeni" || controllerName == "Mezarlik") ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Mezarlik</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "MezarlikLokasyon" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="MezarlikLokasyon/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Mezarlık Lokasyon</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "MezarlikOlumNedeni" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="MezarlikOlumNedeni/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Ölüm Nedeni</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "Mezarlik" && actionName == "MapboxControls" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="Mezarlik/MapboxControls" class="menu-link" target="_blank">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Koordinat Gir</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "Mezarlik" && actionName == "MapboxControls" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="Mezarlik/Koordinatlar?ada=40" class="menu-link" target="_blank">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Koordinatlar</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Toplanti") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "ToplantiTalepKonusu" ||   controllerName == "Toplanti") ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Mahalle Toplantı</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "ToplantiTalepKonusu" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ToplantiTalepKonusu/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Talep Konusu</span>
+									</a>
+								</li>
+
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Cafe") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "CafeKategori" ||   controllerName == "Cafe") ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Cafe</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "CafeKategori" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="CafeKategori/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Kategori</span>
+									</a>
+								</li>
+
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Ulasim") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "Tasitlar" || controllerName == "TasitKullanimDurum" ||  controllerName == "TasitDurum" ||   controllerName == "TasitYakitTur" ||   controllerName == "TasitTur" ||   controllerName == "TasitSoforler") ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Taşıtlar</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "TasitDurum" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="TasitDurum/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Taşıt Durum</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "TasitKullanimDurum" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="TasitKullanimDurum/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Taşıt Kullanım Durumu</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "TasitYakitTur" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="TasitYakitTur/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Yakıt Türü</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "TasitTur" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="TasitTur/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Taşıt Türü</span>
+									</a>
+								</li>
+							
+								<li class="menu-item @(controllerName == "TasitSoforler" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="TasitSoforler/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Şoförler</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Stok") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "Stok" ||   controllerName == "MalzemeBirim" ||   controllerName == "MalzemeTipi" ||   controllerName == "MalzemeHareketTur" ) ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Malzemeler</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "MalzemeBirim" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="MalzemeBirim/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Malzeme Birim</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "MalzemeTipi" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="MalzemeTipi/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Malzeme Tipi</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "MalzemeHareketTur" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="MalzemeHareketTur/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Malzeme Hareket Tür</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "YaziIsleri") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @(controllerName == "EvlendirmeMemuru"   ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Evlendirme Randevu</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "EvlendirmeMemuru" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="EvlendirmeMemuru/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Evlendirme Memuru</span>
+									</a>
+								</li>
+								 
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.IsInRole("TemizlikSikayet") || User.IsInRole("Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "TemizlikSikayetKaynak" || controllerName == "TemizlikSikayetKonu" || controllerName == "TemizlikSikayetPersonel" )  ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Temizlik Şikayet</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "TemizlikSikayetKaynak" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="TemizlikSikayetKaynak/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Şikayet Kaynağı</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "TemizlikSikayetKonu" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="TemizlikSikayetKonu/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Şikayet Konusu</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "TemizlikSikayetPersonel" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="TemizlikSikayetPersonel/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Personel</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.IsInRole("KentTarihi") || User.IsInRole("Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "KentTarihiRota" )  ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Kent Tarihi</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "KentTarihiRota" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="KentTarihiRota/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Rotalar</span>
+									</a>
+								</li>
+							
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.IsInRole("Itfaiye") || User.IsInRole("Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((
+															controllerName == "ItfaiyeTur" 
+															|| controllerName == "ItfaiyeBildirimTuru" 
+															|| controllerName == "ItfaiyeAltTur" 
+															|| controllerName == "ItfaiyeEgitimTuru"
+															|| controllerName == "ItfaiyeEgitimKurumTuru"
+															|| controllerName == "ItfaiyeEgitmen"
+															|| controllerName == "ItfaiyeDenetimTuru"
+															|| controllerName == "ItfaiyeDenetimKurumTuru"
+																)  ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">İtfaiye Bilgi Sistemi</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "ItfaiyeTur" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ItfaiyeTur/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">İhbar Tür</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ItfaiyeAltTur" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ItfaiyeAltTur/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">İhbar Alt Tür</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ItfaiyeBildirimTuru" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ItfaiyeBildirimTuru/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Bildirim Türü</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ItfaiyeEgitimTuru" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ItfaiyeEgitimTuru/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Eğitim Türü</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ItfaiyeEgitimKurumTuru" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ItfaiyeEgitimKurumTuru/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Kurum Türü</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ItfaiyeEgitmen" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ItfaiyeEgitmen/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Eğitmen</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ItfaiyeDenetimTuru" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ItfaiyeDenetimTuru/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Denetim Türü</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "ItfaiyeDenetimKurumTuru" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="ItfaiyeDenetimKurumTuru/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Denetim Kurum Türü</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
+			
+			
+				@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Bakim") || a.Value == "Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "Marka" || controllerName == "BakimTuru") ? "menu-item-open" : "" )" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Dijital CV</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "Marka" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="Marka/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Markalar</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "BakimTuru" && actionName == "Index" ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="BakimTuru/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Bakım Türü</span>
+									</a>
+								</li> 
+							</ul>
+						</div>
+					</li>
+				}
+			</ul>
+		</div>
+	</li>
+}

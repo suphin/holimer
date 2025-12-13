@@ -1,0 +1,38 @@
+﻿@model EczaneVM
+ 
+<form asp-controller="@Model.ControllerName" asp-action="VeriSil" method="post" name="VeriSil" id="VeriSil">
+	<div class="modal-content">
+		<div class="modal-header">
+            <h5 class="modal-title">@Model.ModalTitle</h5>
+			<button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+		</div>
+		<div class="modal-body">
+
+			@{
+				await Html.RenderPartialAsync("_formGoruntule", Model);
+			}
+
+		</div>
+		<div class="modal-footer">
+			<input type="hidden" asp-for="ID" />
+			@* <input type="hidden" asp-for="CreateDate" />
+			<input type="hidden" asp-for="CreateUserID" />
+			<input type="hidden" asp-for="UpdateDate" />
+			<input type="hidden" asp-for="UpdateUserID" />
+			<input type="hidden" asp-for="DeleteDate" value="@DateTime.Now" />
+			<input type="hidden" asp-for="IsActive" value="true" />
+			<input type="hidden" asp-for="IsDelete" value="true" />
+			<input type="hidden" asp-for="DeleteUserID" value="@Model.UserID" /> *@
+			<button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+			<button type="submit" class="btn btn-success">Silme İşlemi Onayla</button>
+		</div>
+	</div>
+</form>
+<script src="js/select2.js?v=7.0.5"></script>
+@{
+	if (User.HasClaim("Authorize", "Delete"))
+	{
+		await Html.RenderPartialAsync("_PartialDeleteFormPostScript");
+	}
+	
+}

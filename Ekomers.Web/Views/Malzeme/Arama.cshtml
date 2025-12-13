@@ -1,0 +1,166 @@
+﻿@model MalzemelerVM
+@{
+    ViewData["Title"] = "Malzemeler";
+    
+}
+<div class="card shadow">
+    <div class="card-header">
+        Arama Seçenekleri
+    </div>
+    <div class="card-body">
+
+        <form action="Malzeme/Arama" method="post" name="filtreform" id="filtreform">
+            @Html.AntiForgeryToken()
+            <div class="form-group row">
+                <div class="col-12 col-md-6">
+
+                    <label asp-for="Aciklama" class="control-label"></label>
+                    <input asp-for="Aciklama" class="form-control"   />
+                    <span asp-validation-for="Aciklama" class="text-danger"></span>
+                </div>  
+                <div class="col-12 col-md-3">
+                     <label asp-for="TipID" class="control-label"></label>
+                    <select asp-for="TipID" class="form-control" asp-items="@ViewBag.MalzemeTipiListe">
+                        <option value="0">— Hepsi —</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label asp-for="BirimID" class="control-label"></label>
+                    <select asp-for="BirimID" class="form-control" asp-items="@ViewBag.MalzemeBirimListe">
+                        <option value="0">— Hepsi —</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group row">
+              
+                <div class="col-12 col-md-10"> <label asp-for="Grup" class="control-label"></label>
+                    <input id="tagifyGruplar" class="form-control tagify " name='tagifyGruplar' placeholder="Grup ekle" value="@Model.tagifyGruplar" />
+                  
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="control-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary form-control">Ara</button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+ 
+<div class="card card-custom mt-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Arama Sonuçları
+                <span class="d-block text-muted pt-2 font-size-sm">Detay</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+          
+        </div>
+    </div>
+    <div class="card-body " id="cardBody">
+        <!--begin: Datatable-->
+        @{
+            await Html.RenderPartialAsync("_List", Model);
+        }
+        <!--end: Datatable-->
+    </div>
+</div>
+@{
+    //await Html.RenderPartialAsync("_PartialModalVeri");
+    await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "lg" });
+}
+@section JSSection {
+    @{
+        await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+        new AuthorizeCrudVM
+        {
+            Controller = "Malzeme",
+            ModulID = (int)ModulEnum.Malzeme,
+            DosyaYolu = "Malzeme"
+        });
+    }
+    @{
+        var grupListe = new List<string>();
+
+        foreach (var grup in Model.MalzemeGrupListe)
+        {
+            var ad = grup.Ad?.Replace("'", "\\'");
+
+            grupListe.Add($@"
+                        {{
+                            value: '{ad}',
+                            kod: '{grup.Kod}',
+                            id: '{grup.ID}',
+                            initials: '',
+                            initialsState: '',
+                            class: 'tagify__tag--primary'
+                        }}");
+        }
+
+        var grupJson = string.Join(",", grupListe);
+    }
+    <script>
+                // Class definition
+        var CokluSelectList = function() {
+            // Private functions
+
+
+            var Gruplar = function() {
+                // Init autocompletes
+                var toEl = document.getElementById('tagifyGruplar');
+                        var tagifyTo = new Tagify(toEl, {
+                        delimiters: ", ",
+                        maxTags: 10,
+                        blacklist: ["fuck", "shit", "pussy"],
+                        keepInvalidTags: true,
+                        whitelist: [@Html.Raw(grupJson)],
+                        templates: {
+                            dropdownItem: function (tagData) {
+                                try {
+                                    var html = '';
+
+                                     html += '<div class="tagify__dropdown__item">';
+                                    html += '   <div class="d-flex align-items-center">';
+                                    html += '       <span class="symbol sumbol-' + (tagData.initialsState ? tagData.initialsState : '') + ' mr-2">';
+                                   // html += '           <span class="symbol-label" style="background-image: url(\''+ (tagData.pic ? tagData.pic : '') + '\')">' + (tagData.initials ? tagData.initials : '') + '</span>';
+                                    html += '       </span>';
+                                    html += '       <div class="d-flex flex-column">';
+                                    html += '           <a href="#" class="text-dark-75 text-hover-primary font-weight-bold">'+ (tagData.value ? tagData.value : '') + '</a>';
+                                    html += '           <span class="text-muted font-weight-bold">' + (tagData.kod ? tagData.kod : '') + '</span>';
+                                    html += '       </div>';
+                                    html += '   </div>';
+                                    html += '</div>';
+
+                                    return html;
+                                } catch (err) { }
+                            }
+                        },
+                        transformTag: function (tagData) {
+                            tagData.class = 'tagify__tag tagify__tag--primary';
+                        },
+                        dropdown: {
+                            classname: "color-blue",
+                            enabled: 1,
+                            maxItems: 5
+                        }
+                    });
+
+            }
+
+            return {
+                // public functions
+                init: function() {
+
+                    Gruplar();
+                }
+            };
+        }();
+
+        jQuery(document).ready(function() {
+            CokluSelectList.init();
+        });
+    </script>
+}

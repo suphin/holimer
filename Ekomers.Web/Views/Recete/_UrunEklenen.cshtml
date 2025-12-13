@@ -1,0 +1,82 @@
+﻿@model ReceteUrunlerVM
+
+@{
+    var kurlar = (KurlarVM)ViewBag.Kurlar;
+}
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #EklenenUrunlerTablo tbody tr:hover {
+        background-color: #f0f0f0;
+    }
+</style>
+<style>
+
+
+    #EklenenUrunlerTablo th {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 2px !important;
+    }
+
+    #EklenenUrunlerTablo td {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 4px !important;
+    }
+</style>
+ 
+
+<table class="table table-sm table-bordered TableSmallFont" id="EklenenUrunlerTablo" width="100%" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Sıra No</th>
+            <th>Grup</th>
+            <th>Alt Grup</th>
+            <th>Ürün Kodu</th>
+            <th>Ürün Adı</th>
+            <th>Birim</th>
+           
+            <th>Çıkar</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            var sayac = 1;
+         
+        }
+        @foreach (ReceteUrunlerVM item in Model.ReceteUrunlerVMListe)
+        {
+            
+
+
+           
+            <tr class="@(item.IsDelete ? "deleted" : "")">
+                <td>@sayac</td>
+                <td>@item.Grup</td>
+                <td>@item.AltGrup</td>
+                <td>@item.UrunKod</td>
+                <td>@item.UrunAd</td>
+                <td>@item.BirimAd</td>
+                
+                        <td>
+                            @if (!item.IsDelete)
+                            {
+                                <a href="javascript:void(0);" class="remove-item" data-id="@item.ID">Çıkar</a>
+                            }
+                    </td>
+            </tr>
+            sayac = sayac + 1;
+           
+           
+        }
+
+    </tbody>
+ 
+
+
+</table>
+
+
+@* <div class="text-right">
+    <button onclick="UrunKaydet('4')" class="btn btn-sm btn-success font-weight-bold" type="button">Ürünleri Kaydet</button>
+</div> *@

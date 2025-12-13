@@ -1,0 +1,20 @@
+﻿@model MalzemelerVM
+ 
+<label asp-for="Grup" class="control-label"></label>
+<select id="GrupID" name="GrupID" class="form-control form-control-sm" required>
+
+    @foreach (var item in Model.MalzemeGrupListe.Where(p => p.ParentID == 0))
+    {
+
+        <optgroup label="@item.Ad">
+            @foreach (var sub in Model.MalzemeGrupListe.Where(p => p.ParentID == item.ID))
+            {
+                <option value="@sub.ID"
+                        selected="@(Model.AltGrupID == sub.ID ? "selected" : null)">
+                    @sub.Ad
+                </option>
+
+            }
+        </optgroup>
+    }
+</select>

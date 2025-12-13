@@ -1,0 +1,189 @@
+﻿@model MalzemelerVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Malzeme Stok Durumu";
+}
+@section CSSection {
+    @* <link href="~/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet"> *@
+    <link href="assets1/plugins/custom/datatables/datatables.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+}
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #AnaTablo tr:hover {
+        background-color: #f0f0f0;
+    }
+    /* Seçili satırın arka plan rengini değiştir */
+    #AnaTablo tr.selected {
+        background-color: #d0e4f1;
+    }
+
+    #AnaTablo .form-control {
+        height: 14px !important;
+    }
+
+    #AnaTablo th {
+        height: 18px !important;
+        font-size: 11px !important;
+    }
+
+    #AnaTablo td {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 4px !important;
+    }
+
+    .modal-xl {
+        max-width: 1340px !important;
+    }
+</style>
+<div class="card shadow">
+    <div class="card-body">
+        <div class="text-left">
+            <h1 class="h4 mb-0 text-gray-800">Malzemeler</h1>
+            <h5 class="mb-0 text-gray-800">Malzemelerin giriş safyası.</h5>
+        </div>
+    </div>
+</div>
+
+<br />
+
+<div class="card shadow">
+    <div class="card-header">
+        Arama Seçenekleri
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <form asp-action="MalzemeDepoDurum" asp-controller="Stok" method="post" name="VeriFiltre" id="VeriFiltre">
+                <table class="table table-bordered table-sm TableSmallFont" width="100%" cellspacing="0">
+                    <tr>
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="Kod" class="control-label"></label>
+                                <input asp-for="Kod" class="form-control form-control-sm" />
+
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="Ad" class="control-label"></label>
+                                <input asp-for="Ad" class="form-control form-control-sm" />
+
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="DepoAd" class="control-label"></label>
+                                <select asp-for="DepoID" class="form-control form-control-sm" asp-items="@ViewBag.DepoListe" required></select>
+                            </div>
+                        </td>  
+                        <td>
+                            <div class="form-group">
+                                <label class="control-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary form-control btn-sm">Ara</button>
+
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+</div>
+<br />
+<div class="card card-custom" >
+    <div class="card-header py-2">
+        <div class="card-title">
+            <h3 class="card-label">KAYIT LİSTESİ</h3>
+        </div>
+        <div class="card-toolbar">
+         @*    <button type="button"  class="btn btn-primary print btn-sm" onclick="Yazdir2('#AnaTablo')" >
+                <i class="la la-print"></i> Yazdır
+            </button> *@
+            @{
+                await Html.RenderPartialAsync("_PartialDisaAktar");
+            }
+        </div>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            @* <table class="table table-sm table-bordered TableSmallFont" id="AnaTablo" width="100%" cellspacing="0"> *@
+            <table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+                <thead>
+                    <tr> 
+                        <th style="width:70px">Kayıt No</th>  
+                        <th>Depo Ad</th>  
+                        <th>Malzeme Kod</th>  
+                        <th>Malzeme Ad</th>  
+                        <th>Giren Miktar</th>
+                        <th>Çıkan Miktar</th>
+                        <th>Kalan Miktar</th>
+                        <th class="no-print">Kritik Miktar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var sayac = 1;
+                    }
+                    @foreach (MalzemelerVM item in Model.MalzemelerVMListe)
+                    {
+
+                        <tr> 
+                            <td>@sayac</td>
+                            <td>@item.DepoAd</td>
+                            <td>@item.Kod</td>
+                            <td>@item.Ad</td>                            
+                            <td class="text-right">@String.Format("{0:n2}", item.GirenMiktar)</td>
+                            <td class="text-right">@String.Format("{0:n2}", item.CikanMiktar)</td>
+                            <td class="text-right"><b>@String.Format("{0:n2}", item.KalanMiktar)</b></td>
+                            <td class="text-right no-print">@String.Format("{0:n2}", item.KritikMiktar)</td>
+                        </tr>
+                        sayac = sayac + 1;
+                    }
+
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+<br />
+
+<div id="ModalGoruntule" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div id="goruntuleFormDiv"></div>
+    </div>
+</div>
+ 
+ 
+@section JSSection {
+
+   @*  <script src="~/assets1/js/pages/crud/forms/widgets/select2.js?v=7.0.5"></script>
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script> *@
+    <script src="assets1/plugins/custom/datatables/datatables.bundle.js?v=7.0.5"></script>
+    <script src="assets1/js/pages/crud/datatables/extensions/buttonsCustom.js?v=7.0.5"></script>
+    <script src="js/select2.js?v=7.0.5"></script>
+    <script>
+        // $.extend($.fn.dataTable.defaults, {
+        //     ordering: false,
+        //     iDisplayLength: 50
+        // });
+        // $(document).ready(function() {
+        //     $('#AnaTablo').DataTable({
+        //         language: {
+        //             url: '/js/i18n/DataTables-TR.json'
+        //         }
+        //     });
+        // });
+
+    </script>
+ 
+   
+   
+
+}
+
+

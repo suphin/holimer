@@ -1,0 +1,99 @@
+﻿@model MalzemelerVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<form asp-controller="Iade" asp-action="Malzeme_VeriEkle" method="post" name="Malzeme_VeriEkle" id="Malzeme_VeriEkle">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Malzeme Ekle</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered TableSmallFont" width="100%" cellspacing="0">
+                     
+                    
+                    <tr>
+                        <td> <label asp-for="BirimID" class="control-label"></label></td>
+                        <td>
+                            <select asp-for="BirimID" class="form-control form-control-sm" asp-items="@ViewBag.MalzemeBirimListe" id="MalzemeBirimListe"></select>
+
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="TipID" class="control-label"></label></td>
+                        <td>
+                            <select asp-for="TipID" class="form-control form-control-sm" asp-items="@ViewBag.MalzemeTipiListe" id="MalzemeTipiListe"></select>
+
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="Kod" class="control-label"></label></td>
+                        <td><input asp-for="Kod" class="form-control form-control-sm" required /></td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="Ad" class="control-label"></label></td>
+                        <td><input asp-for="Ad" class="form-control form-control-sm" required /></td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="Kdv" class="control-label"></label></td>
+                        <td><input asp-for="Kdv" class="form-control form-control-sm" /></td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="KritikMiktar" class="control-label"></label></td>
+                        <td><input asp-for="KritikMiktar" class="form-control form-control-sm" required /></td>
+                    </tr>
+                    <tr>
+                        <td><label class="control-label">Açıklama</label></td>
+                        <td>
+
+                            <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+
+                        </td>
+                    </tr>
+                    @*  <tr>
+                    <td colspan="2" class="text-right"><button type="submit" class="btn btn-sm btn-success width150">Ekle</button></td>
+                    </tr> *@
+                </table>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <input type="hidden" value="@Model.AltGrupID" id="GrupID" name="GrupID" />
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+        </div>
+    </div>
+</form>
+
+<script>
+    $(document).ready(function () {
+        $('#Malzeme_VeriEkle').on('submit', function (e) {
+            e.preventDefault(); // Sayfanın yenilenmesini engelle
+
+            var form = $(this);
+            var actionUrl = form.attr('action');
+            var formData = form.serialize(); // Form verilerini al
+
+            $.ajax({
+                type: 'POST',
+                url: actionUrl,
+                data: formData,
+                success: function (response) {
+                    // Başarılı işlem sonrası yapılacaklar
+                    // alert('Veri başarıyla eklendi.');
+                    $('#DivAltKategori').html(response);
+                    // Modalı kapatmak veya sayfayı yenilemek isteyebilirsiniz
+                    $('#ModalGoruntule').modal('hide');
+                    //location.reload(); // Sayfayı yenile
+                },
+                error: function (xhr, status, error) {
+                    // Hata işlemleri
+                    alert('Bir hata oluştu: ' + xhr.responseText);
+                }
+            });
+        });
+    });
+</script>

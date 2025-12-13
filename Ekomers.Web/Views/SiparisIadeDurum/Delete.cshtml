@@ -1,0 +1,73 @@
+﻿@model SiparisIadeDurum
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+
+    <!-- Page Heading -->
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="form-group text-left">
+                <h1 class="h4 mb-0 text-gray-800">TANIMLAMALAR</h1>
+                <h5 class="mb-0 text-gray-800">Kayıtlarının silinmesi safyası.</h5>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="card shadow">
+        <div class="card-header py-2">
+            <div class="row">
+                <div class="col-md-3"><span class="font-weight-bold"> LİSTE </span></div>
+                <div class="col-md-9 text-right">
+                    <a asp-action="Index" class="btn btn-success btn-sm">Listeye Dön</a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <dl class="dl-horizontal">
+                <dt>
+                    @Html.DisplayNameFor(model => model.Ad)
+                </dt>
+                <dd>
+                    @Html.DisplayFor(model => model.Ad)
+                </dd>
+                <dt>
+                    @Html.DisplayNameFor(model => model.Aciklama)
+                </dt>
+                <dd>
+                    @Html.DisplayFor(model => model.Aciklama)
+                </dd>
+                <dt>
+                    @Html.DisplayNameFor(model => model.IsActive)
+                </dt>
+                <dd>
+                    @Html.DisplayFor(model => model.IsActive)
+                </dd>
+                <dt>
+                    @Html.DisplayNameFor(model => model.IsDelete)
+                </dt>
+                <dd>
+                    @Html.DisplayFor(model => model.IsDelete)
+                </dd>
+                <dt>
+                    @Html.DisplayNameFor(model => model.CreateDate)
+                </dt>
+                <dd>
+                    @Html.DisplayFor(model => model.CreateDate)
+                </dd>
+                <dt>
+                    @Html.DisplayNameFor(model => model.DeleteDate)
+                </dt>
+                <dd>
+                    @Html.DisplayFor(model => model.DeleteDate)
+                </dd>
+            </dl>
+            <form asp-action="Delete">
+                <input type="hidden" asp-for="ID" />
+                <input type="submit" value="Kayıt Sil" class="btn btn-danger" />
+
+            </form>
+        </div>
+    </div>
+

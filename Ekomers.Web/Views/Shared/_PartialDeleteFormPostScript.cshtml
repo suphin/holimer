@@ -1,0 +1,31 @@
+﻿ @if (User.HasClaim("Authorize", "Delete"))
+{
+	<script type="text/javascript">
+		$(document).ready(function () {
+			// Formun submit olayı
+			$('#VeriSil').on('submit', function (e) {
+				e.preventDefault(); // Formun varsayılan submit davranışını engeller
+
+				var form = $(this);
+				var actionUrl = form.attr('action'); // asp-action ile belirtilen URL'yi alır
+				var formData = form.serialize(); // Form verilerini alır
+
+				$.ajax({
+					type: 'POST',
+					url: actionUrl,
+					data: formData,
+					success: function (response) {
+						 
+						$('#ModalVeri').modal('hide');
+						$('tr[data-id="' + response + '"]').remove();
+							toastr.success('Silme İşlemi Başarılı', 'Başarılı');
+					},
+					error: function (xhr, status, error) {
+						 
+						toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+					}
+				});
+			});
+		});
+	</script>
+}

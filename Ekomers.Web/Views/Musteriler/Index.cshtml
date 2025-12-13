@@ -1,0 +1,72 @@
+﻿@model MusterilerVM
+@{
+	ViewData["Title"] = "Müşteri Listesi";
+	ViewData["Description"] = "Çalışma Sayfası - Müşteriler";
+}
+
+
+
+<!--begin::Card-->
+<div class="card card-custom">
+	<div class="card-header flex-wrap py-3">
+		<div class="card-title">
+			<h3 class="card-label">
+				Musteriler Tanımlama
+				<span class="d-block text-muted pt-2 font-size-sm">Detay</span>
+			</h3>
+		</div>
+		<div class="card-toolbar">
+		 
+			 @{
+				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_CreateButton.cshtml");
+			}
+			@{
+				await Html.RenderPartialAsync("_PartialHaritaGenel", new AuthorizeCrudVM
+				{
+					ModulID = (int)ModulEnum.Musteriler,
+					HaritaEkle = true
+				});
+
+			}
+		</div>
+	</div>
+	<div class="card-body " id="cardBody">
+		<!--begin: Datatable-->
+		@{
+			await Html.RenderPartialAsync("_List", Model);
+		}
+		<!--end: Datatable-->
+	</div>
+</div>
+<!--end::Card-->
+@{
+	//await Html.RenderPartialAsync("_PartialModalVeri");
+	await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+
+@{
+	await Html.RenderPartialAsync("_PartialModalDosya",
+	new AuthorizeCrudVM { Controller = "Musteriler", HaritaEkle = true });
+}
+ 
+@section JSSection {
+	@{
+		await Html.RenderPartialAsync("~/Views/Sehirler/_SehirlerScript.cshtml");
+	}
+	 
+	@{
+		await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+		new AuthorizeCrudVM
+		{
+			Controller = "Musteriler",
+			ModulID = (int)ModulEnum.Musteriler,
+			DosyaYolu = "Musteriler"
+		});
+	}
+	@{
+		await Html.RenderPartialAsync("_PartialMapScript");
+	}
+ 
+}
+
+

@@ -1,0 +1,94 @@
+﻿@model AuthorizeCrudVM
+<span>
+    @if (User.HasClaim("Authorize", "Edit"))
+    {
+       @*  <a href="#" class="btn btn-icon btn-light btn-hover-success btn-sm mr-1 crudBtn" onclick="VeriGetir2('@Model.ID')"  data-toggle="modal" data-target="#ModalVeri"  title="Düzenle" data-id="@Model.ID">
+            <span class="svg-icon svg-icon-md svg-icon-success">
+                <!--begin::Svg Icon | path:assets/media/svg/icons/Communication/Write.svg-->
+                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                        <rect x="0" y="0" width="24" height="24"></rect>
+                        <path d="M12.2674799,18.2323597 L12.0084872,5.45852451 C12.0004303,5.06114792 12.1504154,4.6768183 12.4255037,4.38993949 L15.0030167,1.70195304 L17.5910752,4.40093695 C17.8599071,4.6812911 18.0095067,5.05499603 18.0083938,5.44341307 L17.9718262,18.2062508 C17.9694575,19.0329966 17.2985816,19.701953 16.4718324,19.701953 L13.7671717,19.701953 C12.9505952,19.701953 12.2840328,19.0487684 12.2674799,18.2323597 Z" fill="#000000" fill-rule="nonzero" transform="translate(14.701953, 10.701953) rotate(-135.000000) translate(-14.701953, -10.701953)"></path>
+                        <path d="M12.9,2 C13.4522847,2 13.9,2.44771525 13.9,3 C13.9,3.55228475 13.4522847,4 12.9,4 L6,4 C4.8954305,4 4,4.8954305 4,6 L4,18 C4,19.1045695 4.8954305,20 6,20 L18,20 C19.1045695,20 20,19.1045695 20,18 L20,13 C20,12.4477153 20.4477153,12 21,12 C21.5522847,12 22,12.4477153 22,13 L22,18 C22,20.209139 20.209139,22 18,22 L6,22 C3.790861,22 2,20.209139 2,18 L2,6 C2,3.790861 3.790861,2 6,2 L12.9,2 Z" fill="#000000" fill-rule="nonzero" opacity="0.3"></path>
+                    </g>
+                </svg>
+                <!--end::Svg Icon-->
+            </span>
+        </a> *@
+        <a href="@Model.Controller/VeriGoruntule2?view=_VeriGetir2&VeriID=@(Model.ID)&pageIndex=@ViewBag.PageIndex&pageSize=@ViewBag.PageSize" class="btn btn-icon btn-light btn-hover-success btn-sm mr-1">
+            <span class="svg-icon svg-icon-md svg-icon-success">
+                <!--begin::Svg Icon | path:assets/media/svg/icons/Communication/Write.svg-->
+                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                        <rect x="0" y="0" width="24" height="24"></rect>
+                        <path d="M12.2674799,18.2323597 L12.0084872,5.45852451 C12.0004303,5.06114792 12.1504154,4.6768183 12.4255037,4.38993949 L15.0030167,1.70195304 L17.5910752,4.40093695 C17.8599071,4.6812911 18.0095067,5.05499603 18.0083938,5.44341307 L17.9718262,18.2062508 C17.9694575,19.0329966 17.2985816,19.701953 16.4718324,19.701953 L13.7671717,19.701953 C12.9505952,19.701953 12.2840328,19.0487684 12.2674799,18.2323597 Z" fill="#000000" fill-rule="nonzero" transform="translate(14.701953, 10.701953) rotate(-135.000000) translate(-14.701953, -10.701953)"></path>
+                        <path d="M12.9,2 C13.4522847,2 13.9,2.44771525 13.9,3 C13.9,3.55228475 13.4522847,4 12.9,4 L6,4 C4.8954305,4 4,4.8954305 4,6 L4,18 C4,19.1045695 4.8954305,20 6,20 L18,20 C19.1045695,20 20,19.1045695 20,18 L20,13 C20,12.4477153 20.4477153,12 21,12 C21.5522847,12 22,12.4477153 22,13 L22,18 C22,20.209139 20.209139,22 18,22 L6,22 C3.790861,22 2,20.209139 2,18 L2,6 C2,3.790861 3.790861,2 6,2 L12.9,2 Z" fill="#000000" fill-rule="nonzero" opacity="0.3"></path>
+                    </g>
+                </svg>
+                <!--end::Svg Icon-->
+            </span>
+        </a>
+    }
+</span>
+<span>
+    @if (User.HasClaim("Authorize", "View"))
+    {
+        <a href="#" class="btn btn-icon btn-light btn-hover-warning btn-sm mr-1 crudBtn" onclick="VeriGoruntule('@Model.ID')" data-toggle="modal" data-target="#ModalVeri" title="Görüntüle" data-id="@Model.ID">
+            <span class="svg-icon svg-icon-warning svg-icon-2x ">
+                <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\General\Search.svg-->
+                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                        <rect x="0" y="0" width="24" height="24" />
+                        <path d="M14.2928932,16.7071068 C13.9023689,16.3165825 13.9023689,15.6834175 14.2928932,15.2928932 C14.6834175,14.9023689 15.3165825,14.9023689 15.7071068,15.2928932 L19.7071068,19.2928932 C20.0976311,19.6834175 20.0976311,20.3165825 19.7071068,20.7071068 C19.3165825,21.0976311 18.6834175,21.0976311 18.2928932,20.7071068 L14.2928932,16.7071068 Z" fill="#000000" fill-rule="nonzero" opacity="0.3" />
+                        <path d="M11,16 C13.7614237,16 16,13.7614237 16,11 C16,8.23857625 13.7614237,6 11,6 C8.23857625,6 6,8.23857625 6,11 C6,13.7614237 8.23857625,16 11,16 Z M11,18 C7.13400675,18 4,14.8659932 4,11 C4,7.13400675 7.13400675,4 11,4 C14.8659932,4 18,7.13400675 18,11 C18,14.8659932 14.8659932,18 11,18 Z" fill="#000000" fill-rule="nonzero" />
+                    </g>
+                </svg><!--end::Svg Icon-->
+            </span>
+        </a>
+    }
+</span>
+ 
+<div class="dropdown dropdown-inline" data-toggle="tooltip" title="" data-placement="left">
+    <a href="#" class="btn btn-hover-light-primary btn-sm btn-icon" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <i class="ki ki-bold-more-hor"></i>
+    </a>
+    <div class="dropdown-menu p-0 m-0 dropdown-menu-md dropdown-menu-right" style="">
+        <!--begin::Navigation-->
+        <ul class="navi navi-hover">
+            <li class="navi-header font-weight-bold py-4">
+                <span class="font-size-lg">İşlemler:</span>
+
+            </li>
+            <li class="navi-separator mb-3 opacity-70"></li>
+            <li class="navi-item m-2 ml-4">
+                @if (Model.HaritaEkle)
+                {
+                     <a href="#" data-toggle="modal" data-target="#mapModal" class="btn btn-icon btn-light btn-hover-primary btn-sm mr-1 crudBtn" data-id="@Model.ID" data-modulid="@((int)Model.ModulID)">
+                    <span class="svg-icon svg-icon-primary svg-icon-2x">
+                        <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Map\Marker1.svg-->
+                        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                <rect x="0" y="0" width="24" height="24" />
+                                <path d="M5,10.5 C5,6 8,3 12.5,3 C17,3 20,6.75 20,10.5 C20,12.8325623 17.8236613,16.03566 13.470984,20.1092932 C12.9154018,20.6292577 12.0585054,20.6508331 11.4774555,20.1594925 C7.15915182,16.5078313 5,13.2880005 5,10.5 Z M12.5,12 C13.8807119,12 15,10.8807119 15,9.5 C15,8.11928813 13.8807119,7 12.5,7 C11.1192881,7 10,8.11928813 10,9.5 C10,10.8807119 11.1192881,12 12.5,12 Z" fill="#000000" fill-rule="nonzero" />
+                            </g>
+                        </svg><!--end::Svg Icon-->
+                    </span>
+                </a> 
+                }
+              
+                <a href="#" onclick="DosyaGetir('@Model.ID')" data-toggle="modal" data-target="#ModalDosyaEkle" class="btn btn-icon btn-light btn-hover-info btn-sm mr-1 crudBtn" data-id="@Model.ID">
+                    <span class="svg-icon svg-icon-info svg-icon-md">
+                        <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\General\Clip.svg-->
+                        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                <rect x="0" y="0" width="24" height="24" />
+                                <path d="M14,16 L12,16 L12,12.5 C12,11.6715729 11.3284271,11 10.5,11 C9.67157288,11 9,11.6715729 9,12.5 L9,17.5 C9,19.4329966 10.5670034,21 12.5,21 C14.4329966,21 16,19.4329966 16,17.5 L16,7.5 C16,5.56700338 14.4329966,4 12.5,4 L12,4 C10.3431458,4 9,5.34314575 9,7 L7,7 C7,4.23857625 9.23857625,2 12,2 L12.5,2 C15.5375661,2 18,4.46243388 18,7.5 L18,17.5 C18,20.5375661 15.5375661,23 12.5,23 C9.46243388,23 7,20.5375661 7,17.5 L7,12.5 C7,10.5670034 8.56700338,9 10.5,9 C12.4329966,9 14,10.5670034 14,12.5 L14,16 Z" fill="#000000" fill-rule="nonzero" transform="translate(12.500000, 12.500000) rotate(-315.000000) translate(-12.500000, -12.500000) " />
+                            </g>
+                        </svg><!--end::Svg Icon-->
+                    </span>
+                </a>
+            </li>
+        </ul>
+        <!--end::Navigation-->
+    </div>
+</div>

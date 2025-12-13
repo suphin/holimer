@@ -1,0 +1,165 @@
+﻿@model ReportRequest
+@{
+    ViewData["Title"] = "Raporlar";
+}
+
+
+<div class="card shadow">
+    <div class="card-header">
+        Rapor Çalıştır
+    </div>
+    <div class="card-body">
+        <form action="Reports/Run" method="post" class="row g-4" name="filtreform" id="filtreform" target="reportFrame">
+            @Html.AntiForgeryToken()
+
+
+            <!-- Parametreler -->
+          
+                <div class="col-12 col-md-12 mb-5">
+                    <label for="reportKey" class="form-label">Rapor</label>
+                    <select id="reportKey" name="ReportKey" class="kt_select2" data-live-search="true" data-size="5" required>
+                        <option value="">Seçiniz…</option>
+                        <option selected value="SalesByDay">Eczeneler (SP)</option>
+                    <option value="ViewSample">Eczeneler (View)</option>
+                    </select>
+                    <div class="invalid-feedback">Lütfen bir rapor seçin.</div>
+                </div>
+         
+            <div class="col-12 col-md-3">
+                <label for="startDate" class="form-label">Başlangıç Tarihi</label>
+                <input id="startDate" name="Parameters[StartDate]" value="@DateTime.Now" type="date" class="form-control form-control-sm">
+            </div>
+            <div class="col-12 col-md-3">
+                <label for="endDate" class="form-label">Bitiş Tarihi</label>
+                <input id="endDate" name="Parameters[EndDate]" type="date" value="@DateTime.Now" class="form-control form-control-sm">
+            </div>
+            <!-- Sayfalama -->
+            <div class="col-12 col-md-3">
+                <label for="pageIndex" class="form-label">Sayfa</label>
+                <div class="input-group">
+                    <span class="input-group-text form-control-sm">#</span>
+                    <input id="pageIndex" type="number" name="PageIndex" value="1" min="1" class="form-control form-control-sm">
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <label for="pageSize" class="form-label">Sayfa Boyutu</label>
+                <div class="input-group">
+                    <span class="input-group-text form-control-sm">#</span>
+                    <input id="pageSize" type="number" name="PageSize" value="17" min="1" class="form-control form-control-sm">
+                </div>
+            </div>
+           
+            <!-- Gönder -->
+            <div class="col-12 mt-5">
+                <input type="hidden" id="ExportAll" name="ExportAll" value="false" />
+                <button type="reset" class="btn btn-outline-secondary">Temizle</button> 
+                <button type="submit" class="btn btn-primary mr-2" id="btnRun">Çalıştır</button>
+                
+            </div>
+        </form>
+
+    </div>
+</div>
+
+
+<style>
+
+
+    #map-container {
+        display: flex;
+        height: 100%;
+        width: 100%;
+    }
+
+    #mapFrame {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+    }
+
+    #street-view {
+        flex: 1;
+        width: 50%; /* Başlangıçta yer kaplamaz */
+        height: 100%;
+    }
+
+    #controls {
+        padding: 10px;
+        background: #f4f4f4;
+        border-bottom: 1px solid #ccc;
+    }
+</style>
+<div class="modal fade" id="reportModal" tabindex="-1" role="dialog" aria-labelledby="mapModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-fullscreen" role="document">
+        <div class="modal-content">
+            @* <div class="modal-header">
+				<h5 class="modal-title" id="mapModalLabel">Harita Görüntüleyici</h5>				
+			</div> *@
+            <div class="modal-body" style="height: calc(100% - 56px);overflow: hidden; position: relative;">
+
+                <div id="map-container">
+                    <div id="frameLoading" class="position-absolute top-50 start-50 translate-middle text-center">
+                        <div class="spinner-border" role="status" aria-hidden="true"></div>
+                        <div class="mt-2 small text-muted">Yükleniyor…</div>
+                    </div>
+                    <iframe name="reportFrame" id="reportFrame" frameborder="0" class="w-100 border-0"></iframe>
+                </div>
+            </div>
+            <div class="modal-footer">
+
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    #mapModal .modal-footer {
+        padding: 0 !important;
+        padding-right: 1.5rem !important;
+    }
+
+    #mapModal .modal-body {
+        padding: 0 !important;
+        padding-right: 1.5rem !important;
+    }
+</style>
+
+@section JSSection {
+    <script src="js/select2.js?v=7.0.5"></script>
+    <script>
+        const form   = document.getElementById('filtreform');
+        const modal  = new bootstrap.Modal(document.getElementById('reportModal'));
+        const frame  = document.getElementById('reportFrame');
+        const loader = document.getElementById('frameLoading');
+
+        // Kesin URL: asp-action ile zaten doğru gelir ama Url.Action ile explicit verelim
+        form.action = '@Url.Action("Run", "Reports")';
+
+        // Güvenli: submit anında hedefi tekrar set et (butonlar formtarget ile override edemesin)
+        form.addEventListener('submit', function () {
+          form.setAttribute('target', 'reportFrame');
+          loader.classList.remove('d-none');
+          // modalı önce aç, sonra load olunca spinner’ı gizle
+          const onload = () => { loader.classList.add('d-none'); frame.removeEventListener('load', onload); };
+          frame.addEventListener('load', onload);
+          modal.show();
+        });
+    </script>
+
+    @* 
+    <script>
+        $('#mapModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+
+            var modal = $(this); 
+             
+
+
+            var mapFrame = modal.find('#mapFrame');
+            mapFrame.attr('src', '/Map/KoordinatGetir?KayitID='+dataId+'&ModulID='+dataModulId);
+            mapFrame.show();
+
+        });
+    </script> *@
+
+}

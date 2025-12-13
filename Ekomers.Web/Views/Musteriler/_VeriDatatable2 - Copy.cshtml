@@ -1,0 +1,219 @@
+﻿@model MusterilerVM
+
+<style>
+    .row.g-3.align-items-start.border.rounded.p-3.mb-3:hover {
+        background-color: rgba(var(--bs-primary-rgb, 13,110,253), .06);
+        border-color: rgba(var(--bs-primary-rgb, 13,110,253), .5);
+    }
+</style>
+ 
+  
+@foreach (var m in Model.MusterilerVMListe)
+{
+    <div class="row g-3 align-items-start border rounded p-3 mb-3">
+
+        <!-- küçük resim -->
+        <div class="col-auto">
+            @if (m.IsKurum)
+            {
+                <span class="svg-icon svg-icon-primary svg-icon-2x">
+                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Home\Building.svg-->
+                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                            <rect x="0" y="0" width="24" height="24" />
+                            <path d="M13.5,21 L13.5,18 C13.5,17.4477153 13.0522847,17 12.5,17 L11.5,17 C10.9477153,17 10.5,17.4477153 10.5,18 L10.5,21 L5,21 L5,4 C5,2.8954305 5.8954305,2 7,2 L17,2 C18.1045695,2 19,2.8954305 19,4 L19,21 L13.5,21 Z M9,4 C8.44771525,4 8,4.44771525 8,5 L8,6 C8,6.55228475 8.44771525,7 9,7 L10,7 C10.5522847,7 11,6.55228475 11,6 L11,5 C11,4.44771525 10.5522847,4 10,4 L9,4 Z M14,4 C13.4477153,4 13,4.44771525 13,5 L13,6 C13,6.55228475 13.4477153,7 14,7 L15,7 C15.5522847,7 16,6.55228475 16,6 L16,5 C16,4.44771525 15.5522847,4 15,4 L14,4 Z M9,8 C8.44771525,8 8,8.44771525 8,9 L8,10 C8,10.5522847 8.44771525,11 9,11 L10,11 C10.5522847,11 11,10.5522847 11,10 L11,9 C11,8.44771525 10.5522847,8 10,8 L9,8 Z M9,12 C8.44771525,12 8,12.4477153 8,13 L8,14 C8,14.5522847 8.44771525,15 9,15 L10,15 C10.5522847,15 11,14.5522847 11,14 L11,13 C11,12.4477153 10.5522847,12 10,12 L9,12 Z M14,12 C13.4477153,12 13,12.4477153 13,13 L13,14 C13,14.5522847 13.4477153,15 14,15 L15,15 C15.5522847,15 16,14.5522847 16,14 L16,13 C16,12.4477153 15.5522847,12 15,12 L14,12 Z" fill="#000000" />
+                            <rect fill="#FFFFFF" x="13" y="8" width="3" height="3" rx="1" />
+                            <path d="M4,21 L20,21 C20.5522847,21 21,21.4477153 21,22 L21,22.4 C21,22.7313708 20.7313708,23 20.4,23 L3.6,23 C3.26862915,23 3,22.7313708 3,22.4 L3,22 C3,21.4477153 3.44771525,21 4,21 Z" fill="#000000" opacity="0.3" />
+                        </g>
+                    </svg><!--end::Svg Icon-->
+                </span>
+            }
+            else
+            {
+                <span class="svg-icon svg-icon-primary svg-icon-2x">
+                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\General\User.svg-->
+                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                        <polygon points="0 0 24 0 24 24 0 24" />
+                        <path d="M12,11 C9.790861,11 8,9.209139 8,7 C8,4.790861 9.790861,3 12,3 C14.209139,3 16,4.790861 16,7 C16,9.209139 14.209139,11 12,11 Z" fill="#000000" fill-rule="nonzero" opacity="0.3" />
+                        <path d="M3.00065168,20.1992055 C3.38825852,15.4265159 7.26191235,13 11.9833413,13 C16.7712164,13 20.7048837,15.2931929 20.9979143,20.2 C21.0095879,20.3954741 20.9979143,21 20.2466999,21 C16.541124,21 11.0347247,21 3.72750223,21 C3.47671215,21 2.97953825,20.45918 3.00065168,20.1992055 Z" fill="#000000" fill-rule="nonzero" />
+                    </g>
+                </svg><!--end::Svg Icon-->
+            </span>
+            }
+        </div>
+
+        <!-- Sağ taraftaki içerik: iki alt row -->
+        <div class="col">
+            <!-- 1. satır: Adsoyad, şehir ve tel  |  müşteri tip durumu -->
+            <div class="row align-items-center">
+                <div class="col">
+                    <div class="fw-semibold">@m.AdSoyad</div>
+                    <div class="text-muted">
+                        @m.Sehir
+                        @if (!string.IsNullOrWhiteSpace(m.Telefon))
+                        {
+                            <text> • <a href="tel:@m.Telefon">@m.Telefon</a></text>
+                        }
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <span class="badge">
+                        @m.TipAd
+                     
+                    </span>
+                    <span>
+                        @if (User.HasClaim("Authorize", "Edit"))
+                        {                            
+                            <a href="#" class="btn btn-icon btn-light btn-hover-success btn-sm mr-1 crudBtn" onclick="VeriGetir('@m.ID')" data-toggle="modal" data-target="#ModalVeri" title="Düzenle" data-id="@m.ID">
+                                <span class="svg-icon svg-icon-md svg-icon-success">
+                                    <!--begin::Svg Icon | path:assets/media/svg/icons/Communication/Write.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24"></rect>
+                                            <path d="M12.2674799,18.2323597 L12.0084872,5.45852451 C12.0004303,5.06114792 12.1504154,4.6768183 12.4255037,4.38993949 L15.0030167,1.70195304 L17.5910752,4.40093695 C17.8599071,4.6812911 18.0095067,5.05499603 18.0083938,5.44341307 L17.9718262,18.2062508 C17.9694575,19.0329966 17.2985816,19.701953 16.4718324,19.701953 L13.7671717,19.701953 C12.9505952,19.701953 12.2840328,19.0487684 12.2674799,18.2323597 Z" fill="#000000" fill-rule="nonzero" transform="translate(14.701953, 10.701953) rotate(-135.000000) translate(-14.701953, -10.701953)"></path>
+                                            <path d="M12.9,2 C13.4522847,2 13.9,2.44771525 13.9,3 C13.9,3.55228475 13.4522847,4 12.9,4 L6,4 C4.8954305,4 4,4.8954305 4,6 L4,18 C4,19.1045695 4.8954305,20 6,20 L18,20 C19.1045695,20 20,19.1045695 20,18 L20,13 C20,12.4477153 20.4477153,12 21,12 C21.5522847,12 22,12.4477153 22,13 L22,18 C22,20.209139 20.209139,22 18,22 L6,22 C3.790861,22 2,20.209139 2,18 L2,6 C2,3.790861 3.790861,2 6,2 L12.9,2 Z" fill="#000000" fill-rule="nonzero" opacity="0.3"></path>
+                                        </g>
+                                    </svg>
+                                    <!--end::Svg Icon-->
+                                </span>
+                            </a>
+                        }
+                    </span>
+                    <span>
+                        @if (User.HasClaim("Authorize", "View"))
+                        {                 
+                            <a href="#" class="btn btn-icon btn-light btn-hover-warning btn-sm mr-1 crudBtn" onclick="VeriGoruntule('@m.ID')" data-toggle="modal" data-target="#ModalVeri" title="Görüntüle" data-id="@m.ID">
+                                <span class="svg-icon svg-icon-warning svg-icon-2x ">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\General\Search.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24" />
+                                            <path d="M14.2928932,16.7071068 C13.9023689,16.3165825 13.9023689,15.6834175 14.2928932,15.2928932 C14.6834175,14.9023689 15.3165825,14.9023689 15.7071068,15.2928932 L19.7071068,19.2928932 C20.0976311,19.6834175 20.0976311,20.3165825 19.7071068,20.7071068 C19.3165825,21.0976311 18.6834175,21.0976311 18.2928932,20.7071068 L14.2928932,16.7071068 Z" fill="#000000" fill-rule="nonzero" opacity="0.3" />
+                                            <path d="M11,16 C13.7614237,16 16,13.7614237 16,11 C16,8.23857625 13.7614237,6 11,6 C8.23857625,6 6,8.23857625 6,11 C6,13.7614237 8.23857625,16 11,16 Z M11,18 C7.13400675,18 4,14.8659932 4,11 C4,7.13400675 7.13400675,4 11,4 C14.8659932,4 18,7.13400675 18,11 C18,14.8659932 14.8659932,18 11,18 Z" fill="#000000" fill-rule="nonzero" />
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            </a>
+                        }
+                    </span>
+                    <span>
+                        <a href="#" data-toggle="modal" data-target="#mapModal" class="btn btn-icon btn-light btn-hover-primary btn-sm mr-1 crudBtn" data-id="@m.ID" data-modulid="@ModulEnum.Musteriler">
+                            <span class="svg-icon svg-icon-primary svg-icon-2x">
+                                <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Map\Marker1.svg-->
+                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                        <rect x="0" y="0" width="24" height="24" />
+                                        <path d="M5,10.5 C5,6 8,3 12.5,3 C17,3 20,6.75 20,10.5 C20,12.8325623 17.8236613,16.03566 13.470984,20.1092932 C12.9154018,20.6292577 12.0585054,20.6508331 11.4774555,20.1594925 C7.15915182,16.5078313 5,13.2880005 5,10.5 Z M12.5,12 C13.8807119,12 15,10.8807119 15,9.5 C15,8.11928813 13.8807119,7 12.5,7 C11.1192881,7 10,8.11928813 10,9.5 C10,10.8807119 11.1192881,12 12.5,12 Z" fill="#000000" fill-rule="nonzero" />
+                                    </g>
+                                </svg><!--end::Svg Icon-->
+                            </span>
+                        </a>
+                    </span>
+                </div>
+            </div>
+            @if (m.TipID==(int)EnumMusteriTip.Musteri)
+            {
+            <!-- 2. satır: not  |  ekleyen ve tarih -->
+            <div class="row mt-2">
+                <div class="col">
+                    <div class="small">Bizim Hesap No: @(!string.IsNullOrWhiteSpace(m.BizimHesapNo) ? m.BizimHesapNo : "—")</div>
+                </div>               
+            </div>
+            <!-- 2. satır: not  |  ekleyen ve tarih -->
+            <div class="row mt-2">
+                <div class="col">
+                        <div class="small">Cari Bakiye :   @m.CariBakiyeTl </div>
+                </div>
+            </div>
+                <!-- 2. satır: not  |  ekleyen ve tarih -->
+                <div class="row mt-2">
+                    <div class="col">
+                        <div class="small">Para Birimi : @(!string.IsNullOrWhiteSpace(m.ParaBirimi) ? m.ParaBirimi : "—")</div>
+                    </div>
+                </div>
+            }
+         
+
+            <!-- 3. satır: not  |  ekleyen ve tarih -->
+            <div class="row mt-2">
+                <div class="col">
+                    <div class="small">@(!string.IsNullOrWhiteSpace(m.Not) ? m.Not : "—")</div>
+                </div>
+                <div class="col-auto text-muted small">
+                    @if (!string.IsNullOrWhiteSpace(m.KayitEden))
+                    {
+                        <text>@m.KayitEden — </text>
+                    }
+                    @m.KayitTarihi?.ToString("dd.MM.yyyy HH:mm")
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Sayfalama">
+        <ul class="pagination">
+            <li class="page-item @(Model.PageIndex == 1 ? "disabled" : "")">
+                <a class="page-link ajax-page"
+                   href="@Url.Action("IliskiMusteri","Crm", new { page = Model.PageIndex - 1, pageSize = Model.PageSize })">Önceki</a>
+            </li>
+
+            @{
+                var start = Math.Max(1, Model.PageIndex - 2);
+                var end = Math.Min(Model.TotalPages, Model.PageIndex + 2);
+                for (var i = start; i <= end; i++)
+                {
+                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                        <a class="page-link ajax-page"
+                           href="@Url.Action("IliskiMusteri", "Crm", new { page = i, pageSize = Model.PageSize })">@i</a>
+                    </li>
+                }
+            }
+
+            <li class="page-item @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link ajax-page"
+                   href="@Url.Action("IliskiMusteri", "Crm", new { page = Model.PageIndex + 1, pageSize = Model.PageSize })">Sonraki</a>
+            </li>
+        </ul>
+        <span class="ms-2 small text-muted">
+            Toplam: @Model.TotalCount kayıt — Sayfa @Model.PageIndex/@Model.TotalPages
+        </span>
+    </nav>
+}
+
+<script type="text/javascript">
+
+    var $container = $('#CrmGovde');
+    var withPartial = url => url + (url.includes('?') ? '&' : '?') + 'partial=true';
+
+    function loadPartial(url) {
+      $container.addClass('opacity-50 position-relative');
+      $container.append('<div id="spinner" class="position-absolute top-50 start-50 translate-middle">Yükleniyor…</div>');
+      return $.get(withPartial(url))
+        .done(html => { $container.html(html); })
+        .always(() => { $('#spinner').remove(); $container.removeClass('opacity-50 position-relative'); });
+    }
+
+    $(document).on('click', 'a.ajax-page', function (e) {
+      e.preventDefault();
+      const href = this.href;
+      loadPartial(href).then(() => history.pushState(null, '', href));
+    });
+
+
+    $(document).on('change', '#pageSizeSelect', function () {
+      const size = $(this).val();
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', 1);
+      url.searchParams.set('pageSize', size);
+      loadPartial(url.toString()).then(() => history.pushState(null, '', url.toString()));
+    });
+
+
+    window.addEventListener('popstate', function () {
+      loadPartial(window.location.href);
+    });
+</script>

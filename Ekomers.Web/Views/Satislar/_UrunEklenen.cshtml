@@ -1,0 +1,75 @@
+﻿@model SatislarUrunlerVM
+
+@{
+}
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #EklenenUrunlerTablo tbody tr:hover {
+        background-color: #f0f0f0;
+    }
+</style>
+<style>
+
+
+    #EklenenUrunlerTablo th {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 2px !important;
+    }
+
+    #EklenenUrunlerTablo td {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 4px !important;
+    }
+</style>
+ 
+
+<table class="table table-sm table-bordered TableSmallFont" id="EklenenUrunlerTablo" width="100%" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Sıra No</th>
+            <th>Ürün Kodu</th>
+            <th>Ürün Adı</th>
+            <th>Birim</th>
+            <th>Miktar</th>
+       
+            <th>Çıkar</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            var sayac = 1;
+            double T1 = 0;
+            double T2 = 0;
+            double T3 = 0;
+            double T4 = 0;
+        }
+        @foreach (SatislarUrunlerVM item in Model.SatislarUrunlerVMListe)
+        {
+
+            <tr class="@(item.IsDelete ? "deleted" : "")">
+                <td>@sayac</td>
+                <td>@item.UrunKod</td>
+                <td>@item.UrunAd</td>
+                <td>@item.BirimAd</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Miktar)</td>
+             
+                        <td>
+                            @if (!item.IsDelete)
+                            {
+                                <a href="javascript:void(0);" class="remove-item" data-id="@item.ID">Çıkar</a>
+                            }
+                    </td>
+            </tr>
+            sayac = sayac + 1;
+                  
+           
+        }
+
+    </tbody>
+ 
+
+
+</table>
+ 

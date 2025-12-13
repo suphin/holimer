@@ -1,0 +1,46 @@
+﻿@model AuthorizationCategory
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+    <!-- Page Heading -->
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="form-group text-left">
+                <h1 class="h4 mb-0 text-gray-800">TANIMLAMALAR</h1>
+                <h5 class="mb-0 text-gray-800">Kayıtlarının giriş safyası.</h5>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="card shadow">
+        <div class="card-header py-2">
+            <div class="row">
+                <div class="col-md-3"><span class="font-weight-bold"> LİSTE </span></div>
+                <div class="col-md-9 text-right">
+                    <a asp-action="Index" class="btn btn-success btn-sm">Listeye Dön</a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="form-group">
+                    <label asp-for="Ad" class="control-label"></label>
+                    <input asp-for="Ad" class="form-control" />
+                    <span asp-validation-for="Ad" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Aciklama" class="control-label"></label>
+                    <input asp-for="Aciklama" class="form-control" />
+                    <span asp-validation-for="Aciklama" class="text-danger"></span>
+                </div>
+           
+                <div class="form-group text-right">
+                    <input type="submit" value="Kaydet" class="btn btn-success" />
+                </div>
+            </form>
+        </div>
+    </div>
+

@@ -1,0 +1,223 @@
+﻿@model UretimVM;
+@{
+    ViewData["Title"] = "Üretim Planlama Raporu";
+    var malzemeler = (List<MalzemelerVM>)ViewBag.Malzemeler ;
+}
+@section CSSection {
+ <link href="~/assets1/plugins/custom/datatables/datatables.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+}
+<div class= "card shadow">
+    <div class="card-header">
+        Arama Seçenekleri
+    </div>
+    <div class="card-body">
+      
+            <form asp-action="Rapor" asp-controller="Uretim" method="post" name="VeriFiltre" id="VeriFiltre">
+            @Html.AntiForgeryToken()
+            <div class="form-group row">
+                <div class="col-12 col-md-6">
+
+                    <label asp-for="Aciklama" class="control-label"></label>
+                    <input asp-for="Aciklama" class="form-control"   />
+                    <span asp-validation-for="Aciklama" class="text-danger"></span>
+                </div>
+                   <div class="col-12 col-md-3">
+                <label asp-for="SiparisTarihiBas" class="control-label"></label>
+                                <input asp-for="SiparisTarihiBas" class="form-control" type="date" />
+                </div>
+                <div class="col-12 col-md-3">
+                    <label asp-for="SiparisTarihiSon" class="control-label"></label>
+                                <input asp-for="SiparisTarihiSon" class="form-control" type="date" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-12 col-md-10">
+                    <label asp-for="Malzeme" class="control-label"></label>
+                   <input id="tagifyMalzemeler" class="form-control tagify " name='tagifyMalzemeler' placeholder="Malzeme ekle" value="@Model.tagifyMalzemeler" />
+                </div>
+             
+                <div class="col-12 col-md-2">
+                    <label class="control-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary form-control">Ara</button>
+                </div>
+            </div>
+        </form>
+          
+      
+    </div>
+</div>
+<br />
+<div class="card card-custom">
+    <div class="card-header">
+        <div class="card-title">
+            <h3 class="card-label">
+                Üretim Planlama Rapor
+            </h3>
+        </div>
+        <div class="card-toolbar"> 
+           @{
+				await Html.RenderPartialAsync("_PartialDisaAktar");
+			}
+        </div>
+    </div>
+    <div class="card-body"> 
+        <table class="table table-bordered table-hover" id="kt_datatable1">
+           <thead>
+               <tr>
+                    <th>Siparis Tarihi</th>
+                    <th>Ürün Ad</th>                    
+                    <th>Üretici</th>
+                    <th>Not</th>
+                    <th>Parasal Kayıp</th>
+                    <th class="no-print">İncele</th>
+               </tr>
+           </thead>
+           <tbody>
+                @{
+                    double toplam = 0;
+                }
+                @foreach (UretimVM item in Model.UretimVMListe.OrderByDescending(p=>p.SiparisTarihi))
+                {
+                     <tr>
+                        <td>@item.SiparisTarihi.ToString("yyyy-MM-dd")</td>
+                        <td>@item.UrunAd</td>                          
+                          <td>@item.Uretici</td>
+                          <td>@item.Not</td>
+                        <td class="text-right">@String.Format("{0:n2}", item.ParasalDeger)</td>
+                          <td class="no-print">
+                              <a href="#" class="btn btn-icon btn-light btn-hover-warning btn-sm mr-1 crudBtn" onclick="VeriGoruntule('@item.ID')" data-toggle="modal" data-target="#ModalVeri" title="Görüntüle" data-id="1">
+                                <span class="svg-icon svg-icon-warning svg-icon-2x ">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\General\Search.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24"></rect>
+                                            <path d="M14.2928932,16.7071068 C13.9023689,16.3165825 13.9023689,15.6834175 14.2928932,15.2928932 C14.6834175,14.9023689 15.3165825,14.9023689 15.7071068,15.2928932 L19.7071068,19.2928932 C20.0976311,19.6834175 20.0976311,20.3165825 19.7071068,20.7071068 C19.3165825,21.0976311 18.6834175,21.0976311 18.2928932,20.7071068 L14.2928932,16.7071068 Z" fill="#000000" fill-rule="nonzero" opacity="0.3"></path>
+                                            <path d="M11,16 C13.7614237,16 16,13.7614237 16,11 C16,8.23857625 13.7614237,6 11,6 C8.23857625,6 6,8.23857625 6,11 C6,13.7614237 8.23857625,16 11,16 Z M11,18 C7.13400675,18 4,14.8659932 4,11 C4,7.13400675 7.13400675,4 11,4 C14.8659932,4 18,7.13400675 18,11 C18,14.8659932 14.8659932,18 11,18 Z" fill="#000000" fill-rule="nonzero"></path>
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                        </a>
+                        </td>
+                    </tr>
+                    
+                }
+            </tbody> 
+            <tfoot>
+                <tr>                     
+                    <th colspan="4">Toplam</th>
+                    <th class="text-right">@String.Format("{0:n2}", Model.UretimVMListe.Sum(p=>p.ParasalDeger))</th>
+                    <th></th>
+                </tr>
+            </tfoot>
+       </table>
+    </div>
+</div>
+@{ 
+    await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+
+@{
+    await Html.RenderPartialAsync("_PartialModalDosya",
+    new AuthorizeCrudVM { Controller = "Uretim", HaritaEkle = false });
+}
+
+@section JSSection {
+    <script src="~/assets1/plugins/custom/datatables/datatables.bundle.js?v=7.0.5"></script>
+	<script src="~/assets1/js/pages/crud/datatables/extensions/buttonsCustom.js?v=7.0.5"></script>
+
+@{
+        await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+            new AuthorizeCrudVM
+        {
+            Controller = "Uretim",
+            ModulID = (int)ModulEnum.Uretim,
+            DosyaYolu = "Uretim"
+        });
+    }
+
+
+    @{
+        var malzemeListe = new List<string>();
+
+        foreach (var malzeme in malzemeler.Where(p=>p.Kod.StartsWith("152")))
+        {
+            var ad = malzeme.Ad?.Replace("'", "\\'"); 
+
+            malzemeListe.Add($@"
+                        {{
+                            value: '{ad}',
+                            kod: '{malzeme.Kod}',
+                            id: '{malzeme.ID}',
+                            initials: '',
+                            initialsState: '',
+                            class: 'tagify__tag--primary'
+                        }}");
+        }
+
+        var malzemeJson = string.Join(",", malzemeListe);
+    }
+
+
+    <script>
+                // Class definition
+        var CokluSelectList = function() {
+            // Private functions
+            
+
+            var Malzemeler = function() {
+                // Init autocompletes
+                var toEl = document.getElementById('tagifyMalzemeler');
+                        var tagifyTo = new Tagify(toEl, {
+                        delimiters: ", ",
+                        maxTags: 10,
+                        blacklist: ["fuck", "shit", "pussy"],
+                        keepInvalidTags: true,
+                        whitelist: [@Html.Raw(malzemeJson)],
+                        templates: {
+                            dropdownItem: function (tagData) {
+                                try {
+                                    var html = '';
+
+                                     html += '<div class="tagify__dropdown__item">';
+                                    html += '   <div class="d-flex align-items-center">';
+                                    html += '       <span class="symbol sumbol-' + (tagData.initialsState ? tagData.initialsState : '') + ' mr-2">';
+                                   // html += '           <span class="symbol-label" style="background-image: url(\''+ (tagData.pic ? tagData.pic : '') + '\')">' + (tagData.initials ? tagData.initials : '') + '</span>';
+                                    html += '       </span>';
+                                    html += '       <div class="d-flex flex-column">';
+                                    html += '           <a href="#" class="text-dark-75 text-hover-primary font-weight-bold">'+ (tagData.value ? tagData.value : '') + '</a>';
+                                    html += '           <span class="text-muted font-weight-bold">' + (tagData.kod ? tagData.kod : '') + '</span>';
+                                    html += '       </div>';
+                                    html += '   </div>';
+                                    html += '</div>';
+
+                                    return html;
+                                } catch (err) { }
+                            }
+                        },
+                        transformTag: function (tagData) {
+                            tagData.class = 'tagify__tag tagify__tag--primary';
+                        },
+                        dropdown: {
+                            classname: "color-blue",
+                            enabled: 1,
+                            maxItems: 5
+                        }
+                    });
+
+            }
+
+            return {
+                // public functions
+                init: function() {
+
+                    Malzemeler();
+                }
+            };
+        }();
+
+        jQuery(document).ready(function() {
+            CokluSelectList.init();
+        });
+    </script>
+   
+}

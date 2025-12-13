@@ -1,0 +1,78 @@
+﻿@model SiparisIadeVM
+
+<div class="form-group row">
+    
+    <div class="col-lg-3">
+        <label asp-for="SebepAd" class="control-label"></label>
+        <select asp-for="SebepID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SiparisIadeSebepListe, "ID", "Ad"))"></select>
+        <span asp-validation-for="SebepAd" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="DurumAd" class="control-label"></label>
+        <select asp-for="DurumID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SiparisIadeDurumListe, "ID", "Ad"))"></select>
+        <span asp-validation-for="DurumAd" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="SorumluAd" class="control-label"></label>
+        <select asp-for="SorumluID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SorumluListe,"Id","AdSoyad"))"></select>
+        <span asp-validation-for="SorumluAd" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="PlatformAd" class="control-label"></label>
+        <select asp-for="PlatformID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SiparisIadePlatformListe, "ID", "Ad"))"></select>
+        <span asp-validation-for="PlatformAd" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-6">
+    @{
+           // await Html.RenderPartialAsync("~/Views/Musteriler/_selectList.cshtml", Model?.Musteri ?? new Musteriler());
+    }
+        <partial name="~/Views/Musteriler/_selectList.cshtml" model="Model?.Musteri ?? new Musteriler()" />
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="SiparisNo" class="control-label"></label>
+        <input asp-for="SiparisNo" class="form-control form-control-sm" required />
+        <span asp-validation-for="SiparisNo" class="text-danger"></span>
+
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="SiparisToplam" class="control-label"></label>
+        <input asp-for="SiparisToplam" class="form-control form-control-sm" required />
+        <span asp-validation-for="SiparisToplam" class="text-danger"></span>
+        
+    </div>
+    
+    
+
+</div>
+
+ 
+ 
+ 
+ 
+
+ 
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Not" class="control-label"></label>
+        <textarea asp-for="Not" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+        <span asp-validation-for="Not" class="text-danger"></span>
+    </div>
+</div>
+@if (Model.ID>0)
+{
+  
+    <div id="UrunlerDiv">
+
+    </div>
+   
+}
+
+<script src="js/select2.js?v=7.0.5"></script>
+
+
+
+
+ 
+ 

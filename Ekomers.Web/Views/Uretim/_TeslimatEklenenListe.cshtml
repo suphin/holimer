@@ -1,0 +1,33 @@
+﻿@model UretimVM
+@{
+    var sayac = 1;
+
+}
+@foreach (UretimTeslimat item in Model.UretimTeslimatListe)
+{
+
+      
+
+
+    <tr class="@((bool)item.IsDelete ? "deleted" : "")">
+        <td>@sayac</td>
+        <td class="text-right">@item.Tarih.ToString("dd.MM.yyyy")</td>
+        <td class="text-right">@item.Miktar</td>
+
+        <td>
+            @if (!(bool)item.IsDelete)
+            {
+                <a href="javascript:void(0);" class="remove-item" data-id="@item.ID">Çıkar</a>
+            }
+        </td>
+    </tr>
+    sayac = sayac + 1;
+  
+
+}
+<tr>
+    <td> </td>
+    <td>Toplam</td>
+    <td class="text-right">@Model.UretimTeslimatListe.Sum(p => p.Miktar)</td>
+    <td></td>
+</tr>

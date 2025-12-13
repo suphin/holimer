@@ -1,0 +1,60 @@
+﻿@model SirketlerVM
+
+<div class="form-group row">
+    <div class="col-lg-12 ">
+        <label asp-for="SirketAdi" class="control-label"></label>:@Model.SirketAdi
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4 ">
+        <label asp-for="SirketYetkili" class="control-label"></label>:@Model.SirketYetkili
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="SirketYetkiliEmail" class="control-label"></label>:@Model.SirketYetkiliEmail
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="SirketYetkiliTel" class="control-label"></label>:@Model.SirketYetkiliTel
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-6 ">
+        <label asp-for="SirketVergiDairesi" class="control-label"></label>:@Model.SirketVergiDairesi
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="SirketVergiNo" class="control-label"></label>:@Model.SirketVergiNo
+    </div>
+
+</div>
+<div class="form-group row">
+    <div class="col-lg-6 ">
+        <label asp-for="LogoTigerSirketKodu" class="control-label"></label>:@Model.LogoTigerSirketKodu
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="SirketWebSitesi" class="control-label"></label>:@Model.SirketWebSitesi
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Aciklama" class="control-label"></label>:@Model.Aciklama
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <div class="small">
+            Kayıt Oluşturan: @Model.CreateUserName
+            Oluşturma Tarihi:@Model.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+        </div>
+    </div>
+</div>
+@if (Model.IsDelete)
+{
+    <div class="form-group row">
+        <div class="col-lg-12">
+            <div class="small">
+                Kayıt Silen: @Model.DeleteUserName
+                Silme Tarihi:@Model.DeleteDate?.ToString("dd.MM.yyyy HH:mm")
+            </div>
+        </div>
+    </div>
+}
+<script src="js/select2.js?v=7.0.5"></script>

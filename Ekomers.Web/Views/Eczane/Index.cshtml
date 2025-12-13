@@ -1,0 +1,272 @@
+﻿@model EczaneVM
+@{
+	ViewData["Title"] = "Eczane Tanımlama";
+	ViewData["Description"] = "Genel Ayarlar - Şirket Tanımlama";
+}
+@section CSSection {
+	<!--begin::Page Vendors Styles(used by this page)-->
+	<link href="~/assets1/plugins/custom/datatables/datatables.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+
+	<!--end::Page Vendors Styles-->
+}
+
+<!--begin::Notice-->
+@{
+	// await Html.RenderPartialAsync("_PartialNotice",
+	// new NoticeVM { Baslik = "Eczaneler", Aciklama = "Eczaneler Bilgi Girişi" });
+}
+<!--end::Notice-->
+@* <br /> *@
+<div class="card shadow">
+	<div class="card-header">
+		Arama Seçenekleri
+	</div>
+	<div class="card-body">
+		<div class="table-responsive">
+			<form asp-action="Index" asp-controller="Eczane" method="post" name="VeriFiltre" id="VeriFiltre">
+				<table class="table table-bordered table-sm TableSmallFont" width="100%" cellspacing="0">
+					<tr>
+						<td>
+							<div class="form-group">
+								<label class="control-label">Genel Arama</label>
+								<input asp-for="Aciklama" class="form-control form-control-sm" />
+							</div>
+						</td>
+						<td>
+							<div class="form-group">
+								<label asp-for="Sehir" class="control-label"></label>
+								<select asp-for="SehirID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SehirlerAramaListe, "ID", "Ad"))" required id="SehirlerListe">
+									<option value="0">Tümü</option>
+								</select>
+							</div>
+						</td>
+						<td>
+							<label asp-for="Bayi" class="control-label"></label>
+							<select asp-for="BayiMi" class="form-control form-control-sm">
+								<option value="null">Hepsi</option>
+								<option value="true">Evet</option>
+								<option value="false">Hayır</option>
+								
+							</select>
+						</td>
+						<td>
+							<div class="form-group">
+								<label class="control-label">&nbsp;</label>
+								<button type="submit" class="btn btn-primary form-control btn-sm">Ara</button>
+
+							</div>
+						</td>
+					</tr>
+				</table>
+			</form>
+		</div>
+	</div>
+</div>
+<br />
+<!--begin::Card-->
+<div class="card card-custom">
+	<div class="card-header flex-wrap py-3">
+		<div class="card-title">
+			<h3 class="card-label">
+				Eczane Tanımlama
+				<span class="d-block text-muted pt-2 font-size-sm">Detay</span>
+			</h3>
+		</div>
+		<div class="card-toolbar">
+			@if (User.IsInRole("Admin"))
+			{
+				<button id="btnGeoJsonOlustur" class="btn btn-sm btn-info ml-2">
+					GeoJSON Verilerini Oluştur
+				</button>
+				<input type="button" value="Eczane Aktar" class="btn btn-primary print  btn-sm ml-2 mr-2" onclick="EczaneAktar()" />
+				 
+			}
+			@if (User.HasClaim("Authorize", "Transfer"))
+			{
+				 
+			 
+				<input type="button" value="Omt Webe Aktar" class="btn btn-primary print  btn-sm ml-2 mr-2" onclick="OmtWebeGonder()" />
+				<input type="button" value="Fw Web Aktar" class="btn btn-primary print  btn-sm ml-2 mr-2" onclick="FwWebeGonder()" />
+			}
+			@{
+				await Html.RenderPartialAsync("_PartialAuthorizeCreate");
+			}
+			@{
+				await Html.RenderPartialAsync("_PartialHaritaGenel", new AuthorizeCrudVM
+				{
+					ModulID = (int)ModulEnum.Eczane,
+					HaritaEkle = true
+				});
+
+			}
+		</div>
+	</div>
+	<div class="card-body">
+		<!--begin: Datatable-->
+		<table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+			<thead>
+				<tr>
+					<th class="no-print" style="width:30px"></th>
+					 <th>Fotograf</th>
+                    <th>İl</th>
+                    <th>İlçe</th>
+                    <th>Adı</th>
+                    <th>Eczacı</th>
+                   @*  <th>Adres</th>   *@               
+                    <th>Telefon</th>
+					<th>Foto Ekle</th>
+					<th class="no-print">Dosya</th>
+					<th class="no-print">Harita</th>
+					<th class="no-print crudBtnRow">Düzenle</th>
+
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (EczaneVM item in Model.EczaneVMListe)
+				{
+					<tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")">
+						<td class="no-print"><input type="checkbox" class="form-control" /></td>
+						<td><img src="/Eczane/upload/Eczaci/@item.Fotograf" height="35px"/></td>
+                        <td>@item.Sehir</td>
+                        <td>@item.Ilce</td>
+                        <td>@item.Ad</td>
+                        <td>@item.EczaciAdi</td>
+                     @*    <td>@item.Adres</td>   *@                     				 
+                        <td>@item.Telefon</td>
+						<td class="no-print"><a href="#" onclick="FotoGetir('@item.ID')" data-toggle="modal" data-target="#ModalFotoEkle"><i class="icon-x   flaticon-attachment"></i>&nbsp; Foto</a></td>
+
+						 
+						@{
+							await Html.RenderPartialAsync("_PartialAuthorizeScript",
+							new AuthorizeCrudVM { ID = item.ID, DosyaEkle = true, HaritaEkle = true, ModulID = (int)ModulEnum.Eczane, IsMap = item.IsMap });
+						}
+					</tr>
+				}
+
+
+			</tbody>
+		</table>
+		<!--end: Datatable-->
+	</div>
+</div>
+<!--end::Card-->
+@{
+	//await Html.RenderPartialAsync("_PartialModalVeri");
+	await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+
+@{
+	await Html.RenderPartialAsync("_PartialModalDosya",
+	new AuthorizeCrudVM { Controller = "Eczane", HaritaEkle = true });
+}
+ 
+
+<div id="ModalFotoEkle" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+	<div class="modal-dialog modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Foto Ekle</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Kapat">
+					<span aria-hidden="true">&times;</span>
+					<i aria-hidden="true" class="ki ki-close"></i>
+				</button>
+			</div>
+
+			<div class="modal-body" id="DetaylarFoto">
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+			</div>
+
+		</div>
+
+	</div>
+</div>
+
+@section JSSection {
+
+	<script src="~/assets1/plugins/custom/datatables/datatables.bundle.js?v=7.0.5"></script>
+	<script src="~/assets1/js/pages/crud/datatables/extensions/buttonsCustom.js?v=7.0.5"></script>
+	 <script>
+		function EczaneAktar() {
+				 window.open('Eczane/EczaneAktar')
+		 }
+		 function OmtWebeGonder() {
+					 
+				$.ajax({
+					url: '/Eczane/OmtWebeGonder',
+					type: 'GET', 
+					success: function (response)
+					{  
+						toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+					},
+					error: function (xhr, status, error)
+					{
+						toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+					}
+				});		 
+		 }
+		  function FwWebeGonder() {
+					 
+				$.ajax({
+					url: '/Eczane/FwWebeGonder',
+					type: 'GET', 
+					success: function (response)
+					{  
+						toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+					},
+					error: function (xhr, status, error)
+					{
+						toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+					}
+				});		 
+		 }
+		   function FotoGetir(id) {
+			GetAjax('Eczane/_FotoGetir?eczaneID=' + id, 'DetaylarFoto');
+		}
+		 </script>
+
+
+	<script src="js/select2.js?v=7.0.5"></script>
+	@{
+		await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+		new AuthorizeCrudVM
+		{
+			Controller = "Eczane",
+			ModulID = (int)ModulEnum.Eczane,
+			DosyaYolu = "Eczane"
+		});
+	}
+	@{
+		await Html.RenderPartialAsync("_PartialDataTableScript");
+	}
+	@{
+		await Html.RenderPartialAsync("_PartialMapScript");
+	}
+	<script>
+		$(document).ready(function () {
+			$("#btnGeoJsonOlustur").on("click", function () {
+				if (confirm("Tüm eczaneler için GeoJSON verileri oluşturulacak. Emin misiniz?")) {
+					$.ajax({
+						url: '/Eczane/SaveGeoJson', // Controller metodu
+						type: 'POST',
+						data: { ModulID: @((int)ModulEnum.Eczane) },
+						dataType: 'json',
+						success: function (res) {
+							if (res.success) {
+								alert("GeoJSON verileri başarıyla oluşturuldu!");
+							} else {
+								alert("İşlem sırasında bir hata oluştu: " + res.message);
+							}
+						},
+						error: function (xhr, status, error) {
+							alert("Sunucu hatası: " + error);
+						}
+					});
+				}
+			});
+		});
+	</script>
+}
+
+

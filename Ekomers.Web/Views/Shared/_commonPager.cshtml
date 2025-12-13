@@ -1,0 +1,39 @@
+﻿ @model dynamic
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Sayfalama">
+        <ul class="pagination">
+            <li class="page-item @(Model.PageIndex == 1 ? "disabled" : "")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@(Model.PageIndex - 1)"
+                   asp-route-pageSize="@Model.PageSize">Önceki</a>
+            </li>
+
+            @{
+                // Çok sayfa varsa 1..N yerine akıllı pencere göstermek istersen buna göre daralt.
+                var start = Math.Max(1, Model.PageIndex - 2);
+                var end = Math.Min(Model.TotalPages, Model.PageIndex + 2);
+                for (var i = start; i <= end; i++)
+                {
+                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@i"
+                           asp-route-pageSize="@Model.PageSize">@i</a>
+                    </li>
+                }
+            }
+
+            <li class="page-item @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@(Model.PageIndex + 1)"
+                   asp-route-pageSize="@Model.PageSize">Sonraki</a>
+            </li>
+        </ul>
+        <span class="ms-2 small text-muted">
+            Toplam: @Model.TotalCount kayıt — Sayfa @Model.PageIndex/@Model.TotalPages
+        </span>
+    </nav>
+}

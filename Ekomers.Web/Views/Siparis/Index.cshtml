@@ -1,0 +1,72 @@
+﻿@model SiparisVM
+@{
+	ViewData["Title"] = "Siparis Listesi";
+	ViewData["Description"] = "Çalışma Sayfası - Siparis / Görev";
+}
+
+
+
+<!--begin::Card-->
+<div class="card card-custom">
+	<div class="card-header flex-wrap py-3">
+		<div class="card-title">
+			<h3 class="card-label">
+				Siparis Tanımlama
+				<span class="d-block text-muted pt-2 font-size-sm">Detay</span>
+			</h3>
+		</div>
+		<div class="card-toolbar">
+		 
+			 @{
+				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_CreateButton.cshtml");
+			}
+			@{
+				await Html.RenderPartialAsync("_PartialHaritaGenel", new AuthorizeCrudVM
+				{
+					ModulID = (int)ModulEnum.Siparis,
+					HaritaEkle = false
+				});
+
+			}
+		</div>
+	</div>
+	<div class="card-body " id="cardBody">
+		<!--begin: Datatable-->
+		@{
+			await Html.RenderPartialAsync("_List", Model);
+		}
+		<!--end: Datatable-->
+	</div>
+</div>
+<!--end::Card-->
+@{
+	//await Html.RenderPartialAsync("_PartialModalVeri");
+	await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+
+@{
+	await Html.RenderPartialAsync("_PartialModalDosya",
+	new AuthorizeCrudVM { Controller = "Siparis", HaritaEkle = false });
+}
+
+@section JSSection {
+
+	@{
+		await Html.RenderPartialAsync("~/Views/Musteriler/SelectList.Scripts.cshtml");
+	}
+
+	
+	@{
+		await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+		new AuthorizeCrudVM
+		{
+			Controller = "Siparis",
+			ModulID = (int)ModulEnum.Siparis,
+			DosyaYolu = "Siparis"
+		});
+	}
+	 
+ 
+}
+
+

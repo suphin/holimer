@@ -1,0 +1,112 @@
+﻿@model List<UserListVM>;
+@{
+    ViewData["Title"] = "Kullanıcı Listesi";
+   // Layout = "_LayoutMetronic1";
+    var siraNo = 1;
+}
+@section CSSection {
+    <link href="~/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+}
+<div class="container-fluid">
+
+
+    <!-- Content Row -->
+    <div class="card card-custom">
+        <div class="card-header flex-wrap py-3">
+            <div class="card-title">
+                <h3 class="card-label">
+                    Liste
+                    <span class="d-block text-muted pt-2 font-size-sm">Kullanıcılar</span>
+                </h3>
+            </div>
+            
+        </div>
+        <div class="card-body">
+            <div class="table-responsive"> 
+                <table class="table table-sm table-bordered table-hover TableSmallFont" id="AnaTablo">
+                    <thead>
+                        <tr>
+                            <th>Sıra No</th>
+                            <th>ID</th>
+                            <th>Ad Soyad</th>
+                            @* <th>Kullanıcı Adı</th> *@
+                            <th>Telefon No</th>
+                            <th>ePosta Adresi</th>
+                            <th>Son Giriş Tarihi</th>
+                            <th>Yetkiler</th>
+                            <th>Roller</th>
+                            <th>RolAtama</th>
+                            <th>Rol Claim Atama</th>
+                            @*<th>&nbsp;</th>*@
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (UserListVM item in Model)
+                        {
+                            <tr>
+                                <td>@siraNo</td>
+                                <td>@item.Id.Substring(0,10)</td>
+                                <td><a asp-action="UserDetail" asp-route-id="@item.Id">@item.AdSoyad</a></td>
+                                @* <td>@item.UserName</td> *@
+                                <td>@item.Telefon</td>
+                                <td>@item.Email</td>
+                                <td>@item.SonGirisTarihi?.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                                <td>
+                                    <a asp-action="AddUserAuth" asp-route-userId="@item.Id">Yetki Ekle</a>
+                                </td>
+                                <td>@Html.Raw(item.Roller)</td>
+                                <td>
+                                    <a asp-action="RoleAssign" asp-route-id="@item.Id">Rol Ata</a> ||
+                                    <a href="#" onclick="Kopyala('@item.Id')" data-toggle="modal" data-target="#ModalVeri">Rol Kopyala</a>
+                                </td>
+                                <td>
+                                    <a asp-action="AddUserClaim" asp-route-userId="@item.Id">RoleClaim Ekle</a>
+                                </td>
+                                @*<td><a asp-action="UserRemove" asp-route-id="@item.Id">Sil</a></td>*@
+                            </tr>
+                            siraNo = siraNo + 1;
+                        }
+        </tbody>
+    </table>
+
+ 
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    await Html.RenderPartialAsync("_PartialModal",
+    new ModalSettings
+            {
+                ModalID = "ModalVeri",
+                Genislik = "lg",
+                BodyID = "VeriAlan"
+            });
+}
+
+@section JSSection {
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script>
+        function Kopyala(id)
+        {
+            GetAjax('Admin/Kopyala?UserId=' + id, 'VeriAlan');
+        }
+    </script>
+    <script>
+        $.extend($.fn.dataTable.defaults, {
+            ordering: false,
+            iDisplayLength: 10
+        });
+        $(document).ready(function () {
+            $('#AnaTablo').DataTable({
+                language: {
+                    url: '/js/i18n/DataTables-TR.json'
+                }
+            });
+        });
+   
+    </script>
+}

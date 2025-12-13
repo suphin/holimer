@@ -1,0 +1,21 @@
+﻿@model ModalSettings
+ 
+	<div id="@Model.ModalID" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+	<div class="modal-dialog modal-dialog-centered modal-@Model.Genislik">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Detay</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Kapat">
+
+						<i aria-hidden="true" class="ki ki-close"></i>
+					</button>
+				</div>
+
+				<div class="modal-body" id="@Model.BodyID">
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+				</div>
+		</div>
+		</div>
+	</div>

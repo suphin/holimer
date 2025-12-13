@@ -1,0 +1,114 @@
+﻿@* @model PagerModel
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Sayfalama">
+        <ul class="pagination">
+            <li class="page-item @(Model.PageIndex == 1 ? "disabled" : "")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@(Model.PageIndex - 1)"
+                   asp-route-pageSize="@Model.PageSize">Önceki</a>
+            </li>
+           
+            @{
+                // Çok sayfa varsa 1..N yerine akıllı pencere göstermek istersen buna göre daralt.
+                var start = Math.Max(1, Model.PageIndex - 2);
+                var end = Math.Min(Model.TotalPages, Model.PageIndex + 2);
+                for (var i = start; i <= end; i++)
+                {
+                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@i"
+                           asp-route-pageSize="@Model.PageSize">@i</a>
+                    </li>
+                }
+            }
+
+            <li class="page-item @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@(Model.PageIndex + 1)"
+                   asp-route-pageSize="@Model.PageSize">Sonraki</a>
+            </li>
+        </ul>
+        <span class="ms-2 small text-muted">
+            Toplam: @Model.TotalCount kayıt — Sayfa @Model.PageIndex/@Model.TotalPages
+        </span>
+    </nav>
+} *@
+@model PagerModel
+
+@if (Model.TotalPages > 1)
+{
+    var window = 2; // aktif sayfanın sağı/solu kaç sayı görünsün
+    var start = Math.Max(2, Model.PageIndex - window);                 // 2'den başlat (1 zaten ayrı basılacak)
+    var end = Math.Min(Model.TotalPages - 1, Model.PageIndex + window); // son sayfa -1'e kadar (son zaten ayrı basılacak)
+
+    <nav aria-label="Sayfalama">
+        <ul class="pagination">
+
+            <!-- Önceki -->
+            <li class="page-item @(Model.PageIndex == 1 ? "disabled" : "")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@(Model.PageIndex - 1)"
+                   asp-route-pageSize="@Model.PageSize">Önceki</a>
+            </li>
+
+            <!-- 1. sayfa -->
+            <li class="page-item @(Model.PageIndex == 1 ? "active" : "")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="1"
+                   asp-route-pageSize="@Model.PageSize">1</a>
+            </li>
+
+            <!-- Sol "..." (gerekirse) -->
+            @if (start > 2)
+            {
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            }
+
+            <!-- Orta pencere -->
+            @for (var i = start; i <= end; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@i"
+                       asp-route-pageSize="@Model.PageSize">@i</a>
+                </li>
+            }
+
+            <!-- Sağ "..." (gerekirse) -->
+            @if (end < Model.TotalPages - 1)
+            {
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            }
+
+            <!-- Son sayfa (TotalPages > 1 ise zaten buradayız) -->
+            @if (Model.TotalPages > 1)
+            {
+                <li class="page-item @(Model.PageIndex == Model.TotalPages ? "active" : "")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@Model.TotalPages"
+                       asp-route-pageSize="@Model.PageSize">@Model.TotalPages</a>
+                </li>
+            }
+
+            <!-- Sonraki -->
+            <li class="page-item @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@(Model.PageIndex + 1)"
+                   asp-route-pageSize="@Model.PageSize">Sonraki</a>
+            </li>
+        </ul>
+
+        <span class="ms-2 small text-muted">
+            Toplam: @Model.TotalCount kayıt — Sayfa @Model.PageIndex/@Model.TotalPages
+        </span>
+    </nav>
+}

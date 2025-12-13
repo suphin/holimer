@@ -1,0 +1,110 @@
+﻿@model MalzemelerVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<form asp-controller="Stok" asp-action="Kategori_MalzemeYap" method="post" name="Malzeme_VeriYap" id="Malzeme_VeriYap">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Malzeme Yeni Kayıt</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered TableSmallFont" width="100%" cellspacing="0">
+
+
+                    <tr>
+                        <td> <label asp-for="BirimID" class="control-label"></label></td>
+                        <td>
+                            <select asp-for="BirimID" class="form-control form-control-sm" asp-items="@ViewBag.MalzemeBirimListe" id="MalzemeBirimListe"></select>
+
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="TipID" class="control-label"></label></td>
+                        <td>
+                            <select asp-for="TipID" class="form-control form-control-sm" asp-items="@ViewBag.MalzemeTipiListe" id="MalzemeTipiListe"></select>
+
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="GrupKod" class="control-label"></label></td>
+                        <td><input asp-for="GrupKod" class="form-control form-control-sm" required /></td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="Grup" class="control-label"></label></td>
+                        <td><input asp-for="Grup" class="form-control form-control-sm" required /></td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="Kod" class="control-label" ></label></td>
+                        <td><input asp-for="Kod" class="form-control form-control-sm" required value="@(Model.GrupKod)-" /></td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="Ad" class="control-label"></label></td>
+                        <td><input asp-for="Ad" class="form-control form-control-sm" required /></td>
+                    </tr>
+                    <tr>
+                        <td><label asp-for="KritikMiktar" class="control-label"></label></td>
+                        <td><input asp-for="KritikMiktar" class="form-control form-control-sm" required /></td>
+                    </tr>
+                    <tr>
+                        <td><label class="control-label">Açıklama</label></td>
+                        <td>
+
+                            <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+
+                        </td>
+                    </tr>
+                    @*  <tr>
+                    <td colspan="2" class="text-right"><button type="submit" class="btn btn-sm btn-success width150">Ekle</button></td>
+                    </tr> *@
+                </table>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <input type="hidden" name="GrupID" id="GrupID" value="@Model.ID"/>
+            
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+        </div>
+    </div>
+</form>
+ 
+<script>
+        $(document).ready(function () { 
+                removeZeroValueOptions("MalzemeBirimListe");
+                removeZeroValueOptions("MalzemeTipiListe"); 
+        });
+</script>
+<script>
+    $(document).ready(function () {
+        $('#Malzeme_VeriYap').on('submit', function (e) {
+            e.preventDefault(); // Sayfanın yenilenmesini engelle
+
+            var form = $(this);
+            var actionUrl = form.attr('action');
+            var formData = form.serialize(); // Form verilerini al
+
+            $.ajax({
+                type: 'POST',
+                url: actionUrl,
+                data: formData,
+                success: function (response) {
+                    // Başarılı işlem sonrası yapılacaklar
+                    // alert('Veri başarıyla eklendi.');
+                    $('#DivAltKategori').html(response);
+                    // Modalı kapatmak veya sayfayı yenilemek isteyebilirsiniz
+                    $('#ModalGoruntule').modal('hide');
+                    //location.reload(); // Sayfayı yenile
+                },
+                error: function (xhr, status, error) {
+                    // Hata işlemleri
+                    alert('Bir hata oluştu: ' + xhr.responseText);
+                }
+            });
+        });
+    });
+</script>

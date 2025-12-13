@@ -1,0 +1,225 @@
+﻿ @model GruplarVM;
+@{
+    ViewData["Title"] = "Kategoriler";
+}
+@section CSSection
+{
+        <!--begin::Page Vendors Styles(used by this page)-->
+    <link href="~/assets1/plugins/custom/jstree/jstree.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+    <!--end::Page Vendors Styles-->
+ 
+}
+<div class="row">
+    <div class="col-lg-6 col-md-6 col-sm-12">
+        <!--begin::Card-->
+        <div class="card card-custom example example-compact gutter-b">
+            <div class="card-header">
+                <div class="card-title">
+                    <h3 class="card-label">Ana Kategori</h3>
+                </div>
+                <div class="card-toolbar">                  
+                    <button type="button" class="btn btn-sm btn-hover-light-primary" onclick="KategoriGetir('0')" >
+                        <i class="fas fa-th-list"></i> Listeyi Göster
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" style="height:700px;overflow:auto">
+                <!-- id burada olmalı -->
+                <div id="kt_tree_1" class="tree-demo">
+                    @await Html.PartialAsync("_KategoriPartial2", Model.KategoriTree)
+                </div>
+            </div>
+        </div>
+        <!--end::Card-->
+    </div>
+    <div class="col-lg-6  col-md-6 col-sm-12">
+        <div class="card card-custom example example-compact gutter-b">
+            <div class="card-header">
+                <div class="card-title">
+                    <h3 class="card-label">Alt Kategoriler</h3>
+                </div>
+                <div class="card-toolbar">
+                    <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#DetaylarDiv" id="YeniEkleBtn" style="display:none">
+                        <i class="fas fa-plus"></i> Yeni Ekle
+                    </button>
+                 </div>
+            </div>
+           
+            <div class="card-body" id="DivAltKategori">
+            </div>
+        </div>
+    </div>
+</div>
+<div id="DetaylarDiv" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <form asp-controller="Iade" asp-action="Kategori_VeriEkle" method="post" name="GirisEkleForm" id="GirisEkleForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Gruplar</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table" width="100%" cellspacing="0">
+                            <tr>
+                                <td>
+                                    <div class="form-group">
+                                        <label asp-for="Kod" class="control-label"></label>
+                                        <input asp-for="Kod" class="form-control" />
+                                        <span asp-validation-for="Kod" class="text-danger"></span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="form-group">
+                                        <label asp-for="Ad" class="control-label"></label>
+                                        <input asp-for="Ad" class="form-control" required />
+                                        <span asp-validation-for="Ad" class="text-danger"></span>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td colspan="2">
+                                    <div class="form-group">
+                                        <label asp-for="Aciklama" class="control-label"></label>
+                                        <textarea asp-for="Aciklama" type="text" class="form-control" rows="2"></textarea>
+                                        <span asp-validation-for="Aciklama" class="text-danger"></span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+                    <button type="submit" class="btn btn-success">Kaydet</button>
+                    <input type="hidden" id="ParentID" name="ParentID"/>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+<div id="ModalGoruntule" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div id="goruntuleFormDiv"></div>
+    </div>
+</div>
+@section JSSection
+{
+        <!--begin::Page Vendors(used by this page)-->
+    <script src="~/assets1/plugins/custom/jstree/jstree.bundle.js?v=7.0.5"></script>
+    <!--end::Page Vendors-->
+
+    <script>
+        $(document).ready(function () {
+            $('#GirisEkleForm').on('submit', function (e) {
+                e.preventDefault(); // Sayfanın yenilenmesini engelle
+
+                var form = $(this);
+                var actionUrl = form.attr('action');
+                var formData = form.serialize(); // Form verilerini al
+
+                $.ajax({
+                    type: 'POST',
+                    url: actionUrl,
+                    data: formData,
+                    success: function (response) {
+                        // Başarılı işlem sonrası yapılacaklar
+                       // alert('Veri başarıyla eklendi.');
+                        $('#DivAltKategori').html(response);
+                        // Modalı kapatmak veya sayfayı yenilemek isteyebilirsiniz
+                        $('#DetaylarDiv').modal('hide');
+                        //location.reload(); // Sayfayı yenile
+                    },
+                    error: function (xhr, status, error) {
+                        // Hata işlemleri
+                        alert('Bir hata oluştu: ' + xhr.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+    <script>
+        function KategoriGetir(id) {
+            GetAjax('Iade/KategoriListesiGetir?KategoriID=' + id, 'DivAltKategori');
+            // Gelen id değerini hidden input'a ekliyoruz
+            document.getElementById("ParentID").value = id;
+
+            if (id !== 0) {
+                document.getElementById("YeniEkleBtn").style.display = "block";  // Butonu görünür yapar
+            } else {
+                document.getElementById("YeniEkleBtn").style.display = "none";   // Butonu gizler
+            }
+        }
+    </script>
+    <script>
+
+        function VeriGetir(id) {
+            GetAjax('Iade/Kategori_VeriGetir?GrupID=' + id, 'goruntuleFormDiv');
+        }
+        function SilinecekVerileriGetir(id) {
+            GetAjax('Iade/Kategori_SilinecekVerileriGetir?GrupID=' + id, 'goruntuleFormDiv');
+        }
+        function KopyalanacakVerileriGetir(id) {
+            GetAjax('Iade/Kategori_KopyalanacakVerileriGetir?GrupID=' + id, 'goruntuleFormDiv');
+        }
+    </script>
+    <script>
+        $(document).ready(function () {
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <text>
+                        toastr.success('@TempData["SuccessMessage"]', 'Başarılı');
+            </text>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <text>
+                        toastr.error('@TempData["ErrorMessage"]', 'Hata');
+            </text>
+        }
+                });
+    </script>
+
+    <script>
+        var KTTreeview = function () {
+
+            var _demo1 = function () {
+                $('#kt_tree_1').jstree({
+                    "core": {
+                        "themes": {
+                            "responsive": false
+                        }
+                    },
+                    "types": {
+                        "default": {
+                            "icon": "fa fa-folder text-success"
+                        },
+                        "file": {
+                            "icon": "fa fa-file"
+                        }
+                    },
+                    "plugins": ["types"]
+                });
+            }
+
+           
+
+            return {
+                //main function to initiate the module
+                init: function () {
+                    _demo1(); 
+                }
+            };
+        }();
+
+        jQuery(document).ready(function () {
+            KTTreeview.init();
+        });
+    </script>
+}

@@ -1,0 +1,23 @@
+﻿@model Musteriler
+
+ 
+
+ 
+    <label id="MusteriAd" name="MusteriAd" class="control-label">Müşteri</label>
+    <div>
+        <div class="input-icon input-icon-right">
+        <input type="text" class="form-control form-control-sm col-md-12" placeholder="Müşteri Ara..." id="search-box" autocomplete="off" required value="@Model.AdSoyad">
+        <ul class="col-md-12" id="results"></ul>
+            <span>
+                <i class="flaticon2-search-1 icon-md"></i>
+            </span>
+        </div>
+            @* <input type="text" class="form-control form-control-sm" id="search-box" placeholder="Müşteri Ara..." autocomplete="off" required value="@Model.AdSoyad"/> *@
+            <input type="hidden" name="MusteriID" id="MusteriID" value="@Model.ID" />
+
+            
+    </div>
+
+@{
+    await Html.RenderPartialAsync("~/Views/Musteriler/SelectList.Scripts.cshtml");
+}

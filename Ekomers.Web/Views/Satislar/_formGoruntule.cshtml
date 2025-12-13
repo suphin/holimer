@@ -1,0 +1,64 @@
+﻿@model SatislarVM
+<style>
+    .control-label {
+        font-weight:bold !important;
+        margin-right:10px;
+        margin-bottom: 15px;
+    }
+</style>
+<div class="form-group row">
+
+    <div class="col-lg-3">
+        <label asp-for="SebepAd" class="control-label"></label>:@Model.SebepAd
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="DurumAd" class="control-label"></label>:@Model.DurumAd
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="SorumluAd" class="control-label"></label>:@Model.SorumluAd
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="PlatformAd" class="control-label"></label>:@Model.PlatformAd
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-6">
+        <label asp-for="MusteriAd" class="control-label"></label>:@Model.MusteriAd
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="SiparisNo" class="control-label"></label>:@Model.SiparisNo
+
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="SiparisToplam" class="control-label"></label> :@Model.SiparisToplam
+
+    </div>
+</div>
+ 
+ 
+
+ 
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Not" class="control-label"></label>:@Model.Not
+    </div>
+</div> 
+<div class="form-group row">
+    <div class="col-lg-12">
+        <div class="small">
+            Kayıt Oluşturan: @Model.CreateUserName
+            Oluşturma Tarihi:@Model.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+        </div>
+    </div>
+</div>
+@if (Model.IsDelete)
+{
+    <div class="form-group row">
+        <div class="col-lg-12">
+            <div class="small">
+                Kayıt Silen: @Model.DeleteUserName
+                Silme Tarihi:@Model.DeleteDate?.ToString("dd.MM.yyyy HH:mm")
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,27 @@
+﻿
+@{
+}
+@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "View") || a.Value == "Admin"))
+{
+    <button class="btn btn-warning  btn-sm mr-3" disabled id="View" data-toggle="modal" data-target="#ModalGoruntule" title="Görüntüle">
+        Görüntüle<i class="fas fa-search   ml-2"></i>
+    </button>
+}
+@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Edit") || a.Value == "Admin"))
+{
+    <button class="btn btn-success  btn-sm mr-3" disabled id="Edit" data-toggle="modal" data-target="#ModalGoruntule" title="Düzenle">
+        Düzenle<i class="far fa-edit  ml-2"></i>
+    </button>
+}
+@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Delete") || a.Value == "Admin"))
+{
+    <button class="btn btn-danger  btn-sm mr-3" disabled id="Delete" data-toggle="modal" data-target="#ModalGoruntule" title="Sil">
+        Sil<i class="fas fa-trash  ml-2"></i>
+    </button>
+}
+@if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Copy") || a.Value == "Admin"))
+{
+    <button class="btn btn-primary  btn-sm mr-3" disabled id="Copy" data-toggle="modal" data-target="#ModalGoruntule" title="Kopyala">
+        Kopyala<i class="far fa-clone  ml-2"></i>
+    </button>
+}

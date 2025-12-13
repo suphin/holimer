@@ -1,0 +1,114 @@
+﻿@model UserDetailVM
+@{
+    ViewData["Title"] = "User Detail";
+  //  Layout = "_LayoutMetronic1";
+}
+<!-- Begin Page Content -->
+ 
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Kullanıcı Detayı</h1>
+    </div>
+
+    <!-- Content Row -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            
+                @if (ViewBag.Error != String.Empty)
+                {
+                    <div class="alert alert-danger">@ViewBag.Error</div>
+                } else
+                {
+                    <form asp-action="UserDetail" asp-controller="Admin" method="post">
+                        @if (TempData["Message"] != null)
+                        {
+                            <div class="alert alert-info" role="alert">@TempData["Message"]</div>
+                        }
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label asp-for="UserName" class="control-label"></label>
+                            <input asp-for="UserName" class="form-control  form-control-sm" />
+                                    <span asp-validation-for="UserName" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="AdSoyad" class="control-label"></label>
+                            <input asp-for="AdSoyad" class="form-control form-control-sm" />
+                                    <span asp-validation-for="AdSoyad" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="PhoneNumber" class="control-label"></label>
+                            <input asp-for="PhoneNumber" class="form-control form-control-sm" />
+                                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="Email" class="control-label"></label>
+                            <input asp-for="Email" class="form-control form-control-sm" />
+                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                        <div class="form-group">
+                            <label asp-for="SirketID" class="control-label"></label>
+                            <select asp-for="SirketID" class="form-control" asp-items="@(new SelectList(ViewBag.SirketListe, "ID", "SirketAdi"))">
+                                <option value="0">Şirket Seçiniz</option>
+                            </select>
+                            <span asp-validation-for="SirketID" class="text-danger"></span>
+                        </div>
+                                <div class="form-group">
+                                    <label asp-for="Departman" class="control-label"></label>
+                            <select asp-for="DepartmanID" class="form-control form-control-sm" asp-items="@(new SelectList(ViewBag.IlgiliMudurlukListe, "ID", "Ad"))"></select>
+                                    <input asp-for="Departman" class="form-control" type="hidden" />
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="Unvan" class="control-label"></label>
+                            <input asp-for="Unvan" class="form-control form-control-sm" />
+                                    <span asp-validation-for="Unvan" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="Bolum" class="control-label"></label>
+                            <input asp-for="Bolum" class="form-control form-control-sm" />
+                                    <span asp-validation-for="Bolum" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="Password1" class="control-label"></label>
+                            <input asp-for="Password1" class="form-control form-control-sm" />
+                                    <span asp-validation-for="Password1" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="Password2" class="control-label"></label>
+                            <input asp-for="Password2" class="form-control form-control-sm" />
+                                    <span asp-validation-for="Password2" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+                                             
+                        
+                        <div class="form-group">
+                            <div class="col-lg-4">
+                        <input asp-for="IsCrmUser" />
+                        <label asp-for="IsCrmUser" class="control-label"></label>
+                            </div>
+                            <div class="col-lg-4">
+                        <input asp-for="IsEticaretUser" />
+                        <label asp-for="IsEticaretUser" class="control-label"></label>
+                            </div>
+                            <div class="col-lg-4">
+                        <input asp-for="IsMhUser" />
+                        <label asp-for="IsMhUser" class="control-label"></label>
+                            </div>
+                          
+                        </div>
+                     
+
+                        <input type="hidden" asp-for="Id" />
+                        <div class="form-group">
+                            <input type="submit" value="Bilgileri Güncelle" class="btn btn-primary" />
+                        </div>
+                    </form>
+                }
+  
+        </div>
+    </div>
+ 

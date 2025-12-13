@@ -1,0 +1,36 @@
+﻿@model List<WarehouseInventoryEditViewModel>
+
+@{
+    ViewData["Title"] = "Depo Miktar Girişi";
+}
+
+<h2>@ViewBag.WarehouseName - Depo Miktar Girişi</h2>
+
+<form asp-action="EditAll" method="post">
+    <table class="table table-bordered table-striped mt-3">
+        <thead class="table-light">
+            <tr>
+                <th>Ürün</th>
+                <th>Sistem Miktarı</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                <tr>
+                    <td>
+                        @Model[i].ProductName
+                        <input type="hidden" asp-for="@Model[i].ProductId" />
+                        <input type="hidden" asp-for="@Model[i].WarehouseId" />
+                    </td>
+                    <td>
+                        <input asp-for="@Model[i].SystemQuantity" class="form-control" type="number" step="0.01" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-success">Kaydet</button>
+    <a asp-action="Index" class="btn btn-secondary">Depo Değiştir</a>
+</form>

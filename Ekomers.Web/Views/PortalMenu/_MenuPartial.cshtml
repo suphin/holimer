@@ -1,0 +1,21 @@
+﻿ 
+@model List<PortalMenuTreeItem>
+ 
+<ul>
+    @foreach (var menu in Model)
+    {
+        var iconType = menu.AltMenuSayisi > 0 ? "folder" : "file";
+        
+        <li data-jstree='@("{ \"type\" : \"" + iconType + "\", \"opened\" : false }")'>         
+
+            <a href="#" onclick="MenuGetir('@menu.ID')">
+                @menu.Ad
+            </a>
+
+            @if (menu.Children.Any())
+            {
+                @await Html.PartialAsync("_MenuPartial", menu.Children)
+            }
+        </li>
+    }
+</ul>

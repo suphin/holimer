@@ -1,0 +1,62 @@
+﻿@model PortalMenuVM;
+
+@{
+    ViewData["Title"] = "Gruplar";
+}
+@section CSSection {
+    <link href="~/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+}
+
+ 
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered TableSmallFont" id="DataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th> 
+                        <th>Alt Kategori</th>   
+                        <th>Controller</th>   
+                        <th>Action</th>   
+                        <th style="width:90px" class="no-print">DÜZENLE</th> 
+                    </tr>
+                </thead>
+                <tbody>
+            @foreach (PortalMenu item in Model.PortalMenuListe)
+                    {
+
+                        <tr>
+                            <td>@item.ID</td> 
+                            <td>@item.Ad</td>        
+                            <td>@item.ControllerName</td>        
+                            <td>@item.ActionName</td>        
+                            <td class="no-print">
+
+
+
+                                @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Edit") || a.Value == "Admin"))
+                                {
+
+                                    <a href="#" onclick="VeriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Düzenle">
+                                        <i class="far fa-edit text-success mr-2"></i>
+                                    </a>
+                                }
+                                @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Delete") || a.Value == "Admin"))
+                                {
+                                    <a href="#" onclick="SilinecekVerileriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Sil">
+                                        <i class="fas fa-trash text-danger mr-2"></i>
+                                    </a>
+                                }
+                                @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Copy") || a.Value == "Admin"))
+                                {
+                                    <a href="#" onclick="KopyalanacakVerileriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Sil">
+                                        <i class="far fa-clone text-primary mr-2"></i>
+                                    </a>
+                                }
+                            </td>
+                         
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+        </div>
+ 

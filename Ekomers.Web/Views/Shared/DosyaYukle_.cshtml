@@ -1,0 +1,45 @@
+﻿@model List<DosyaVM>;
+
+
+@foreach (DosyaVM item in Model)
+{
+    <tr>
+        <td>@item.DosyaAdi</td>
+        <td>@item.FileName</td>
+        <td class="text-right">@((item.DosyaBoyutu / (1024.0 * 1024.0))?.ToString("N2")) mb</td>
+        <td>@item.OlusturulmaTarihi</td>
+        <td style="width:120px">
+            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#pdfModal" data-filename="@item.DosyaAdi" data-filepath="@item.ModulDosyaYolu">
+                <i class="fas fa-eye"></i>  Görüntüle
+            </button>
+        </td>
+           @if (User.HasClaim("Authorize", "FileDelete"))
+            {
+                 <td style="width:100px">
+                <button type="button" class="btn btn-danger btn-sm" itemid="@item.ID" onclick="return confirmFileDeletion('@item.ID','@item.KayitID','@item.ModulID','@item.ModulDosyaYolu')">
+                    <i class="fas fa-trash"></i> Sil  
+                </button>
+            </td>
+            }
+    </tr>
+}
+
+  @if (User.HasClaim("Authorize", "FileDelete"))
+{
+	<script>
+		function BilesenSil(id,kayitId,ModulId,dosyaYolu) 
+        {
+            GetAjax('DosyaYonetimi/DosyaSil?DosyaYolu='+dosyaYolu+'&DosyaID=' + id + '&ModulID='+ModulId+'&VeriID='+kayitId, 'DosyaListesi');
+		}
+
+		function confirmFileDeletion(id,kayitId,ModulId,dosyaYolu) 
+        {
+			var confirmation = confirm("Bu öğeyi sil mek istediği nizden emin misiniz?");
+			if (confirmation) 
+            {
+				BilesenSil(id,kayitId,ModulId,dosyaYolu);
+			}
+			return false; // Prevent the default link behavior
+		}
+	</script>
+}

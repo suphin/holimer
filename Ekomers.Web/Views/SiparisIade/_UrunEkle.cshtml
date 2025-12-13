@@ -1,0 +1,212 @@
+﻿@model SiparisIadeUrunlerVM
+@{
+    var kurlar = (KurlarVM)ViewBag.Kurlar;
+}
+<style>
+     input[type="file"]::file-selector-button {
+         background-color: #4CAF50;
+         color: white;
+         padding: 6px 20px;
+         border: none;
+         border-radius: 5px;
+         cursor: pointer;
+     }
+</style>
+<style>
+    #results-urun {
+        /* border: 1px solid #ddd; */
+        max-height: 150px;
+        overflow-y: auto;
+        list-style-type: none; /* Liste işaretlerini kaldırır */
+        padding: 0;
+        margin: 0;
+    }
+
+        #results-urun li {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+            #results-urun li:hover {
+                background-color: #f0f0f0;
+            }
+</style>
+  
+          
+            <div class="form-group row">
+                <div class="col-lg-4">
+                    <label class="control-label">Ürün Seç</label>
+                    <input type="text" class="form-control form-control-sm" id="search-box-urun" placeholder="Malzeme Ara..." autocomplete="off"  />
+                    <input type="hidden" asp-for="UrunID" />
+                    <ul class="col-md-12" id="results-urun"></ul>
+                </div>
+                <div class="col-lg-1">
+                    <label asp-for="Miktar" class="control-label"></label>
+                    <input asp-for="Miktar" class="form-control form-control-sm" value=""  />
+                </div>
+                <div class="col-lg-1">
+                    <label asp-for="BirimAd" class="control-label"></label>
+                    <input asp-for="BirimAd" class="form-control form-control-sm" tabindex="-1"  />
+                    <input asp-for="BirimID" type="hidden" />
+                </div>
+                <div class="col-lg-1" style="display:none">
+                    <label asp-for="Iskonto" class="control-label"></label>
+                <input asp-for="Iskonto" class="form-control form-control-sm" value="0"  />
+                </div>
+
+    <div class="col-lg-2">
+        <label class="control-label">&nbsp;</label>
+        <button type="button" onclick="MalzemeEkle()" class="btn btn-success btn-sm form-control form-control-sm">Ekle</button>
+    </div>
+        <div class="col-lg-2 text-right">
+            <label   class="control-label">Dolar</label>
+            <input type="text" name="DolarKuru" id="DolarKur" class="form-control form-control-sm text-right" value="@String.Format("{0:n4}", kurlar.UsdSatis)"  />
+        </div>
+        <div class="col-lg-2 text-right">
+            <label  class="control-label">Euro</label>
+            <input type="text" name="EuroKuru" id="EuroKur" class="form-control form-control-sm text-right" value="@String.Format("{0:n4}", kurlar.EurSatis)"  />
+        </div>
+            </div>
+            <div id="MalzemeEklenenListe">
+                @{
+                    await Html.RenderPartialAsync("_UrunEklenen", Model);
+                }
+            </div>
+
+    
+       
+    
+
+ 
+
+<script>
+    $(document).ready(function() {
+       
+        $("#search-box-urun").on("input", function() {
+            var query = $(this).val();
+          
+            if (query.length >= 3) {
+                $.ajax({
+                    url: '/SiparisIade/MalzemeAra',
+                    type: 'GET',
+                    data: { kelime: query },
+                    success: function(data) {
+                        var results = $("#results-urun");
+                        results.empty();
+                        $.each(data, function(index, malzeme) {
+                            console.log("data:",data);
+                            results.append('<li data-id="' + malzeme.id + '" data-birim-id="' + malzeme.birimID + '" data-birim-ad="' + malzeme.birimAd + '">' + malzeme.kod + ' ' + malzeme.ad + '</li>');
+                        });
+                    }
+                });
+            } else {
+                $("#results-urun").empty();
+            }
+        });
+
+        $(document).on("click", "#results-urun li", function() {
+            var malzemeAd = $(this).text();
+            var malzemeId = $(this).data("id");
+            var malzemeBirimId = $(this).data("birim-id");
+            var malzemeBirimAd = $(this).data("birim-ad");
+
+            $("#BirimID").val(malzemeBirimId);
+            $("#BirimAd").val(malzemeBirimAd);
+            $("#search-box-urun").val(malzemeAd);
+            $("#UrunID").val(malzemeId);
+            $("#results-urun").empty();
+            // Miktar textbox'ına odaklanıyoruz
+            $("#Miktar").focus();
+        });
+    });
+</script>
+
+<script>
+    
+    function MalzemeEkle() {
+        var UrunID = $('#UrunID').val();
+        var Miktar = $('#Miktar').val();
+        var Iskonto = $('#Iskonto').val();
+        var Aciklama = $('#Aciklama').val();
+        var SiparisID=@(Model.SiparisID);
+    
+       if(UrunID==0){
+           alert("Malzeme seçiniz!");
+           return false;
+       }
+        if(Miktar==""){
+            alert("Miktar giriniz!");
+           return false;
+       }
+        $.ajax({
+            url: '@Url.Action("_SiparisUrunEkle", "SiparisIade")',
+            type: 'GET',
+            dataType: "html",
+            data: {
+                UrunID: UrunID,
+                Miktar: Miktar,
+                Iskonto: Iskonto,
+                Aciklama: Aciklama,
+                SiparisID:SiparisID
+            },
+            success: function(response) {
+                $('#MalzemeEklenenListe').html(response);
+                $('#UrunID').val('');
+                $('#Miktar').val('');
+                $('#Iskonto').val('');
+                $('#BirimAd').val('');
+                $('#BirimID').val('');
+                $('#Aciklama').val('');
+                $('#search-box-urun').val('');
+                $('#search-box-urun').focus();
+                toastr.success('Ürün eklendi.', 'Başarılı');
+            },
+            error: function(error) {
+               toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+            }
+        });
+    }
+
+
+</script>
+<script>
+    $(document).on('click', '.remove-item', function() {
+        var urunId = $(this).data('id');
+         if (!confirm("Bu ürünü listeden çıkarmak istediğinize emin misiniz?")) {
+        return; // kullanıcı iptal etti, AJAX çalışmaz
+    }
+        $.ajax({
+            url: '@Url.Action("UrunCikar", "SiparisIade")',
+            type: 'POST',
+            dataType: "html",
+            data: { urunId: urunId ,SiparisID:@(Model.SiparisID) },
+            success: function(response) {
+                $('#MalzemeEklenenListe').html(response);
+
+            },
+            error: function() {
+                alert('Bir hata oluştu. Lütfen tekrar deneyin.'+ respon.error);
+            }
+        });
+    });
+</script>
+<script>
+    function UrunKaydet(SiparisId) {
+       
+        $.ajax({
+            url: '@Url.Action("_UrunEkleBitir", "SiparisIade")',
+            type: 'POST',
+            dataType: "html",
+            data: {
+                SiparisId:SiparisId
+            },
+            success: function(response) {
+                $('#MalzemeEklenenListe').html(response);
+              toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+            },
+            error: function(error) {
+                toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+            }
+        });
+    }
+</script>

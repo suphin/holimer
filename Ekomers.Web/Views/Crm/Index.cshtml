@@ -1,0 +1,27 @@
+﻿
+@{
+	ViewData["Title"] = "Müşteri Yönetimi";
+	 ViewData["Modul"] = "CRM";
+}
+@section CSSection {
+	<!--begin::Page Vendors Styles(used by this page)-->
+ 
+	<!--end::Page Vendors Styles-->
+}
+ 
+ 
+	 
+	 
+	<!--begin::Content-->
+	@await Component.InvokeAsync(typeof(CrmDashbord))
+	<!--end::Content-->
+	 
+ 
+
+
+@section JSSection {
+	 
+	<script src="assets1/js/pages/widgets.js?v=7.0.5"></script>
+ 
+  
+}

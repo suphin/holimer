@@ -1,0 +1,74 @@
+﻿@model SozlesmelerVM
+<style>
+    .control-label {
+        font-weight:bold !important;
+        margin-right:10px;
+        margin-bottom: 15px;
+    }
+</style>
+
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Baslik" class="control-label"></label>  
+        <input asp-for="Baslik" class="form-control form-control-sm" readonly/>
+    </div>
+
+</div>
+<div class="form-group row">
+    <div class="col-lg-9">
+        <label asp-for="Konu" class="control-label"></label>  
+        <input asp-for="Konu" class="form-control form-control-sm" readonly />
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="Durum" class="control-label"></label>  
+        <input asp-for="Durum" class="form-control form-control-sm" readonly="readonly" />
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-6">
+        <label asp-for="Taraf1" class="control-label"></label>  
+        <input asp-for="Taraf1" class="form-control form-control-sm" readonly="readonly" />
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="Taraf2" class="control-label"></label>  
+        <input asp-for="Taraf2" class="form-control form-control-sm" readonly="readonly" />
+    </div>
+</div>
+
+<div class="form-group row">
+    <div class="col-lg-3">
+        <label asp-for="BaslangicTarih" class="control-label"></label>  
+        <input asp-for="Durum" class="form-control form-control-sm" readonly="readonly" value="@Model.BaslangicTarih?.ToString("dd.MM.yyyy")" />
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="BitisTarih" class="control-label"></label>  
+        <input asp-for="Durum" class="form-control form-control-sm" readonly="readonly" value="@Model.BitisTarih?.ToString("dd.MM.yyyy")" />
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="Tutar" class="control-label"></label>   
+        <input asp-for="Tutar" class="form-control form-control-sm text-right" readonly="readonly" value="@String.Format("{0:N2}", Model.Tutar)" />
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="TutarAciklama" class="control-label"></label>  
+        <input asp-for="TutarAciklama" class="form-control form-control-sm" readonly="readonly" />
+    </div>
+</div>
+ 
+<div class="form-group row">
+
+    <div class="col-lg-12 col-md-12 col-sm-12">
+        <label asp-for="AnahtarKelimeler" class="control-label"></label>  
+        
+        <input id="kt_tagify_1" class="form-control tagify" readonly="readonly" name='AnahtarKelimeler'   value='@Model.AnahtarKelimeler'   />
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Aciklama" class="control-label"></label>  
+        <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="3" readonly="readonly"></textarea>
+    </div>
+
+</div>
+
+<script src="assets1/js/pages/crud/forms/widgets/tagify.js?v=7.0.5"></script>
+<script src="js/select2.js?v=7.0.5"></script>

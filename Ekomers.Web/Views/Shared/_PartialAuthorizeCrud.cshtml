@@ -1,0 +1,234 @@
+﻿@model AuthorizeCrudVM
+
+@if (User.HasClaim("Authorize", "Create") || User.IsInRole("Admin"))
+{
+	<script>
+		function VeriYeni() {
+			GetAjax('@Model.Controller/VeriGoruntule?view=_VeriKopyalanacak&VeriID=0', 'VeriAlan');
+		}
+	</script>
+}
+
+@if (User.HasClaim("Authorize", "View") || User.IsInRole("Admin"))
+{
+	<script>
+		function VeriGoruntule(id) {
+			GetAjax('@Model.Controller/VeriGoruntule?view=_VeriGoruntule&VeriID=' + id, 'VeriAlan');
+		}
+
+	</script>
+}
+@if (User.HasClaim("Authorize", "Edit") || User.IsInRole("Admin"))
+{
+	<script>
+		function VeriGetir(id) {
+			GetAjax('@Model.Controller/VeriGoruntule?view=_VeriGetir&VeriID=' + id, 'VeriAlan');
+		}
+		function VeriGetir2(id) {
+			GetAjax('@Model.Controller/VeriGoruntule?view=_VeriGetir&VeriID=' + id+'&pageIndex=@ViewBag.PageIndex&pageSize=@ViewBag.PageSize', 'VeriAlan');
+			
+		}
+	</script>
+}
+@if (User.HasClaim("Authorize", "Delete") || User.IsInRole("Admin"))
+{
+	<script>
+		function VeriSilinecek(id) {
+			GetAjax('@Model.Controller/VeriGoruntule?view=_VeriSilinecek&VeriID=' + id, 'VeriAlan');
+		}
+	</script>
+}
+@if (User.HasClaim("Authorize", "Copy") || User.IsInRole("Admin"))
+{
+	<script>
+		function VeriKopyalanacak(id) {
+			GetAjax('@Model.Controller/VeriGoruntule?view=_VeriKopyalanacak&VeriID=' + id, 'VeriAlan');
+		}
+	</script>
+}
+
+@if (User.HasClaim("Authorize", "Folder") || User.IsInRole("Admin"))
+{
+	<script>
+		 function VeriKlasor(id) {
+			GetAjax('DosyaYonetimi/KlasorGetir?DosyaYolu=@(Model.DosyaYolu)&ModulID=@(Model.ModulID)&VeriID=' + id, 'DetaylarDosya');
+		}
+	</script>
+}
+
+
+@if (User.HasClaim("Authorize", "FileAdd") || User.IsInRole("Admin"))
+{
+	<script>
+		 function DosyaGetir(id) {
+			GetAjax('DosyaYonetimi/DosyaGetir?DosyaYolu=@(Model.DosyaYolu)&ModulID=@(Model.ModulID)&VeriID=' + id, 'DetaylarDosya');
+		}
+	</script>
+	<script>
+		$('#pdfModal').on('show.bs.modal', function (event) {
+			var button = $(event.relatedTarget); // Button that triggered the modal
+			var fileName = button.data('filename'); // Extract info from data-* attributes
+			var filePath = button.data('filepath'); // Extract info from data-* attributes
+			var modal = $(this);
+		//	var pdfFrame = modal.find('#pdfFrame');
+			//pdfFrame.attr('src', '/DosyaYonetimi/GetPDF?filepath=' + filePath + '&fileName=' + fileName);
+
+
+			// PDF ve resim çerçevelerini seçiyoruz
+		var pdfFrame = modal.find('#pdfFrame');
+		var imageFrame = modal.find('#imageFrame');
+			var videoFrame = modal.find('#videoFrame');
+		var toolbar = modal.find('#toolbar');
+		var downloadLink = modal.find('#downloadImage');
+
+		// Dosya türünü kontrol ediyoruz
+		@* if (fileName.endsWith('.pdf')) {
+			// PDF dosyası için iframe kullan
+			pdfFrame.attr('src', '/DosyaYonetimi/GetPDF?filepath=' + filePath + '&fileName=' + fileName);
+			pdfFrame.show();
+			imageFrame.hide();
+			toolbar.hide();
+		} else if (fileName.match(/\.(jpg|jpeg|png|gif|tif|tiff)$/i)) {			
+			imageFrame.attr('src', '/DosyaYonetimi/GetPDF?filepath=' + filePath + '&fileName=' + fileName);
+			imageFrame.css('transform', 'scale(1)');
+			imageFrame.show();
+			pdfFrame.hide();
+			toolbar.show();
+			downloadLink.attr('href', '/DosyaYonetimi/GetPDF?filepath=' + filePath + '&fileName=' + fileName);
+		} *@
+				if (fileName.endsWith('.pdf')) {
+				// PDF dosyası için iframe kullan
+				pdfFrame.attr('src', '/DosyaYonetimi/GetPDF?filepath=' + filePath + '&fileName=' + fileName);
+				pdfFrame.show();
+				imageFrame.hide();
+				videoFrame.hide();
+				toolbar.hide();
+			} else if (fileName.match(/\.(jpg|jpeg|png|gif|tif|tiff)$/i)) {
+				// Resim dosyası için img etiketi kullan
+				imageFrame.attr('src', '/DosyaYonetimi/GetPDF?filepath=' + filePath + '&fileName=' + fileName);
+				imageFrame.css('transform', 'scale(1)');
+				imageFrame.show();
+				pdfFrame.hide();
+				videoFrame.hide();
+				toolbar.show();
+				downloadLink.attr('href', '/DosyaYonetimi/GetPDF?filepath=' + filePath + '&fileName=' + fileName);
+			} else if (fileName.match(/\.(mp4|avi|mov|wmv|webm)$/i)) {
+				// Video dosyası için video etiketi kullan
+				videoFrame.attr('src', '/DosyaYonetimi/GetPDF?filepath=' + filePath + '&fileName=' + fileName);
+				videoFrame.show();
+				videoFrame[0].load(); // Video yükle
+				pdfFrame.hide();
+				imageFrame.hide();
+				toolbar.hide(); // Video için indir butonunu gizleyebiliriz (isteğe bağlı)
+			}
+
+
+		});
+		$(document).ready(function () {
+			$('.btn-close-modal').on('click', function () {
+				$('#pdfModal').modal('hide');
+			});
+
+			let scale = 1;
+			const scaleStep = 0.1; // Yakınlaştırma/Uzaklaştırma oranı
+		
+			// Yakınlaştırma işlevi
+			$('#zoomIn').on('click', function () {
+				scale += scaleStep;
+				$('#imageFrame').css({
+					'transform': 'scale(' + scale + ')',
+					'position': 'relative',
+					'z-index': 1 // Araç çubuğunun altında kalmasını sağlamak için
+				});
+			});
+		
+			// Uzaklaştırma işlevi
+			$('#zoomOut').on('click', function () {
+				scale = Math.max(scale - scaleStep, 0.1); // Minimum ölçek 0.1
+				$('#imageFrame').css('transform', 'scale(' + scale + ')');
+			});
+			 
+			@* // Sürükleme için değişkenler
+			let isDragging = false;
+			let startX, startY;
+			let offsetX = 0, offsetY = 0;
+
+			// Fareye basıldığında sürüklemeyi başlat
+			$('#imageFrame').on('mousedown', function (e) {
+				if (scale > 1) { // Sadece yakınlaştırılmışsa sürükle
+					isDragging = true;
+					startX = e.pageX - offsetX;
+					startY = e.pageY - offsetY;
+					$(this).css('cursor', 'grabbing');
+				}
+			});
+
+			// Fare hareket ettiğinde resmi hareket ettir
+			$('#imageFrame').on('mousemove', function (e) {
+				if (isDragging) {
+					offsetX = e.pageX - startX;
+					offsetY = e.pageY - startY;
+					$(this).css({
+						'transform': `scale(${scale}) translate(${offsetX / scale}px, ${offsetY / scale}px)`
+					});
+				}
+			});
+
+			// Fare bırakıldığında sürüklemeyi bitir
+			$('#imageFrame').on('mouseup mouseleave', function () {
+				if (isDragging) {
+					isDragging = false;
+					$(this).css('cursor', 'grab');
+				}
+			}); *@
+			// Sürükleme için değişkenler
+		let isDragging = false;
+		let startX, startY;
+		let offsetX = 0, offsetY = 0;
+
+		// Fareye basıldığında sürüklemeyi başlat
+		$('#imageFrame').on('mousedown', function (e) {
+			if (scale > 1) { // Sadece yakınlaştırılmışsa sürükle
+				e.preventDefault(); // Tarayıcı kaydırmasını engelle
+				isDragging = true;
+				startX = e.pageX - offsetX;
+				startY = e.pageY - offsetY;
+				$(this).css('cursor', 'grabbing');
+			}
+		});
+
+		// Fare hareket ettiğinde resmi hareket ettir
+		$('#imageFrame').on('mousemove', function (e) {
+			if (isDragging) {
+				e.preventDefault();
+				offsetX = e.pageX - startX;
+				offsetY = e.pageY - startY;
+				$(this).css({
+					'transform': `scale(${scale}) translate(${offsetX / scale}px, ${offsetY / scale}px)`
+				});
+			}
+		});
+
+		// Fare bırakıldığında sürüklemeyi bitir
+		$(document).on('mouseup', function () {
+			if (isDragging) {
+				isDragging = false;
+				$('#imageFrame').css('cursor', 'grab');
+			}
+		});
+		});
+
+	</script>
+}
+
+
+@if (User.HasClaim("Authorize", "Mapping") || User.IsInRole("Admin"))
+{
+	<script>
+		 function HaritaGetir(id,modulid) {
+			GetAjax('Map/KoordinatGetir?ModulID=@(Model.ModulID)&KayitID=' + id, 'DetaylarDosya');
+		}
+	</script>
+}
+
+ 

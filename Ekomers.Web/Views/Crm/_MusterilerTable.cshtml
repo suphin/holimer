@@ -1,0 +1,37 @@
+﻿@model List<MusterilerVM>
+@{
+}
+<table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+	<thead>
+		<tr>
+			<th class="no-print" style="width:30px"></th>
+			<th>Kayıt ID</th>
+			<th>Açıklama</th>
+		 
+			<th class="no-print">Dosya</th>
+			<th class="no-print crudBtnRow">Düzenle</th>
+
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (MusterilerVM item in Model)
+		{
+			<tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")">
+				<td class="no-print"><input type="checkbox" class="form-control" /></td>
+				<td>@item.ID</td>
+				<td>@item.Aciklama</td>
+
+				<td class="no-print"><a href="/Musteriler/Detay?MusterilerID=@item.ID" class="btn btn-sm btn-primary">Detay</a></td>
+
+				@{
+					await Html.RenderPartialAsync("_PartialAuthorizeScript",
+					new AuthorizeCrudVM { ID = item.ID, DosyaEkle = true, HaritaEkle = true, ModulID = (int)ModulEnum.Musteriler });
+				}
+			</tr>
+		}
+
+
+	</tbody>
+</table>
+<script src="assets1/plugins/custom/datatables/datatables.bundle.js?v=7.0.5"></script>
+<script src="assets1/js/pages/crud/datatables/extensions/buttonsCustom.js?v=7.0.5"></script>

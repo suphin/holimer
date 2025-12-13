@@ -1,0 +1,181 @@
+﻿@model GruplarVM;
+ 
+@{ 
+    ViewData["Title"] = "Gruplar";
+}
+@section CSSection {
+    <link href="~/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+}
+ 
+<!-- Content Row -->
+<div class="card shadow">
+    <div class="card-header py-2">
+
+        <div class="row">
+            <div class="col-md-3"><span class="font-weight-bold"> GRUP LİSTESİ </span></div>
+            <div class="col-md-9 text-right">
+                @* <input type="button" value="Yazdır" class="btn btn-primary btn-sm" onclick="Yazdir2('#YardimTable')" /> *@
+                <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#DetaylarDiv">Yeni Grup Ekle</button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered TableSmallFont" id="DataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Gruplar</th> 
+                        <th>Kod</th>
+                        <th>Açıklama</th> 
+                        <th style="width:130px" class="no-print">DÜZENLE</th>
+                        <th style="width:100px" class="no-print">Alt Gruplar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (MalzemeGrup item in Model.MalzemeGrupListe)
+                    {
+
+                        <tr>
+                            <td>@item.ID</td>
+                            <td>@item.Ad</td>
+                            <td>@item.Kod</td>
+                            <td>@item.Aciklama</td> 
+                            <td class="no-print">
+                                
+                               
+
+                                @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Edit") || a.Value == "Admin"))
+                                {
+
+                                    <a href="#" onclick="VeriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Düzenle">
+                                        <i class="far fa-edit text-success mr-2"></i>
+                                    </a>
+                                }
+                                @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Delete") || a.Value == "Admin"))
+                                {
+                                    <a href="#" onclick="SilinecekVerileriGetir('@item.ID')" data-toggle="modal" data-target="#ModalGoruntule" title="Sil">
+                                        <i class="fas fa-trash text-danger mr-2"></i> 
+                                        </a>
+                                }
+                                
+                            </td>
+                            <td>
+                                <a href="Stok/AltGruplar?GrupID=@item.ID"><i class="fa fa-list text-info"></i></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="DetaylarDiv" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <form asp-controller="Stok" asp-action="Grup_VeriEkle" method="post" name="GirisEkleForm">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Gruplar</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+                </div>
+
+                <div class="modal-body"> 
+                    <div class="table-responsive">
+                        <table class="table" width="100%" cellspacing="0">
+                            <tr>
+                                <td>
+                                    <div class="form-group">
+                                        <label asp-for="Ad" class="control-label"></label>
+                                        <input asp-for="Ad" class="form-control" required  />
+                                        <span asp-validation-for="Ad" class="text-danger"></span>
+                                    </div>
+                                </td> 
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="form-group">
+                                        <label asp-for="Kod" class="control-label"></label>
+                                        <input asp-for="Kod" class="form-control" />
+                                        <span asp-validation-for="Kod" class="text-danger"></span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <div class="form-group">
+                                        <label asp-for="Aciklama" class="control-label"></label>
+                                        <textarea asp-for="Aciklama" type="text" class="form-control" rows="2"></textarea>
+                                        <span asp-validation-for="Aciklama" class="text-danger"></span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+                    <button type="submit" class="btn btn-success">Kaydet</button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+<div id="ModalGoruntule" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div id="goruntuleFormDiv"></div>
+    </div>
+</div>
+@section JSSection {
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        $.extend($.fn.dataTable.defaults, {
+            ordering: false,
+            iDisplayLength: 50
+        });
+        $(document).ready(function() {
+            $('#DataTable').DataTable({
+                language: {
+                    url: '/js/i18n/DataTables-TR.json'
+                }
+            });
+        });
+        
+    </script>
+ <script>
+        
+        function VeriGetir(id) {
+            GetAjax('Stok/Grup_VeriGetir?GrupID=' + id, 'goruntuleFormDiv');
+        }
+        function SilinecekVerileriGetir(id) {
+            GetAjax('Stok/Grup_SilinecekVerileriGetir?GrupID=' + id, 'goruntuleFormDiv');
+        }
+    </script>
+  
+
+    <script src="/js/ajax.js"></script>
+    <script>
+        $(document).ready(function() {
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <text>
+                        toastr.success('@TempData["SuccessMessage"]', 'Başarılı');
+            </text>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <text>
+                        toastr.error('@TempData["ErrorMessage"]', 'Hata');
+            </text>
+        }
+        });
+    </script>
+}
+

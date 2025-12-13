@@ -1,0 +1,141 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TypeScriptTarget>ES5</TypeScriptTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TypeScriptTarget>ES5</TypeScriptTarget>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+<SatelliteResourceLanguages>en;tr</SatelliteResourceLanguages>
+    <UserSecretsId>aspnet-Ekomers-054FC8E6-6167-4587-91B1-A6C9AAB3EF38</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Areas\cum5\**" />
+    <Compile Remove="Areas\GES\**" />
+    <Compile Remove="wwwroot\assets5\**" />
+    <Compile Remove="wwwroot\assets7\**" />
+    <Compile Remove="wwwroot\assets\**" />
+    <Compile Remove="wwwroot\css\Yeni klasör\**" />
+    <Compile Remove="wwwroot\packages\**" />
+    <Content Remove="Areas\cum5\**" />
+    <Content Remove="Areas\GES\**" />
+    <Content Remove="wwwroot\assets5\**" />
+    <Content Remove="wwwroot\assets7\**" />
+    <Content Remove="wwwroot\assets\**" />
+    <Content Remove="wwwroot\css\Yeni klasör\**" />
+    <Content Remove="wwwroot\packages\**" />
+    <EmbeddedResource Remove="Areas\cum5\**" />
+    <EmbeddedResource Remove="Areas\GES\**" />
+    <EmbeddedResource Remove="wwwroot\assets5\**" />
+    <EmbeddedResource Remove="wwwroot\assets7\**" />
+    <EmbeddedResource Remove="wwwroot\assets\**" />
+    <EmbeddedResource Remove="wwwroot\css\Yeni klasör\**" />
+    <EmbeddedResource Remove="wwwroot\packages\**" />
+    <None Remove="Areas\cum5\**" />
+    <None Remove="Areas\GES\**" />
+    <None Remove="wwwroot\assets5\**" />
+    <None Remove="wwwroot\assets7\**" />
+    <None Remove="wwwroot\assets\**" />
+    <None Remove="wwwroot\css\Yeni klasör\**" />
+    <None Remove="wwwroot\packages\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Controllers\KullaniciController.cs" />
+    <Compile Remove="Controllers\Sayim2Controller.cs" />
+    <Compile Remove="Controllers\SayimController.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Views\Shared\Partial\_LayoutMetronic111.cshtml" />
+    <Content Remove="wwwroot\css\custom-metronic7.css" />
+    <Content Remove="wwwroot\css\sb-admin-2 41.css" />
+    <Content Remove="wwwroot\css\sb-admin-2.css" />
+    <Content Remove="wwwroot\css\sb-admin-2.min 41.css" />
+    <Content Remove="wwwroot\css\sb-admin-2.min.css" />
+    <Content Remove="wwwroot\maps\package.json" />
+    <Content Remove="wwwroot\map\cbsmapscript.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="ScaffoldingReadMe.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="15.1.0" />
+    <PackageReference Include="Azure.Identity" Version="1.17.1" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="EPPlus" Version="8.3.1" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
+    <PackageReference Include="MetadataExtractor" Version="2.9.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Build" Version="18.0.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="5.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Features" Version="5.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ekomers.Common\Ekomers.Common.csproj" />
+    <ProjectReference Include="..\Ekomers.Data\Ekomers.Data.csproj" />
+    <ProjectReference Include="..\Ekomers.Models\Ekomers.Models.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Areas\" />
+    <Folder Include="Infrastructure\Auth\" />
+    <Folder Include="Data\" />
+    <Folder Include="wwwroot\FileUploads\" />
+    <Folder Include="wwwroot\Leaflet\plugIn\Draw\" />
+    <Folder Include="wwwroot\Leaflet\plugIn\Fullscreen\" />
+    <Folder Include="wwwroot\StokUpload\malzeme\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Views\Admin\AddRoleClaim.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\Shared\Partial\_LayoutMetronic111.cshtml" />
+    <_ContentIncludedByDefault Remove="wwwroot\css\custom.css" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\map\cbsmapscript.js" />
+    <None Include="wwwroot\map\mapScript.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Views\Admin\AddRoleClaim.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Views\Shared\Partial\_LayoutMetronic111.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Views\Shared\DosyaYukle_.cshtml">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

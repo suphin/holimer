@@ -1,0 +1,93 @@
+﻿@model CbsVM
+@{
+    Layout = "_LayoutCbs";
+}
+ 
+
+<!--begin::Leaflet Main-->
+<link rel="stylesheet" href="~/Leaflet/leaflet.css" />
+<script src="~/Leaflet/leaflet.js"></script> 
+<!--end::Leaflet Main-->
+<!--begin::Leaflet PlugIn style-->
+<link href="~/leaflet/plugin/control.geocoder/control.geocoder.css" rel="stylesheet" />
+<link href="~/leaflet/plugin/draw/leaflet.draw.css" rel="stylesheet" />
+<link href="~/leaflet/plugin/fullscreen/leaflet.fullscreen.css" rel="stylesheet" />
+<link href="~/leaflet/plugin/markercluster/markercluster.css" rel="stylesheet" />
+<link href="~/leaflet/plugin/markercluster/markercluster.default.css" rel="stylesheet" />
+<!--end::Leaflet PlugIn style-->
+<!--begin::custom style-->
+<link href="~/map/cbsmapstyle.css" rel="stylesheet" />
+<!--end::custom style-->
+
+<div id="lmap" style="height: 100%;width:100%"></div>
+
+ 
+<div id="Goruntu360" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            @* <div class="modal-header">
+				<h5 class="modal-title">Görüntüle</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+			</div> *@
+            <div class="modal-body">
+
+                <iframe id="iframeContent" name="iframeContent" src="" width="100%" height="650px" frameborder="0"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="ModalKapat('Goruntu360')">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="ResultModal" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            @* <div class="modal-header">
+				<h5 class="modal-title">Görüntüle</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+			</div> *@
+            <div class="modal-body" id="result">
+
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="ModalKapat('ResultModal')">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+ 
+
+
+
+
+<!--begin::Leaflet PlugIn Config-->
+<script src="~/leaflet/plugin/control.geocoder/control.geocoder.js"></script> 
+<script src="~/leaflet/plugin/draw/leaflet.draw.js"></script>
+<script src="~/leaflet/plugin/fullscreen/leaflet.fullscreen.min.js"></script>
+<script src="~/leaflet/plugin/omnivore/leaflet-omnivore.min.js"></script>
+<script src="~/leaflet/plugin/markercluster/leaflet.markercluster-src.js"></script>
+<script src="~/leaflet/plugin/geoserver/l.geoserver.js"></script>
+<!--end::Leaflet PlugIn Config-->
+<!--begin::custom Config-->
+<script src="~/map/cbsmapscript.js"></script>
+<!--end::custom Config-->
+<script>
+    
+       // getGeoJSONAll('23');
+       // getImageAll('23');
+    
+          function ModalKapat(modal)
+    {
+            $("#"+modal).modal('hide');
+    }
+</script>
+
+<script>
+    $(document).ready(function() {
+               KTTreeview.init();
+           });
+</script>
+ 
+
+

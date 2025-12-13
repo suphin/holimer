@@ -1,0 +1,74 @@
+﻿@model MalzemeStokVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+ 
+<form class="form" method="post" name="_VeriGoruntule" id="_VeriGoruntule">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Malzeme Hareketi Kayıt Düzenle</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group row">
+
+                <div class="col-lg-5">
+                    <label asp-for="HareketTur" class="control-label"></label> : @Model.HareketTur
+                </div>
+                <div class="col-lg-5">
+                    <label asp-for="DepoAd" class="control-label"></label>: @Model.DepoAd
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="Tarih" class="control-label"></label>: @Model.Tarih
+                </div>
+
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-2">
+                    <label asp-for="SktTarih" class="control-label"></label>: @Model.SktTarih
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="LotNumara" class="control-label"></label>: @Model.LotNumara
+                </div>
+                <div class="col-lg-8">
+                    <label asp-for="Aciklama" class="control-label"></label>: @Model.Aciklama
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-4">
+                    <label class="control-label">Malzeme</label>: @Model.MalzemeAd
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="Miktar" class="control-label"></label>: @Model.Miktar
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="BirimAd" class="control-label"></label>: @Model.BirimAd
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="Aciklama" class="control-label"></label>: @Model.MalzemeAciklama
+                </div>
+               
+            </div>
+            <div class="form-group row">
+                <div class="small">
+                    Kayıt Oluşturan: @Model.CreateUserName
+                    Oluşturma Tarihi:@Model.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+                </div>
+                </div>
+            
+
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button> 
+        </div>
+    </div>
+
+</form>
+
+
+
+
+
+

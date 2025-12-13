@@ -1,0 +1,107 @@
+﻿@model MalzemelerVM
+
+<h4>Malzeme Arama</h4>
+
+<form asp-action="Arama" method="post" class="row g-3 mb-3">
+    <div class="col-md-4">
+        <label class="form-label">Kelime</label>
+        <input asp-for="Aciklama" class="form-control form-control-sm" />
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Grup</label>
+        <select asp-for="GrupID" class="form-control form-control-sm"
+                asp-items="@(new SelectList(Model.MalzemeGrupListe, "ID", "Ad"))">
+            <option value="">— Hepsi —</option>
+        </select>
+    </div>
+
+  
+
+    <div class="col-md-2">
+        <label class="form-label">Sayfa Boyutu</label>
+        <select name="pageSize" class="form-control form-control-sm">
+            <option value="10"  selected="@(Model.PageSize==10)">10</option>
+            <option value="20"  selected="@(Model.PageSize==20)">20</option>
+            <option value="50"  selected="@(Model.PageSize==50)">50</option>
+            <option value="100" selected="@(Model.PageSize==100)">100</option>
+        </select>
+    </div>
+
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary btn-sm">Ara</button>
+        <a asp-action="Arama" class="btn btn-light btn-sm">Temizle</a>
+    </div>
+</form>
+
+@if (Model.Sorgulandi)
+{
+    <div class="mb-2">
+        <strong>@Model.TotalCount</strong> kayıt bulundu.
+    </div>
+
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Ad</th>
+                <th>Kod</th>
+                <th>Aktif</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.MalzemelerVMListe)
+        {
+            <tr>
+                <td>@item.ID</td>
+                <td>@item.Ad</td>
+                <td>@item.Kod</td>
+                <td>@(item.IsActive ? "Evet" : "Hayır")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+@{
+    
+        var totalPages = (int)Math.Ceiling((double)Model.TotalCount / Model.PageSize);
+        var route = Model.Filter.ToRouteValues();
+        route["pageSize"] = Model.PageSize.ToString();
+    route.Remove("pageIndex"); // varsa kesin kaldır
+    }
+
+    @if (totalPages > 1)
+    {
+        <nav aria-label="Sayfalama">
+            <ul class="pagination">
+                <li class="page-item @(Model.PageIndex == 1 ? "disabled" : "")">
+                    <a class="page-link"
+                       asp-action="Arama"
+                   asp-route-pageIndex="@(Model.PageIndex - 1)"
+                       asp-all-route-data="route">Önceki</a>
+                </li>
+
+                @{
+                    var start = Math.Max(1, Model.PageIndex - 2);
+                    var end   = Math.Min(totalPages, Model.PageIndex + 2);
+                    for (var i = start; i <= end; i++)
+                    {
+                        <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="Arama"
+                               asp-route-pageIndex="@i"
+                               asp-all-route-data="route">@i</a>
+                        </li>
+                    }
+                }
+
+                <li class="page-item @(Model.PageIndex >= totalPages ? "disabled" : "")">
+                    <a class="page-link"
+                       asp-action="Arama"
+                   asp-route-pageIndex="@(Model.PageIndex + 1)"
+                       asp-all-route-data="route">Sonraki</a>
+                </li>
+            </ul>
+        </nav>
+    }
+

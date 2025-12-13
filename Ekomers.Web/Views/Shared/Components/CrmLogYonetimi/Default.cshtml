@@ -1,0 +1,407 @@
+﻿@model CrmLogVM
+
+
+
+<div class="row">
+
+   <div class="col-lg-4 col-md-4 col-sm-12">
+        <div class="card card-custom card-border">
+        <div class="card-body">
+                <h3>
+                    Müşteri Bilgileri
+                </h3>
+                @{
+                    await Html.RenderPartialAsync("~/Views/Musteriler/_info.cshtml", Model.Musteri);
+                }
+        </div>
+          
+    </div>
+       
+     
+   </div>
+    <div class="col-lg-8 col-md-8 col-sm-12">
+    
+        <div class="card card-custom card-border">
+        
+            <div class="card-body">
+                <h3>
+                    Hareket Bilgileri
+                </h3>
+
+                @foreach (var item in Model.ActiviteListe)
+                {
+                    <div class="row g-3 align-items-start border rounded p-3 mb-3">
+
+                        <!-- küçük resim -->
+                        <div class="col-auto">
+                            @if (item.IsDone)
+                            {
+                                <span class="svg-icon svg-icon-success svg-icon-2x">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Code\Done-circle.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1" alt="Yapılacak Görev">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24" />
+                                            <circle fill="#000000" opacity="0.3" cx="12" cy="12" r="10" />
+                                            <path d="M16.7689447,7.81768175 C17.1457787,7.41393107 17.7785676,7.39211077 18.1823183,7.76894473 C18.5860689,8.1457787 18.6078892,8.77856757 18.2310553,9.18231825 L11.2310553,16.6823183 C10.8654446,17.0740439 10.2560456,17.107974 9.84920863,16.7592566 L6.34920863,13.7592566 C5.92988278,13.3998345 5.88132125,12.7685345 6.2407434,12.3492086 C6.60016555,11.9298828 7.23146553,11.8813212 7.65079137,12.2407434 L10.4229928,14.616916 L16.7689447,7.81768175 Z" fill="#000000" fill-rule="nonzero" />
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="svg-icon svg-icon-danger svg-icon-2x">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Home\Alarm-clock.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1" alt="Yapılmış Aktivite">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24" />
+                                            <path d="M7.14319965,19.3575259 C7.67122143,19.7615175 8.25104409,20.1012165 8.87097532,20.3649307 L7.89205065,22.0604779 C7.61590828,22.5387706 7.00431787,22.7026457 6.52602525,22.4265033 C6.04773263,22.150361 5.88385747,21.5387706 6.15999985,21.0604779 L7.14319965,19.3575259 Z M15.1367085,20.3616573 C15.756345,20.0972995 16.3358198,19.7569961 16.8634386,19.3524415 L17.8320512,21.0301278 C18.1081936,21.5084204 17.9443184,22.1200108 17.4660258,22.3961532 C16.9877332,22.6722956 16.3761428,22.5084204 16.1000004,22.0301278 L15.1367085,20.3616573 Z" fill="#000000" />
+                                            <path d="M12,21 C7.581722,21 4,17.418278 4,13 C4,8.581722 7.581722,5 12,5 C16.418278,5 20,8.581722 20,13 C20,17.418278 16.418278,21 12,21 Z M19.068812,3.25407593 L20.8181344,5.00339833 C21.4039208,5.58918477 21.4039208,6.53893224 20.8181344,7.12471868 C20.2323479,7.71050512 19.2826005,7.71050512 18.696814,7.12471868 L16.9474916,5.37539627 C16.3617052,4.78960984 16.3617052,3.83986237 16.9474916,3.25407593 C17.5332781,2.66828949 18.4830255,2.66828949 19.068812,3.25407593 Z M5.29862906,2.88207799 C5.8844155,2.29629155 6.83416297,2.29629155 7.41994941,2.88207799 C8.00573585,3.46786443 8.00573585,4.4176119 7.41994941,5.00339833 L5.29862906,7.12471868 C4.71284263,7.71050512 3.76309516,7.71050512 3.17730872,7.12471868 C2.59152228,6.53893224 2.59152228,5.58918477 3.17730872,5.00339833 L5.29862906,2.88207799 Z" fill="#000000" opacity="0.3" />
+                                            <path d="M11.9630156,7.5 L12.0475062,7.5 C12.3043819,7.5 12.5194647,7.69464724 12.5450248,7.95024814 L13,12.5 L16.2480695,14.3560397 C16.403857,14.4450611 16.5,14.6107328 16.5,14.7901613 L16.5,15 C16.5,15.2109164 16.3290185,15.3818979 16.1181021,15.3818979 C16.0841582,15.3818979 16.0503659,15.3773725 16.0176181,15.3684413 L11.3986612,14.1087258 C11.1672824,14.0456225 11.0132986,13.8271186 11.0316926,13.5879956 L11.4644883,7.96165175 C11.4845267,7.70115317 11.7017474,7.5 11.9630156,7.5 Z" fill="#000000" />
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            }
+
+                        </div>
+
+                        <!-- Sağ taraftaki içerik: iki alt row -->
+                        <div class="col">
+                            <!-- 1. satır: Adsoyad, şehir ve tel  |  müşteri tip durumu -->
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <span class="text-muted small">
+                                        Kayıt No: @item.ID
+                                    </span>
+                                    <div class="fw-semibold">
+                                        @item.Musteri?.AdSoyad
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Musteri?.Telefon))
+                                        {
+                                            <text> • <a href="tel:@item.Musteri.Telefon">@item.Musteri.Telefon</a></text>
+                                        }
+
+                                    </div>
+
+                                    @if (!item.IsDone)
+                                    {
+                                        @if (!string.IsNullOrWhiteSpace(item.Musteri?.Telefon))
+                                        {
+                                            <text><b> Randevu Tarihi : </b>  @item.TarihSaat?.ToString("dd.MM.yyyy HH:mm") </text>
+                                        }
+                                    }
+                                </div>
+                                <div class="col-auto">
+                                    <span class="badge">
+                                        @item.TurAd
+                                    </span>
+                                   
+                                </div>
+                            </div>
+                            <!-- 2. satır: not  |  ekleyen ve tarih -->
+                            <div class="row mt-2">
+                                <div class="col">
+                                    <div class="small">Adres: @(!string.IsNullOrWhiteSpace(item.Musteri?.Adres) ? item.Musteri.Adres : "—")</div>
+                                </div>
+                            </div>
+
+
+
+                            <!-- 4. satır: not  |  ekleyen ve tarih -->
+                            <div class="row mt-2">
+                                <div class="col">
+                                    <div class="small">@(!string.IsNullOrWhiteSpace(item.Not) ? item.Not : "—")</div>
+                                </div>
+                                <div class="col-auto text-muted small">
+                                    @if (!string.IsNullOrWhiteSpace(item.CreateUserName))
+                                    {
+                                        <text>@item.CreateUserName — </text>
+                                    }
+                                    @item.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+                }
+                @foreach (var item in Model.FirsatListe)
+                {
+                    <div class="row g-3 align-items-start border rounded p-3 mb-3">
+
+                        <!-- küçük resim -->
+                        <div class="col-auto">
+                            @if (item.DurumID == (int)EnumFirsatDurum.SipariseDonustu)
+                            {
+                                <span class="svg-icon svg-icon-warning svg-icon-2x">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Code\Done-circle.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1" alt="Yapılacak Görev">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <polygon points="0 0 24 0 24 24 0 24" />
+                                            <path d="M12,18 L7.91561963,20.1472858 C7.42677504,20.4042866 6.82214789,20.2163401 6.56514708,19.7274955 C6.46280801,19.5328351 6.42749334,19.309867 6.46467018,19.0931094 L7.24471742,14.545085 L3.94038429,11.3241562 C3.54490071,10.938655 3.5368084,10.3055417 3.92230962,9.91005817 C4.07581822,9.75257453 4.27696063,9.65008735 4.49459766,9.61846284 L9.06107374,8.95491503 L11.1032639,4.81698575 C11.3476862,4.32173209 11.9473121,4.11839309 12.4425657,4.36281539 C12.6397783,4.46014562 12.7994058,4.61977315 12.8967361,4.81698575 L14.9389263,8.95491503 L19.5054023,9.61846284 C20.0519472,9.69788046 20.4306287,10.2053233 20.351211,10.7518682 C20.3195865,10.9695052 20.2170993,11.1706476 20.0596157,11.3241562 L16.7552826,14.545085 L17.5353298,19.0931094 C17.6286908,19.6374458 17.263103,20.1544017 16.7187666,20.2477627 C16.5020089,20.2849396 16.2790408,20.2496249 16.0843804,20.1472858 L12,18 Z" fill="#000000" />
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            }
+                            else if (item.DurumID == (int)EnumFirsatDurum.BilgiToplaniyor)
+                            {
+                                <span class="svg-icon svg-icon-danger svg-icon-2x">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Home\Alarm-clock.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1" alt="Yapılmış Firsat">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <polygon points="0 0 24 0 24 24 0 24" />
+                                            <path d="M12,4.25932872 C12.1488635,4.25921584 12.3000368,4.29247316 12.4425657,4.36281539 C12.6397783,4.46014562 12.7994058,4.61977315 12.8967361,4.81698575 L14.9389263,8.95491503 L19.5054023,9.61846284 C20.0519472,9.69788046 20.4306287,10.2053233 20.351211,10.7518682 C20.3195865,10.9695052 20.2170993,11.1706476 20.0596157,11.3241562 L16.7552826,14.545085 L17.5353298,19.0931094 C17.6286908,19.6374458 17.263103,20.1544017 16.7187666,20.2477627 C16.5020089,20.2849396 16.2790408,20.2496249 16.0843804,20.1472858 L12,18 L12,4.25932872 Z" fill="#000000" opacity="0.3" />
+                                            <path d="M12,4.25932872 L12,18 L7.91561963,20.1472858 C7.42677504,20.4042866 6.82214789,20.2163401 6.56514708,19.7274955 C6.46280801,19.5328351 6.42749334,19.309867 6.46467018,19.0931094 L7.24471742,14.545085 L3.94038429,11.3241562 C3.54490071,10.938655 3.5368084,10.3055417 3.92230962,9.91005817 C4.07581822,9.75257453 4.27696063,9.65008735 4.49459766,9.61846284 L9.06107374,8.95491503 L11.1032639,4.81698575 C11.277344,4.464261 11.6315987,4.25960807 12,4.25932872 Z" fill="#000000" />
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            }
+                            else if (item.DurumID == (int)EnumFirsatDurum.TeklifeDonustu)
+                            {
+                                <span class="svg-icon svg-icon-info svg-icon-2x">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Communication\Sending mail.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24" />
+                                            <path d="M4,16 L5,16 C5.55228475,16 6,16.4477153 6,17 C6,17.5522847 5.55228475,18 5,18 L4,18 C3.44771525,18 3,17.5522847 3,17 C3,16.4477153 3.44771525,16 4,16 Z M1,11 L5,11 C5.55228475,11 6,11.4477153 6,12 C6,12.5522847 5.55228475,13 5,13 L1,13 C0.44771525,13 6.76353751e-17,12.5522847 0,12 C-6.76353751e-17,11.4477153 0.44771525,11 1,11 Z M3,6 L5,6 C5.55228475,6 6,6.44771525 6,7 C6,7.55228475 5.55228475,8 5,8 L3,8 C2.44771525,8 2,7.55228475 2,7 C2,6.44771525 2.44771525,6 3,6 Z" fill="#000000" opacity="0.3" />
+                                            <path d="M10,6 L22,6 C23.1045695,6 24,6.8954305 24,8 L24,16 C24,17.1045695 23.1045695,18 22,18 L10,18 C8.8954305,18 8,17.1045695 8,16 L8,8 C8,6.8954305 8.8954305,6 10,6 Z M21.0849395,8.0718316 L16,10.7185839 L10.9150605,8.0718316 C10.6132433,7.91473331 10.2368262,8.02389331 10.0743092,8.31564728 C9.91179228,8.60740125 10.0247174,8.9712679 10.3265346,9.12836619 L15.705737,11.9282847 C15.8894428,12.0239051 16.1105572,12.0239051 16.294263,11.9282847 L21.6734654,9.12836619 C21.9752826,8.9712679 22.0882077,8.60740125 21.9256908,8.31564728 C21.7631738,8.02389331 21.3867567,7.91473331 21.0849395,8.0718316 Z" fill="#000000" />
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Sağ taraftaki içerik: iki alt row -->
+                        <div class="col">
+                            <!-- 1. satır: Adsoyad, şehir ve tel  |  müşteri tip durumu -->
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <span class="text-muted small">
+                                        Kayıt No: @item.ID
+                                    </span>
+                                    <div class="fw-semibold">
+                                        @item.Musteri?.AdSoyad
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Musteri?.Telefon))
+                                        {
+                                            <text> • <a href="tel:@item.Musteri.Telefon">@item.Musteri.Telefon</a></text>
+                                        }
+
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <span class="badge">
+                                        @item.DurumAd
+                                    </span>
+                                  
+
+                                </div>
+                            </div>
+                            <!-- 2. satır: not  |  ekleyen ve tarih -->
+                            <div class="row mt-2">
+                                <div class="col">
+                                    <div class="small bold">Sorumlu: @(!string.IsNullOrWhiteSpace(item.CreateUserName) ? item.CreateUserName : "—")</div>
+                                </div>
+                            </div>
+
+
+
+                            <!-- 4. satır: not  |  ekleyen ve tarih -->
+                            <div class="row mt-2">
+                                <div class="col">
+                                    <div class="small">@(!string.IsNullOrWhiteSpace(item.Not) ? item.Not : "—")</div>
+                                </div>
+                                <div class="col-auto text-muted small">
+                                    @if (!string.IsNullOrWhiteSpace(item.CreateUserName))
+                                    {
+                                        <text>@item.CreateUserName — </text>
+                                    }
+                                    @item.CreateDate?.ToString("dd.Mitem.yyyy HH:mm")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+
+                }
+                @foreach (var item in Model.TeklifListe)
+                {
+                    <div class="row g-3 align-items-start border rounded p-3 mb-3">
+
+                        <!-- küçük resim -->
+                        <div class="col-auto">
+                            @if (item.IsDone)
+                            {
+                                <span class="svg-icon svg-icon-info svg-icon-2x">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Communication\Sending mail.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24" />
+                                            <path d="M4,16 L5,16 C5.55228475,16 6,16.4477153 6,17 C6,17.5522847 5.55228475,18 5,18 L4,18 C3.44771525,18 3,17.5522847 3,17 C3,16.4477153 3.44771525,16 4,16 Z M1,11 L5,11 C5.55228475,11 6,11.4477153 6,12 C6,12.5522847 5.55228475,13 5,13 L1,13 C0.44771525,13 6.76353751e-17,12.5522847 0,12 C-6.76353751e-17,11.4477153 0.44771525,11 1,11 Z M3,6 L5,6 C5.55228475,6 6,6.44771525 6,7 C6,7.55228475 5.55228475,8 5,8 L3,8 C2.44771525,8 2,7.55228475 2,7 C2,6.44771525 2.44771525,6 3,6 Z" fill="#000000" opacity="0.3" />
+                                            <path d="M10,6 L22,6 C23.1045695,6 24,6.8954305 24,8 L24,16 C24,17.1045695 23.1045695,18 22,18 L10,18 C8.8954305,18 8,17.1045695 8,16 L8,8 C8,6.8954305 8.8954305,6 10,6 Z M21.0849395,8.0718316 L16,10.7185839 L10.9150605,8.0718316 C10.6132433,7.91473331 10.2368262,8.02389331 10.0743092,8.31564728 C9.91179228,8.60740125 10.0247174,8.9712679 10.3265346,9.12836619 L15.705737,11.9282847 C15.8894428,12.0239051 16.1105572,12.0239051 16.294263,11.9282847 L21.6734654,9.12836619 C21.9752826,8.9712679 22.0882077,8.60740125 21.9256908,8.31564728 C21.7631738,8.02389331 21.3867567,7.91473331 21.0849395,8.0718316 Z" fill="#000000" />
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="svg-icon svg-icon-info svg-icon-2x">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Communication\Sending mail.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24" />
+                                            <path d="M4,16 L5,16 C5.55228475,16 6,16.4477153 6,17 C6,17.5522847 5.55228475,18 5,18 L4,18 C3.44771525,18 3,17.5522847 3,17 C3,16.4477153 3.44771525,16 4,16 Z M1,11 L5,11 C5.55228475,11 6,11.4477153 6,12 C6,12.5522847 5.55228475,13 5,13 L1,13 C0.44771525,13 6.76353751e-17,12.5522847 0,12 C-6.76353751e-17,11.4477153 0.44771525,11 1,11 Z M3,6 L5,6 C5.55228475,6 6,6.44771525 6,7 C6,7.55228475 5.55228475,8 5,8 L3,8 C2.44771525,8 2,7.55228475 2,7 C2,6.44771525 2.44771525,6 3,6 Z" fill="#000000" opacity="0.3" />
+                                            <path d="M10,6 L22,6 C23.1045695,6 24,6.8954305 24,8 L24,16 C24,17.1045695 23.1045695,18 22,18 L10,18 C8.8954305,18 8,17.1045695 8,16 L8,8 C8,6.8954305 8.8954305,6 10,6 Z M21.0849395,8.0718316 L16,10.7185839 L10.9150605,8.0718316 C10.6132433,7.91473331 10.2368262,8.02389331 10.0743092,8.31564728 C9.91179228,8.60740125 10.0247174,8.9712679 10.3265346,9.12836619 L15.705737,11.9282847 C15.8894428,12.0239051 16.1105572,12.0239051 16.294263,11.9282847 L21.6734654,9.12836619 C21.9752826,8.9712679 22.0882077,8.60740125 21.9256908,8.31564728 C21.7631738,8.02389331 21.3867567,7.91473331 21.0849395,8.0718316 Z" fill="#000000" />
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            }
+
+
+                        </div>
+
+                        <!-- Sağ taraftaki içerik: iki alt row -->
+                        <div class="col">
+                            <!-- 1. satır: Adsoyad, şehir ve tel  |  müşteri tip durumu -->
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <span class="text-muted small">
+                                        Kayıt No: @item.ID
+                                    </span>
+                                    <div class="fw-semibold">
+                                        @item.Musteri?.AdSoyad
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Musteri?.Telefon))
+                                        {
+                                            <text> • <a href="tel:@item.Musteri.Telefon">@item.Musteri.Telefon</a></text>
+                                        }
+
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <span class="badge">
+                                        @item.DurumAd
+                                    </span>
+                                  
+
+                                </div>
+                            </div>
+                            <!-- 2. satır: not  |  ekleyen ve tarih -->
+                            <div class="row mt-2">
+                                <div class="col">
+                                    <div class="small bold">Sorumlu: @(!string.IsNullOrWhiteSpace(item.CreateUserName) ? item.CreateUserName : "—")</div>
+                                </div>
+                            </div>
+
+
+
+                            <!-- 4. satır: not  |  ekleyen ve tarih -->
+                            <div class="row mt-2">
+                                <div class="col">
+                                    <div class="small">@(!string.IsNullOrWhiteSpace(item.Not) ? item.Not : "—")</div>
+                                </div>
+                                <div class="col-auto text-muted small">
+                                    @if (!string.IsNullOrWhiteSpace(item.CreateUserName))
+                                    {
+                                        <text>@item.CreateUserName — </text>
+                                    }
+                                    @item.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+
+                }
+                @foreach (var item in Model.SiparisListe)
+                {
+                    <div class="row g-3 align-items-start border rounded p-3 mb-3">
+
+                        <!-- küçük resim -->
+                        <div class="col-auto">
+                            @if (item.IsDone)
+                            {
+                                <span class="svg-icon svg-icon-info svg-icon-2x">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Communication\Sending mail.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24" />
+                                            <path d="M4,16 L5,16 C5.55228475,16 6,16.4477153 6,17 C6,17.5522847 5.55228475,18 5,18 L4,18 C3.44771525,18 3,17.5522847 3,17 C3,16.4477153 3.44771525,16 4,16 Z M1,11 L5,11 C5.55228475,11 6,11.4477153 6,12 C6,12.5522847 5.55228475,13 5,13 L1,13 C0.44771525,13 6.76353751e-17,12.5522847 0,12 C-6.76353751e-17,11.4477153 0.44771525,11 1,11 Z M3,6 L5,6 C5.55228475,6 6,6.44771525 6,7 C6,7.55228475 5.55228475,8 5,8 L3,8 C2.44771525,8 2,7.55228475 2,7 C2,6.44771525 2.44771525,6 3,6 Z" fill="#000000" opacity="0.3" />
+                                            <path d="M10,6 L22,6 C23.1045695,6 24,6.8954305 24,8 L24,16 C24,17.1045695 23.1045695,18 22,18 L10,18 C8.8954305,18 8,17.1045695 8,16 L8,8 C8,6.8954305 8.8954305,6 10,6 Z M21.0849395,8.0718316 L16,10.7185839 L10.9150605,8.0718316 C10.6132433,7.91473331 10.2368262,8.02389331 10.0743092,8.31564728 C9.91179228,8.60740125 10.0247174,8.9712679 10.3265346,9.12836619 L15.705737,11.9282847 C15.8894428,12.0239051 16.1105572,12.0239051 16.294263,11.9282847 L21.6734654,9.12836619 C21.9752826,8.9712679 22.0882077,8.60740125 21.9256908,8.31564728 C21.7631738,8.02389331 21.3867567,7.91473331 21.0849395,8.0718316 Z" fill="#000000" />
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="svg-icon svg-icon-info svg-icon-2x">
+                                    <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Communication\Sending mail.svg-->
+                                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                            <rect x="0" y="0" width="24" height="24" />
+                                            <path d="M4,16 L5,16 C5.55228475,16 6,16.4477153 6,17 C6,17.5522847 5.55228475,18 5,18 L4,18 C3.44771525,18 3,17.5522847 3,17 C3,16.4477153 3.44771525,16 4,16 Z M1,11 L5,11 C5.55228475,11 6,11.4477153 6,12 C6,12.5522847 5.55228475,13 5,13 L1,13 C0.44771525,13 6.76353751e-17,12.5522847 0,12 C-6.76353751e-17,11.4477153 0.44771525,11 1,11 Z M3,6 L5,6 C5.55228475,6 6,6.44771525 6,7 C6,7.55228475 5.55228475,8 5,8 L3,8 C2.44771525,8 2,7.55228475 2,7 C2,6.44771525 2.44771525,6 3,6 Z" fill="#000000" opacity="0.3" />
+                                            <path d="M10,6 L22,6 C23.1045695,6 24,6.8954305 24,8 L24,16 C24,17.1045695 23.1045695,18 22,18 L10,18 C8.8954305,18 8,17.1045695 8,16 L8,8 C8,6.8954305 8.8954305,6 10,6 Z M21.0849395,8.0718316 L16,10.7185839 L10.9150605,8.0718316 C10.6132433,7.91473331 10.2368262,8.02389331 10.0743092,8.31564728 C9.91179228,8.60740125 10.0247174,8.9712679 10.3265346,9.12836619 L15.705737,11.9282847 C15.8894428,12.0239051 16.1105572,12.0239051 16.294263,11.9282847 L21.6734654,9.12836619 C21.9752826,8.9712679 22.0882077,8.60740125 21.9256908,8.31564728 C21.7631738,8.02389331 21.3867567,7.91473331 21.0849395,8.0718316 Z" fill="#000000" />
+                                        </g>
+                                    </svg><!--end::Svg Icon-->
+                                </span>
+                            }
+
+
+                        </div>
+
+                        <!-- Sağ taraftaki içerik: iki alt row -->
+                        <div class="col">
+                            <!-- 1. satır: Adsoyad, şehir ve tel  |  müşteri tip durumu -->
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <span class="text-muted small">
+                                        Kayıt No: @item.ID
+                                    </span>
+                                    <div class="fw-semibold">
+                                        @item.Musteri?.AdSoyad
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Musteri?.Telefon))
+                                        {
+                                            <text> • <a href="tel:@item.Musteri.Telefon">@item.Musteri.Telefon</a></text>
+                                        }
+
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <span class="badge">
+                                        @String.Format("{0:n2}", item.SiparisToplam) TL
+                                    </span>
+                                   
+
+                                </div>
+                            </div>
+                            <!-- 2. satır: not  |  ekleyen ve tarih -->
+                            <div class="row mt-2">
+                                <div class="col">
+                                    <div class="small bold">Sorumlu: @(!string.IsNullOrWhiteSpace(item.CreateUserName) ? item.CreateUserName : "—")</div>
+                                </div>
+                            </div>
+
+
+
+                            <!-- 4. satır: not  |  ekleyen ve tarih -->
+                            <div class="row mt-2">
+                                <div class="col">
+                                    <div class="small">@(!string.IsNullOrWhiteSpace(item.DurumAd) ? item.DurumAd : "—")</div>
+                                </div>
+                                <div class="col-auto text-muted small">
+                                    @if (!string.IsNullOrWhiteSpace(item.CreateUserName))
+                                    {
+                                        <text>@item.CreateUserName — </text>
+                                    }
+                                    @item.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+                }
+
+
+            </div>
+        </div>
+    </div>
+</div>

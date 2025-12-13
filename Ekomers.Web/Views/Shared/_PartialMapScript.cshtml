@@ -1,0 +1,22 @@
+﻿ 
+@{
+}
+
+<script>
+    $('#mapModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);  
+
+        var modal = $(this);
+        var dataId = button.data('id');   
+        var dataModulId = button.data('modulid');  
+
+        // console.log("Data ID: ", dataId);
+        // console.log("Data Modul ID: ", dataModulId);
+
+         
+        var mapFrame = modal.find('#mapFrame');
+        mapFrame.attr('src', '/Map/KoordinatGetir?KayitID='+dataId+'&ModulID='+dataModulId);
+        mapFrame.show();
+
+    });
+</script>

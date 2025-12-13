@@ -1,0 +1,73 @@
+﻿@model HedefTabloVM
+@{
+    ViewData["Title"] = "Hedefler";
+  
+}
+
+<div class="card card-custom">
+    <div class="card-header">
+     
+    </div>
+    <div class="card-body">
+        <form asp-action="Kaydet" method="post">
+            <input type="hidden" asp-for="Yil" />
+
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Kullanıcı</th>
+                        @for (int ay = 1; ay <= 12; ay++)
+                        {
+                            <th>@ay. Ay<br />Miktar / Tutar</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.KullaniciHedefleri.Count; i++)
+                    {
+                        <tr>
+                            <td>
+                                @Model.KullaniciHedefleri[i].UserName
+                                <input type="hidden" asp-for="KullaniciHedefleri[@i].UserID" />
+                                <input type="hidden" asp-for="KullaniciHedefleri[@i].UserName" />
+                            </td>
+
+                            @for (int j = 0; j < Model.KullaniciHedefleri[i].Hedefler.Count; j++)
+                            {
+                                <td>
+                                    <input asp-for="KullaniciHedefleri[@i].Hedefler[@j].Miktar"
+                                           class="form-control form-control-sm" placeholder="Miktar" />
+                                    <input asp-for="KullaniciHedefleri[@i].Hedefler[@j].Tutar"
+                                           class="form-control form-control-sm" placeholder="Tutar" />
+                                    <input type="hidden" asp-for="KullaniciHedefleri[@i].Hedefler[@j].Ay" />
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+        </form>
+        <br />
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-custom alert-outline-success fade show mb-5" role="alert">
+                <div class="alert-icon">
+                    <i class="flaticon-warning"></i>
+                </div>
+                <div class="alert-text">@TempData["Message"]</div>
+                <div class="alert-close">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">
+                            <i class="ki ki-close"></i>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+
+

@@ -1,0 +1,260 @@
+﻿@model MalzemeStokVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Stoklar";
+}
+
+
+@section CSSection {
+    <link href="~/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+}
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #AnaTablo tr:hover {
+        background-color: #f0f0f0;
+    }
+    /* Seçili satırın arka plan rengini değiştir */
+    #AnaTablo tr.selected {
+        background-color: #d0e4f1;
+    }
+
+    #AnaTablo .form-control {
+        height: 14px !important;
+    }
+
+    #AnaTablo th {
+        height: 18px !important;
+        font-size: 11px !important;
+    }
+
+    #AnaTablo td {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 4px !important;
+    }
+</style>
+<div class="card shadow">
+    <div class="card-body">
+        <div class="text-left">
+            <h1 class="h4 mb-0 text-gray-800">Stok Yönetimi</h1>
+            <h5 class="mb-0 text-gray-800">Malzeme stok giriş/çıkış safyası.</h5>
+        </div>
+    </div>
+</div>
+
+<br />
+
+<div class="card shadow">
+    <div class="card-header">
+        Arama Seçenekleri
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <form asp-action="Index" asp-controller="Stok" method="post" name="VeriFiltre" id="VeriFiltre">
+                <table class="table table-bordered table-sm TableSmallFont" width="100%" cellspacing="0">
+                    <tr>
+                        <td class="width200">
+                            <div class="form-group">
+                                <label asp-for="Aciklama" class="control-label"></label>
+                                <input asp-for="Aciklama" class="form-control form-control-sm" />
+
+                            </div>
+                        </td>
+                      
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="DepoAd" class="control-label"></label>
+                                <select asp-for="DepoID" class="form-control form-control-sm" asp-items="@ViewBag.DepoListe" required></select>
+                            </div>
+                        </td>
+                      
+                     
+
+                        <td>
+                            <div class="form-group">
+                                <label class="control-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary form-control btn-sm">Ara</button>
+
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+</div>
+<br />
+<div class="card card-custom card-sticky" id="kt_page_sticky_card">
+    <div class="card-header py-2">
+        <div class="card-title">
+            <h3 class="card-label">KAYIT LİSTESİ</h3>
+        </div>
+        <div class="card-toolbar">
+            @{
+                await Html.RenderPartialAsync("_PartialCrud");
+            }
+
+            <!--begin::Button-->
+            @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Add") || a.Value == "Admin"))
+            {
+
+                <div class="dropdown dropdown-inline">
+                    <button type="button" class="btn btn-sm btn-hover-light-primary btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-th-list"></i> Malzeme Hareket Ekle
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-sm dropdown-menu-right" style="">
+                        <a class="dropdown-item" onclick="HareketEkle('1','1')" data-toggle="modal" data-target="#ModalGoruntule" href="#">Giriş- Satınalma</a>
+                        <a class="dropdown-item" onclick="HareketEkle('2','1')" data-toggle="modal" data-target="#ModalGoruntule" href="#">Giriş- Depoya Gelen</a>
+                        <a class="dropdown-item" onclick="HareketEkle('3','1')" data-toggle="modal" data-target="#ModalGoruntule" href="#">Giriş- İade</a>
+                        <a class="dropdown-item" onclick="HareketEkle('4','1')" data-toggle="modal" data-target="#ModalGoruntule" href="#">Giriş- Devir</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" onclick="HareketEkle('5','0')" data-toggle="modal" data-target="#ModalGoruntule" href="#">Çıkış- Sarf</a>
+                        <a class="dropdown-item" onclick="HareketEkle('6','0')" data-toggle="modal" data-target="#ModalGoruntule" href="#">Çıkış- Satış</a>
+                        <a class="dropdown-item" onclick="HareketEkle('7','0')" data-toggle="modal" data-target="#ModalGoruntule" href="#">Çıkış- Depodan Giden</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" onclick="HareketEkleTransfer('8')" data-toggle="modal" data-target="#ModalGoruntule" href="#">Transfer- Depolar Arası</a>
+                    </div>
+                </div>
+                @* <button type="button" class="btn btn-info  btn-sm" data-toggle="modal" data-target="#DetaylarDiv">Yeni Malzeme Ekle</button> *@
+
+            }
+            <!--end::Button-->
+        </div>
+
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered TableSmallFont" id="AnaTablo" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th class="no-print" style="width:30px"></th>
+                        <th style="width:70px">Kayıt No</th>
+                        <th>İşlem Tarihi</th>
+                        <th>Hareket Tür</th>
+                        <th>Depo</th>
+                        <th>Giriş/Çıkış</th>
+                        <th>Malzeme Kod</th>
+                        <th>Malzeme Ad</th>
+                        <th>Malzeme Birim</th>
+                        <th>Miktar</th>
+                        <th>Malzeme Açıklama</th>
+                        <th>Açıklama</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+
+                    @foreach (MalzemeStokVM item in Model.MalzemeStokVMListe)
+                    {
+
+                        <tr data-id="@item.ID">
+                            <td class="no-print"><input type="checkbox" class="form-control" /></td>
+                            <td>@item.ID</td>
+                            <td>@item.Tarih.ToString("yyyy-MM-dd")</td>
+                            <td>@item.HareketTur</td>
+                            <td>@item.DepartmanAd - @item.DepoAd</td>
+                            <td style="color:@(item.GirisCikis == true ? "green" : "red")">@(item.GirisCikis == true ? "Giriş" : "Çıkış")</td>
+                            <td>@item.MalzemeKod</td>
+                            <td>@item.MalzemeAd</td>
+                            <td>@item.BirimAd</td>
+                            <td class="text-right" style="color:@(item.GirisCikis == true ? "green" : "red")">@String.Format("{0:n2}", item.GirisCikis == true ? item.Miktar : item.Miktar * -1)</td>
+                            <td>@item.MalzemeAciklama</td>
+                            <td>@item.Aciklama</td>
+                        </tr>
+
+                    }
+
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+<br />
+
+<div id="ModalGoruntule" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl" style="max-width: 85%;">
+        <div id="goruntuleFormDiv"></div>
+    </div>
+</div>
+
+
+
+
+
+@section JSSection {
+
+    <script src="~/assets1/js/pages/crud/forms/widgets/select2.js?v=7.0.5"></script>
+    <script src="~/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+
+    <script>
+        $.extend($.fn.dataTable.defaults, {
+            ordering: false,
+            iDisplayLength: 25
+        });
+        $(document).ready(function() {
+            $('#AnaTablo').DataTable({
+                language: {
+                    url: '/js/i18n/DataTables-TR.json'
+                }
+            });
+        });
+
+    </script>
+
+
+    @{
+        await Html.RenderPartialAsync("_PartialCrudScript");
+    }
+    <script>
+        $(document).ready(function() {
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+                <text>
+                            toastr.success('@TempData["SuccessMessage"]', 'Başarılı');
+                </text>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+                <text>
+                            toastr.error('@TempData["ErrorMessage"]', 'Hata');
+                </text>
+        }
+                });
+    </script>@* toastr *@
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Fonksiyonu her select element için çağırıyoruz
+            // removeZeroValueOptions("MalzemeBirimListe");
+            // removeZeroValueOptions("MalzemeTipiListe");
+        });
+    </script>
+    <script>
+        function VeriGoruntule(id) {
+            GetAjax('Iade/_VeriGoruntule?StokID=' + id, 'goruntuleFormDiv');
+        }
+        function VeriGetir(id) {
+
+            GetAjax('Iade/_VeriGetir?StokID=' + id, 'goruntuleFormDiv');
+        }
+        function SilinecekVerileriGetir(id) {
+            GetAjax('Iade/_VeriSilinecek?StokID=' + id, 'goruntuleFormDiv');
+        }
+        function KopyalanacakVerileriGetir(id) {
+            GetAjax('Iade/_VeriKopyalanacak?StokID=' + id, 'goruntuleFormDiv');
+        }
+
+        function HareketEkle(id,InOut) {
+            GetAjax('Iade/_StokHareketEkle?HareketTurID=' + id + '&InOut='+InOut, 'goruntuleFormDiv');
+        }
+        function HareketEkleTransfer(id) {
+            GetAjax('Iade/_StokTransferEkle?HareketTurID=' + id, 'goruntuleFormDiv');
+        }
+    </script>
+
+}

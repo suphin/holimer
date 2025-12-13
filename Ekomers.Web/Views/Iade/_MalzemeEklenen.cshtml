@@ -1,0 +1,79 @@
+﻿@model MalzemeIadeVM
+
+@{
+}
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #EklenenUrunlerTablo tr:hover {
+        background-color: #f0f0f0;
+    }
+    
+</style>
+<style>
+    
+
+    #EklenenUrunlerTablo th {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 2px !important;
+    }
+
+    #EklenenUrunlerTablo td {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 4px !important;
+    }
+</style>
+<table class="table table-sm table-bordered TableSmallFont" id="EklenenUrunlerTablo" width="100%" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Sıra No</th>
+            <th>Malzeme Kod</th>
+            <th>Malzeme Ad</th>
+            <th>Malzeme Birim</th>
+            <th>Miktar</th>
+            <th>Fiyat</th>
+            <th>Açıklama</th>
+            <th>Çıkar</th>
+
+
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            var sayac = 1;
+        }
+        @foreach (MalzemeIadeVM item in Model.MalzemeIadeVMListe)
+        {
+
+            <tr> 
+                <td>@sayac</td>                 
+                <td>@item.MalzemeKod</td>
+                <td>@item.MalzemeAd</td>
+                <td>@item.BirimAd</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Miktar)</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Fiyat)</td>
+                <td>@item.MalzemeAciklama</td>
+                <td><a href="javascript:void(0);" class="remove-item" data-id="@item.MalzemeID">Çıkar</a></td>
+            </tr>
+            sayac = sayac + 1;
+        }
+
+    </tbody>
+
+</table>
+<script>
+    $.extend($.fn.dataTable.defaults, {
+        ordering: false,
+        iDisplayLength: 10
+    });
+    $(document).ready(function() {
+        $('#EklenenUrunlerTablo').DataTable({
+            language: {
+                url: '/js/i18n/DataTables-TR.json'
+            }
+        });
+    });
+
+</script>
+

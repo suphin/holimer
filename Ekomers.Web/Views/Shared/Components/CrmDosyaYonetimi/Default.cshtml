@@ -1,0 +1,115 @@
+﻿@model DosyaYonetimiVM;
+<style>
+    input[type="file"]::file-selector-button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 6px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    /*   #warningLabel {
+            margin-top: 10px;
+            font-weight: bold;
+            color: red;
+            width: 100%;
+            background-color: aliceblue;
+            padding: 5px;
+            margin-bottom: 5px !important;
+        } */
+</style>
+
+@if (User.HasClaim("Authorize", "FileAdd"))
+{
+    @*  <div class="row">
+        <div class="col-md-12">
+            <label id="warningLabel" class="hidden">Sadece PDF formatındaki dosyaları yükleyiniz!</label>
+        </div>
+    </div> *@
+    <form  method="post" enctype="multipart/form-data" id="uploadForm">
+        <div class="row">
+            <div class="col-md-9">
+
+                <input class="fileElement" name="dosya" type="file" required>
+
+            </div>
+            <div class="col-md-3 text-right">
+                <button type="submit" class="btn btn-sm btn-success width100_">
+                    <i class="icon-xl fas fa-file-upload"></i> Seçilen Dosyayı Yükle
+                </button>
+                <input type="hidden" asp-for="KayitID" />
+                <input type="hidden" asp-for="ModulID" />
+                <input type="hidden" asp-for="DosyaYolu" />
+            </div>
+
+        </div>
+
+
+    </form>
+    <br />
+}
+
+
+<table class="table table-sm table-bordered TableSmallFont" width="100%" cellspacing="0" id="fileTable">
+    <thead>
+        <tr>
+            <th style="width:300px">Dosya Adı</th>
+            <th>Dosya Orijinal Adı</th>
+            <th>Dosya Boyutu</th>
+            <th>Oluşturulma Tarihi</th> 
+            <th>Görüntüle</th>
+
+            @if (User.HasClaim("Authorize", "FileDelete"))
+            {
+                <th>Sil</th>
+            }
+        </tr>
+    </thead>
+    <tbody id="DosyaListesi">
+        @{
+            await Html.RenderPartialAsync("~/Views/Shared/Components/CrmDosyaYonetimi/DosyaYukle.cshtml", Model.DosyaListe);
+        }
+    </tbody>
+</table>
+
+
+
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script>
+
+    $(document).ready(function () {
+        // Dosya yükleme işlemi
+        $('#uploadForm').on('submit', function (event) {
+            event.preventDefault();
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '@Url.Action("DosyaYukle", "DosyaYonetimi")',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                dataType: "html",
+                success: function (response) {
+
+                    $('#DosyaListesi').html(response);
+                    $('#uploadForm')[0].reset();
+                },
+                error: function (xhr, status, error) {
+                    // alert('Dosya yükleme sırasında bir hata oluştu. \nAçıklama:'+ JSON.parse(xhr.responseText).message);
+                    toastr.error('Açıklama:' + JSON.parse(xhr.responseText).message, 'Hata!');
+                }
+            });
+        });
+    });
+</script>
+@section JSSection {
+
+  
+}
+
+
+
+

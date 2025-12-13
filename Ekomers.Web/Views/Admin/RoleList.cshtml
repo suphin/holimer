@@ -1,0 +1,50 @@
+﻿@model List<RoleVM>;
+@{
+    ViewData["Title"] = "RoleList";
+   // Layout = "~/Views/Shared/_Layout.cshtml";
+   // Layout = "_LayoutMetronic1";
+}
+ 
+
+<div class="container-fluid">
+
+
+    <!-- Content Row -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+
+                <h2>Rol Listesi</h2>
+                <table class="table table-sm table-bordered table-hover TableSmallFont">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Rol Adı</th>
+                            <th>Yetkiler</th>
+                            <th>Rol Claim Ekle</th>
+                            <th style="width:25px">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (RoleVM item in Model)
+                        {
+                            <tr>
+                                <td>@item.ID.Substring(0, 10)</td>
+                                <td>@item.Name</td>
+                                <td>
+                                    <a asp-action="AddRoleAuth" asp-route-roleId="@item.ID">Yetki Ekle</a>
+                                </td>
+                                <td>
+                                    <a asp-action="AddRoleClaim" asp-route-roleId="@item.ID">RoleClaim Ekle</a>
+                                </td>
+                                <td><a class="btn btn-danger btn-sm" asp-action="RoleDelete" asp-controller="admin" asp-route-id="@item.ID">Sil</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <a asp-action="RoleCreate" class="btn btn-success">Yeni Rol Ekle</a>
+            </div>
+        </div>
+    </div>
+</div>
+

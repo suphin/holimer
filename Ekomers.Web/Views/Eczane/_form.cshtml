@@ -1,0 +1,131 @@
+﻿@model EczaneVM
+
+<div class="form-group row">
+
+    <div class="col-lg-6">
+        <label asp-for="Ad" class="control-label"></label>
+        <input asp-for="Ad" class="form-control form-control-sm" required />
+        <span asp-validation-for="Ad" class="text-danger"></span>
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="MusteriAdi" class="control-label"></label>
+        <input asp-for="MusteriAdi" class="form-control form-control-sm" />
+        <span asp-validation-for="MusteriAdi" class="text-danger"></span>
+    </div>
+
+</div>
+<div class="form-group row">
+
+    <div class="col-lg-6">
+        <label asp-for="EczaciAdi" class="control-label"></label>
+        <input asp-for="EczaciAdi" class="form-control form-control-sm" />
+        <span asp-validation-for="EczaciAdi" class="text-danger"></span>
+    </div>
+    <div class="col-lg-2 ">
+        <label asp-for="Bayi" class="control-label"></label>
+        <select asp-for="BayiMi" class="form-control form-control-sm">
+            <option value="false">OMT</option>
+            <option value="true">BAYİ</option>
+
+        </select>
+        <span asp-validation-for="BayiMi" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4">
+        <label asp-for="Sehir" class="control-label"></label>
+        <input asp-for="Sehir" class="form-control form-control-sm"  />
+        <span asp-validation-for="Sehir" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="Il" class="control-label"></label>
+        <input asp-for="Il" class="form-control form-control-sm"  />
+        <span asp-validation-for="Il" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="Ilce" class="control-label"></label>
+        <input asp-for="Ilce" class="form-control form-control-sm"  />
+        <span asp-validation-for="Ilce" class="text-danger"></span>
+    </div> 
+</div>
+<div class="form-group row">
+    <div class="col-lg-4 ">
+        <label asp-for="Sehir" class="control-label"></label>
+        <select asp-for="SehirID" class="kt_select2" data-live-search="true" data-size="5" id="selectSehir" asp-items="@ViewBag.SehirlerListe" required></select>
+        <span asp-validation-for="SehirID" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4 ">
+        <label asp-for="Ilce" class="control-label"></label>
+        <select asp-for="IlceID" class="kt_select2" data-live-search="true" data-size="5" id="selectIlce" asp-items="@ViewBag.IlcelerListe" required></select>
+        <span asp-validation-for="IlceID" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4 ">
+        <label asp-for="Mahalle" class="control-label"></label>
+        <select asp-for="MahalleID" class="kt_select2" data-live-search="true" data-size="5" id="selectMahalle" asp-items="@ViewBag.MahalleListe" required></select>
+        <span asp-validation-for="Mahalle" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">   
+    <div class="col-lg-3 ">
+        <label asp-for="Telefon" class="control-label"></label>
+        <input asp-for="Telefon" class="form-control form-control-sm" required  />
+        <span asp-validation-for="Telefon" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3 ">
+        <label asp-for="Telefon2" class="control-label"></label>
+        <input asp-for="Telefon2" class="form-control form-control-sm"   />
+        <span asp-validation-for="Telefon2" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3 ">
+        <label asp-for="Email1" class="control-label"></label>
+        <input asp-for="Email1" class="form-control form-control-sm"  />
+        <span asp-validation-for="Email1" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3 ">
+        <label asp-for="Email2" class="control-label"></label>
+        <input asp-for="Email2" class="form-control form-control-sm" />
+        <span asp-validation-for="Email2" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4 ">
+        <label asp-for="Konum" class="control-label"></label>
+        <input asp-for="Konum" class="form-control form-control-sm" required />
+        <span asp-validation-for="Konum" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4 ">
+        <label asp-for="Enlem" class="control-label"></label>
+        <input asp-for="Enlem" class="form-control form-control-sm" required />
+        <span asp-validation-for="Enlem" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4 ">
+        <label asp-for="Boylam" class="control-label"></label>
+        <input asp-for="Boylam" class="form-control form-control-sm" required />
+        <span asp-validation-for="Boylam" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Adres" class="control-label"></label>
+        <textarea asp-for="Adres" type="text" class="form-control form-control-sm" rows="2"></textarea>
+        <span asp-validation-for="Adres" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="AciklamaAdres" class="control-label"></label>
+        <textarea asp-for="AciklamaAdres" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+        <span asp-validation-for="AciklamaAdres" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Aciklama" class="control-label"></label>
+        <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="2" required ></textarea>
+        <span asp-validation-for="Aciklama" class="text-danger"></span>
+    </div>
+</div>
+<script src="js/select2.js?v=7.0.5"></script>
+@{
+    await Html.RenderPartialAsync("~/Views/Sehirler/_SehirlerScript.cshtml");
+}

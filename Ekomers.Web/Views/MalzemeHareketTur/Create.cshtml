@@ -1,0 +1,75 @@
+﻿@model Ekomers.Models.Ekomers.MalzemeHareketTur
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>MalzemeHareketTur</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Ad" class="control-label"></label>
+                <input asp-for="Ad" class="form-control" />
+                <span asp-validation-for="Ad" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Kod" class="control-label"></label>
+                <input asp-for="Kod" class="form-control" />
+                <span asp-validation-for="Kod" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Aciklama" class="control-label"></label>
+                <input asp-for="Aciklama" class="form-control" />
+                <span asp-validation-for="Aciklama" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="IsActive" class="control-label"></label>
+                <input asp-for="IsActive" class="form-control" />
+                <span asp-validation-for="IsActive" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="IsDelete" class="control-label"></label>
+                <input asp-for="IsDelete" class="form-control" />
+                <span asp-validation-for="IsDelete" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CreateDate" class="control-label"></label>
+                <input asp-for="CreateDate" class="form-control" />
+                <span asp-validation-for="CreateDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DeleteDate" class="control-label"></label>
+                <input asp-for="DeleteDate" class="form-control" />
+                <span asp-validation-for="DeleteDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CreateUserID" class="control-label"></label>
+                <input asp-for="CreateUserID" class="form-control" />
+                <span asp-validation-for="CreateUserID" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DeleteUserID" class="control-label"></label>
+                <input asp-for="DeleteUserID" class="form-control" />
+                <span asp-validation-for="DeleteUserID" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DosyaID" class="control-label"></label>
+                <input asp-for="DosyaID" class="form-control" />
+                <span asp-validation-for="DosyaID" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+

@@ -1,0 +1,67 @@
+﻿@model StockCountViewModel
+
+
+
+
+<div class="card shadow">
+    <div class="card-header">
+        Depo Sayım Ekranı
+    </div>
+    <div class="card-body">
+<form asp-action="Save" method="post">
+    <div class="mb-3">
+        <label>Sayım Tarihi:</label>
+        <input type="date" asp-for="CountDate" class="form-control" style="width: 250px;" />
+    </div>
+
+    <table class="table table-bordered table-sm">
+        <thead>
+            <tr>
+                <th>Ürün</th>
+                @foreach (var warehouse in Model.Warehouses)
+                {
+                    <th colspan="2" class="text-center">@warehouse.Name</th>
+                }
+            </tr>
+            <tr>
+                <th></th>
+                @foreach (var warehouse in Model.Warehouses)
+                {
+                    <th>Sistem</th>
+                    <th>Sayım</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Products.Count; i++)
+            {
+                <tr>
+                    <td>
+                        @Model.Products[i].ProductName
+                        <input type="hidden" name="Products[@i].ProductId" value="@Model.Products[i].ProductId" />
+                    </td>
+
+                    @for (int j = 0; j < Model.Products[i].Warehouses.Count; j++)
+                    {
+                        var w = Model.Products[i].Warehouses[j];
+                        <td>
+                            @w.SystemQuantity
+                            <input type="hidden" name="Products[@i].Warehouses[@j].SystemQuantity" value="@w.SystemQuantity" />
+                            <input type="hidden" name="Products[@i].Warehouses[@j].WarehouseId" value="@w.WarehouseId" />
+                        </td>
+                        <td>
+                            <input type="number" step="0.01"
+                                   name="Products[@i].Warehouses[@j].CountedQuantity"
+                                   class="form-control form-control-sm" />
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-success">Kaydet</button>
+</form>
+
+    </div>
+</div>

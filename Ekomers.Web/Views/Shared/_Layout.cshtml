@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>@ViewData["Title"] - Afyonkarahisar Belediyesi</title>
+    <!-- Custom fonts for this template-->
+    <link href="@Url.Content("~/vendor/fontawesome-free/css/all.min.css")" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <!-- Custom styles for this template-->
+    <link href="@Url.Content("~/css/sb-admin-2.css")" rel="stylesheet">
+    <link href="@Url.Content("~/css/custom.css")" rel="stylesheet">
+
+    <link rel="shortcut icon" href="~/img/favicon.ico" />
+
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- _Layout.cshtml veya ilgili View'de -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" /> 
+    @RenderSection("CSSection", required: false)
+</head>
+<body id="page-top">
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-lacivert sidebar sidebar-dark accordion" id="accordionSidebar">
+            <!-- Sidebar - Brand -->
+            <a class="sidebar-brand d-flex" href="/Home/Member">
+                <div class="sidebar-brand-icon">
+                    <img src="~/img/logo-Ekomers.png" width="30" />
+                </div>
+                <div class="sidebar-brand-text mx-3">AfBel</div>
+            </a>
+            <!-- Divider -->
+            <hr class="sidebar-divider my-0">
+
+            <!-- Nav Item - Dashboard -->
+            <li class="nav-item active">
+                <a class="nav-link" href="~/Home/Member">
+                    <i class="fas fa-fw fa-list"></i>
+                    <span>Ana Sayfa</span>
+                </a>
+            </li>
+            <!-- Divider -->
+            <hr class="sidebar-divider" />
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                Modüller
+            </div>
+            <!-- Nav Item - Pages Collapse Menu ***-->
+            <partial name="_SolMenu" />
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block" />
+            <!-- Sidebar Toggler (Sidebar) -->
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block" />
+
+        </ul>
+        <!-- End of Sidebar -->
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Main Content -->
+            <div id="content">
+                @{
+                    string controllerName = Context.Request.RouteValues["controller"]!.ToString()!;
+                }
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <!-- Topbar -->
+                    <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                         
+                           
+                                <table width="100%" cellspacing="0">
+                                    <tr>
+                                        <td><img src="~/img/logo_afyon.jpg" width="60px" /></td>
+                                        <td class="text-center">
+                                            T.C.<br />
+                                            AFYONKARAHİSAR BELEDİYE BAŞKANLIĞI<br />
+                                          @if (controllerName=="Yardim")
+                                    {
+                                        <span>Muhtarlık ve Sosyal Hizmetler Müdürlüğü</span>
+                                    }
+                                    else if (controllerName == "ImarKullandirma" || controllerName == "ImarRuhsat")
+                                    {
+                                        <span>İmar ve Şehircilik Müdürlüğü</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Dijital Belediyecilik</span>
+                                    }
+                                        </td>
+                                        <td><img src="~/img/logo100.png" width="60px" /></td>
+                                    </tr>
+                                </table>
+                         
+                        <!-- Topbar Navbar -->
+                        <ul class="navbar-nav ml-auto">
+                          @*   <li>
+                                <table width="100%" cellspacing="0">
+                                    <tr>
+                                        <td><img src="~/img/logo_afyon.jpg" width="60px" /></td>
+                                        <td class="text-center">
+                                            T.C.<br />
+                                            AFYONKARAHİSAR BELEDİYE BAŞKANLIĞI<br />
+                                            Muhtarlık ve Sosyal Hizmetleri Müdürlüğü
+                                        </td>
+                                        <td><img src="~/img/logo100.png" width="60px" /></td>
+                                    </tr>
+                                </table>
+                            </li> *@
+                            <!-- Nav Item - User Information -->
+                            <li class="nav-item dropdown no-arrow">
+                                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="mr-2 d-none d-lg-inline text-gray-600 small">@User.Identity.Name</span>
+                                   @*  <img class="img-profile rounded-circle" src="/img/user.png"> *@
+                                    @if (User.Identity.IsAuthenticated)
+                                    {
+                                        var fileName = @User.Identity.Name + ".jpg";
+                                        <img class="img-profile rounded-circle" src="~/img/user/@fileName" width="100px">
+                                        
+                                    }
+                                </a>
+                                <!-- Dropdown - User Information -->
+                                <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                                    <a class="dropdown-item" asp-controller="Home" asp-action="Profile">
+                                        <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
+                                        Profil
+                                    </a>
+                                    <a class="dropdown-item" href="#">
+                                        <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
+                                        Ayarlar
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" asp-controller="Home" asp-action="LogOut">
+                                        <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                        Çıkış
+                                    </a>
+                                </div>
+                            </li>
+                        </ul>
+                    </nav>
+                    <!-- End of Topbar -->
+                }
+                
+                <!-- Begin Page Content -->
+
+                @RenderBody()
+
+            </div>
+            <!-- End of Main Content -->
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Afyonkarahisar Belediyesi 2024</span>
+                        <hr />
+                        <span> Karaman Mahallesi Albay Reşat Çiğiltepe Caddesi No:11 03200 Merkez/Afyonkarahisar</span>
+                        <span>
+                           [ 444 03 83 ]
+                           [ 0 272 213 2798 ]
+                        </span>
+                        <span>
+                            info@afyon.bel.tr
+                        </span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+   
+    
+    <!-- Bootstrap core JavaScript--> 
+    @* <script src="@Url.Content("~/js/jQuery.print.js")"></script> *@
+    @* <script src="@Url.Content("~/js/jquery.table2excel.js")"></script> *@
+
+    <script src="@Url.Content("~/vendor/jquery/jquery.min.js")"></script>
+    @* <script src="@Url.Content("~/js/jquery-1.7.2.min.js")"></script> *@
+    <script src="@Url.Content("~/vendor/bootstrap/js/bootstrap.bundle.min.js")"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="@Url.Content("~/vendor/jquery-easing/jquery.easing.min.js")"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="@Url.Content("~/js/sb-admin-2.min.js")"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="@Url.Content("~/js/printThis.js")"></script>
+    <script src="@Url.Content("~/js/ajax.js")"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    @*  <script src="~/Scripts/custom.js"></script> *@
+    @RenderSection("JSSection", required: false)
+    @RenderSection("scripts", required: false)
+</body>
+</html>

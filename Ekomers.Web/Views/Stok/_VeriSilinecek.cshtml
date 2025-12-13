@@ -1,0 +1,80 @@
+﻿@model MalzemeStokVM
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+ 
+<form asp-controller="Stok" asp-action="_VeriSil" class="form" method="post" name="_VeriSil" id="_VeriSil">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Malzeme Hareketi Kayıt Düzenle</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group row">
+
+                <div class="col-lg-5">
+                    <label asp-for="HareketTur" class="control-label"></label>
+                    <select asp-for="HareketTurID" class="form-control form-control-sm" asp-items="@ViewBag.HareketTurListe" disabled="disabled"></select>
+                    <input type="hidden" asp-for="HareketTurID" disabled="disabled" />
+                    <input type="hidden" asp-for="ID" />
+                </div>
+                <div class="col-lg-5">
+                    <label asp-for="DepoAd" class="control-label"></label>
+                    <select asp-for="DepoID" class="form-control form-control-sm" asp-items="@ViewBag.DepoListe" disabled="disabled"></select>
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="Tarih" class="control-label"></label>
+                    <input asp-for="Tarih" class="form-control form-control-sm" type="date" disabled="disabled" />
+                </div>
+
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-12">
+                    <label asp-for="Aciklama" class="control-label"></label>
+                    <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="1" disabled="disabled"></textarea>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-4">
+                    <label class="control-label">Malzeme Seç</label>
+                    <input type="text" class="form-control form-control-sm" id="search-box" asp-for="MalzemeAd" placeholder="Malzeme Ara..." autocomplete="off" disabled="disabled" />
+                    <input type="hidden" asp-for="MalzemeID" />
+                    <ul class="col-md-12" id="results"></ul>
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="Miktar" class="control-label"></label>
+                    <input asp-for="Miktar" class="form-control form-control-sm" disabled="disabled" />
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="BirimAd" class="control-label"></label>
+                    <input asp-for="BirimAd" class="form-control form-control-sm" tabindex="-1" disabled="disabled" />
+                    <input asp-for="BirimID" type="hidden" />
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="Aciklama" class="control-label"></label>
+                    <input asp-for="MalzemeAciklama" class="form-control form-control-sm" disabled="disabled" />
+                </div>
+
+            </div>
+            <div id="MalzemeEklenenListe">
+                @{
+                    //await Html.RenderPartialAsync("_MalzemeEklenen", Model);
+                }
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+            <button type="submit" class="btn btn-success">Silme İşlemi Onayla</button>
+        </div>
+    </div>
+
+</form>
+
+ 
+
+ 
+ 
+

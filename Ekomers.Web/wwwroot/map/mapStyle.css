@@ -1,0 +1,22 @@
+﻿.leaflet-bottom.leaflet-right {
+    display: none !important;
+}
+/* Katman kontrolcüsü stili */
+
+.leaflet-toolbar-icon .fa {
+    color: #000;
+}
+
+.leaflet-color-swatch {
+    background-color: #fff;
+}
+
+ 
+
+h2 {
+    color: #333;
+    text-align: center;
+}
+ 
+
+ 

@@ -1,0 +1,69 @@
+﻿@model AddRoleClaimVM
+
+@{
+    ViewData["Title"] = "Add Role Claim";
+   // Layout = "_LayoutMetronic1";
+}
+
+
+<div class="container-fluid">
+
+
+    <!-- Content Row -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+
+                <h2>Rol Listesi</h2>
+                <h2>Add Role Claim to <b>@Model.RoleName</b></h2>
+
+                <form asp-action="AddRoleClaim" method="post">
+                    <input type="hidden" asp-for="RoleId" /> <input type="hidden" asp-for="RoleName" />
+                    <div class="form-group">
+                        <label asp-for="ClaimType"></label>
+                        <input asp-for="ClaimType" class="form-control" />
+                        <span asp-validation-for="ClaimType" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="ClaimValue"></label>
+                        <input asp-for="ClaimValue" class="form-control" />
+                        <span asp-validation-for="ClaimValue" class="text-danger"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Claim</button>
+                </form>
+                <br />
+                <hr />
+                <h3>Existing Claims for <b>@Model.RoleName</b></h3>
+
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>Claim Type</th>
+                            <th>Claim Value</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var claim in Model.ExistingClaims)
+                        {
+                            <tr>
+                                <td>@claim.Type</td>
+                                <td>@claim.Value</td>
+                                <td>
+                                    <a href="@Url.Action("DeleteClaimFromRole", "Admin", new { roleId = Model.RoleId, claimType = claim.Type, claimValue = claim.Value })" class="btn btn-danger btn-sm">
+                                        Delete
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div>
+                    <a asp-action="RoleList">Back to List</a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>

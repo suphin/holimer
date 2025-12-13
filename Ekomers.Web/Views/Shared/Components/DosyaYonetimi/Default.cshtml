@@ -1,0 +1,159 @@
+﻿@model DosyaYonetimiVM;
+ 
+
+@{
+    var imageExtensions = new List<string> { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".tif", ".tiff" };
+    var videoExtensions = new List<string> { ".mp4", ".avi", ".mov", ".wmv" };
+    var pdfExtension = ".pdf";
+}
+ 
+<h3>Görseller</h3>
+<div class="gallery">
+    @{
+        var sayac = 0;
+    }
+    @foreach (var dosya in Model.DosyaListe.Where(d => imageExtensions.Contains(d.DosyaUzantisi.ToLower()) && d.Is360 == false))
+    {
+        <div class="thumbnail" onclick="openLightbox('image',@sayac)">
+            <img src="~/@dosya.ModulDosyaYolu/@dosya.DosyaAdi" alt="@dosya.DosyaAdi" />
+        </div>
+        sayac = sayac + 1;
+    }
+</div>
+<br />
+<h3>Görseller 360 Derece</h3>
+<div class="gallery">
+
+    @foreach (var dosya in Model.DosyaListe.Where(d => imageExtensions.Contains(d.DosyaUzantisi.ToLower()) && d.Is360 == true))
+    {
+
+        <button type="button" class="btn btn-primary btn-sm thumbnail" data-filename="@dosya.DosyaAdi" data-filepath="@dosya.ModulDosyaYolu" onclick="View360(this)">
+            <img src="../@dosya.ModulDosyaYolu/@dosya.DosyaAdi" alt="@dosya.DosyaAdi" />
+        </button>
+
+    }
+</div>
+
+<br />
+<h3>Videolar</h3>
+<div class="gallery">
+    @{
+        sayac = 0;
+    }
+    @foreach (var dosya in Model.DosyaListe.Where(d => videoExtensions.Contains(d.DosyaUzantisi.ToLower())))
+    {
+        <div class="thumbnail" onclick="openLightbox('video', @sayac)">
+            <img src="~/img/video-thumbnail.png" alt="@dosya.DosyaAdi" />
+        </div>
+        sayac = sayac + 1;
+    }
+</div>
+<br />
+<h3>PDF Dosyalar</h3>
+<div class="file-groups">
+
+    <div class="file-group">
+
+        <div class="file-list">
+            @foreach (var dosya in Model.DosyaListe.Where(d => d.DosyaUzantisi.ToLower() == pdfExtension))
+            {
+                <div class="file-item">
+
+                    <a href="#" data-toggle="modal" data-target="#pdfModal" data-filename="@dosya.DosyaAdi" data-filepath="@dosya.ModulDosyaYolu">
+                        <img src="~/img/pdf-thumbnail.png" alt="@dosya.DosyaAdi" class="file-thumbnail" />
+                        <p>@dosya.DosyaAdi</p>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<br />
+<h3>Diğer Dosyalar</h3>
+<div class="file-groups">
+
+    <div class="file-group">
+
+        <div class="file-list">
+            @foreach (var dosya in Model.DosyaListe.Where(d => !imageExtensions.Contains(d.DosyaUzantisi.ToLower()) && !videoExtensions.Contains(d.DosyaUzantisi.ToLower()) && d.DosyaUzantisi.ToLower() != pdfExtension))
+            {
+                <div class="file-item">
+
+                    <a href="#" data-toggle="modal" data-target="#pdfModal" data-filename="@dosya.DosyaAdi" data-filepath="@dosya.ModulDosyaYolu">
+                        <img src="~/img/default-thumbnail.png" alt="@dosya.DosyaAdi" class="file-thumbnail" />
+                        <p>@dosya.DosyaAdi</p>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+
+<div id="lightbox" class="lightbox">
+    <span class="closex btn btn-sm btn-danger width75" onclick="closeLightbox()">&times;</span>
+    <button class="lightbox-button prev" onclick="changeSlide(-1)">&#10094;</button>
+    <div class="lightbox-content">
+        <img id="lightboxImage" style="display:none;" alt="Gösterici Resmi" />
+        <video id="lightboxVideo" style="display:none;" controls></video>
+        <p id="lightboxCaption"></p>
+    </div>
+    <button class="lightbox-button next" onclick="changeSlide(1)">&#10095;</button>
+</div>
+<div id="Goruntu360" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            @* <div class="modal-header">
+				<h5 class="modal-title">Görüntüle</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+			</div> *@
+            <div class="modal-body">
+
+                <iframe id="iframeContent" name="iframeContent" src="" width="100%" height="650px" frameborder="0"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="ModalKapat()">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link href="~/css/klasorgetirstyle.css" rel="stylesheet" />
+
+
+<script>
+
+    var currentSlideIndex = 0;
+     var images = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DosyaListe.Where(d => imageExtensions.Contains(d.DosyaUzantisi.ToLower())).Select(d => new { src = "../" + d.ModulDosyaYolu + "/" + d.DosyaAdi, caption = d.DosyaAdi }).ToList()));
+     var videos = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DosyaListe.Where(d => videoExtensions.Contains(d.DosyaUzantisi.ToLower())).Select(d => new { src = "../" + d.ModulDosyaYolu + "/" + d.DosyaAdi, caption = d.DosyaAdi }).ToList()));
+     var currentMediaType = 'image';
+
+
+</script>
+@* <script src="~/js/jquery-1.7.2.min.js"></script> *@
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script src="~/js/klasorgetirscript.js"></script>
+
+<script>
+    var filename;
+    var filepath;
+     function View360(btn)
+       {
+            filename = $(btn).data('filename');
+            filepath = $(btn).data('filepath');
+           
+          $('#Goruntu360').modal('show');
+
+    }
+
+    $('#Goruntu360').on('shown.bs.modal', function () {
+                             $('#iframeContent').attr('src', '/DosyaYonetimi/View360?filename=' + filename + '&filepath=' + filepath);
+                   // $('#Goruntu360').modal('show');
+                    })
+
+                    function ModalKapat()
+                    {
+                           $("#Goruntu360").modal('hide');
+                    }
+</script>
