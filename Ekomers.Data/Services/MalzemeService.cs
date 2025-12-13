@@ -146,6 +146,10 @@ namespace Ekomers.Data.Services
 							 Indirim = malzeme.Indirim,
 							 DovizTur = malzeme.DovizTur,
 							 DovizTurAd = doviz.Ad,
+							 MaliyetSatis = malzeme.MaliyetSatis,
+							 Maliyet = malzeme.Maliyet,
+							 SonMaliyetGuncellemeTarih = malzeme.SonMaliyetGuncellemeTarih,
+							  SonFiyatGuncellemeTarih = malzeme.SonFiyatGuncellemeTarih,
 
 							 IsActive = (bool)malzeme.IsActive,
 							 IsDelete = (bool)malzeme.IsDelete,

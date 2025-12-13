@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251213133849_MalzemeTAblusuFiyatduzenleme")]
+    partial class MalzemeTAblusuFiyatduzenleme
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -665,9 +668,6 @@ namespace Ekomers.Data.Migrations
                     b.Property<DateTime?>("SonFiyatGuncellemeTarih")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("SonMaliyetGuncellemeTarih")
-                        .HasColumnType("datetime2");
-
                     b.Property<int>("TipID")
                         .HasColumnType("int");
 
@@ -1029,63 +1029,6 @@ namespace Ekomers.Data.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("MalzemeIade");
-                });
-
-            modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeMaliyetFiyat", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<string>("Aciklama")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("CreateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreateUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DeleteDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeleteUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DosyaID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("DovizTur")
-                        .HasColumnType("int");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("IsDelete")
-                        .HasColumnType("bit");
-
-                    b.Property<double?>("Maliyet")
-                        .HasColumnType("float");
-
-                    b.Property<int>("MalzemeID")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("Tarih")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("UpdateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdateUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("MalzemeID");
-
-                    b.ToTable("MalzemeMaliyetFiyat");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeStok", b =>
@@ -2519,8 +2462,14 @@ namespace Ekomers.Data.Migrations
                     b.Property<double>("EuroKuru")
                         .HasColumnType("float");
 
+                    b.Property<int?>("FirsatID")
+                        .HasColumnType("int");
+
                     b.Property<int?>("GorevliID")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IadeSonuc")
+                        .HasColumnType("bit");
 
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
@@ -2546,8 +2495,11 @@ namespace Ekomers.Data.Migrations
                     b.Property<string>("Not")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PersonelID")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("PlatformID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SebepID")
+                        .HasColumnType("int");
 
                     b.Property<string>("SiparisNo")
                         .HasColumnType("nvarchar(max)");
@@ -2560,6 +2512,9 @@ namespace Ekomers.Data.Migrations
 
                     b.Property<DateTime>("TarihSaat")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("TeklifID")
+                        .HasColumnType("int");
 
                     b.Property<int?>("TurID")
                         .HasColumnType("int");
@@ -2807,6 +2762,9 @@ namespace Ekomers.Data.Migrations
                         .HasColumnType("float");
 
                     b.Property<int>("SiparisID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TeklifID")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdateDate")
@@ -4690,17 +4648,6 @@ namespace Ekomers.Data.Migrations
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeFiyat", b =>
-                {
-                    b.HasOne("Ekomers.Models.Ekomers.Malzeme", "Malzeme")
-                        .WithMany()
-                        .HasForeignKey("MalzemeID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Malzeme");
-                });
-
-            modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeMaliyetFiyat", b =>
                 {
                     b.HasOne("Ekomers.Models.Ekomers.Malzeme", "Malzeme")
                         .WithMany()

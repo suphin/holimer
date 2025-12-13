@@ -5,6 +5,7 @@
 		public const string FirsatDurumAll = "FirsatDurum:All";
 		public const string MusterilerAll = "Musteriler:All";
 		public const string SorumlularAll = "Sorumlular:All";
+		public const string PersonelAll = "Personel:All";
 		public const string TeklifDurumAll = "TeklifDurum:All";
 		public const string TeklifTurAll = "TeklifTur:All";
 		public const string MalzemeDovizAll = "MalzemeDoviz:All";

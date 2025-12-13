@@ -74,6 +74,9 @@ namespace Ekomers.Models.Ekomers
 		public double? Kdv { get; set; }
 		public double? Indirim { get; set; }
 		public int? DovizTur { get; set; }
+		public DateTime? SonFiyatGuncellemeTarih { get; set; }
+		public DateTime? SonMaliyetGuncellemeTarih { get; set; }
+		public double? MaliyetSatis { get; set; }
 	}
 	public class MalzemeGrup: BaseEntity
 	{
@@ -121,6 +124,18 @@ namespace Ekomers.Models.Ekomers
 		public DateTime? Tarih {  get; set; }
 		public int? DovizTur { get; set; }
 	}
+
+	public class MalzemeMaliyetFiyat : BaseEntity
+	{
+		public int MalzemeID { get; set; }
+		[ForeignKey("MalzemeID")]
+		public virtual Malzeme? Malzeme { get; set; }
+		public string? Aciklama { get; set; }
+		public double? Maliyet { get; set; }
+		public DateTime? Tarih { get; set; }
+		public int? DovizTur { get; set; }
+	}
+
 	public class DovizTur:BaseEntity
 	{
 		public string Ad { get; set; }

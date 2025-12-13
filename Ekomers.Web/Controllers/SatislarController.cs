@@ -9,9 +9,11 @@ using Ekomers.Data;
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
+using Ekomers.Models;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
 using Ekomers.Models.Enums;
+using Ekomers.Models.Models;
 using Ekomers.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -36,6 +38,7 @@ namespace Ekomers.Web.Controllers
 	 
 		private readonly IStokService _stokService;
 		private readonly IMalzemeService _malzemeService;
+		private readonly IMalzemeFiyatService _malzemeFiyatService;
 		private readonly ITcmbService _tcmbService;
 		private string _userId;
 		private readonly ApplicationDbContext _context;
@@ -46,7 +49,7 @@ namespace Ekomers.Web.Controllers
 		private readonly ICacheService<SatislarTur> _turCache;
 		private readonly ICacheService<SatislarPlatform> _platformCache;
 		private readonly ICacheService<Kullanici> _kullaniciCache;
-		private string ModulAd = "Satislar";
+		private string ModulAd = "DestekHizmetleri";
 		public SatislarController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			 ISatislarService service
 			, IWebHostEnvironment hostingEnvironment, IFileService fileService
@@ -58,13 +61,14 @@ namespace Ekomers.Web.Controllers
 			, ICacheService<Kullanici> kullaniciCache
 			, ICacheService<SatislarSebep> sebepCache
 			,ICacheService<SatislarPlatform> platformCache
-			 
+			 , IMalzemeFiyatService malzemeFiyatService
 			, IStokService stokService
 			,IMalzemeService malzemeService
 			, ITcmbService tcmbService
 			) : base(userManager, roleManager)
 		{
 			_service = service;
+			_malzemeFiyatService = malzemeFiyatService;
 			_context = context;
 			_httpClientFactory = httpClientFactory;
 			_sehirlerService = sehirlerService;
@@ -105,8 +109,8 @@ namespace Ekomers.Web.Controllers
 			Expression<Func<Kullanici, bool>> filter = a => a.IsMhUser == true  ;
 
 			ViewBag.SorumluListe = await _kullaniciCache.GetListeAsync(CacheKeys.SorumlularAll,filter);
-
-			ViewBag.PersonelListe = await _kullaniciCache.GetListeAsync(CacheKeys.SorumlularAll);
+			Expression<Func<Kullanici, bool>> filter2 = a => a.IsActive == true;
+			ViewBag.PersonelListe = await _kullaniciCache.GetListeAsync(CacheKeys.PersonelAll, filter2,x=>x.AdSoyad,orderByDesc:false);
 		}
 
 			 
@@ -291,11 +295,11 @@ namespace Ekomers.Web.Controllers
 				Iskonto = models.Iskonto,
 				BirimID = urun.BirimID,
 				BirimAd = urun.BirimAd,				
-				Fiyat = (double)urun.Fiyat,
+				Fiyat = (double)urun.MaliyetSatis,
 				Kdv= (double)urun.Kdv,
 				DovizTurAd = urun.DovizTurAd,
 				DovizTur = urun.DovizTur,
-
+				
 				Aciklama = models.Aciklama,
 				SiparisID=models.SiparisID
 			};
@@ -310,6 +314,29 @@ namespace Ekomers.Web.Controllers
 
 			return PartialView("_UrunEklenen", model);
 		}
-	
+
+		public async Task<IActionResult> Fiyatlar()
+		{
+			ViewBag.Modul = ModulAd;
+			var model = await _context.Malzeme.Where(p => p.Kod.StartsWith("152MM") || p.Kod.StartsWith("153TG"))
+				.Select(x => new MalzemeFiyatGuncelleVM
+				{
+					MalzemeId = x.ID,
+					Ad = x.Ad,
+					Kod = x.Kod,
+					MevcutMaliyetSatis = x.MaliyetSatis,
+					GuncellemeTarihiSatis = x.SonMaliyetGuncellemeTarih,
+				})
+				.ToListAsync();
+
+			return View(model);
+		}
+		[HttpPost]
+		public async Task<IActionResult> Fiyatlar([FromBody] List<MalzemeFiyatGuncelleDto> model)
+		{
+			await _malzemeFiyatService.TopluMaliyetGuncelleAsync(model);
+			return Ok();
+		}
+
 	}
 }

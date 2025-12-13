@@ -110,9 +110,9 @@
                     data: formData,
                     success: function (response) {
                         // $('#cardBody').html(response);
-                        // $('#ModalVeri').modal('hide');
-                        toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
-
+                        // $('#BrutToplam').modal('hide');
+                        toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');                        
+                        $('#SiparisToplam').val($('#BrutToplam').val());
                     },
                     error: function (xhr, status, error) {
 

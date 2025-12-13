@@ -1,0 +1,117 @@
+﻿@model List<MalzemeFiyatGuncelleVM>
+@{
+    ViewData["Title"] = "Toplu Fiyat Güncelleme";
+    ViewData["Description"] = "Malzeme - Toplu Fiyat Güncelleme";
+}
+
+<div class="card shadow">
+    <div class="card-header">
+        <h5 class="mb-0">
+            Toplu Fiyat Güncelleme
+        </h5>
+        <small class="text-muted">
+            Güncel fiyatlar Malzeme tablosuna yazılır, geçmiş kaydı tutulur
+        </small>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" id="fiyatTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:140px">Kod</th>
+                        <th>Ad</th>
+                        <th>Son Güncelleme Tarihi</th>
+                        <th style="width:140px">Mevcut Fiyat</th>
+                        <th style="width:140px">Mevcut Maliyet</th>
+                        <th style="width:160px">Yeni Fiyat</th>
+                        <th style="width:160px">Yeni Maliyet</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr data-id="@item.MalzemeId">
+                            <td>@item.Kod</td>
+                            <td>@item.Ad</td>
+                            <td>@item.GuncellemeTarihi?.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="text-right">@String.Format("{0:n2}", item.MevcutFiyat)</td>
+                            <td class="text-right">@String.Format("{0:n2}", item.MevcutMaliyet)</td>
+                            <td class="text-right">
+                                <input type="number"
+                                       step="0.01"
+                                       class="form-control form-control-sm yeniFiyat"
+                                       placeholder="Yeni fiyat" />
+                            </td>
+                            <td class="text-right">
+                                <input type="number"
+                                       step="0.01"
+                                       class="form-control form-control-sm yeniMaliyet"
+                                       placeholder="Yeni maliyet" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between">
+        <span class="text-muted">
+            * Boş bırakılan satırlar güncellenmez
+        </span>
+
+        <button type="button"
+                class="btn btn-primary"
+                id="btnKaydet">
+            Toplu Fiyat Güncelle
+        </button>
+    </div>
+</div>
+ 
+
+@section JSSection {
+<script>
+    $("#btnKaydet").click(function () {
+
+        var liste = [];
+       
+        $("#fiyatTable tbody tr").each(function () {
+            var row = $(this);
+
+            var yeniFiyat = row.find(".yeniFiyat").val();
+            var yeniMaliyet = row.find(".yeniMaliyet").val();
+           
+            if (yeniFiyat || yeniMaliyet) {
+                liste.push({
+                    MalzemeId: row.data("id"),
+                    YeniFiyat: yeniFiyat,
+                    YeniMaliyet: yeniMaliyet,
+                    DovizTur: 1,
+                    Aciklama: "Toplu fiyat güncelleme"
+                });
+            }
+        });
+
+        if (liste.length === 0) {
+            alert("Güncellenecek kayıt yok");
+            return;
+        }
+        
+        $.ajax({
+            url: '@Url.Action("TopluFiyatGuncelle", "Malzeme")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(liste),             
+            success: function (response) {
+                    toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+                          setTimeout(function () {
+                            window.location.reload();
+                        }, 2000);
+                    location.reload();
+            },
+            error: function (xhr, status, error) {
+                    toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+            }
+        });
+    });
+</script>
+}

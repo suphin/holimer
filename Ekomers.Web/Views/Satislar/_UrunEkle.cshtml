@@ -160,6 +160,7 @@
                 $('#search-box-urun').val('');
                 $('#search-box-urun').focus();
                 toastr.success('Ürün eklendi.', 'Başarılı');
+                 $('#SiparisToplam').val($('#BrutToplam').val());
             },
             error: function(error) {
                toastr.error('Açıklama:' + xhr.responseText, 'Hata!');

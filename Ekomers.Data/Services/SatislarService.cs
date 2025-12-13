@@ -141,13 +141,11 @@ namespace Ekomers.Data.Services
 						 into sorumluGroup
 						 from sorumlu in sorumluGroup.DefaultIfEmpty()
 
-						 join platform in _SatislarPlatformRepo.GetAll2() on kayit.PlatformID equals platform.ID
-						 into platformGroup
-						 from platform in platformGroup.DefaultIfEmpty()
+						 join personel in _userRepo.GetAll2() on kayit.PersonelID equals personel.Id
+						 into personelGroup
+						 from personel in personelGroup.DefaultIfEmpty()
 
-						 join sebep in _SatislarSebepRepo.GetAll2() on kayit.SebepID equals sebep.ID
-						 into sebepGroup
-						 from sebep in sebepGroup.DefaultIfEmpty()
+						
 
 						 join createUser in _userRepo.GetAll2() on kayit.CreateUserID equals createUser.Id
 						 into createUserGroup
@@ -170,25 +168,21 @@ namespace Ekomers.Data.Services
 							 DurumAd = SatislarDurum != null ? SatislarDurum.Ad : "",
 							 IsDone = (bool)kayit.IsDone,
 							 TarihSaat = kayit.TarihSaat != null ? kayit.TarihSaat : new DateTime(1000, 1, 1),
-							 MusteriID = kayit.MusteriID,
-							 GorevliID = kayit.GorevliID,							 
-							 TeklifID = kayit.TeklifID,
+							 MusteriID = kayit.MusteriID == null ? 0: kayit.MusteriID,
+							 GorevliID = kayit.GorevliID,	
 							 SorumluID= kayit.SorumluID,
 							 SorumluAd= sorumlu != null ? sorumlu.AdSoyad : "",
-							 Musteri = musteriler,
+							 Musteri = musteriler ?? new Musteriler(),
 							 SiparisToplam = (double)kayit.SiparisToplam,
 							 KdvToplam = (double)kayit.KdvToplam,
 							 IskontoToplam = (double)kayit.IskontoToplam,
 							DolarKuru = (double)kayit.DolarKuru,
 							EuroKuru = (double)kayit.EuroKuru,
-							FirsatID= kayit.FirsatID,
 							 IsLocked = (bool)kayit.IsLocked,
-							 PlatformAd=platform.Ad,
-							 PlatformID=kayit.PlatformID,
-							 SebepAd=sebep.Ad,
-							 SebepID=kayit.SebepID,
+							 PersonelAd=personel.AdSoyad,
+							 PersonelID=kayit.PersonelID,
 							 SiparisNo=kayit.SiparisNo,
-
+							 CariTipi= kayit.CariTipi,
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,
 
@@ -404,7 +398,6 @@ namespace Ekomers.Data.Services
 				{
 					UrunID = modelv.UrunID,
 					SiparisID = modelv.SiparisID,
-					TeklifID = modelv.TeklifID,
 					Fiyat = modelv.Fiyat,
 					Kdv = modelv.Kdv,
 					Iskonto = modelv.Iskonto,
@@ -514,7 +507,6 @@ namespace Ekomers.Data.Services
 							 DovizTur = urunler.DovizTur,
 							 DovizTurAd = doviz.Ad,
 							 SiparisID = kayit.SiparisID,
-							 TeklifID = kayit.TeklifID,
 							 UrunID = kayit.UrunID,
 							 Miktar = (double)kayit.Miktar,
 							 Toplam = (double)(kayit.Miktar * kayit.Fiyat),

@@ -67,6 +67,9 @@ namespace Ekomers.Models.ViewModels
         public List<KategoriTreeItem> KategoriTree { get; set; } 
 		// ARAMA KRİTERLERİ
 		public MalzemelerFilterVM Filter { get; set; } = new();
+		public DateTime? SonFiyatGuncellemeTarih { get; set; }
+		public DateTime? SonMaliyetGuncellemeTarih { get; set; }
+		public double? MaliyetSatis { get; set; }
 	}
 
 	public class TagifyDto

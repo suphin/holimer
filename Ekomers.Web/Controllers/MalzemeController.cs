@@ -6,15 +6,18 @@
 
 using Azure.Core;
 using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Ekomers.Data;
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
+using Ekomers.Models;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
 using Ekomers.Models.Enums;
 using Ekomers.Models.FilterVM;
+using Ekomers.Models.Models;
 using Ekomers.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -22,6 +25,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using System.Drawing.Printing;
@@ -38,6 +42,7 @@ namespace Ekomers.Web.Controllers
 	public class MalzemeController : BaseController
 	{
 		private readonly IMalzemeService _service;
+		private readonly IMalzemeFiyatService _malzemeFiyatService;
 		private readonly IStokService _stokService;
 	 
 		private string _userId;
@@ -59,7 +64,7 @@ namespace Ekomers.Web.Controllers
 			, ICacheService<MalzemeTipi> malzemeTipCache
 			, ICacheService<DovizTur> dovizTurCache
 			, ICacheService<MalzemeGrup> malzemeGrupCache
-			 
+			 , IMalzemeFiyatService malzemeFiyatService
 
 			, IFirsatService firsatService
 			, IStokService stokService
@@ -74,8 +79,8 @@ namespace Ekomers.Web.Controllers
 			_dovizTurCache = dovizTurCache;
 			_malzemeGrupCache = malzemeGrupCache;
 			_stokService = stokService;
-			
-			 
+			_malzemeFiyatService = malzemeFiyatService;
+
 		}
 
 		public override void OnActionExecuting(ActionExecutingContext context)
@@ -346,8 +351,49 @@ namespace Ekomers.Web.Controllers
 				return BadRequest("Veri aktarılamadı.");
 			}
 		}
+		public async Task<IActionResult> TopluFiyatGuncelle()
+		{
+			ViewBag.Modul = "CRM";
+			var model = await _context.Malzeme.Where(p=>p.Kod.StartsWith("152MM") || p.Kod.StartsWith("153TG"))
+				.Select(x => new MalzemeFiyatGuncelleVM
+				{
+					MalzemeId = x.ID,
+					Ad = x.Ad,
+					Kod = x.Kod,
+					MevcutFiyat = x.Fiyat,
+					MevcutMaliyet = x.Maliyet,
+					GuncellemeTarihi= x.SonFiyatGuncellemeTarih,
+				})
+				.ToListAsync();
 
+			return View(model);
+		}
+		[HttpPost]
+		public async Task<IActionResult> TopluFiyatGuncelle([FromBody] List<MalzemeFiyatGuncelleDto> model)
+		{
+			await _malzemeFiyatService.TopluFiyatGuncelleAsync(model);
+			return Ok();
+		}
 
+		public async Task<IActionResult> GrupListesi()
+		{
+			ViewBag.Modul = "CRM";
+			var kategoriTree = _stokService.GetKategoriTree();
+
+			kategoriTree = BuildFullPathForTree(kategoriTree);
+
+			 
+
+			var model = new MalzemelerVM
+			{
+				//MalzemeGrupListe = await _malzemeGrupCache.GetListeAsync(CacheKeys.MalzemeGrupAll),
+				KategoriTree = kategoriTree
+			};
+			 
+			 
+
+			return View(model);
+		}
 
 	}
 }

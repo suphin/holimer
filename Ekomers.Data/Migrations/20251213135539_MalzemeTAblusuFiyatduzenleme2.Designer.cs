@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251213135539_MalzemeTAblusuFiyatduzenleme2")]
+    partial class MalzemeTAblusuFiyatduzenleme2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2519,8 +2522,14 @@ namespace Ekomers.Data.Migrations
                     b.Property<double>("EuroKuru")
                         .HasColumnType("float");
 
+                    b.Property<int?>("FirsatID")
+                        .HasColumnType("int");
+
                     b.Property<int?>("GorevliID")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IadeSonuc")
+                        .HasColumnType("bit");
 
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
@@ -2546,8 +2555,11 @@ namespace Ekomers.Data.Migrations
                     b.Property<string>("Not")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PersonelID")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("PlatformID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SebepID")
+                        .HasColumnType("int");
 
                     b.Property<string>("SiparisNo")
                         .HasColumnType("nvarchar(max)");
@@ -2560,6 +2572,9 @@ namespace Ekomers.Data.Migrations
 
                     b.Property<DateTime>("TarihSaat")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("TeklifID")
+                        .HasColumnType("int");
 
                     b.Property<int?>("TurID")
                         .HasColumnType("int");
@@ -2807,6 +2822,9 @@ namespace Ekomers.Data.Migrations
                         .HasColumnType("float");
 
                     b.Property<int>("SiparisID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TeklifID")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdateDate")

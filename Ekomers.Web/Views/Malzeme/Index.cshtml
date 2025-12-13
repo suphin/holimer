@@ -36,7 +36,11 @@
 					ModulID = (int)ModulEnum.Malzeme,
 					HaritaEkle = false
 				});
-
+			}
+			@if (User.IsInRole("Admin"))
+			{
+				<a asp-action="TopluFiyatGuncelle" asp-controller="Malzeme" target="_blank" class="btn btn-info  btn-sm ml-2">Toplu Fiyat Girişi</a>
+				<a asp-action="GrupListesi" asp-controller="Malzeme" target="_blank" class="btn btn-info  btn-sm ml-2">Grup Listesi</a>
 			}
 		</div>
 	</div>

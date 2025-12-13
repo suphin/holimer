@@ -4,30 +4,10 @@
 }
 <a href="#" onclick="FiyatDegistir('@Model.ID')" data-toggle="modal" data-target="#ModalFiyatDegistir" class="btn btn-sm btn-info mb-4">Fiyat Değiştir</a>
 
-
-<table class="table table-sm table-bordered" width="100%" cellspacing="0">
-    <thead>
-        <tr>
-            <td>Güncelleme Zamanı</td>
-            <td>Fiyat</td>
-            <td>Maliyet</td>
-            <td>Döviz Türü</td>
-            <td>Açıklama</td>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (MalzemeFiyat item in Model.MalzemeFiyatListe)
-        {
-            <tr>
-                <td>@item.Tarih?.ToString("dd.MM.yyyy HH:mm")</td>
-                <td class="text-right">@String.Format("{0:n2}", item.Fiyat)</td>
-                <td class="text-right">@String.Format("{0:n2}", item.Maliyet)</td>
-                <td>@item.DovizTur</td>
-                <td>@item.Aciklama</td>
-            </tr>
-        }
-    </tbody>
-</table>
+@{
+    await Html.RenderPartialAsync("~/Views/Shared/Components/MalzemeFiyatYonetimi/_FiyatGetir.cshtml", Model);
+}
+ 
 <div id="ModalFiyatDegistir" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -81,7 +61,11 @@
 </div>
 <script type="text/javascript">
     $(document).ready(function () {
-          
+           var tab = localStorage.getItem('activeTab');
+    if (tab) {
+        $('a[href="' + tab + '"]').tab('show');
+        localStorage.removeItem('activeTab');
+    }
         // Formun submit olayı
         $('#_FiyatDegistir').on('submit', function (e) {
             e.preventDefault();
@@ -96,6 +80,8 @@
                     // $('#cardBody').html(response);
                    $('#ModalFiyatDegistir').modal('hide');
                     toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+                        localStorage.setItem('activeTab', '#kt_tab_pane_3_4');
+     
                      setTimeout(function () {
                         window.location.reload();
                     }, 2000);

@@ -1,0 +1,45 @@
+﻿@model IEnumerable<KategoriTreeItem>
+
+ 
+
+@{
+    int level = ViewData["Level"] != null ? (int)ViewData["Level"] : 10;
+}
+@{
+    var childViewData = new ViewDataDictionary(ViewData);
+    childViewData["Level"] = level + 1;
+}
+@foreach (var kategori in Model)
+{
+    var icon = kategori.AltKategoriSayisi > 0 ? "📁" : "📄";
+    var padding = level==0? 10:level * 35; // her seviye 25px girsin
+    
+    <tr>
+        <td style="padding-left:@(padding)px">
+            
+                    @icon @kategori.Kod - @kategori.Ad
+           
+        </td>
+        <td>
+            @if (kategori.AltKategoriSayisi > 0)
+            {
+                
+            }
+            else
+            {
+                <a href="#">Fiyat Gir</a>
+            }
+           
+        </td>
+    </tr>
+
+    @* Alt kategoriler varsa recursive çağır *@
+    if (kategori.Children != null && kategori.Children.Any())
+    {
+        @await Html.PartialAsync(
+        "_gruplarPartial",
+            kategori.Children,
+           childViewData
+        )
+    }
+}

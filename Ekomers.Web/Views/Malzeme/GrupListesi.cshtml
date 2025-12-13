@@ -1,0 +1,25 @@
+﻿@model MalzemelerVM
+ @{
+          ViewData["Title"] = "Malzeme Grup Listesi";
+     ViewData["Description"] = "Crm - Malzeme Grup Listesi ";
+}
+ 
+<div class="card shadow">
+    <div class="card-header">
+        Grup Listesi
+    </div>
+    <div class="card-body">
+
+<table class="table table-bordered table-hover">
+    <thead>
+        <tr>
+            <th>Kategori</th>
+        </tr>
+    </thead>
+    <tbody>
+        @await Html.PartialAsync("_gruplarPartial", Model.KategoriTree,
+        new ViewDataDictionary(ViewData) { { "Level", 0 } })
+    </tbody>
+</table>
+    </div>
+</div>

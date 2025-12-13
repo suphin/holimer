@@ -14,16 +14,14 @@ namespace Ekomers.Models.Entity
 	public class Satislar : BaseEntity
 	{
 		public int? MusteriID { get; set; }
-		public int? GorevliID { get; set; }
-		public int? FirsatID { get; set; }
-		public int? TeklifID { get; set; }
+		public int? GorevliID { get; set; } 
+		public string? PersonelID { get; set; } 
+	
 		public int? DurumID { get; set; }
-		public int? SebepID { get; set; }
-		public int? PlatformID { get; set; }
+		 
 		public int? TurID { get; set; }
 		public string? SorumluID { get; set; }
 		public bool IsDone { get; set; }
-		public bool IadeSonuc { get; set; }
 		public DateTime TarihSaat { get; set; } = DateTime.Now;
 		public string? Not { get; set; }
 		public string? Aciklama { get; set; }
@@ -39,22 +37,14 @@ namespace Ekomers.Models.Entity
 
 	public class SatislarVM : BaseVM
 	{
+		[Display(Name = "Müşteri Ad")]
 		public string? MusteriAd { get; set; }
 		public int? MusteriID { get; set; }
 		public string? GorevliAd { get; set; }
-		public int? GorevliID { get; set; }
-		[Display(Name = "Fırsat")]
-		public string? FirsatAd { get; set; }
-		public int? FirsatID { get; set; }
-		public int? TeklifID { get; set; }
-		[Display(Name = "Teklif")]
-		public string? TeklifAd { get; set; }
-		public int? SebepID { get; set; }
-		[Display(Name = "İade Sebebi")]
-		public string? SebepAd { get; set; }
-		public bool CariTipi { get; set; }
-		public int? PlatformID { get; set; }
-		public string? PlatformAd { get; set; }
+		public string? PersonelAd { get; set; }
+		public string? PersonelID { get; set; }
+		public int? GorevliID { get; set; } 
+		public bool CariTipi { get; set; } 
 		public int? DurumID { get; set; }
 		[Display(Name = "İade Durumu")]
 		public string? DurumAd { get; set; }
@@ -62,7 +52,6 @@ namespace Ekomers.Models.Entity
 		[Display(Name = "Sorumlu")]
 		public string? SorumluAd { get; set; }
 		public bool IsDone { get; set; }
-		public bool IadeSonuc { get; set; }
 		public DateTime? TarihSaat { get; set; }
 		public string? Not { get; set; }
 		[Display(Name = "Açıklama")]
@@ -109,8 +98,7 @@ namespace Ekomers.Models.Entity
 	public class SatislarUrunler : BaseEntity
 	{
 		public int UrunID { get; set; }
-		public int SiparisID { get; set; }
-		public int TeklifID { get; set; }
+		public int SiparisID { get; set; } 
 		public double Miktar { get; set; }
 		public double Fiyat { get; set; }
 		public int? DovizTur { get; set; }
@@ -124,7 +112,6 @@ namespace Ekomers.Models.Entity
 	{
 		public int UrunID { get; set; }
 		public int SiparisID { get; set; }
-		public int TeklifID { get; set; }
 		public double Miktar { get; set; }
 		public double Fiyat { get; set; }
 		public double Kdv { get; set; }

@@ -25,5 +25,10 @@ namespace Ekomers.Data.Services.IServices
 
 		Task<List<T>> GetListeAsync(string cacheKey);
 		Task<List<T>> GetListeAsync(string cacheKey, Expression<Func<T, bool>> filter);
+		Task<List<T>> GetListeAsync<TKey>(string cacheKey,
+														Expression<Func<T, bool>> filter,
+														Expression<Func<T, TKey>> orderBy,
+														bool orderByDesc = false
+													);
 	}
 }

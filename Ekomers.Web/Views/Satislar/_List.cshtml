@@ -31,11 +31,20 @@
                     <span class="text-muted small">
                         Kayıt No: @m.ID
                     </span>
-                    <div class="fw-semibold">@m.Musteri?.AdSoyad    
+                    <div class="fw-semibold"> <b></b>
+                        @if (m.CariTipi)
+                        {
+                          <b>Müşteri/Hasta Adı :</b>  @m.Musteri?.AdSoyad <br />
+                        }
+                        else
+                        {
+                           <b>Personel Adı :</b> @m.PersonelAd <br />
+                        }
+
                                              
                             @if (!string.IsNullOrWhiteSpace(m.SiparisNo))
                             {
-                            <text> Sipariş No:  @m.SiparisNo </text>
+                            <text> <b>Sipariş No:</b>  @m.SiparisNo </text>
                             }
                         
                     </div>
@@ -54,7 +63,7 @@
             <!-- 2. satır: not  |  ekleyen ve tarih -->
             <div class="row mt-2">
                 <div class="col">
-                    <div class="small bold">Sebep : @(!string.IsNullOrWhiteSpace(m.SebepAd) ? m.SebepAd : "—")</div>
+                    <div class="small bold"> </div>
                 </div>
             </div>
             

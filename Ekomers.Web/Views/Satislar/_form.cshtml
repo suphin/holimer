@@ -10,47 +10,32 @@
     </div>
 </div>
 <div class="form-group row">
-    
-    <div class="col-lg-3">
-        <label asp-for="SebepAd" class="control-label"></label>
-        <select asp-for="SebepID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SatislarSebepListe, "ID", "Ad"))"></select>
-        <span asp-validation-for="SebepAd" class="text-danger"></span>
-    </div>
-    <div class="col-lg-3">
-        <label asp-for="DurumAd" class="control-label"></label>
-        <select asp-for="DurumID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SatislarDurumListe, "ID", "Ad"))"></select>
-        <span asp-validation-for="DurumAd" class="text-danger"></span>
-    </div>
+     
     <div class="col-lg-3">
         <label asp-for="SorumluAd" class="control-label"></label>
-        <select asp-for="SorumluID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SorumluListe,"Id","AdSoyad"))"></select>
+        <select asp-for="SorumluID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SorumluListe, "Id", "AdSoyad"))"></select>
         <span asp-validation-for="SorumluAd" class="text-danger"></span>
-    </div>
-    <div class="col-lg-3">
-        <label asp-for="PlatformAd" class="control-label"></label>
-        <select asp-for="PlatformID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SatislarPlatformListe, "ID", "Ad"))"></select>
-        <span asp-validation-for="PlatformAd" class="text-danger"></span>
     </div>
 </div>
 <div class="form-group row">
-    <div id="personelFields" style="display:@(Model?.CariTipi == false ? "block" : "none")">
+    <div id="personelFields" class="col-lg-6" style="display:@(Model?.CariTipi == false ? "block" : "none")">
 
-        <div class="col-lg-6">
-            <label asp-for="SorumluAd" class="control-label"></label>
-            <select asp-for="SorumluID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SorumluListe, "Id", "AdSoyad"))"></select>
-            <span asp-validation-for="SorumluAd" class="text-danger"></span>
+       
+            <label asp-for="PersonelAd" class="control-label"></label>
+            <select asp-for="PersonelID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.PersonelListe, "Id", "AdSoyad"))"></select>
+        <span asp-validation-for="PersonelID" class="text-danger"></span>
             
-        </div>
+        
 
     </div>
-    <div id="cariFields" style="display:@(Model?.CariTipi == true ? "block" : "none")">
-
-        <div class="col-lg-6">
+     <div id="cariFields" class="col-lg-6" style="display:@(Model?.CariTipi == true ? "block" : "none")"> 
+       @* <div id="cariFields" class="col-lg-6" @(Model?.CariTipi == true ? "" : "hidden")>*@
+      
             @{
                 // await Html.RenderPartialAsync("~/Views/Musteriler/_selectList.cshtml", Model?.Musteri ?? new Musteriler());
             }
             <partial name="~/Views/Musteriler/_selectList.cshtml" model="Model?.Musteri ?? new Musteriler()" />
-        </div>
+       
 
     </div>
     <div class="col-lg-3">
@@ -107,11 +92,16 @@
         if (CariTipi) {
           wrap.style.display = 'block';
           wrap2.style.display = 'none';
+          
+            $('#cariFields').find(':input').prop('required', true);
           inputs.forEach(function (el) {
             el.disabled = false; // doğrulama/submit'e tekrar dahil et
           });
         } else {
           wrap.style.display = 'none';
+          wrap2.style.display = 'block';
+           
+            $('#cariFields').find(':input').prop('required', false);
           inputs.forEach(function (el) {
             el.disabled = true;  // doğrulamadan ve submit'ten çıkar
             // istersen değerleri de temizle:
@@ -130,7 +120,7 @@
       });
 
       // Sayfa yüklenince mevcut değere göre ilk ayar
-      document.addEventListener('DOMContentLoaded', toggleKurumFields);
+      document.addEventListener('DOMContentLoaded', toggleCariFields);
     })();
 </script>
 

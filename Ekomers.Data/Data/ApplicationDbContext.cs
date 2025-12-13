@@ -66,6 +66,7 @@ namespace Ekomers.Data
 		public DbSet<MalzemeGrup> MalzemeGrup { get; set; }
 		public DbSet<MalzemeBirim> MalzemeBirim { get; set; }
 		public DbSet<MalzemeFiyat> MalzemeFiyat { get; set; }
+		public DbSet<MalzemeMaliyetFiyat> MalzemeMaliyetFiyat { get; set; }
 		public DbSet<MalzemeTipi> MalzemeTipi { get; set; } 
 		public DbSet<Malzeme> Malzeme { get; set; } 
 		public DbSet<MalzemeStok> MalzemeStok { get; set; } 

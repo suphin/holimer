@@ -58,6 +58,26 @@ namespace Ekomers.Data.Services
 				return await _context.Set<T>().Where(filter).ToListAsync();
 			}) ?? new List<T>();
 		}
+		public async Task<List<T>> GetListeAsync<TKey>(
+														string cacheKey,
+														Expression<Func<T, bool>> filter,
+														Expression<Func<T, TKey>> orderBy,
+														bool orderByDesc = false
+													) 
+		{
+			return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+			{
+				entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12);
+
+				IQueryable<T> query = _context.Set<T>().Where(filter);
+
+				query = orderByDesc
+					? query.OrderByDescending(orderBy)
+					: query.OrderBy(orderBy);
+
+				return await query.ToListAsync();
+			}) ?? new List<T>();
+		}
 		public void Remove(string cacheKey) => _cache.Remove(cacheKey);
 	}
 }
