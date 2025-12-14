@@ -12,7 +12,7 @@
 <div class="form-group row">
     <div class="col-lg-4">
         <label asp-for="TipAd" class="control-label"></label>
-        <select asp-for="TipID" class="form-control form-control-sm" asp-items="@ViewBag.MusteriTipListe"></select>
+        <select asp-for="TipID" class="form-control form-control-sm" asp-items="@(new SelectList(ViewBag.MusteriTipListe, "ID", "Ad"))"></select>
         <span asp-validation-for="TipID" class="text-danger"></span>
     </div>
     <div class="col-lg-8">

@@ -185,6 +185,7 @@ namespace Ekomers.Data.Services
 							 CariTipi= kayit.CariTipi,
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,
+							 SiparisTarihi= kayit.SiparisTarihi,
 
 							 CreateUserID = kayit.CreateUserID,
 							 CreateDate = kayit.CreateDate != null ? kayit.CreateDate : new DateTime(1000, 1, 1),

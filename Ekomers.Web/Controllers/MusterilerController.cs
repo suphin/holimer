@@ -33,6 +33,7 @@ namespace Ekomers.Web.Controllers
 		private readonly ApplicationDbContext _context;
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly ISehirlerService _sehirlerService;
+		private readonly ICacheService<MusteriTip> _musteriTipCache;
 		private string ModulAd = "CRM";
 		public MusterilerController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			 IMusterilerService service
@@ -40,12 +41,14 @@ namespace Ekomers.Web.Controllers
 			, ApplicationDbContext context
 			, IHttpClientFactory httpClientFactory
 			, ISehirlerService sehirlerService
+			, ICacheService<MusteriTip> musteriTipCache
 			) : base(userManager, roleManager)
 		{
 			_service = service;
 			_context = context;
 			_httpClientFactory = httpClientFactory;
 			_sehirlerService = sehirlerService;
+			_musteriTipCache = musteriTipCache;
 		}
 
 		public override void OnActionExecuting(ActionExecutingContext context)
@@ -58,9 +61,10 @@ namespace Ekomers.Web.Controllers
 		{
 
 
-			var MusteriTipListe = await _context.MusteriTip.OrderBy(p => p.Ad).ToListAsync();
-			MusteriTipListe.Insert(0, new MusteriTip { ID = 0, Ad = "Tümü" });
-			ViewBag.MusteriTipListe = new SelectList(MusteriTipListe, "ID", "Ad");
+			//var MusteriTipListe = await _context.MusteriTip.OrderBy(p => p.Ad).ToListAsync();
+			//MusteriTipListe.Insert(0, new MusteriTip { ID = 0, Ad = "Tümü" });
+			//ViewBag.MusteriTipListe = new SelectList(MusteriTipListe, "ID", "Ad");
+			ViewBag.MusteriTipListe = await _musteriTipCache.GetListeAsync(CacheKeys.MusteriTipAll);
 
 		}
 		private async Task ViewBagPartialListeDoldur(int sehirId,int ilceId)
@@ -73,7 +77,8 @@ namespace Ekomers.Web.Controllers
 		}
 		private async Task ViewBagPartialListeDoldur()
 		{
-			ViewBag.MusteriTipListe = new SelectList(await _context.MusteriTip.OrderBy(p => p.Ad).ToListAsync(), "ID", "Ad");
+			//ViewBag.MusteriTipListe = new SelectList(await _context.MusteriTip.OrderBy(p => p.Ad).ToListAsync(), "ID", "Ad");
+			ViewBag.MusteriTipListe = await _musteriTipCache.GetListeAsync(CacheKeys.MusteriTipAll);
 
 			ViewBag.SehirlerListe = new SelectList(await _sehirlerService.GetSehirler(0), "ID", "Ad",34);
 			ViewBag.IlcelerListe = new SelectList(await _sehirlerService.GetSehirler(34), "ID", "Ad");
@@ -227,6 +232,23 @@ namespace Ekomers.Web.Controllers
 				return BadRequest("Kaydetme başarısız!");
 			}
 		}
+
+
+		[Authorize(Roles = "Editor")]
+		[HttpPost]
+		public async Task<IActionResult> VeriEkleAjax(MusterilerVM modelv)
+		{
+			bool sonuc = await _service.VeriEkleAsync(modelv);
+			if (sonuc)
+			{
+				return Ok("Kayıt işlemi başarılı");
+			}
+			else
+			{
+				return BadRequest("Kaydetme başarısız!");
+			}			 
+		}
+
 
 		[HttpPost]
 		[Authorize(Roles = "Editor")]

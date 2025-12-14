@@ -72,7 +72,7 @@
             <!-- 4. satır: not  |  ekleyen ve tarih -->
             <div class="row mt-2">
                 <div class="col">
-                    <div class="small">Durum: @(!string.IsNullOrWhiteSpace(m.DurumAd) ? m.DurumAd : "—")</div>
+                    <div class="small">Sipariş Tarihi: @m.SiparisTarihi?.ToString("dd.MM.yyyy HH:mm")</div>
                     <div class="small">Not: @(!string.IsNullOrWhiteSpace(m.Not) ? m.Not  : "—")</div>
                 </div>
                 <div class="col-auto text-muted small">

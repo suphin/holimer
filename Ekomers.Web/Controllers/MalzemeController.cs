@@ -380,20 +380,39 @@ namespace Ekomers.Web.Controllers
 			ViewBag.Modul = "CRM";
 			var kategoriTree = _stokService.GetKategoriTree();
 
-			kategoriTree = BuildFullPathForTree(kategoriTree);
-
-			 
+			kategoriTree = BuildFullPathForTree(kategoriTree);			 
 
 			var model = new MalzemelerVM
 			{
 				//MalzemeGrupListe = await _malzemeGrupCache.GetListeAsync(CacheKeys.MalzemeGrupAll),
 				KategoriTree = kategoriTree
-			};
-			 
-			 
+			};		 
 
 			return View(model);
 		}
 
+		public async Task<IActionResult> TopluGrupFiyatGuncelle(int id)
+		{
+			ViewBag.Modul = "CRM";
+			var model = await _context.Malzeme.Where(p => p.GrupID==id)
+				.Select(x => new MalzemeFiyatGuncelleVM
+				{
+					MalzemeId = x.ID,
+					Ad = x.Ad,
+					Kod = x.Kod,
+					MevcutFiyat = x.Fiyat,
+					MevcutMaliyet = x.Maliyet,
+					GuncellemeTarihi = x.SonFiyatGuncellemeTarih,
+				})
+				.ToListAsync();
+
+			return View(model);
+		}
+		[HttpPost]
+		public async Task<IActionResult> TopluGrupFiyatGuncelle([FromBody] List<MalzemeFiyatGuncelleDto> model)
+		{
+			await _malzemeFiyatService.TopluFiyatGuncelleAsync(model);
+			return Ok();
+		}
 	}
 }

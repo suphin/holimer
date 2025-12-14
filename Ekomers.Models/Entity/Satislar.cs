@@ -23,6 +23,7 @@ namespace Ekomers.Models.Entity
 		public string? SorumluID { get; set; }
 		public bool IsDone { get; set; }
 		public DateTime TarihSaat { get; set; } = DateTime.Now;
+		public DateTime? SiparisTarihi { get; set; }
 		public string? Not { get; set; }
 		public string? Aciklama { get; set; }
 		public double KdvToplam { get; set; }
@@ -53,6 +54,7 @@ namespace Ekomers.Models.Entity
 		public string? SorumluAd { get; set; }
 		public bool IsDone { get; set; }
 		public DateTime? TarihSaat { get; set; }
+		public DateTime? SiparisTarihi { get; set; }
 		public string? Not { get; set; }
 		[Display(Name = "Açıklama")]
 		public string? Aciklama { get; set; }

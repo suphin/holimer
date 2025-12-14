@@ -16,6 +16,11 @@
         <select asp-for="SorumluID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SorumluListe, "Id", "AdSoyad"))"></select>
         <span asp-validation-for="SorumluAd" class="text-danger"></span>
     </div>
+    <div class="col-lg-3">
+        <label asp-for="SiparisTarihi" class="control-label"></label>
+        <input asp-for="SiparisTarihi" class="form-control form-control-sm" type="date" />
+        <span asp-validation-for="SiparisTarihi" class="text-danger"></span>
+    </div>
 </div>
 <div class="form-group row">
     <div id="personelFields" class="col-lg-6" style="display:@(Model?.CariTipi == false ? "block" : "none")">

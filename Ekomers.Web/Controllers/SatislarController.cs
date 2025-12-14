@@ -166,7 +166,7 @@ namespace Ekomers.Web.Controllers
 		 
 
 			modelc.ControllerName = "Satislar";
-			modelc.ModalTitle = "Satislar Bilgileri";
+			modelc.ModalTitle = "Satış Bilgileri";
 
 			modelc.UserID = _userId;
 			return PartialView(view, modelc);
@@ -181,9 +181,10 @@ namespace Ekomers.Web.Controllers
 
 
 			modelc.ControllerName = "Satislar";
-			modelc.ModalTitle = "Satislar Bilgileri";
+			modelc.ModalTitle = "Satış Bilgileri";
 
 			modelc.UserID = _userId;
+			
 			return View(view, modelc);
 		}
 
