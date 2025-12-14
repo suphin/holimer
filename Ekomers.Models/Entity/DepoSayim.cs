@@ -27,7 +27,7 @@ namespace Ekomers.Models.Entity
 		public int Id { get; set; }
 		public int WarehouseId { get; set; }
 		public int ProductId { get; set; }
-		public decimal SystemQuantity { get; set; }
+		public double SystemQuantity { get; set; }
 		public Warehouse Warehouse { get; set; }
 		public Product Product { get; set; }
 
@@ -38,9 +38,9 @@ namespace Ekomers.Models.Entity
 		public int Id { get; set; }
 		public int WarehouseId { get; set; }
 		public int ProductId { get; set; } 
-		public decimal SystemQuantity { get; set; }   // Depodaki sistemdeki miktar
-		public decimal CountedQuantity { get; set; }  // Sayımda bulunan miktar
-		public decimal Difference => CountedQuantity - SystemQuantity;  // Hesaplanan fark
+		public double SystemQuantity { get; set; }   // Depodaki sistemdeki miktar
+		public double CountedQuantity { get; set; }  // Sayımda bulunan miktar
+		public double Difference => CountedQuantity - SystemQuantity;  // Hesaplanan fark
 		public DateTime CountDate { get; set; } = DateTime.Now;
 
 		public Warehouse Warehouse { get; set; }

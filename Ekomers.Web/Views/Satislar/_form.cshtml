@@ -1,10 +1,11 @@
 ﻿@model SatislarVM
+<fieldset @(Model.IsDone ? "disabled" : "")>
 <div class="form-group row">
-    <div class="col-6">
+    <div class="col-lg-3 col-md-6">
         <label class="control-label">Personel </label>
         <input asp-for="CariTipi" type="radio" value="false" name="CariTipi" />
     </div>
-    <div class="col-6">
+        <div class="col-lg-3 col-md-6">
         <label class="control-label">Müşteri/Hasta </label>
         <input asp-for="CariTipi" type="radio" value="true" name="CariTipi" />
     </div>
@@ -13,12 +14,20 @@
      
     <div class="col-lg-3">
         <label asp-for="SorumluAd" class="control-label"></label>
-        <select asp-for="SorumluID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SorumluListe, "Id", "AdSoyad"))"></select>
-        <span asp-validation-for="SorumluAd" class="text-danger"></span>
+            @if(Model.IsDone)
+            {
+                <input asp-for="SorumluAd" class="form-control form-control-sm" />
+            }
+            else
+            {
+               <select asp-for="SorumluID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SorumluListe, "Id", "AdSoyad"))"></select>
+        <span asp-validation-for="SorumluAd" class="text-danger"></span>  
+            }
+           
     </div>
     <div class="col-lg-3">
         <label asp-for="SiparisTarihi" class="control-label"></label>
-        <input asp-for="SiparisTarihi" class="form-control form-control-sm" type="date" />
+        <input asp-for="SiparisTarihi" class="form-control form-control-sm" type="date" required/>
         <span asp-validation-for="SiparisTarihi" class="text-danger"></span>
     </div>
 </div>
@@ -27,9 +36,16 @@
 
        
             <label asp-for="PersonelAd" class="control-label"></label>
+            @if(Model.IsDone)
+            {
+                <input asp-for="PersonelAd" class="form-control form-control-sm" />
+                 
+            }
+            else
+            {
             <select asp-for="PersonelID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.PersonelListe, "Id", "AdSoyad"))"></select>
         <span asp-validation-for="PersonelID" class="text-danger"></span>
-            
+            }
         
 
     </div>
@@ -51,7 +67,7 @@
     </div>
     <div class="col-lg-3">
         <label asp-for="SiparisToplam" class="control-label"></label>
-        <input asp-for="SiparisToplam" class="form-control form-control-sm" required />
+        <input asp-for="SiparisToplam" class="form-control form-control-sm text-right" required />
         <span asp-validation-for="SiparisToplam" class="text-danger"></span>
 
     </div>
@@ -69,6 +85,7 @@
         <span asp-validation-for="Not" class="text-danger"></span>
     </div>
 </div>
+</fieldset>
 @if (Model.ID>0)
 {
   

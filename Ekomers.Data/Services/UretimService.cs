@@ -145,7 +145,7 @@ namespace Ekomers.Data.Services
 							 TerminSuresi=kayit.TerminSuresi,
 							 TeslimTarihi=kayit.TeslimTarihi,
 							 Not=kayit.Not,
-							 KayipFireOran=Math.Round((decimal)kayit.KayipFireOran,2),
+							 KayipFireOran=Math.Round((double)kayit.KayipFireOran,2),
 							 KayipFireMiktar=kayit.KayipFireMiktar,
 							 ParasalDeger=kayit.ParasalDeger,
 							 HmCarpan=kayit.HmCarpan,
@@ -407,7 +407,7 @@ namespace Ekomers.Data.Services
 			else
 			{
 				 model.KayipFireMiktar = model.HesaplananMiktar-model.GerceklesenMiktar;
-				model.KayipFireOran = (decimal)((model.HesaplananMiktar - model.GerceklesenMiktar) / model.HesaplananMiktar * 100);
+				model.KayipFireOran = (double)((model.HesaplananMiktar - model.GerceklesenMiktar) / model.HesaplananMiktar * 100);
 				model.ParasalDeger = (model.HesaplananMiktar - model.GerceklesenMiktar) * model.HmCarpan;
 				_mapper.Map(model, existingEntry);
 				await _uretimRepo.UpdateAsync(existingEntry);

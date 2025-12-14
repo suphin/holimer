@@ -13,6 +13,8 @@ namespace Ekomers.Data.Services.IServices
 	{
 		Task<bool> SatislarUrunEkle(SatislarUrunlerVM modelv);
 		Task<bool> SatislarUrunCikar(int urunId);
+		Task<bool> SiparisKapat(int siparisId);
+		Task<bool> SiparisAc(int siparisId);
 		Task<List<SatislarUrunlerVM>> SatislarUrunlerGetir(int SatislarID);
 	}
 }

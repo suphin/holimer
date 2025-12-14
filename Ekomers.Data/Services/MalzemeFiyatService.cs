@@ -1,9 +1,11 @@
 ﻿using Ekomers.Data.Services.IServices;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Text;
 
 namespace Ekomers.Data.Services
@@ -11,10 +13,15 @@ namespace Ekomers.Data.Services
 	public class MalzemeFiyatService : IMalzemeFiyatService
 	{
 		private readonly ApplicationDbContext _context;
-
-		public MalzemeFiyatService(ApplicationDbContext context)
+		private readonly IHttpContextAccessor _httpContextAccessor;
+		private readonly ClaimsPrincipal _user;
+		private readonly string _userId;
+		public MalzemeFiyatService(ApplicationDbContext context,  IHttpContextAccessor httpContextAccessor)
 		{
 			_context = context;
+			_httpContextAccessor = httpContextAccessor;
+			_user = _httpContextAccessor.HttpContext?.User;
+			_userId = _user?.FindFirstValue(ClaimTypes.NameIdentifier);
 		}
 
 		public async Task TopluFiyatGuncelleAsync(List<MalzemeFiyatGuncelleDto> model)
@@ -84,7 +91,8 @@ namespace Ekomers.Data.Services
 
 					// 1️⃣ Ana tablo güncelle
 					 
-					malzeme.MaliyetSatis = item.YeniMaliyet;
+					malzeme.MaliyetSatis = item.YeniMaliyet==null ? malzeme.MaliyetSatis: item.YeniMaliyet;
+					malzeme.FiyatSatis = item.YeniFiyat==null ? malzeme.FiyatSatis:item.YeniFiyat;
 					malzeme.DovizTur = item.DovizTur;
 					malzeme.SonMaliyetGuncellemeTarih = DateTime.Now;
 					// 2️⃣ Fiyat geçmişine ekle
@@ -92,9 +100,14 @@ namespace Ekomers.Data.Services
 					{
 						MalzemeID = malzeme.ID, 
 						Maliyet = item.YeniMaliyet,
+						Fiyat = item.YeniFiyat,
 						DovizTur = item.DovizTur,
 						Aciklama = item.Aciklama,
-						Tarih = DateTime.Now
+						Tarih = DateTime.Now,
+						CreateDate= DateTime.Now,
+						CreateUserID= _userId,
+						IsActive= true,
+						IsDelete= false
 					};
 
 					_context.MalzemeMaliyetFiyat.Add(fiyatKaydi);

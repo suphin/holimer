@@ -147,6 +147,7 @@ namespace Ekomers.Data.Services
 							 DovizTur = malzeme.DovizTur,
 							 DovizTurAd = doviz.Ad,
 							 MaliyetSatis = malzeme.MaliyetSatis,
+							 FiyatSatis = malzeme.FiyatSatis,
 							 Maliyet = malzeme.Maliyet,
 							 SonMaliyetGuncellemeTarih = malzeme.SonMaliyetGuncellemeTarih,
 							  SonFiyatGuncellemeTarih = malzeme.SonFiyatGuncellemeTarih,

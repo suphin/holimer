@@ -12,6 +12,7 @@ namespace Ekomers.Models
 		public DateTime? GuncellemeTarihi { get; set; }
 		public DateTime? GuncellemeTarihiSatis { get; set; }
 		public double? MevcutFiyat { get; set; }
+		public double? MevcutFiyatSatis { get; set; }
 		public double? YeniFiyat { get; set; }
 		public double? YeniMaliyet { get; set; }
 		public double? YeniMaliyetSatis { get; set; }

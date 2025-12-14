@@ -28,7 +28,7 @@ namespace Ekomers.Models.Entity
 
 		//hesaplamalar
 		public double? KayipFireMiktar { get; set; }
-		public decimal? KayipFireOran { get; set; }
+		public double? KayipFireOran { get; set; }
 		public double? ParasalDeger { get; set; }
 		public string? Not { get; set; }
 	}
@@ -50,7 +50,7 @@ namespace Ekomers.Models.Entity
 		public double? GerceklesenMiktar { get; set; }
 
 		public double? KayipFireMiktar { get; set; }
-		public decimal? KayipFireOran { get; set; }
+		public double? KayipFireOran { get; set; }
 		public double? ParasalDeger { get; set; }
 		public double? HmCarpan { get; set; }
 		public int ReceteID { get; set; }

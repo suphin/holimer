@@ -103,7 +103,7 @@ namespace Ekomers.Web.Controllers
 
 			Expression<Func<Kullanici, bool>> filter = a => a.IsCrmUser == true  ;
 
-			var sorumlular = await _kullaniciCache.GetListeAsync(CacheKeys.SorumlularAll,filter);
+			var sorumlular = await _kullaniciCache.GetListeAsync(CacheKeys.CrmUserAll, filter);
 			ViewBag.SorumluListe = new SelectList(sorumlular, "Id", "AdSoyad");
 
 		}

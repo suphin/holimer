@@ -24,8 +24,8 @@ namespace Ekomers.Models.ViewModels
 	public class WarehouseStockCell
 	{
 		public int WarehouseId { get; set; }
-		public decimal SystemQuantity { get; set; }
-		public decimal? CountedQuantity { get; set; } // girilecek miktar
+		public double SystemQuantity { get; set; }
+		public double? CountedQuantity { get; set; } // girilecek miktar
 	}
 
 	public class WarehouseInventoryEditViewModel
@@ -33,6 +33,6 @@ namespace Ekomers.Models.ViewModels
 		public int WarehouseId { get; set; }
 		public int ProductId { get; set; }
 		public string ProductName { get; set; }
-		public decimal SystemQuantity { get; set; }
+		public double SystemQuantity { get; set; }
 	}
 }

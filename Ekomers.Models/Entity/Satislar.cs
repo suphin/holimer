@@ -42,6 +42,7 @@ namespace Ekomers.Models.Entity
 		public string? MusteriAd { get; set; }
 		public int? MusteriID { get; set; }
 		public string? GorevliAd { get; set; }
+		[Display(Name = "Personel Ad")]
 		public string? PersonelAd { get; set; }
 		public string? PersonelID { get; set; }
 		public int? GorevliID { get; set; } 
@@ -50,10 +51,11 @@ namespace Ekomers.Models.Entity
 		[Display(Name = "İade Durumu")]
 		public string? DurumAd { get; set; }
 		public string? SorumluID { get; set; }
-		[Display(Name = "Sorumlu")]
+		[Display(Name = "Sorumlu Ad")]
 		public string? SorumluAd { get; set; }
 		public bool IsDone { get; set; }
 		public DateTime? TarihSaat { get; set; }
+		[Display(Name = "Sipariş Tarihi")]
 		public DateTime? SiparisTarihi { get; set; }
 		public string? Not { get; set; }
 		[Display(Name = "Açıklama")]
@@ -70,8 +72,11 @@ namespace Ekomers.Models.Entity
 		public double EuroKuru { get; set; }
 		public double KdvToplam { get; set; }
 		public double IskontoToplam { get; set; }
+
+		[Display(Name = "Sipariş Toplam")]
 		public double SiparisToplam { get; set; }
 		public bool IsLocked { get; set; } = false;
+		[Display(Name = "Sipariş No")]
 		public string? SiparisNo { get; set; }
 	}
 
@@ -132,6 +137,6 @@ namespace Ekomers.Models.Entity
 		public double GenelToplam { get; set; }
 		public string Aciklama { get; set; }
 		public List<SatislarUrunlerVM> SatislarUrunlerVMListe { get; set; }
-
+		public int CariTipi { get; set; }
 	}
 }

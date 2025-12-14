@@ -7,6 +7,7 @@
 		public const string MusteriTipAll = "MusteriTip:All";
 		public const string SorumlularAll = "Sorumlular:All";
 		public const string PersonelAll = "Personel:All";
+		public const string CrmUserAll = "CrmUser:All";
 		public const string TeklifDurumAll = "TeklifDurum:All";
 		public const string TeklifTurAll = "TeklifTur:All";
 		public const string MalzemeDovizAll = "MalzemeDoviz:All";

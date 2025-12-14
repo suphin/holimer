@@ -70,6 +70,7 @@ namespace Ekomers.Models.ViewModels
 		public DateTime? SonFiyatGuncellemeTarih { get; set; }
 		public DateTime? SonMaliyetGuncellemeTarih { get; set; }
 		public double? MaliyetSatis { get; set; }
+		public double? FiyatSatis { get; set; }
 	}
 
 	public class TagifyDto

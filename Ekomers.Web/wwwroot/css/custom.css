@@ -196,3 +196,8 @@
 .no-padding {
     padding: 0 !important;
 }
+
+.select-disabled  {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+}

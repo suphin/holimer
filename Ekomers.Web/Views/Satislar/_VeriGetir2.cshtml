@@ -53,7 +53,15 @@
                                     <input type="hidden" asp-for="CreateUserID" value="@Model.CreateUserID" />
                                     <input type="hidden" asp-for="UpdateUserID" value="@Model.UserID" />
                                     <button type="button" class="btn btn-danger" onclick="javascript:history.back()" >Geri Dön</button>
-                                    <button type="submit" class="btn btn-success">Kaydet</button>
+                                    @if (!Model.IsDone)
+                                    {
+                                        <button type="submit" class="btn btn-success">Kaydet</button>
+                                    <button type="button" class="btn btn-info ml-5" onclick="SiparisiKapat('@Model.ID')">Siparişi Kapat</button>
+                                    }
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <button type="button" class="btn btn-info ml-5" onclick="SiparisiAc('@Model.ID')">Siparişi Aç</button>
+                        }
                                 </div>
                         </form>
                         </div>
@@ -64,10 +72,7 @@
                                                         }
                         </div>
             <div class="tab-pane fade" id="kt_tab_pane_3_4" role="tabpanel" aria-labelledby="kt_tab_pane_2_4">
-                @{
-                    @await Component.InvokeAsync("CrmLogYonetimi",
-                    new { MusteriID = Model.MusteriID })
-                                }
+                
             </div>
                     </div>
                 </div>
@@ -86,13 +91,58 @@
     @{
         await Html.RenderPartialAsync("~/Views/Musteriler/SelectList.Scripts.cshtml") ;
     }
-
-  
-
+       @if (User.IsInRole("Admin"))
+                        {
+     <script>
+        function SiparisiAc(SiparisID) {
+             
+        $.ajax({
+            url: '@Url.Action("SiparisAc", "Satislar")',
+            type: 'POST',
+            dataType: "html",
+            data: {
+                SiparisID:SiparisID
+            },
+            success: function(response) {
+              
+              toastr.success('İşlem Başarılı', 'Başarılı');
+               setTimeout(function () {
+                            window.location.reload();
+                        }, 1500);
+            },
+            error: function(error) {
+                toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+            }
+        });
+        }
+       
+    </script>
+     }
 
 	<script src="js/select2.js?v=7.0.5"></script>
     <script>
-         
+        function SiparisiKapat(SiparisID) {
+             
+        $.ajax({
+            url: '@Url.Action("SiparisKapat", "Satislar")',
+            type: 'POST',
+            dataType: "html",
+            data: {
+                SiparisID:SiparisID
+            },
+            success: function(response) {
+              
+              toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+               setTimeout(function () {
+                            window.location.reload();
+                        }, 1500);
+            },
+            error: function(error) {
+                toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+            }
+        });
+        }
+       
     </script>
 
     <script type="text/javascript">

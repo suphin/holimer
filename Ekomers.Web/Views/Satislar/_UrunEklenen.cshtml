@@ -35,7 +35,11 @@
             <th>Miktar</th>
             <th>Br Fiyat</th>
             <th>Toplam</th>
-            <th>Çıkar</th>
+            @if (!ViewBag.IsDone)
+            {
+                <th>Çıkar</th>
+            }
+            
         </tr>
     </thead>
     <tbody>
@@ -58,10 +62,13 @@
                 <td class="text-right">@String.Format("{0:n2}", item.Fiyat) @item.DovizTurAd</td>
                 <td class="text-right">@String.Format("{0:n2}", item.Fiyat*item.Miktar) @item.DovizTurAd</td>
                         <td>
+                        @if (!ViewBag.IsDone)
+                        {
                             @if (!item.IsDelete)
                             {
                                 <a href="javascript:void(0);" class="remove-item" data-id="@item.ID">Çıkar</a>
                             }
+                        }
                     </td>
             </tr>
             sayac = sayac + 1;

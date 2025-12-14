@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251214151615_decimalToDoubleFields")]
+    partial class decimalToDoubleFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -625,9 +628,6 @@ namespace Ekomers.Data.Migrations
                     b.Property<double?>("Fiyat")
                         .HasColumnType("float");
 
-                    b.Property<double?>("FiyatSatis")
-                        .HasColumnType("float");
-
                     b.Property<string>("Fotograf")
                         .HasColumnType("nvarchar(max)");
 
@@ -1062,9 +1062,6 @@ namespace Ekomers.Data.Migrations
 
                     b.Property<int?>("DovizTur")
                         .HasColumnType("int");
-
-                    b.Property<double?>("Fiyat")
-                        .HasColumnType("float");
 
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");

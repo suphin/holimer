@@ -20,23 +20,34 @@
                         <th style="width:140px">Kod</th>
                         <th>Ad</th>
                         <th>Son Güncelleme Tarihi</th> 
+                        <th style="width:140px">Mevcut Fiyat</th> 
                         <th style="width:140px">Mevcut Maliyet</th> 
+                        <th style="width:160px">Yeni Fiyat</th>
                         <th style="width:160px">Yeni Maliyet</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in Model)
                     {
+                        //value="@item.MevcutFiyatSatis?.ToString("0.##", CultureInfo.InvariantCulture)"
+                        //value="@item.MevcutMaliyetSatis?.ToString("0.##", CultureInfo.InvariantCulture)"
                         <tr data-id="@item.MalzemeId">
                             <td>@item.Kod</td>
                             <td>@item.Ad</td>
-                            <td>@item.GuncellemeTarihiSatis?.ToString("dd.MM.yyyy HH:mm")</td> 
-                            <td class="text-right">@String.Format("{0:n2}", item.MevcutMaliyetSatis)</td>                            
+                            <td>@item.GuncellemeTarihiSatis?.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="text-right">@String.Format("{0:n2}", item.MevcutFiyatSatis)</td>
+                            <td class="text-right">@String.Format("{0:n2}", item.MevcutMaliyetSatis)</td>
+                            <td class="text-right">
+                                <input type="number"
+                                       step="0.01"
+                                       class="form-control form-control-sm yeniFiyat"
+                                       placeholder="Yeni fiyat"  />
+                            </td>
                             <td class="text-right">
                                 <input type="number"
                                        step="0.01"
                                        class="form-control form-control-sm yeniMaliyet"
-                                       placeholder="Yeni maliyet" />
+                                       placeholder="Yeni maliyet"  />
                             </td>
                         </tr>
                     }
@@ -67,12 +78,14 @@
             $("#fiyatTable tbody tr").each(function () {
                 var row = $(this);
 
+                 var yeniFiyat = row.find(".yeniFiyat").val();
                 var yeniMaliyet = row.find(".yeniMaliyet").val();
 
-                if (yeniMaliyet) {
+                if (yeniFiyat || yeniMaliyet) {
                     liste.push({
                         MalzemeId: row.data("id"),
                         YeniMaliyet: yeniMaliyet,
+                        YeniFiyat: yeniFiyat,
                         DovizTur: 1,
                         Aciklama: "Toplu fiyat güncelleme"
                     });

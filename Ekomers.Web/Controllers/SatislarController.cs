@@ -3,6 +3,7 @@
 
 
 using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.Office2013.Drawing.Chart;
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
@@ -250,6 +251,8 @@ namespace Ekomers.Web.Controllers
 			};
 			   
 			ViewBag.Kurlar= await _tcmbService.DovizKuruGetir();
+			ViewBag.IsDone=  _service.VeriGetir(SiparisID).Result.IsDone;
+			ViewBag.CariTip=  _service.VeriGetir(SiparisID).Result.CariTipi;
 
 			if (modelvm.SatislarUrunlerVMListe == null)
 			{
@@ -267,7 +270,8 @@ namespace Ekomers.Web.Controllers
 			{
 				SatislarUrunlerVMListe = await _service.SatislarUrunlerGetir(SiparisID)
 			};
-
+			ViewBag.IsDone = _service.VeriGetir(SiparisID).Result.IsDone;
+			ViewBag.CariTip = _service.VeriGetir(SiparisID).Result.CariTipi;
 
 			return PartialView("_UrunEklenen", model);
 		}
@@ -296,7 +300,7 @@ namespace Ekomers.Web.Controllers
 				Iskonto = models.Iskonto,
 				BirimID = urun.BirimID,
 				BirimAd = urun.BirimAd,				
-				Fiyat = (double)urun.MaliyetSatis,
+				Fiyat =models.CariTipi==1 ? (double)urun.FiyatSatis : (double)urun.MaliyetSatis,
 				Kdv= (double)urun.Kdv,
 				DovizTurAd = urun.DovizTurAd,
 				DovizTur = urun.DovizTur,
@@ -312,7 +316,8 @@ namespace Ekomers.Web.Controllers
 			{
 				SatislarUrunlerVMListe = await _service.SatislarUrunlerGetir(models.SiparisID)
 			};
-
+			ViewBag.IsDone = _service.VeriGetir(models.SiparisID).Result.IsDone;
+			ViewBag.CariTip = _service.VeriGetir(models.SiparisID).Result.CariTipi;
 			return PartialView("_UrunEklenen", model);
 		}
 
@@ -326,8 +331,9 @@ namespace Ekomers.Web.Controllers
 					Ad = x.Ad,
 					Kod = x.Kod,
 					MevcutMaliyetSatis = x.MaliyetSatis,
+					MevcutFiyatSatis = x.FiyatSatis,
 					GuncellemeTarihiSatis = x.SonMaliyetGuncellemeTarih,
-				})
+				}).OrderBy(x => x.Kod)
 				.ToListAsync();
 
 			return View(model);
@@ -338,6 +344,30 @@ namespace Ekomers.Web.Controllers
 			await _malzemeFiyatService.TopluMaliyetGuncelleAsync(model);
 			return Ok();
 		}
-
+		public async Task<IActionResult> SiparisKapat(int SiparisID)
+		{
+			bool sonuc = await _service.SiparisKapat(SiparisID);
+			if (sonuc)
+			{
+				return Ok("Sipariş kapatıldı.");
+			}
+			else
+			{
+				return BadRequest("Veri silinemedi.");
+			}
+		}
+		[Authorize(Roles = "Admin")]
+		public async Task<IActionResult> SiparisAc(int SiparisID)
+		{
+			bool sonuc = await _service.SiparisAc(SiparisID);
+			if (sonuc)
+			{
+				return Ok("Sipariş açıldı.");
+			}
+			else
+			{
+				return BadRequest("Veri silinemedi.");
+			}
+		}
 	}
 }

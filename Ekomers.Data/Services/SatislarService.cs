@@ -173,7 +173,7 @@ namespace Ekomers.Data.Services
 							 SorumluID= kayit.SorumluID,
 							 SorumluAd= sorumlu != null ? sorumlu.AdSoyad : "",
 							 Musteri = musteriler ?? new Musteriler(),
-							 SiparisToplam = (double)kayit.SiparisToplam,
+							 SiparisToplam =Math.Round( (double)kayit.SiparisToplam,2),
 							 KdvToplam = (double)kayit.KdvToplam,
 							 IskontoToplam = (double)kayit.IskontoToplam,
 							DolarKuru = (double)kayit.DolarKuru,
@@ -510,7 +510,7 @@ namespace Ekomers.Data.Services
 							 SiparisID = kayit.SiparisID,
 							 UrunID = kayit.UrunID,
 							 Miktar = (double)kayit.Miktar,
-							 Toplam = (double)(kayit.Miktar * kayit.Fiyat),
+							 Toplam = Math.Round(kayit.Miktar * kayit.Fiyat,2),
 							 //KdvTutar = (double)((kayit.Miktar * kayit.Fiyat) * (kayit.Kdv / 100)),
 							 //IskontoTutar = (double)((kayit.Miktar * kayit.Fiyat) * (kayit.Iskonto / 100)),
 							// GenelToplam = (double)((kayit.Miktar * kayit.Fiyat) + ((kayit.Miktar * kayit.Fiyat) * (kayit.Kdv / 100)) - ((kayit.Miktar * kayit.Fiyat) * (kayit.Iskonto / 100))),
@@ -542,12 +542,36 @@ namespace Ekomers.Data.Services
 		public async Task<bool> SatislarUrunCikar(int urunId)
 		{
 			var model = _SatislarUrunlerRepo.GetById(urunId);
-			model.IsDelete = true;
-			model.DeleteDate=DateTime.Now;
-			model.DeleteUserID = _userId;
-			await _SatislarUrunlerRepo.UpdateAsync(model);
-			// _SatislarUrunlerRepo.Delete(model);
+			 
+			  _SatislarUrunlerRepo.Delete(model); 
 			await _context.SaveChangesAsync();
+			return true;
+		}
+
+		public async Task<bool> SiparisKapat(int siparisId)
+		{
+			Satislar? kayit = _SatislarRepo.GetById(siparisId);
+			if (kayit != null)
+			{
+				 
+				kayit.IsDone = true;
+				 
+				await _SatislarRepo.UpdateAsync(kayit);
+				await _context.SaveChangesAsync();
+			}
+			return true;
+		}
+		public async Task<bool> SiparisAc(int siparisId)
+		{
+			Satislar? kayit = _SatislarRepo.GetById(siparisId);
+			if (kayit != null)
+			{
+
+				kayit.IsDone = false;
+
+				await _SatislarRepo.UpdateAsync(kayit);
+				await _context.SaveChangesAsync();
+			}
 			return true;
 		}
 	}

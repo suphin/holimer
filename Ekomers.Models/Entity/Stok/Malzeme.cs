@@ -77,6 +77,7 @@ namespace Ekomers.Models.Ekomers
 		public DateTime? SonFiyatGuncellemeTarih { get; set; }
 		public DateTime? SonMaliyetGuncellemeTarih { get; set; }
 		public double? MaliyetSatis { get; set; }
+		public double? FiyatSatis { get; set; }
 	}
 	public class MalzemeGrup: BaseEntity
 	{
@@ -132,6 +133,7 @@ namespace Ekomers.Models.Ekomers
 		public virtual Malzeme? Malzeme { get; set; }
 		public string? Aciklama { get; set; }
 		public double? Maliyet { get; set; }
+		public double? Fiyat { get; set; }
 		public DateTime? Tarih { get; set; }
 		public int? DovizTur { get; set; }
 	}
