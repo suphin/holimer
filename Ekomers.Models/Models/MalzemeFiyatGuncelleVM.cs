@@ -17,6 +17,7 @@ namespace Ekomers.Models
 		public double? YeniMaliyet { get; set; }
 		public double? YeniMaliyetSatis { get; set; }
 		public double? MevcutMaliyet { get; set; }
+		public double? MevcutKdv { get; set; }
 		public double? MevcutMaliyetSatis { get; set; }
 		public int? DovizTur { get; set; }
 	}

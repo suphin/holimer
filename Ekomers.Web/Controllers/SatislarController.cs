@@ -93,18 +93,18 @@ namespace Ekomers.Web.Controllers
 	 
 		private async Task ViewBagListeDoldur()
 		{
-			ViewBag.SatislarDurumListe = await _durumCache.GetListeAsync(CacheKeys.SatislarDurumAll);
+			//ViewBag.SatislarDurumListe = await _durumCache.GetListeAsync(CacheKeys.SatislarDurumAll);
 			 
 		}
 
 		private async Task ViewBagPartialListeDoldur()
 		{
-			ViewBag.SatislarDurumListe = await _durumCache.GetListeAsync(CacheKeys.SatislarDurumAll);
-			ViewBag.SatislarSebepListe = await _sebepCache.GetListeAsync(CacheKeys.SatislarSebepAll);
-			ViewBag.SatislarPlatformListe = await _platformCache.GetListeAsync(CacheKeys.SatislarPlatformAll);
+			//ViewBag.SatislarDurumListe = await _durumCache.GetListeAsync(CacheKeys.SatislarDurumAll);
+			//ViewBag.SatislarSebepListe = await _sebepCache.GetListeAsync(CacheKeys.SatislarSebepAll);
+			//ViewBag.SatislarPlatformListe = await _platformCache.GetListeAsync(CacheKeys.SatislarPlatformAll);
 
 
-			ViewBag.SatislarTurListe = await _turCache.GetListeAsync(CacheKeys.SatislarTurAll);
+			//ViewBag.SatislarTurListe = await _turCache.GetListeAsync(CacheKeys.SatislarTurAll);
 			 
 
 			Expression<Func<Kullanici, bool>> filter = a => a.IsMhUser == true  ;
@@ -179,8 +179,7 @@ namespace Ekomers.Web.Controllers
 
 			await ViewBagPartialListeDoldur();
 
-
-
+			
 			modelc.ControllerName = "Satislar";
 			modelc.ModalTitle = "Satış Bilgileri";
 
@@ -240,8 +239,8 @@ namespace Ekomers.Web.Controllers
 		
 		public async Task<PartialViewResult> UrunEkle(int SiparisID)
 		{
-			 
-			 
+
+			var siparis = await _service.VeriGetir(SiparisID);
 			var modelvm = new SatislarUrunlerVM()
 			{
 				CreateDate = DateTime.Now,
@@ -253,7 +252,7 @@ namespace Ekomers.Web.Controllers
 			ViewBag.Kurlar= await _tcmbService.DovizKuruGetir();
 			ViewBag.IsDone=  _service.VeriGetir(SiparisID).Result.IsDone;
 			ViewBag.CariTip=  _service.VeriGetir(SiparisID).Result.CariTipi;
-
+			ViewBag.Siparis = siparis;
 			if (modelvm.SatislarUrunlerVMListe == null)
 			{
 				modelvm.SatislarUrunlerVMListe = new List<SatislarUrunlerVM>();
@@ -265,14 +264,14 @@ namespace Ekomers.Web.Controllers
 		public async Task<PartialViewResult> UrunCikar(int urunId,int SiparisID)
 		{
 			var sonuc = await _service.SatislarUrunCikar(urunId);
-
+			var siparis = await _service.VeriGetir(SiparisID);
 			var model = new SatislarUrunlerVM
 			{
 				SatislarUrunlerVMListe = await _service.SatislarUrunlerGetir(SiparisID)
 			};
 			ViewBag.IsDone = _service.VeriGetir(SiparisID).Result.IsDone;
 			ViewBag.CariTip = _service.VeriGetir(SiparisID).Result.CariTipi;
-
+			ViewBag.Siparis = siparis;
 			return PartialView("_UrunEklenen", model);
 		}
 		public async Task<IActionResult> MalzemeAra(string kelime)
@@ -289,7 +288,7 @@ namespace Ekomers.Web.Controllers
 		public async Task<PartialViewResult> _SiparisUrunEkle(SatislarUrunlerVM models)
 		{
 			var urun = await _malzemeService.VeriGetir(models.UrunID);
-
+			var siparis = await _service.VeriGetir(models.SiparisID);
 			// Yeni eklenen malzemeyi listeye ekliyoruz
 			var SatislarUrunekle = new SatislarUrunlerVM
 			{
@@ -300,7 +299,8 @@ namespace Ekomers.Web.Controllers
 				Iskonto = models.Iskonto,
 				BirimID = urun.BirimID,
 				BirimAd = urun.BirimAd,				
-				Fiyat =models.CariTipi==1 ? (double)urun.FiyatSatis : (double)urun.MaliyetSatis,
+				Fiyat =(double)urun.FiyatSatis,
+				Maliyet =(double)urun.MaliyetSatis,
 				Kdv= (double)urun.Kdv,
 				DovizTurAd = urun.DovizTurAd,
 				DovizTur = urun.DovizTur,
@@ -316,8 +316,9 @@ namespace Ekomers.Web.Controllers
 			{
 				SatislarUrunlerVMListe = await _service.SatislarUrunlerGetir(models.SiparisID)
 			};
-			ViewBag.IsDone = _service.VeriGetir(models.SiparisID).Result.IsDone;
-			ViewBag.CariTip = _service.VeriGetir(models.SiparisID).Result.CariTipi;
+			ViewBag.IsDone = siparis.IsDone;
+			ViewBag.CariTip = siparis.CariTipi;
+			ViewBag.Siparis = siparis;
 			return PartialView("_UrunEklenen", model);
 		}
 

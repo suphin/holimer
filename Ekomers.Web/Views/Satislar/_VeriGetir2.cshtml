@@ -1,7 +1,7 @@
 ﻿@model SatislarVM
 @{
-    ViewData["Title"] = "Siparis Iade Listesi";
-    ViewData["Description"] = "Çalışma Sayfası - Siparis Iade / Görev";
+    ViewData["Title"] = "Satışlar Listesi";
+    ViewData["Description"] = "Müşteri Hizmetleri - Satışlar";
 }
 
  
@@ -44,6 +44,16 @@
                             @{
                                 await Html.RenderPartialAsync("_form", Model);
                             }
+                            <div>
+                        @if (!Model.IsDone)
+                        { 
+                            <button type="button" class="btn btn-info ml-5" onclick="SiparisiKapat('@Model.ID')">Siparişi Kapat</button>
+                        }
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <button type="button" class="btn btn-info ml-5" onclick="SiparisiAc('@Model.ID')">Siparişi Aç</button>
+                        }
+                            </div>
                                 <div class="text-right mt-3">
                                     <input type="hidden" asp-for="ID" />
                                     <input type="hidden" asp-for="CreateDate" />
@@ -55,13 +65,9 @@
                                     <button type="button" class="btn btn-danger" onclick="javascript:history.back()" >Geri Dön</button>
                                     @if (!Model.IsDone)
                                     {
-                                        <button type="submit" class="btn btn-success">Kaydet</button>
-                                    <button type="button" class="btn btn-info ml-5" onclick="SiparisiKapat('@Model.ID')">Siparişi Kapat</button>
+                                        <button type="submit" class="btn btn-success">Kaydet</button> 
                                     }
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <button type="button" class="btn btn-info ml-5" onclick="SiparisiAc('@Model.ID')">Siparişi Aç</button>
-                        }
+                      
                                 </div>
                         </form>
                         </div>
@@ -163,6 +169,7 @@
                         // $('#BrutToplam').modal('hide');
                         toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');                        
                         $('#SiparisToplam').val($('#BrutToplam').val());
+                        location.reload();
                     },
                     error: function (xhr, status, error) {
 

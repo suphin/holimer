@@ -43,9 +43,10 @@ namespace Ekomers.Data.Services
 						continue;
 
 					// 1️⃣ Ana tablo güncelle
-					malzeme.Fiyat = item.YeniFiyat; 
-					malzeme.Maliyet = item.YeniMaliyet;
+					malzeme.Fiyat =  item.YeniFiyat == null ? malzeme.Fiyat : item.YeniFiyat; 
+					malzeme.Maliyet = item.YeniMaliyet == null ? malzeme.Maliyet : item.YeniMaliyet;
 					malzeme.DovizTur = item.DovizTur;
+					malzeme.Kdv=item.YeniKdv == null ? malzeme.Kdv : item.YeniKdv;
 					malzeme.SonFiyatGuncellemeTarih = DateTime.Now;
 					// 2️⃣ Fiyat geçmişine ekle
 					var fiyatKaydi = new MalzemeFiyat
@@ -55,7 +56,11 @@ namespace Ekomers.Data.Services
 						Maliyet = item.YeniMaliyet,
 						DovizTur = item.DovizTur,
 						Aciklama = item.Aciklama,
-						Tarih = DateTime.Now
+						Tarih = DateTime.Now,
+						CreateDate = DateTime.Now,
+						CreateUserID = _userId,
+						IsActive = true,
+						IsDelete = false
 					};
 
 					_context.MalzemeFiyat.Add(fiyatKaydi);

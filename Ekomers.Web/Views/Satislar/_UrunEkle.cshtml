@@ -82,52 +82,52 @@
 </div>
 
 
-
-
-
-
-
 <script>
     $(document).ready(function() {
 
-    $("#search-box-urun").on("input", function() {
-    var query = $(this).val();
+        $("#search-box-urun").on("input", function() {
+            var query = $(this).val();
 
-    if (query.length >= 3) {
-    $.ajax({
-    url: '/Satislar/MalzemeAra',
-    type: 'GET',
-    data: { kelime: query },
-    success: function(data) {
-    var results = $("#results-urun");
-    results.empty();
-    $.each(data, function(index, malzeme) {
-    console.log("data:",data);
-    results.append('<li data-id="' + malzeme.id + '" data-birim-id="' + malzeme.birimID + '" data-birim-ad="' + malzeme.birimAd + '">' + malzeme.kod + ' ' + malzeme.ad + '</li>');
-    });
-    }
-    });
-    } else {
-    $("#results-urun").empty();
-    }
-    });
+            if (query.length >= 3) {
+                $.ajax({
+                    url: '/Satislar/MalzemeAra',
+                    type: 'GET',
+                    data: { kelime: query },
+                    success: function(data) {
+                                var results = $("#results-urun");
+                                results.empty();
+                                $.each(data, function(index, malzeme) {
+                                console.log("data:",data);
+                                results.append('<li data-id="' + malzeme.id + '" data-birim-id="' + malzeme.birimID + '" data-birim-ad="' + malzeme.birimAd + '">' + malzeme.kod + ' ' + malzeme.ad + '</li>');
+                            });
+                        }
+                    });
+            } else {
+            $("#results-urun").empty();
+                }
+            });
 
-    $(document).on("click", "#results-urun li", function() {
-    var malzemeAd = $(this).text();
-    var malzemeId = $(this).data("id");
-    var malzemeBirimId = $(this).data("birim-id");
-    var malzemeBirimAd = $(this).data("birim-ad");
+            $(document).on("click", "#results-urun li", function() {
+            var malzemeAd = $(this).text();
+            var malzemeId = $(this).data("id");
+            var malzemeBirimId = $(this).data("birim-id");
+            var malzemeBirimAd = $(this).data("birim-ad");
 
-    $("#BirimID").val(malzemeBirimId);
-    $("#BirimAd").val(malzemeBirimAd);
-    $("#search-box-urun").val(malzemeAd);
-    $("#UrunID").val(malzemeId);
-    $("#results-urun").empty();
-    // Miktar textbox'ına odaklanıyoruz
-    $("#Miktar").focus();
-    });
+            $("#BirimID").val(malzemeBirimId);
+            $("#BirimAd").val(malzemeBirimAd);
+            $("#search-box-urun").val(malzemeAd);
+            $("#UrunID").val(malzemeId);
+            $("#results-urun").empty();
+            // Miktar textbox'ına odaklanıyoruz
+            $("#Miktar").focus();
+        });
     });
 </script>
+
+
+
+
+
 @if (!ViewBag.IsDone)
 {
     <script>
@@ -171,7 +171,8 @@
             $('#search-box-urun').val('');
             $('#search-box-urun').focus();
                         toastr.success('Ürün eklendi.', 'Başarılı');
-             $('#SiparisToplam').val($('#BrutToplam').val());
+           //  $('#SiparisToplam').val($('#BrutToplam').val());
+           //  $('#MaliyetToplam').val($('#NetToplam').val());
                     },
         error: function(error) {
                         toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
@@ -194,7 +195,8 @@
                 data: { urunId: urunId ,SiparisID:@(Model.SiparisID) },
                 success: function(response) {
                     $('#MalzemeEklenenListe').html(response);
-                    $('#SiparisToplam').val($('#BrutToplam').val());
+                   // $('#SiparisToplam').val($('#BrutToplam').val());
+                  //  $('#MaliyetToplam').val($('#NetToplam').val());
                 },
                 error: function() {
                     alert('Bir hata oluştu. Lütfen tekrar deneyin.'+ respon.error);

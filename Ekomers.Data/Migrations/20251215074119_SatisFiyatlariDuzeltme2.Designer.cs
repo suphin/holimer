@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251215074119_SatisFiyatlariDuzeltme2")]
+    partial class SatisFiyatlariDuzeltme2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2552,17 +2555,11 @@ namespace Ekomers.Data.Migrations
                     b.Property<int?>("MusteriID")
                         .HasColumnType("int");
 
-                    b.Property<double?>("MusteriOran")
-                        .HasColumnType("float");
-
                     b.Property<string>("Not")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PersonelID")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("PersonelOran")
-                        .HasColumnType("float");
 
                     b.Property<string>("SiparisNo")
                         .HasColumnType("nvarchar(max)");

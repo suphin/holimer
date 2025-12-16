@@ -1,6 +1,7 @@
 ﻿@model SatislarUrunlerVM
 
 @{
+    var _siparis = (SatislarVM)ViewBag.Siparis;
 }
 <style>
     /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
@@ -33,7 +34,9 @@
             <th>Ürün Adı</th>
             <th>Birim</th>
             <th>Miktar</th>
+            <th>Br Maliyet</th>
             <th>Br Fiyat</th>
+            <th>MaliyetToplam</th>
             <th>Toplam</th>
             @if (!ViewBag.IsDone)
             {
@@ -59,7 +62,9 @@
                 <td>@item.UrunAd</td>
                 <td>@item.BirimAd</td>
                 <td class="text-right">@String.Format("{0:n2}", item.Miktar)</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Maliyet) @item.DovizTurAd</td>
                 <td class="text-right">@String.Format("{0:n2}", item.Fiyat) @item.DovizTurAd</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Maliyet * item.Miktar) @item.DovizTurAd</td>
                 <td class="text-right">@String.Format("{0:n2}", item.Fiyat*item.Miktar) @item.DovizTurAd</td>
                         <td>
                         @if (!ViewBag.IsDone)
@@ -72,27 +77,68 @@
                     </td>
             </tr>
             sayac = sayac + 1;
-            T1 = T1 + (item.Fiyat * item.Miktar);
-           
+            T1 = T1 + (item.Maliyet * item.Miktar);
+            T2 = T2 + (item.Fiyat * item.Miktar);
+            
         }
 
     </tbody>
     @if (Model.SatislarUrunlerVMListe.Count > 0)
     {
+        T3 = T1 * (double)(_siparis.PersonelOran / 100);
+        T4 = T2 * (double)(_siparis.MusteriOran / 100);
         <tfoot>
-            <tr>  <td class="text-right" colspan="7">
+            <tr>  
+                <td class="text-right" colspan="9">
                     <table width="100%" class="table-borderless">
+
                         <tr>
-                            <td class="text-right">Brüt Toplam      :</td>
-                            <td class="text-right">@String.Format("{0:n2}", T1) TL <input name="BrutToplam" id="BrutToplam" type="hidden" value="@T1" /></td>
+                            <td class="text-right">Maliyet Toplam     :</td>
+                            <td class="text-right">
+                              @String.Format("{0:n2}", T1) TL <input name="NetToplam" id="NetToplam" type="hidden" value="@T1" />
+                                </td>
+                            
                         </tr>
-                       
+                        <tr>
+                            <td class="text-right">Satış Fiyatı Toplamı      :</td>
+                            <td class="text-right">@String.Format("{0:n2}", T2) TL <input name="BrutToplam" type="hidden" value="@T2" /></td>
+                        </tr>
+                        @if (ViewBag.CariTip)
+                        {
+                            <tr>
+                                <td class="text-right">İskonto Toplamı     :</td>
+                                <td class="text-right">@String.Format("{0:n2}", T4) TL <input name="SatirIskontoToplam" type="hidden" value="@T4" /></td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <tr>
+                                <td class="text-right">Kar Marjı  :</td>
+                                <td class="text-right">@String.Format("{0:n2}", T3) TL <input name="SatirIskontoToplam" type="hidden" value="@T3" /></td>
+                            </tr>
+                        }                      
+                        <tr>
+                            <td colspan="2"><hr /></td>
+                        </tr>
+                        @if (ViewBag.CariTip)
+                        {
+                            <tr>
+                                <td class="text-right bold">Ara Toplam         :</td>
+                                <td class="text-right bold">@String.Format("{0:n2}", T2 - T4) TL <input name="aratoplam" type="hidden" value="@(T2 - T4)" /></td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <tr>
+                                <td class="text-right bold">Ara Toplam         :</td>
+                                <td class="text-right bold">@String.Format("{0:n2}", T1 + T3) TL <input name="aratoplam" type="hidden" value="@(T1 + T3)" /></td>
+                            </tr>
+                        } 
                        
                         
                     </table>
 
                 </td>
-                <td> </td>
             </tr>
         </tfoot>
     }

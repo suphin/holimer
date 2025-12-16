@@ -1,38 +1,59 @@
 ﻿@model SatislarVM
 <fieldset @(Model.IsDone ? "disabled" : "")>
 <div class="form-group row">
-    <div class="col-lg-3 col-md-6">
+        <div class="col-lg-3 col-md-6">
+            <label class="control-label">Müşteri/Hasta </label>
+            <input asp-for="CariTipi" type="radio" value="true" name="CariTipi" />
+        </div> 
+        <div class="col-lg-3 col-md-6">
         <label class="control-label">Personel </label>
         <input asp-for="CariTipi" type="radio" value="false" name="CariTipi" />
     </div>
-        <div class="col-lg-3 col-md-6">
-        <label class="control-label">Müşteri/Hasta </label>
-        <input asp-for="CariTipi" type="radio" value="true" name="CariTipi" />
-    </div>
+  
 </div>
 <div class="form-group row">
      
-    <div class="col-lg-3">
-        <label asp-for="SorumluAd" class="control-label"></label>
-            @if(Model.IsDone)
-            {
-                <input asp-for="SorumluAd" class="form-control form-control-sm" />
-            }
-            else
-            {
-               <select asp-for="SorumluID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SorumluListe, "Id", "AdSoyad"))"></select>
-        <span asp-validation-for="SorumluAd" class="text-danger"></span>  
-            }
-           
-    </div>
+  
     <div class="col-lg-3">
         <label asp-for="SiparisTarihi" class="control-label"></label>
         <input asp-for="SiparisTarihi" class="form-control form-control-sm" type="date" required/>
         <span asp-validation-for="SiparisTarihi" class="text-danger"></span>
     </div>
+        <div class="col-lg-3">
+            <label asp-for="SiparisNo" class="control-label"></label>
+            <input asp-for="SiparisNo" class="form-control form-control-sm" required />
+            <span asp-validation-for="SiparisNo" class="text-danger"></span>
+
+        </div>
+        <div class="col-lg-3">
+            <label asp-for="PersonelOran" class="control-label"></label>
+            <input asp-for="PersonelOran" class="form-control form-control-sm" type="number"
+                   step="0.01" />
+            <span asp-validation-for="PersonelOran" class="text-danger"></span>
+        </div>
+        <div class="col-lg-3">
+            <label asp-for="MusteriOran" class="control-label"></label>
+            <input asp-for="MusteriOran" class="form-control form-control-sm" type="number"
+                   step="0.01" />
+            <span asp-validation-for="MusteriOran" class="text-danger"></span>
+
+        </div>
 </div>
 <div class="form-group row">
-    <div id="personelFields" class="col-lg-6" style="display:@(Model?.CariTipi == false ? "block" : "none")">
+        <div class="col-lg-3">
+            <label asp-for="SorumluAd" class="control-label"></label>
+            @if (Model.IsDone)
+            {
+                <input asp-for="SorumluAd" class="form-control form-control-sm" />
+            }
+            else
+            {
+                <select asp-for="SorumluID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SorumluListe, "Id", "AdSoyad"))"></select>
+                <span asp-validation-for="SorumluAd" class="text-danger"></span>
+            }
+
+        </div>
+    <div id="personelFields" class="col-lg-9" style="display:@(Model?.CariTipi == false ? "block" : "none")">
 
        
             <label asp-for="PersonelAd" class="control-label"></label>
@@ -59,25 +80,7 @@
        
 
     </div>
-    <div class="col-lg-3">
-        <label asp-for="SiparisNo" class="control-label"></label>
-        <input asp-for="SiparisNo" class="form-control form-control-sm" required />
-        <span asp-validation-for="SiparisNo" class="text-danger"></span>
-
-    </div>
-    <div class="col-lg-3">
-        <label asp-for="SiparisToplam" class="control-label"></label>
-        <input asp-for="SiparisToplam" class="form-control form-control-sm text-right" required />
-        <span asp-validation-for="SiparisToplam" class="text-danger"></span>
-
-    </div>
-
-
-
-</div>
- 
-
- 
+</div> 
 <div class="form-group row">
     <div class="col-lg-12">
         <label asp-for="Not" class="control-label"></label>
@@ -85,6 +88,7 @@
         <span asp-validation-for="Not" class="text-danger"></span>
     </div>
 </div>
+ 
 </fieldset>
 @if (Model.ID>0)
 {
@@ -147,5 +151,4 @@
 </script>
 
 
- 
  

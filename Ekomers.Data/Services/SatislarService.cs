@@ -174,6 +174,7 @@ namespace Ekomers.Data.Services
 							 SorumluAd= sorumlu != null ? sorumlu.AdSoyad : "",
 							 Musteri = musteriler ?? new Musteriler(),
 							 SiparisToplam =Math.Round( (double)kayit.SiparisToplam,2),
+							 MaliyetToplam =Math.Round( (double)kayit.MaliyetToplam, 2),
 							 KdvToplam = (double)kayit.KdvToplam,
 							 IskontoToplam = (double)kayit.IskontoToplam,
 							DolarKuru = (double)kayit.DolarKuru,
@@ -186,6 +187,8 @@ namespace Ekomers.Data.Services
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,
 							 SiparisTarihi= kayit.SiparisTarihi,
+							 PersonelOran= kayit.PersonelOran,
+							 MusteriOran= kayit.MusteriOran,
 
 							 CreateUserID = kayit.CreateUserID,
 							 CreateDate = kayit.CreateDate != null ? kayit.CreateDate : new DateTime(1000, 1, 1),
@@ -233,17 +236,44 @@ namespace Ekomers.Data.Services
 		{
 			model.Not = model.Not.Replace("\r\n", "");
 			Satislar? existingEntry = _SatislarRepo.GetById(model.ID);
+			 
 			if (existingEntry == null)
 			{
 				var newEntry = _mapper.Map<Satislar>(model);
+				newEntry.PersonelOran = model.PersonelOran ?? 5;
+				newEntry.MusteriOran = model.MusteriOran ?? 20;
+
 				_SatislarRepo.Add(newEntry);
 			}
 			else
 			{
 				_mapper.Map(model, existingEntry);
+
+				double toplam1 = 0; double toplam2 =0;
+				double musteriOran = existingEntry.MusteriOran ?? 1;
+				double personelOran = existingEntry.PersonelOran ?? 1;
+				var SatislarUrunler = await _SatislarUrunlerRepo.GetAll2(p => p.SiparisID == existingEntry.ID).ToListAsync();
+				 
+				foreach (var Urun in SatislarUrunler)
+				{
+					var _urun = _urunlerRepo.GetAll2().Where(p => p.ID == Urun.UrunID).FirstOrDefault();
+					if (Urun == null)
+						continue;
+
+					toplam1 += Urun.Fiyat*Urun.Miktar;
+					toplam2 += Urun.Maliyet * Urun.Miktar;
+
+				 
+				}
+				existingEntry.SiparisToplam = toplam1 * (double)(1-musteriOran / 100);
+				existingEntry.MaliyetToplam = toplam2 * (double)(1+personelOran / 100);
 				await _SatislarRepo.UpdateAsync(existingEntry);
 			}
 
+
+
+
+			
 			await _context.SaveChangesAsync();
 			return true;
 		}
@@ -400,6 +430,7 @@ namespace Ekomers.Data.Services
 					UrunID = modelv.UrunID,
 					SiparisID = modelv.SiparisID,
 					Fiyat = modelv.Fiyat,
+					Maliyet = modelv.Maliyet,
 					Kdv = modelv.Kdv,
 					Iskonto = modelv.Iskonto,
 					DovizTur= modelv.DovizTur,
@@ -501,7 +532,7 @@ namespace Ekomers.Data.Services
 							 BirimAd = birim.Ad,
 							 TipAd = tip.Ad,
 							 TipID = tip.ID, 
-							  
+							  Maliyet = (double)kayit.Maliyet,
 							 Fiyat = (double)kayit.Fiyat,
 							 Kdv = (double)kayit.Kdv,
 							 Iskonto = (double)kayit.Iskonto,

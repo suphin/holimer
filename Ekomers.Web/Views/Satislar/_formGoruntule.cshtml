@@ -8,26 +8,30 @@
 </style>
 <div class="form-group row">
      
-    <div class="col-lg-3">
-        <label asp-for="SorumluAd" class="control-label"></label>:@Model.SorumluAd
-    </div>
+   
     <div class="col-lg-3">
         <label asp-for="SiparisTarihi" class="control-label"></label> :@Model.SiparisTarihi?.ToString("dd.MM.yyyy")
-    </div>
-</div>
-<div class="form-group row">
-    <div class="col-lg-6">
-
-        <label class="control-label">Hasta/Personel</label>:@(Model.CariTipi==true ? Model.MusteriAd : Model.PersonelAd)
-    </div>
+    </div> 
     <div class="col-lg-3">
         <label asp-for="SiparisNo" class="control-label"></label>:@Model.SiparisNo
 
     </div>
     <div class="col-lg-3">
         <label asp-for="SiparisToplam" class="control-label"></label> :@Model.SiparisToplam
-
     </div>
+    <div class="col-lg-3">
+        <label asp-for="MaliyetToplam" class="control-label"></label> :@Model.MaliyetToplam
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-3">
+        <label asp-for="SorumluAd" class="control-label"></label>:@Model.SorumluAd
+    </div>
+    <div class="col-lg-9">
+
+        <label class="control-label">Hasta/Personel</label>:@(Model.CariTipi==true ? Model.MusteriAd : Model.PersonelAd)
+    </div>
+ 
 </div>
  
  

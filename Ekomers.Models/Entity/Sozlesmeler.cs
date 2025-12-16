@@ -45,6 +45,8 @@ namespace Ekomers.Models.Entity
 		public int? GunFarki { get; set; }
 		[Display(Name = "Tutar Açıklama")]
 		public string? TutarAciklama { get; set; }
+		[DataType(DataType.Currency)]
+		[DisplayFormat(DataFormatString = "{0:N2}", ApplyFormatInEditMode = true)]
 		public double? Tutar { get; set; }
 
 		[Display(Name = "Şirket")]

@@ -29,11 +29,14 @@ namespace Ekomers.Models.Entity
 		public double KdvToplam { get; set; }
 		public double IskontoToplam { get; set; }
 		public double SiparisToplam { get; set; }
+		public double MaliyetToplam { get; set; }
 		public double DolarKuru { get; set; }
 		public double EuroKuru { get; set; }
 		public bool IsLocked { get; set; } = false;
 		public string? SiparisNo { get; set; }
 		public bool CariTipi { get; set; }
+		public double? MusteriOran { get; set; }
+		public double? PersonelOran { get; set; }
 	}
 
 	public class SatislarVM : BaseVM
@@ -46,7 +49,7 @@ namespace Ekomers.Models.Entity
 		public string? PersonelAd { get; set; }
 		public string? PersonelID { get; set; }
 		public int? GorevliID { get; set; } 
-		public bool CariTipi { get; set; } 
+		public bool CariTipi { get; set; }= true;
 		public int? DurumID { get; set; }
 		[Display(Name = "İade Durumu")]
 		public string? DurumAd { get; set; }
@@ -75,9 +78,15 @@ namespace Ekomers.Models.Entity
 
 		[Display(Name = "Sipariş Toplam")]
 		public double SiparisToplam { get; set; }
+		[Display(Name = "Maliyet Toplam")]
+		public double MaliyetToplam { get; set; }
 		public bool IsLocked { get; set; } = false;
 		[Display(Name = "Sipariş No")]
 		public string? SiparisNo { get; set; }
+		[Display(Name ="Müşteri/Hasta İskonto Oranı")]
+		public double? MusteriOran { get; set; }
+		[Display(Name ="Personel Marj Oranı")]
+		public double? PersonelOran { get; set; }
 	}
 
 	public class SatislarDurum : BaseEntity
@@ -100,6 +109,12 @@ namespace Ekomers.Models.Entity
 		public string? Ad { get; set; }
 		public string? Aciklama { get; set; }
 	}
+	public class SatislarAyar : BaseEntity
+	{
+		public double? MusteriOran { get; set; }
+		public double? PersonelOran { get; set; }
+		 
+	}
 
 
 	public class SatislarUrunler : BaseEntity
@@ -108,6 +123,7 @@ namespace Ekomers.Models.Entity
 		public int SiparisID { get; set; } 
 		public double Miktar { get; set; }
 		public double Fiyat { get; set; }
+		public double Maliyet { get; set; }
 		public int? DovizTur { get; set; }
 		public string? DovizTurAd { get; set; }
 		public double Kdv { get; set; }
@@ -121,6 +137,7 @@ namespace Ekomers.Models.Entity
 		public int SiparisID { get; set; }
 		public double Miktar { get; set; }
 		public double Fiyat { get; set; }
+		public double Maliyet { get; set; }
 		public double Kdv { get; set; }
 		public double Iskonto { get; set; }
 		public string UrunAd { get; set; }

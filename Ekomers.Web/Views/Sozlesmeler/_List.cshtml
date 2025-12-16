@@ -39,9 +39,9 @@
                     <span class="text-muted small">
                         Kayıt No: @m.ID
                     </span>
-                    <div class="fw-semibold">@m.Baslik</div>
-                    <div class="text-muted">
-                        @m.Taraf2
+                    <div class="fw-semibold"> Şirket : @m.Taraf1  </div>
+                    <div class="fw-semibold mt-2">
+                     Karşı Taraf :    @m.Taraf2
                       
                     </div>
                 </div>
@@ -63,6 +63,9 @@
                 <div class="col">
                     <div class="small bold">Sözleşme Konusu: @(!string.IsNullOrWhiteSpace(m.Konu) ? m.Konu : "—")</div>
                 </div> 
+                <div class="col">
+                    <div class="small bold">Sözleşme Bedeli: @String.Format("{0:N2}", m.Tutar) @m.TutarAciklama</div>
+                </div>
             </div>
            
          

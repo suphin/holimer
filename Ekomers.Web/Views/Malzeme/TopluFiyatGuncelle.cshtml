@@ -23,8 +23,10 @@
                         <th>Son Güncelleme Tarihi</th>
                         <th style="width:140px">Mevcut Fiyat</th>
                         <th style="width:140px">Mevcut Maliyet</th>
+                        <th style="width:140px">Mevcut Kdv</th>
                         <th style="width:160px">Yeni Fiyat</th>
                         <th style="width:160px">Yeni Maliyet</th>
+                        <th style="width:160px">KDV</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -36,6 +38,7 @@
                             <td>@item.GuncellemeTarihi?.ToString("dd.MM.yyyy HH:mm")</td>
                             <td class="text-right">@String.Format("{0:n2}", item.MevcutFiyat)</td>
                             <td class="text-right">@String.Format("{0:n2}", item.MevcutMaliyet)</td>
+                            <td class="text-right">@String.Format("{0:n0}", item.MevcutKdv)</td>
                             <td class="text-right">
                                 <input type="number"
                                        step="0.01"
@@ -47,6 +50,12 @@
                                        step="0.01"
                                        class="form-control form-control-sm yeniMaliyet"
                                        placeholder="Yeni maliyet" />
+                            </td>
+                            <td class="text-right">
+                                <input type="number"
+                                       step="0.01"
+                                       class="form-control form-control-sm yeniKdv"
+                                       placeholder="Yeni kdv" />
                             </td>
                         </tr>
                     }
@@ -79,12 +88,14 @@
 
             var yeniFiyat = row.find(".yeniFiyat").val();
             var yeniMaliyet = row.find(".yeniMaliyet").val();
+            var yeniKdv = row.find(".yeniKdv").val();
            
             if (yeniFiyat || yeniMaliyet) {
                 liste.push({
                     MalzemeId: row.data("id"),
                     YeniFiyat: yeniFiyat,
                     YeniMaliyet: yeniMaliyet,
+                    YeniKdv: yeniKdv,
                     DovizTur: 1,
                     Aciklama: "Toplu fiyat güncelleme"
                 });
@@ -103,10 +114,10 @@
             data: JSON.stringify(liste),             
             success: function (response) {
                     toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
-                          setTimeout(function () {
-                            window.location.reload();
-                        }, 2000);
-                    location.reload();
+                    setTimeout(function () {
+                    window.location.reload();
+                    }, 1500);
+                     
             },
             error: function (xhr, status, error) {
                     toastr.error('Açıklama:' + xhr.responseText, 'Hata!');

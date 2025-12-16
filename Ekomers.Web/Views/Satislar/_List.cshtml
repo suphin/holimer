@@ -59,7 +59,15 @@
                     </div>
                 </div>
                 <div class="col-auto"> 
-                        <b class="mr-2">Sipariş Toplamı : @String.Format("{0:n2}", m.SiparisToplam) TL</b>  
+                     @if (m.CariTipi)
+                        {
+                           <b class="mr-2">Sipariş Toplamı : @String.Format("{0:n2}", m.SiparisToplam) TL</b> 
+                        }
+                        else
+                        {
+                           <b class="mr-2">Sipariş Toplamı : @String.Format("{0:n2}", m.MaliyetToplam) TL</b> 
+                        }
+                       
                     
                     @{
                         await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_ButtonGroup.cshtml",

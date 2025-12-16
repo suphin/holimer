@@ -362,7 +362,8 @@ namespace Ekomers.Web.Controllers
 					Kod = x.Kod,
 					MevcutFiyat = x.Fiyat,
 					MevcutMaliyet = x.Maliyet,
-					GuncellemeTarihi= x.SonFiyatGuncellemeTarih,
+					MevcutKdv = x.Kdv,
+					GuncellemeTarihi = x.SonFiyatGuncellemeTarih,
 				})
 				.ToListAsync();
 
@@ -402,6 +403,7 @@ namespace Ekomers.Web.Controllers
 					Kod = x.Kod,
 					MevcutFiyat = x.Fiyat,
 					MevcutMaliyet = x.Maliyet,
+					MevcutKdv = x.Kdv,
 					GuncellemeTarihi = x.SonFiyatGuncellemeTarih,
 				})
 				.ToListAsync();
