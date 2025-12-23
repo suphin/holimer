@@ -310,12 +310,12 @@ namespace Ekomers.Web.Controllers
 
 		[HttpPost]
 		[Authorize(Roles = "Editor")]
-		public async Task<IActionResult> VeriSil(MalzemelerVM model)
+		public async Task<IActionResult> VeriSil(MalzemelerVM modelc)
 		{
-			bool sonuc = await _service.VeriSil(model.ID);
+			bool sonuc = await _service.VeriSil(modelc.ID);
 			if (sonuc)
 			{
-				return Ok(model.ID);
+				return Ok(modelc.ID);
 			}
 			else
 			{

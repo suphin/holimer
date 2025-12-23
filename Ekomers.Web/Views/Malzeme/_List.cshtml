@@ -3,7 +3,7 @@
   
 @foreach (var m in Model.MalzemelerVMListe)
 {
-    <div class="row g-3 align-items-start border rounded p-3 mb-3">
+    <div class="row g-3 align-items-start border rounded p-3 mb-3 @(m.IsDelete == true ? "pasif-kayit" : "")" id="row@(m.ID)">
 
         <!-- küçük resim -->
         <div class="col-auto">
@@ -58,9 +58,18 @@
                 <div class="col-auto text-muted small">
                     @if (!string.IsNullOrWhiteSpace(m.CreateUserName))
                     {
-                        <text>@m.CreateUserName — </text>
+                        <text>Oluşturan : @m.CreateUserName — </text>
                     }
                     @m.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+                    <br />
+                    @if (m.IsDelete)
+                    {
+                        @if (!string.IsNullOrWhiteSpace(m.DeleteUserName))
+                        {
+                            <text>Silen : @m.DeleteUserName — </text>
+                        }
+                        @m.DeleteDate?.ToString("dd.MM.yyyy HH:mm")
+                    }
                 </div>
             </div>
         </div>

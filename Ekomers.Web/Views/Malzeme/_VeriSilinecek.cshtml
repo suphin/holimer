@@ -31,8 +31,8 @@
 <script src="js/select2.js?v=7.0.5"></script>
 @{
 	if (User.HasClaim("Authorize", "Delete"))
-	{
-		await Html.RenderPartialAsync("_PartialDeleteFormPostScript");
+	{ 
+		await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_PartialDeleteFormPostScript.cshtml");
 	}
 	
 }

@@ -14,6 +14,7 @@ using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -92,7 +93,17 @@ namespace Ekomers.Data.Services
 		}
 		public IQueryable<MalzemelerVM> GenelListe()
 		{
-			var result = from malzeme in _malzemeRepo.GetAll2()
+			Expression<Func<Malzeme, bool>> filter;
+			if (_user.IsInRole("Admin"))
+			{
+				filter = a => a.IsActive == true;
+			}
+			else
+			{
+				filter = a => a.IsActive == true && a.IsDelete == false;
+			}
+
+			var result = from malzeme in _malzemeRepo.GetAll2(filter)
 
 						 join altGrup in _altGrupRepo.GetAll2() on malzeme.GrupID equals altGrup.ID
 						 into altGrupGroup
@@ -115,9 +126,17 @@ namespace Ekomers.Data.Services
 						 from tip in tipGroup.DefaultIfEmpty()
 
 
-						 join user in _userRepo.GetAll2() on malzeme.CreateUserID equals user.Id
-						 into userGroup
-						 from user in userGroup.DefaultIfEmpty()
+						 join createUser in _userRepo.GetAll2() on malzeme.CreateUserID equals createUser.Id
+						  into createUserGroup
+						 from createUser in createUserGroup.DefaultIfEmpty()
+
+						 join deleteUser in _userRepo.GetAll2() on malzeme.DeleteUserID equals deleteUser.Id
+						 into deleteUserGroup
+						 from deleteUser in deleteUserGroup.DefaultIfEmpty()
+
+						 join updateUser in _userRepo.GetAll2() on malzeme.UpdateUserID equals updateUser.Id
+						 into updateUserGroup
+						 from updateUser in updateUserGroup.DefaultIfEmpty()
 
 
 						 select new MalzemelerVM
@@ -137,9 +156,7 @@ namespace Ekomers.Data.Services
 							 TipAd = tip.Ad,
 							 TipID = tip.ID,
 							 KritikMiktar = malzeme.KritikMiktar,
-							 CreateUserID = malzeme.CreateUserID,
-							 CreateUserName = user != null ? user.AdSoyad : "",
-							 CreateDate = malzeme.CreateDate != null ? malzeme.CreateDate : new DateTime(1000, 1, 1),
+							 
 							 Fotograf = malzeme.Fotograf ?? "",
 							 Fiyat = malzeme.Fiyat,
 							 Kdv = malzeme.Kdv,
@@ -155,7 +172,17 @@ namespace Ekomers.Data.Services
 							 IsActive = (bool)malzeme.IsActive,
 							 IsDelete = (bool)malzeme.IsDelete,
 
+							 CreateUserID = malzeme.CreateUserID,
+							 CreateDate = malzeme.CreateDate != null ? malzeme.CreateDate : new DateTime(1000, 1, 1),
+							 CreateUserName = createUser != null ? createUser.AdSoyad : "",
 
+							 DeleteUserID = malzeme.DeleteUserID,
+							 DeleteDate = malzeme.DeleteDate,
+							 DeleteUserName = deleteUser != null ? deleteUser.AdSoyad : "",
+
+							 UpdateUserID = malzeme.UpdateUserID,
+							 UpdateDate = malzeme.UpdateDate,
+							 UpdateUserName = updateUser != null ? updateUser.AdSoyad : "",
 						 };
 
 
