@@ -190,6 +190,7 @@ namespace Ekomers.Data
 		public DbSet<SozlesmelerDurum> SozlesmelerDurum { get; set; }
 		public DbSet<SozlesmelerKonu> SozlesmelerKonu { get; set; }
 
-
+		// satın alma
+		public DbSet<PurchaseRequest> PurchaseRequests { get; set; }
 	}
 }

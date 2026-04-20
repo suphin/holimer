@@ -1,0 +1,155 @@
+﻿@model CreatePurchaseRequestVM
+
+<div class="container mt-4">
+    <h4>Talep Oluştur</h4>
+
+    <form method="post">
+
+        <div class="mb-3">
+            <label>Talep Nedeni</label>
+            <textarea class="form-control" asp-for="Description" required></textarea>
+        </div>
+
+        <hr />
+
+        <h5>Ürün Ekle</h5>
+
+        <div class="row g-2">
+            @* <div class="col-md-4">
+                <input type="text" id="productName" class="form-control" placeholder="Ürün adı veya ara..." />
+            </div> *@
+            <div class="col-md-4 position-relative">
+                <input type="text" id="productName" class="form-control" placeholder="Ürün ara..." />
+                <div id="searchList" class="list-group position-absolute w-100"></div>
+            </div>
+         
+            <div class="col-md-2">
+                <input type="number" id="quantity" class="form-control" placeholder="Miktar" />
+            </div>
+
+            <div class="col-md-2">
+                <input type="text" id="unit" class="form-control" placeholder="Birim" />
+            </div>
+
+            <div class="col-md-2">
+                <button type="button" class="btn btn-primary w-100" onclick="addItem()">Ekle</button>
+            </div>
+        </div>
+
+        <table class="table mt-3">
+            <thead>
+                <tr>
+                    <th>Ürün</th>
+                    <th>Miktar</th>
+                    <th>Birim</th>
+                    <th></th>
+                </tr>
+            </thead> 
+            <tbody id="itemTable">
+              
+            </tbody>
+        </table>
+
+        <input type="hidden" name="ItemsJson" id="ItemsJson" />
+
+        <button name="actionType" value="draft" class="btn btn-secondary">Kaydet</button>
+        <button name="actionType" value="send" class="btn btn-success">Onaya Gönder</button>
+
+    </form>
+</div>
+<script>
+    let items = [];
+
+     function addItem() {
+        let nameInput = document.getElementById("productName");
+        let qtyInput = document.getElementById("quantity");
+        let unitInput = document.getElementById("unit");
+
+        let name = nameInput.value.trim();
+        let qty = parseFloat(qtyInput.value);
+        let unit = unitInput.value.trim();
+
+        if (!name || !qty || !unit) return;
+
+        let existing = items.find(x =>
+            x.productName.toLowerCase() === name.toLowerCase() &&
+            x.unit.toLowerCase() === unit.toLowerCase()
+        );
+
+        if (existing) {
+            existing.quantity += qty;
+        } else {
+               items.push({
+                    productId: selectedProductId,
+                    productName: name,
+                    quantity: qty,
+                    unit: unit
+                });
+        }
+        selectedProductId = null;
+        renderTable();
+
+        // 🔥 TEMİZLE
+        nameInput.value = "";
+        qtyInput.value = "";
+        unitInput.value = "";
+
+        nameInput.focus();
+    }
+
+    function renderTable() {
+        let tbody = document.getElementById("itemTable");
+        tbody.innerHTML = "";
+
+        items.forEach((x, i) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${x.productName}</td>
+                    <td>${x.quantity}</td>
+                    <td>${x.unit}</td>
+                    <td><button type="button" onclick="removeItem(${i})" class="btn btn-danger btn-sm">Sil</button></td>
+                </tr>`;
+        });
+
+        document.getElementById("ItemsJson").value = JSON.stringify(items);
+    }
+
+    function removeItem(i) {
+        items.splice(i, 1);
+        renderTable();
+    }
+</script>
+
+<script>
+    let selectedProductId = null;
+
+    document.getElementById("productName").addEventListener("input", function () {
+       
+        let term = this.value;
+
+        if (term.length < 4) return;
+ 
+           fetch(`/PurchaseRequest/Search?term=${term}`)
+            .then(res => res.json())
+            .then(data => {
+
+                let list = document.getElementById("searchList");
+                list.innerHTML = "";
+
+                data.forEach(x => {
+                    let item = document.createElement("div");
+                    item.className = "list-group-item list-group-item-action";
+                    item.innerText = x.text;
+
+                    item.onclick = () => {
+                        document.getElementById("productName").value = x.text;
+                        document.getElementById("unit").value = x.unit;
+                        selectedProductId = x.id;
+                        list.innerHTML = "";
+                    };
+
+                    list.appendChild(item);
+                });
+            });
+    });
+</script>
