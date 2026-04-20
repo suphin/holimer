@@ -1,0 +1,43 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+@model List<PurchaseRequest>
+
+<div class="container mt-4">
+    <h4>Talepler</h4>
+
+    <a href="/PurchaseRequest/Create" class="btn btn-primary mb-3">Yeni Talep</a>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Tarih</th>
+                <th>Durum</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.RequestNo</td>
+                    <td>@item.RequestDate.ToShortDateString()</td>
+                    <td>@item.Status</td>
+                    <td>
+                        @if (item.Status == RequestStatus.Draft)
+                        {
+                            <a href="/PurchaseRequest/Edit/@item.Id" class="btn btn-warning btn-sm">Düzenle</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Kilitli</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

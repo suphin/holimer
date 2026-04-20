@@ -254,6 +254,10 @@ builder.Services.AddScoped<ISatislarService, SatislarService>();
 builder.Services.AddScoped<ISozlesmelerService, SozlesmelerService>();
 
 
+builder.Services.AddScoped<IPurchaseRequestService, PurchaseRequestService>();
+builder.Services.AddScoped<IPurchaseRequestRepository, PurchaseRequestRepository>();
+
+
 
 builder.Services.AddScoped<ITcmbService, TcmbService>();
 builder.Services.AddScoped<IMapService, MapService>();
