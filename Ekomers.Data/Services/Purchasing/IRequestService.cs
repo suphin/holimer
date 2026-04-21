@@ -1,4 +1,5 @@
-﻿ 
+﻿
+using Ekomers.Models;
 using Ekomers.Models.Entity;
 using Ekomers.Models.ViewModels;
 using System;
@@ -18,6 +19,7 @@ namespace Ekomers.Data.Services.IServices
 		Task<int> RequestUrunDurum(int RequestID);		 
 		Task<List<RequestUrunlerVM>> RequestUrunlerGetir(int RequestID);
 		Task<RequestUrunlerVM> RequestUrunGetir(int UrunId);
-	 
+		Task<PagedResult<RequestUrunlerVM>> UrunListeleAsync(int page, int pageSize, CancellationToken ct = default);
+
 	}
 }

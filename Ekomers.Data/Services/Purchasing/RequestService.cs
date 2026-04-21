@@ -550,5 +550,43 @@ namespace Ekomers.Data.Services
 		{
 			return  RequestUrunlerGenelListe().Where(p => p.OnayliMi == false && p.IsActive==true && p.IsDelete == false && p.RequestID == RequestID).Count();
 		}
+
+		public async Task<PagedResult<RequestUrunlerVM>> UrunListeleAsync(int page, int pageSize, CancellationToken ct = default)
+		{
+			try
+			{
+				if (page < 1) page = 1;
+				// mantıklı bir üst sınır koy
+				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
+
+				var query = RequestUrunlerGenelListe(); // IQueryable<RequestUrunlerVM>
+
+				var total = await query.CountAsync(ct);
+
+				var items = await query
+					.OrderByDescending(a => a.ID)
+					.Skip((page - 1) * pageSize)
+					.Take(pageSize)
+					.ToListAsync(ct);
+
+				return new PagedResult<RequestUrunlerVM>
+				{
+					Items = items,
+					PageIndex = page,
+					PageSize = pageSize,
+					TotalCount = total
+				};
+			}
+			catch
+			{
+				return new PagedResult<RequestUrunlerVM>
+				{
+					Items = new List<RequestUrunlerVM>(),
+					PageIndex = page,
+					PageSize = pageSize,
+					TotalCount = 0
+				};
+			}
+		}
 	}
 }

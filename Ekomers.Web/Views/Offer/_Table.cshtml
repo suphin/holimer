@@ -1,0 +1,47 @@
+﻿@model RequestUrunlerVM
+
+
+
+<table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+    <thead>
+        <tr> 
+            <th>Talep No</th>
+            <th>Şirket</th>
+            <th>Talep Tarihi</th>
+            <th>Talep Eden</th>
+            <th>Talep Türü</th>
+            <th>Durum</th>          
+            <th>Not</th>  
+            <th>Dosya</th>  
+            <th class="no-print crudBtnRow">Düzenle</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (RequestUrunlerVM item in Model.RequestUrunlerVMListe)
+        {
+            <tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")"> 
+                <td>@item.ID</td>
+                <td>@item.UrunAd</td>
+                 
+                <td>@item.CreateUserName</td>
+                
+                 
+                <td>@(!string.IsNullOrWhiteSpace(item.Aciklama) ? item.Aciklama : "—")</td> 
+                
+                
+            </tr>
+        }
+
+
+    </tbody>
+</table>
+
+ 
+
+@if (Model.TotalPages > 1)
+{ 
+    await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_Pager.cshtml", new PagerModel { PageIndex = Model.PageIndex, PageSize = Model.PageSize, TotalCount = Model.TotalCount });
+}
+
+ 
