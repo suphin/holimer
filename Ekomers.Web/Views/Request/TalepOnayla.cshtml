@@ -1,0 +1,186 @@
+﻿@model RequestVM
+ 
+<form   method="post" name="_VeriEkle" id="_VeriEkle">
+    <div class="modal-content shadow-none">
+		<div class="modal-header">
+            <h5 class="modal-title">@Model.ModalTitle</h5>
+		 
+			<button type="button" class="close no-print" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+		</div>
+		<div class="modal-body">
+		 
+          
+ 
+            <div class="form-group row">
+                <div class="col-lg-1">
+                    <label class="control-label">Talep No</label>  <input asp-for="ID" class="form-control form-control-sm" readonly />
+                </div>
+                @if (Model.ID > 0)
+                {
+                    <div class="col-lg-3">
+                        <span class="@Model.DurumClass"></span>  <label asp-for="DurumAd" class="control-label"></label> <div class="durum-wrapper">
+                    </div>
+                    <input asp-for="DurumAd" class="form-control form-control-sm" readonly />
+                    <span asp-validation-for="DurumAd" class="text-danger"></span>
+                </div>
+            } 
+    
+                <div class="col-lg-3">
+                    <label class="control-label">Talep Eden</label>  <input asp-for="CreateUserName" class="form-control form-control-sm" readonly />
+                </div>
+
+               
+            
+   
+        </div>
+ 
+<div class="form-group row">
+            <div class="col-lg-6">
+                <label asp-for="SirketAd" class="control-label"></label>  <input asp-for="SirketAd" class="form-control form-control-sm" readonly />
+            </div>
+    <div class="col-lg-3">
+                    <label asp-for="TurAd" class="control-label"></label>  <input asp-for="TurAd" class="form-control form-control-sm" readonly />
+    </div>
+   
+    <div class="col-lg-3">
+                    <label asp-for="RequestDate" class="control-label"></label>   <input asp-for="RequestDate" class="form-control form-control-sm" readonly />
+    </div>
+  
+</div>
+ 
+ 
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Not" class="control-label"></label> 
+                    <textarea asp-for="Not" type="text" class="form-control form-control-sm" rows="2" readonly></textarea>
+    </div>
+</div> 
+
+
+<table class="table  table-bordered" id="" width="100%" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Sıra No</th>
+            <th>Ürün Kodu</th>
+                    <th>Ürün Adı</th>
+                    <th>Açıklama</th>
+            <th>Birim</th>
+            <th>Miktar</th> 
+           
+            <th>Onay</th> 
+        </tr>
+    </thead>
+            <tbody id="MalzemeEklenenListe">
+                @{
+                    await Html.RenderPartialAsync("_OnayUrunEklenen", Model);
+                }
+
+    </tbody>
+
+  
+</table>
+
+
+
+
+
+
+
+        <div class="form-group row">
+            <div class="col-lg-12">
+                <div class="small">
+                    Kayıt Oluşturan: @Model.CreateUserName
+                    Oluşturma Tarihi:@Model.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+                </div>
+            </div>
+        </div>
+        @if (Model.IsDelete)
+        {
+            <div class="form-group row">
+                <div class="col-lg-12">
+                    <div class="small">
+                        Kayıt Silen: @Model.DeleteUserName
+                        Silme Tarihi:@Model.DeleteDate?.ToString("dd.MM.yyyy HH:mm")
+                    </div>
+                </div>
+            </div>
+        }
+		</div>
+		<div class="modal-footer" id="modal-footer">
+			<button type="button" class="btn btn-danger no-print" data-dismiss="modal">Kapat</button> 
+			<a href="/Request/Print/@Model.ID" target="_blank" class="btn btn-primary">
+				Yazdır
+			</a>
+		</div>
+	</div>
+
+
+
+</form>
+ 
+    <script>
+        function TalepUrunOnay(KayitID,RequestId) {
+
+            if (!confirm("Onaylamak istediğinize emin misiniz?")) {
+                 return;
+            }
+           var miktar = $(`.miktar-input[data-id='${KayitID}']`).val();          
+
+
+            $.ajax({
+                url: '@Url.Action("TalepUrunOnay", "Request")',
+                type: 'GET',
+                dataType: "html",
+                data: {
+                    RequestId:RequestId,
+                    kayitID:KayitID,
+                    miktar: miktar
+                },
+                success: function(response) {
+                    $('#MalzemeEklenenListe').html(response);
+                  toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+                },
+            error: function(xhr, status, error) {
+
+                    toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+
+                 setTimeout(function () {
+                        location.reload();
+                    }, 3000); // 1.5 saniye bekle
+                }
+            });
+        }
+    </script>
+<script>
+    function TalepUrunIptal(KayitID,RequestId) {
+
+        if (!confirm("Onaylamak istediğinize emin misiniz?")) {
+             return;
+        }
+       var miktar = $(`.miktar-input[data-id='${KayitID}']`).val();
+
+
+        $.ajax({
+            url: '@Url.Action("TalepUrunIptal", "Request")',
+            type: 'GET',
+            dataType: "html",
+            data: {
+                RequestId:RequestId,
+                kayitID:KayitID,
+                miktar: miktar
+            },
+            success: function(response) {
+                $('#MalzemeEklenenListe').html(response);
+              toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+            },
+        error: function(xhr, status, error) {
+
+                toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+
+             setTimeout(function () {
+                    location.reload();
+                }, 3000); // 1.5 saniye bekle
+            }
+        });
+    }
+</script>

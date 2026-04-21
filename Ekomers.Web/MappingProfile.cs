@@ -90,6 +90,15 @@ namespace Ekomers.Web
 
 			CreateMap<Sozlesmeler, SozlesmelerVM>();
 			CreateMap<SozlesmelerVM, Sozlesmeler>();
+
+
+
+			CreateMap<Request, RequestVM>();
+			CreateMap<RequestVM, Request>();
+
+			CreateMap<RequestUrunler, RequestUrunlerVM>();
+			CreateMap<RequestUrunlerVM, RequestUrunler>();
+
 		}
     }
 }

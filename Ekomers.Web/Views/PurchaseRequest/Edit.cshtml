@@ -1,81 +1,103 @@
 ﻿@model CreatePurchaseRequestVM
 
-<div class="container mt-4">
-    <h4>Talep Oluştur</h4>
 
-    <form method="post">
 
-        <div class="mb-3">
-            <label>Talep Nedeni</label>
-            <textarea class="form-control" asp-for="Description"></textarea>
+
+<!--begin::Card-->
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Talep Düzenle
+                <span class="d-block text-muted pt-2 font-size-sm">Detay</span>
+            </h3>
         </div>
+        <div class="card-toolbar">
+            <a href="/PurchaseRequest/" class="btn btn-primary mb-3">Geri</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <!--begin: Datatable-->
+        <form method="post">
 
-        <hr />
+            <div class="mb-3">
+                <label>Talep Nedeni</label>
+                <textarea class="form-control" asp-for="Description"></textarea>
+            </div>
 
-        <h5>Ürün Ekle</h5>
+            <hr />
 
-        <div class="row g-2">
-            @* <div class="col-md-4">
+            <h5>Ürün Ekle</h5>
+
+            <div class="row g-2">
+                @* <div class="col-md-4">
                 <input type="text" id="productName" class="form-control" placeholder="Ürün adı veya ara..." />
             </div> *@
-            <div class="col-md-4 position-relative">
-                <input type="text" id="productName" class="form-control" placeholder="Ürün ara..." />
-                <div id="searchList" class="list-group position-absolute w-100"></div>
-            </div>
-            <div class="col-md-2">
-                <input type="number" id="quantity" class="form-control" placeholder="Miktar" />
+                <div class="col-md-4 position-relative">
+                    <input type="text" id="productName" class="form-control" placeholder="Ürün ara..." />
+                    <div id="searchList" class="list-group position-absolute w-100"></div>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" id="quantity" class="form-control" placeholder="Miktar" />
+                </div>
+
+                <div class="col-md-2">
+                    <input type="text" id="unit" class="form-control" placeholder="Birim" />
+                </div>
+
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-primary w-100" onclick="addItem()">Ekle</button>
+                </div>
             </div>
 
-            <div class="col-md-2">
-                <input type="text" id="unit" class="form-control" placeholder="Birim" />
-            </div>
-
-            <div class="col-md-2">
-                <button type="button" class="btn btn-primary w-100" onclick="addItem()">Ekle</button>
-            </div>
-        </div>
-
-        <table class="table mt-3">
-            <thead>
-                <tr>
-                    <th>Ürün</th>
-                    <th>Miktar</th>
-                    <th>Birim</th>
-                    <th></th>
-                </tr>
-            </thead> 
-            <tbody id="itemTable">
-                @for (int i = 0; i < Model.Items.Count; i++)
-                {
+            <table class="table mt-3 table-bordered table-hover">
+                <thead>
                     <tr>
-                        <td>
-                            <input type="hidden" name="Items[@i].ProductId" value="@Model.Items[i].ProductId" />
-                            <input type="text" name="Items[@i].ProductName" class="form-control"
-                                   value="@Model.Items[i].ProductName" />
-                        </td>
-                        <td>
-                            <input type="text" name="Items[@i].Quantity" class="form-control"
-                                   value="@Model.Items[i].Quantity" />
-                        </td>
-                        <td>
-                            <input type="text" name="Items[@i].Unit" class="form-control"
-                                   value="@Model.Items[i].Unit" />
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-danger btn-sm remove-row">Sil</button>
-                        </td>
+                        <th>Ürün</th>
+                        <th>Miktar</th>
+                        <th>Birim</th>
+                        <th></th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody id="itemTable">
+                    @for (int i = 0; i < Model.Items.Count; i++)
+                    {
+                        <tr>
+                            <td>
+                                <input type="hidden" name="Items[@i].ProductId" value="@Model.Items[i].ProductId" />
+                                <input type="text" name="Items[@i].ProductName" class="form-control"
+                                       value="@Model.Items[i].ProductName" />
+                            </td>
+                            <td>
+                                <input type="text" name="Items[@i].Quantity" class="form-control"
+                                       value="@Model.Items[i].Quantity" />
+                            </td>
+                            <td>
+                                <input type="text" name="Items[@i].Unit" class="form-control"
+                                       value="@Model.Items[i].Unit" />
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm remove-row">Sil</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
 
-        <input type="hidden" name="ItemsJson" id="ItemsJson" />
+            <input type="hidden" name="ItemsJson" id="ItemsJson" />
 
-        <button name="actionType" value="draft" class="btn btn-secondary">Kaydet</button>
-        <button name="actionType" value="send" class="btn btn-success">Onaya Gönder</button>
+            <button name="actionType" value="draft" class="btn btn-secondary">Kaydet</button>
+            <button name="actionType" value="send" class="btn btn-success">Onaya Gönder</button>
 
-    </form>
+        </form>
+        <!--end: Datatable-->
+    </div>
 </div>
+<!--end::Card-->
+
+
+
+ 
 <script>
     let items = [];
 

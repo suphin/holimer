@@ -27,5 +27,6 @@ namespace Ekomers.Models.Enums
 		Uretim = 1012,
 		Satislar = 1013,
 		Sozlesmeler = 1014,
+		Request = 1015,
 	}
 }

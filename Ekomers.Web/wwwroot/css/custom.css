@@ -207,3 +207,37 @@
     opacity: 0.5; /* Soluk görünüm */
     background-color: #f5f5f5;
 }
+
+.Durum1 {
+    background-color: #f8d7da;
+    display: inline-block; /* taslak */
+    width: 12px;
+    height: 12px;
+}
+.Durum2 {
+    background-color: #b2ee9e;
+    display: inline-block; /* onay bekliyor */
+    width: 12px;
+    height: 12px;
+}
+.Durum3 {
+    background-color: #2fea0b;
+    display: inline-block; /* onaylandı */
+    width: 12px;
+    height: 12px;
+}
+.Durum4 {
+    background-color: #ea0f0f;
+    display: inline-block; /* iptal */
+    width: 12px;
+    height: 12px;
+}
+.durum-wrapper {
+    display: inline-flex;
+    align-items: center; /* dikey ortalar */
+    gap: 6px; /* aradaki boşluk */
+}
+
+.DurumLabel {
+    font-size: 14px;
+}

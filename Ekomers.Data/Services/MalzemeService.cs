@@ -32,7 +32,7 @@ namespace Ekomers.Data.Services
 		private readonly ClaimsPrincipal _user;
 		private readonly string _userId;
 		private readonly IMemoryCache _cache;
-		private const string CacheKey = "TumMalzemeListesi";
+		private const string CacheKey = "TumMalzemeListesi1";
 		private readonly IRepository<Kullanici> _userRepo;
 		private readonly IRepository<Malzeme> _malzemeRepo;
 		private readonly IRepository<MalzemeGrup> _grupRepo;
@@ -455,12 +455,37 @@ namespace Ekomers.Data.Services
 		{
 			return await _cache.GetOrCreateAsync(CacheKey, async entry =>
 			{
-				entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
+				entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(120);
 				// veritabanından bir kez çek
 				var list = await GenelListe().ToListAsync();
 				return list;
 			});
 		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	 
 		public async Task<bool> LogoMalzemeAktar()

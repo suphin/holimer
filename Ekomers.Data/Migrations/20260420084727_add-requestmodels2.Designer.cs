@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260420084727_add-requestmodels2")]
+    partial class addrequestmodels2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2601,9 +2604,6 @@ namespace Ekomers.Data.Migrations
                     b.Property<DateTime>("RequestDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("SirketID")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("TarihSaat")
                         .HasColumnType("datetime2");
 
@@ -2639,9 +2639,6 @@ namespace Ekomers.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Ad")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Class")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("CreateDate")
@@ -2730,9 +2727,6 @@ namespace Ekomers.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
-                    b.Property<string>("Aciklama")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int?>("BirimID")
                         .HasColumnType("int");
 
@@ -2759,12 +2753,6 @@ namespace Ekomers.Data.Migrations
 
                     b.Property<double>("Miktar")
                         .HasColumnType("float");
-
-                    b.Property<double>("MiktarSon")
-                        .HasColumnType("float");
-
-                    b.Property<bool>("OnayliMi")
-                        .HasColumnType("bit");
 
                     b.Property<int>("RequestID")
                         .HasColumnType("int");

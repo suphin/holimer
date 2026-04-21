@@ -6,7 +6,7 @@ using static System.Net.Mime.MediaTypeNames;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 //using NetTopologySuite.Geometries;
-using Azure.Core;
+ 
 using Ekomers.Models.Entity;
 
 
@@ -192,5 +192,12 @@ namespace Ekomers.Data
 
 		// satın alma
 		public DbSet<PurchaseRequest> PurchaseRequests { get; set; }
+
+		public DbSet<Request> Request { get; set; }
+		public DbSet<RequestUrunler> RequestUrunler { get; set; }
+		public DbSet<RequestDurum> RequestDurum { get; set; }
+		public DbSet<RequestTur> RequestTur { get; set; }
+		 
+
 	}
 }

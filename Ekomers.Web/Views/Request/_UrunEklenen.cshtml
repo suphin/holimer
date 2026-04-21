@@ -1,0 +1,74 @@
+﻿@model RequestUrunlerVM
+
+ 
+<style>
+    /* Mouse ile üzerine gelindiğinde arka plan rengini değiştir */
+    #EklenenUrunlerTablo tbody tr:hover {
+        background-color: #f0f0f0;
+    }
+</style>
+<style>
+
+
+    #EklenenUrunlerTablo th {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 2px !important;
+    }
+
+    #EklenenUrunlerTablo td {
+        height: 18px !important;
+        font-size: 11px !important;
+        padding: 4px !important;
+    }
+</style>
+ 
+
+<table class="table  table-bordered" id="" width="100%" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Sıra No</th>
+            <th>Ürün Kodu</th>
+            <th>Ürün Adı</th>
+            <th>Birim</th>
+            <th>Miktar</th> 
+            <th>Açıklama</th> 
+            <th>Çıkar</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            var sayac = 1;
+          
+        }
+        @foreach (RequestUrunlerVM item in Model.RequestUrunlerVMListe)
+        {
+             
+            <tr class="@(item.IsDelete ? "deleted" : "")">
+                <td>@sayac</td>
+                <td>@item.UrunKod</td>
+                <td>@item.UrunAd</td>
+                <td>@item.BirimAd</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Miktar)</td>
+                <td>@item.Aciklama</td>
+                <td>
+                    @if (Model.RequestDurumID != (int)EnumRequestDurum.Onaylandi){
+                        @if (!item.IsDelete)
+                        {
+                            <a href="javascript:void(0);" class="remove-item" data-id="@item.ID">Çıkar</a>
+                        }
+                    }
+                </td>
+            </tr>
+            sayac = sayac + 1;
+            
+           
+        }
+
+    </tbody>
+  
+
+</table>
+
+
+ 

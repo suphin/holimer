@@ -1,0 +1,114 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<Kullanici> UserManager
+
+@{
+    var user = await UserManager.GetUserAsync(User);
+}
+ 
+@model RequestVM
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Talep Yazdır</title>
+    <link href="~/css/print.css" rel="stylesheet" />
+   
+    <link href="~/bootstrap.min.css" rel="stylesheet" /> 
+</head>
+<body>
+    <div class="container" id="container">
+
+  
+    <!-- ANTET -->
+    <div class="header">
+            <img src="/img/holimer2025.png" />
+        <div class="title">HOLIMER İLAÇ VE SAĞLIK HİZMETLERİ</div>
+            <div>
+                Holimer İlaç ve Sağlık Hizmetleri Sanayi ve Tic. A.Ş.
+
+                Nisbetiye Mh. Nisbetiye Cd. Özden İş Mrk.  No:22 İç Kapı No:3 34520 Beşiktaş / İstanbul
+
+                Tel: 02122135513 Faks: .
+
+                Web Sitesi: www.holimer.com.tr
+
+                e-Posta: muhasebe@holimer.com.tr
+
+                Vergi Dairesi: Beşiktaş
+
+                VKN: 4631527593
+
+                Ticaret Sicil No: 43999-5
+
+                MERSİS No: 0463152759300001
+            </div>
+    </div>
+
+    <!-- BİLGİLER -->
+    <div class="info">
+        <div><b>Talep Eden:</b> @Model.CreateUserName</div>
+        <div><b>Talep Türü:</b> @Model.TurAd</div>
+     @*    <div><b>Durum:</b> @Model.DurumAd</div> *@
+        <div><b>Tarih:</b> @Model.RequestDate.ToString("dd.MM.yyyy")</div>
+        <div><b>Not:</b> @Model.Not</div>
+    </div>
+
+    <!-- TABLO -->
+    <table>
+        <thead>
+            <tr>
+                <th>Sıra</th>
+                <th>Ürün Kodu</th>
+                <th>Ürün Adı</th>
+                <th>Birim</th>
+                <th>Miktar</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int i = 1;
+            }
+            @foreach (var item in Model.RequestUrunler.Where(p=>p.OnayliMi && p.IsActive && p.IsDelete==false))
+            {
+                <tr>
+                    <td>@i</td>
+                    <td>@item.UrunKod</td>
+                    <td>@item.UrunAd</td>
+                    <td>@item.BirimAd</td>
+                    <td class="text-right">@String.Format("{0:n2}", item.Miktar)</td>
+                </tr>
+                i++;
+            }
+        </tbody>
+    </table>
+
+    <!-- İMZA -->
+    <div class="footer">
+        <table style="border:none;">
+            <tr style="border:none;">
+                <td style="border:none; text-align:left;">
+                    Hazırlayan<br /><br /><br />
+                        @user?.AdSoyad
+                </td>
+                <td style="border:none; text-align:right;">
+                    Onaylayan<br /><br /><br /> 
+                </td>
+            </tr>
+        </table>
+    </div> 
+        <input type="button" value="Yazdır" class="btn btn-primary print  no-print" onclick="Yazdir2('#container')" />
+    </div>
+    <script src="~/js/jquery-1.7.2.min.js"></script>
+    <script src="~/js/printthis.js"></script>
+    <script>
+                    function Yazdir2(tableid) {
+        
+                $(tableid).printThis();
+ 
+            }
+    </script>
+</body>
+</html>

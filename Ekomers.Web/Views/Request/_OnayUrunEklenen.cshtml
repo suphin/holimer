@@ -1,0 +1,54 @@
+﻿@model RequestVM
+
+ 
+@{
+    var sayac = 1;
+          
+}
+@foreach (RequestUrunlerVM item in  Model.RequestUrunler)
+{
+             
+    @if (item.OnayliMi)
+    {
+        <tr class="@(item.IsDelete ? "deleted" : "")">
+            <td>@sayac</td>
+            <td>@item.UrunKod</td>
+            <td>@item.UrunAd</td>
+            <td>@item.Aciklama</td>
+            <td>@item.BirimAd</td>
+                
+            <td class="text-right">
+                @String.Format("{0:n2}", item.MiktarSon)
+                    
+            </td>
+            <td>
+                Onay/İptal
+            </td>
+        </tr>
+        sayac = sayac + 1;
+    }
+    else
+    {
+        <tr class="@(item.IsDelete ? "deleted" : "")">
+            <td>@sayac</td>
+            <td>@item.UrunKod</td>
+            <td>@item.UrunAd</td>
+            <td>@item.Aciklama</td>
+            <td>@item.BirimAd</td>
+                
+            <td class="text-right">
+                <input type="text" class="form-control  miktar-input" data-id="@item.ID" value="@item.Miktar" />
+                    
+            </td>
+            <td>
+                <button class="btn btn-sm btn-info" type="button" onclick="TalepUrunOnay('@item.ID','@item.RequestID')">Onayla</button> / 
+                <button class="btn btn-sm btn-danger" type="button" onclick="TalepUrunIptal('@item.ID','@item.RequestID')">İptal</button>
+            </td>
+        </tr>
+        sayac = sayac + 1;
+    }
+
+
+
+
+}

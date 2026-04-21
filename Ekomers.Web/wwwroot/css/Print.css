@@ -1,0 +1,61 @@
+﻿body {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    margin: 40px;
+}
+
+/* Antet */
+.header {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+    .header img {
+        height:120px;
+    }
+
+    .header .title {
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+/* Bilgi alanı */
+.info {
+    margin-bottom: 20px;
+}
+
+    .info div {
+        margin-bottom: 5px;
+    }
+
+/* Tablo */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid #000;
+}
+
+th, td {
+    padding: 6px;
+}
+
+.text-right {
+    text-align: right;
+}
+
+/* Footer */
+.footer {
+    margin-top: 40px;
+}
+
+/* PRINT AYARLARI */
+ print {
+    button {
+        display: none;
+    }
+}

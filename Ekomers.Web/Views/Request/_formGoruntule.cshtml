@@ -1,0 +1,113 @@
+﻿@model RequestVM
+<style>
+    .control-label {
+        font-weight:bold !important;
+        margin-right:10px;
+        margin-bottom: 15px;
+    }
+</style>
+ 
+ 
+ 
+<div class="form-group row">
+    <div class="col-lg-1">
+        <label class="control-label">Talep No</label>  <input asp-for="ID" class="form-control form-control-sm" readonly />
+    </div>
+    @if (Model.ID > 0)
+    {
+        <div class="col-lg-3">
+            <span class="@Model.DurumClass"></span>  <label asp-for="DurumAd" class="control-label"></label> <div class="durum-wrapper">
+        </div>
+        <input asp-for="DurumAd" class="form-control form-control-sm" readonly />
+        <span asp-validation-for="DurumAd" class="text-danger"></span>
+    </div>
+}
+    
+<div class="col-lg-3">
+    <label class="control-label">Talep Eden</label>  <input asp-for="CreateUserName" class="form-control form-control-sm" readonly />
+</div>
+
+               
+            
+   
+</div>
+ 
+<div class="form-group row">
+    <div class="col-lg-6">
+        <label asp-for="SirketAd" class="control-label"></label>  <input asp-for="SirketAd" class="form-control form-control-sm" readonly />
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="TurAd" class="control-label"></label>  <input asp-for="TurAd" class="form-control form-control-sm" readonly />
+    </div>
+   
+    <div class="col-lg-3">
+        <label asp-for="RequestDate" class="control-label"></label>   <input asp-for="RequestDate" class="form-control form-control-sm" readonly />
+    </div>
+  
+</div>
+
+ 
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Not" class="control-label"></label>
+        <textarea asp-for="Not" type="text" class="form-control form-control-sm" rows="2" readonly></textarea>
+    </div>
+</div>
+
+
+<table class="table  table-bordered" id="" width="100%" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Sıra No</th>
+            <th>Ürün Kodu</th>
+            <th>Ürün Adı</th>
+            <th>Açıklama</th>
+            <th>Birim</th>
+            <th>Miktar</th> 
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            var sayac = 1;
+          
+        }
+        @foreach (RequestUrunlerVM item in Model.RequestUrunler)
+        {
+             
+            <tr class="@(item.IsDelete ? "deleted" : "")">
+                <td>@sayac</td>
+                <td>@item.UrunKod</td>
+                <td>@item.UrunAd</td>
+                <td>@item.Aciklama</td>
+                <td>@item.BirimAd</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Miktar)</td>
+              
+            </tr>
+            sayac = sayac + 1;
+
+            
+        }
+
+    </tbody>
+
+  
+</table>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <div class="small">
+            Kayıt Oluşturan: @Model.CreateUserName
+            Oluşturma Tarihi:@Model.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+        </div>
+    </div>
+</div>
+@if (Model.IsDelete)
+{
+    <div class="form-group row">
+        <div class="col-lg-12">
+            <div class="small">
+                Kayıt Silen: @Model.DeleteUserName
+                Silme Tarihi:@Model.DeleteDate?.ToString("dd.MM.yyyy HH:mm")
+            </div>
+        </div>
+    </div>
+}

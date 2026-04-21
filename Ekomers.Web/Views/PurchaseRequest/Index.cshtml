@@ -1,43 +1,117 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model List<PurchaseRequest>
 @{
+	ViewData["Title"] = "Eczane Tanımlama";
+	ViewData["Description"] = "Genel Ayarlar - Şirket Tanımlama";
 }
-@model List<PurchaseRequest>
+@section CSSection {
+	<!--begin::Page Vendors Styles(used by this page)-->
+	<link href="~/assets1/plugins/custom/datatables/datatables.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
 
-<div class="container mt-4">
-    <h4>Talepler</h4>
+	<!--end::Page Vendors Styles-->
+}
 
-    <a href="/PurchaseRequest/Create" class="btn btn-primary mb-3">Yeni Talep</a>
-
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>No</th>
-                <th>Tarih</th>
-                <th>Durum</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td>@item.RequestNo</td>
-                    <td>@item.RequestDate.ToShortDateString()</td>
-                    <td>@item.Status</td>
-                    <td>
-                        @if (item.Status == RequestStatus.Draft)
-                        {
-                            <a href="/PurchaseRequest/Edit/@item.Id" class="btn btn-warning btn-sm">Düzenle</a>
-                        }
-                        else
-                        {
-                            <span class="text-muted">Kilitli</span>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<!--begin::Notice-->
+@{
+	// await Html.RenderPartialAsync("_PartialNotice",
+	// new NoticeVM { Baslik = "Eczaneler", Aciklama = "Eczaneler Bilgi Girişi" });
+}
+<!--end::Notice-->
+@* <br /> *@
+<div class="card shadow">
+	<div class="card-header">
+		Arama Seçenekleri
+	</div>
+	<div class="card-body">
+		<div class="table-responsive">
+			<form   method="post" name="VeriFiltre" id="VeriFiltre">
+			
+			</form>
+		</div>
+	</div>
 </div>
+<br />
+<!--begin::Card-->
+<div class="card card-custom">
+	<div class="card-header flex-wrap py-3">
+		<div class="card-title">
+			<h3 class="card-label">
+			Talepler
+				<span class="d-block text-muted pt-2 font-size-sm">Detay</span>
+			</h3>
+		</div>
+		<div class="card-toolbar">
+			<a href="/PurchaseRequest/Create" class="btn btn-primary mb-3">Yeni Talep</a>
+		</div>
+	</div>
+	<div class="card-body">
+		<!--begin: Datatable-->
+		<table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+			<thead>
+				<tr> 
+					<th>No</th>
+					<th>Tarih</th>
+					<th>Durum</th> 
+					<th class="no-print">Dosya</th> 
+					<th class="no-print crudBtnRow">Düzenle</th>
+
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var item in Model)
+				{
+					<tr>
+						<td>@item.RequestNo</td>
+						<td>@item.RequestDate.ToShortDateString()</td>
+						<td>@item.Status</td>
+						
+						<td class="no-print">
+							<a href="#" onclick="DosyaGetir('@item.Id')" data-toggle="modal" data-target="#ModalDosyaEkle" class="crudBtn" data-id="3">
+								<i class="icon-x   flaticon-attachment"></i>&nbsp; Ekler
+							</a>
+                        </td>
+                        <td>
+                            @if (item.Status == RequestStatus.Draft)
+                            {
+                                <a href="/PurchaseRequest/Edit/@item.Id" class="btn btn-warning btn-sm">Düzenle</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Kilitli</span>
+                            }
+                        </td>
+					</tr>
+				}
+
+
+			</tbody>
+		</table>
+		<!--end: Datatable-->
+	</div>
+</div>
+<!--end::Card-->
+ 
+@{
+	await Html.RenderPartialAsync("_PartialModalDosya",
+	new AuthorizeCrudVM { Controller = "Eczane", HaritaEkle = false });
+}
+
+@section JSSection {
+
+	<script src="~/assets1/plugins/custom/datatables/datatables.bundle.js?v=7.0.5"></script>
+	<script src="~/assets1/js/pages/crud/datatables/extensions/buttonsCustom.js?v=7.0.5"></script>
+ 
+
+
+	<script src="js/select2.js?v=7.0.5"></script>
+	 
+	@{
+		await Html.RenderPartialAsync("_PartialDataTableScript");
+	}
+ 
+	 
+}
+
+
+
+
+ 

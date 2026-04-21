@@ -34,5 +34,9 @@
 		public const string SozlesmeDurumAll = "SozlesmeDurum:All";
 		public const string SozlesmeKonuAll = "SozlesmeKonu:All";
 		public const string SirketlerAll = "Sirketler:All";
+		public const string RequestDurumAll = "RequestDurum:All";
+		public const string RequestTurAll = "RequestTur:All";
+		public const string SirketAll = "Sirket:All";
+
 	}
 }
