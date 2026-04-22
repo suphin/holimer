@@ -15,36 +15,63 @@ namespace Ekomers.Models.Entity
 		
 		
 		
+		public int RequestUrunID { get; set; }
 		public int? DurumID { get; set; }
 		public int? TurID { get; set; }
 		public bool IsDone { get; set; }
+		public bool IsSelected { get; set; }
 		public DateTime TarihSaat { get; set; }=DateTime.Now;
 		
+		public double Miktar { get; set; }
+		public double Fiyat { get; set; }
+		public double UsdRate { get; set; }
+		public double EurRate { get; set; }
+
+		public int DovizTurID { get; set; } 
+		public int Vade { get; set; }
+		public int OdemeTurID { get; set; }
+
+
+		public string? Firma { get; set; }
+		public int? FirmaID { get; set; }
 		public string? Not { get; set; }
 		public string? Aciklama { get; set; }
-		public int? SirketID { get; set; }
+		
 		public bool IsLocked { get; set; } = false;		 
-		public DateTime TeslimTarihi { get; set; }		 
-		public DateTime RequestDate { get; set; }		 
+		public DateTime TeslimTarihi { get; set; }	 		 
 		public string? TeslimAdres { get; set; }
 	}
 
 	public class OfferVM : BaseVM
 	{
-		
-
+		public int RequestUrunID { get; set; }
+		public double Miktar { get; set; }
+		public double Fiyat { get; set; }
+		public int Vade { get; set; }
+		[Display(Name = "Ödeme Türü")]
+		public int OdemeTurID { get; set; }
+		public string? DovizTur { get; set; }
+		public string? Firma { get; set; }
+		public int? MusteriID { get; set; }
 		public int? DurumID { get; set; }
 		[Display(Name = "Son Durum")]
 		public string? DurumAd { get; set; }
 		public string? DurumClass { get; set; }
-	
+		[Display(Name = "Döviz Türü")]
+		public int DovizTurID { get; set; }
+		public int UrunID { get; set; }
+
+		public double UsdRate { get; set; }
+		public double EurRate { get; set; }
+
 		public bool IsDone { get; set; }
+		public bool IsSelected { get; set; }
 		public DateTime? TarihSaat { get; set; }
 		[Display(Name = "Talep Tarihi")]
 		public DateTime RequestDate { get; set; }
 		public string? Not { get; set; }
- 
-		 
+		public virtual Musteriler? Musteri { get; set; }
+
 
 		[Display(Name = "Açıklama")]
 		public string? Aciklama { get; set; }
@@ -59,6 +86,10 @@ namespace Ekomers.Models.Entity
 		public string? SirketAd { get; set; }
 
         public bool IsLocked { get; set; } = false;
+
+		[Display(Name = "Teslim Tarihi")]
+		public DateTime TeslimTarihi { get; set; }
+		public string? TeslimAdres { get; set; }
 	}
 
 	public class OfferDurum : BaseEntity

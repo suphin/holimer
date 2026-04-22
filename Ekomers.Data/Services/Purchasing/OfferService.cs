@@ -23,8 +23,9 @@ namespace Ekomers.Data.Services
 		private readonly IRepository<Offer> _OfferRepo;
 		private readonly IRepository<OfferTur> _OfferTurRepo;
 		private readonly IRepository<OfferDurum> _OfferDurumRepo;
-	
-		  
+	private readonly IRepository<RequestUrunler> _requestUrunlerRepo;
+
+		private readonly IRepository<Musteriler> _musterilerRepo;
 		private readonly IRepository<Malzeme> _urunlerRepo;
 		private readonly IRepository<MalzemeGrup> _altGrupRepo;
  
@@ -45,8 +46,8 @@ namespace Ekomers.Data.Services
 			, IRepository<MalzemeGrup> altGrupRepo
 			, IRepository<MalzemeBirim> malzemeBirimRepo
 			, IRepository<MalzemeTipi> malzemeTipiRepo
-			 
-		 
+			 ,IRepository<Musteriler> musterilerRepo
+			, IRepository<RequestUrunler> requestUrunlerRepo
 			)
 		{
 			_context = context;
@@ -58,12 +59,12 @@ namespace Ekomers.Data.Services
 			_userRepo = userRepo;
 			_OfferDurumRepo = OfferDurumRepo;
 			_sirketRepo = sirketRepo;
-		  
+			_musterilerRepo = musterilerRepo;
 			_urunlerRepo = urunlerRepo;
 			_altGrupRepo = altGrupRepo;
 			_malzemeBirimRepo = malzemeBirimRepo;
 			_malzemeTipiRepo = malzemeTipiRepo;
-			 
+			 _requestUrunlerRepo = requestUrunlerRepo;
 			// Get the current user's claims principal and user ID
 			_user = _httpContextAccessor.HttpContext?.User;
 			_userId = _user?.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -96,7 +97,21 @@ namespace Ekomers.Data.Services
 						into OfferTurGroup
 						 from OfferTur in OfferTurGroup.DefaultIfEmpty()
 
-						 join sirket in _sirketRepo.GetAll2() on kayit.SirketID equals sirket.ID
+						 join firma in _musterilerRepo.GetAll2() on kayit.FirmaID equals firma.ID
+						 	 into firmaGroup
+							from firma in firmaGroup.DefaultIfEmpty()
+
+
+							join request in _requestUrunlerRepo.GetAll2() on kayit.RequestUrunID equals request.ID
+							into requestGroup
+							from request in requestGroup.DefaultIfEmpty()
+
+							join urun in _urunlerRepo.GetAll2() on request.UrunID equals urun.ID
+							into urunGroup
+							from urun in urunGroup.DefaultIfEmpty()
+
+
+						 join sirket in _sirketRepo.GetAll2() on kayit.FirmaID equals sirket.ID
 						 into sirketGroup
 						  from sirket in sirketGroup.DefaultIfEmpty()
 
@@ -120,17 +135,26 @@ namespace Ekomers.Data.Services
 							 DurumID = kayit.DurumID,
 							 DurumAd = OfferDurum != null ? OfferDurum.Ad : "",
 							 DurumClass = OfferDurum != null ? OfferDurum.Class : "",
-							 SirketAd = sirket != null ? sirket.SirketAdi : "",
-							 SirketID = kayit.SirketID,
-
+							 Firma = sirket != null ? sirket.SirketAdi : "",
+							 MusteriID = kayit.FirmaID,
+							 RequestUrunID=kayit.RequestUrunID,
 							 TurID = kayit.TurID,
 							 TurAd = OfferTur != null ? OfferTur.Ad : "",
-
+							 Vade=kayit.Vade,
+							 Miktar=kayit.Miktar,
+							 Fiyat=kayit.Fiyat,
 							 IsDone = (bool)kayit.IsDone,
 							 TarihSaat = kayit.TarihSaat != null ? kayit.TarihSaat : new DateTime(1000, 1, 1),
-						 
+							 Musteri = firma ,
+							 DovizTurID=kayit.DovizTurID,
+							 EurRate=kayit.EurRate,
+							 UsdRate=kayit.UsdRate,
 							 IsLocked = (bool)kayit.IsLocked, 
-							 
+							 OdemeTurID=kayit.OdemeTurID,
+							 TeslimTarihi=kayit.TeslimTarihi,
+							 IsSelected=kayit.IsSelected,
+							 UrunID=request.UrunID,
+
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,
 
@@ -251,9 +275,14 @@ namespace Ekomers.Data.Services
 		public async Task<List<OfferVM>> VeriListele(OfferVM model)
 		{
 			var liste = GenelListe();
-
-			 
-
+			if (model.RequestUrunID != 0)
+			{
+				liste = liste.Where(p => p.RequestUrunID==model.RequestUrunID);
+			}
+			if (model.UrunID != 0)
+			{
+				liste = liste.Where(p => p.UrunID == model.UrunID);
+			}
 			if (model.Aciklama != null)
 			{
 				liste = liste.Where(p => p.Aciklama.Contains(model.Aciklama)

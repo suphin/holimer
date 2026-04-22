@@ -28,5 +28,6 @@ namespace Ekomers.Models.Enums
 		Satislar = 1013,
 		Sozlesmeler = 1014,
 		Request = 1015,
+		Offer = 1016,
 	}
 }

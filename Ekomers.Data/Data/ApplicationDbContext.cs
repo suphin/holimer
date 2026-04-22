@@ -197,7 +197,12 @@ namespace Ekomers.Data
 		public DbSet<RequestUrunler> RequestUrunler { get; set; }
 		public DbSet<RequestDurum> RequestDurum { get; set; }
 		public DbSet<RequestTur> RequestTur { get; set; }
-		 
+
+		public DbSet<Offer> Offer { get; set; }
+		public DbSet<OfferDurum> OfferDurum { get; set; }
+		public DbSet<OfferTur> OfferTur { get; set; }
+		  
+
 
 	}
 }

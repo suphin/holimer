@@ -405,7 +405,18 @@ namespace Ekomers.Data.Services
 			await _context.SaveChangesAsync();
 			return true;
 		}
+		public async Task<bool> RequestUrunGuncelle(RequestUrunlerVM modelv)
+		{
+			var newGuid = Guid.NewGuid().ToString();
+			var existingEntry= _RequestUrunlerRepo.GetById(modelv.ID);
+			_mapper.Map(modelv, existingEntry);
 
+			_RequestUrunlerRepo.Update(existingEntry);
+
+
+			await _context.SaveChangesAsync();
+			return true;
+		}
 		public async Task<List<RequestUrunlerVM>> RequestUrunlerGetir(int RequestID)
 		{
 			if (RequestID!=0)
@@ -444,6 +455,18 @@ namespace Ekomers.Data.Services
 			}
 			var result = from kayit in _RequestUrunlerRepo.GetAll2(filter)
 
+						 join request in _RequestRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false) on kayit.RequestID equals request.ID
+						 into requestGroup
+						 from request in requestGroup.DefaultIfEmpty()
+
+						 join sirket in _sirketRepo.GetAll2() on request.SirketID equals sirket.ID into sirketGroup
+						 						 from sirket in sirketGroup.DefaultIfEmpty()
+
+						join durum in _RequestDurumRepo.GetAll2() on request.DurumID equals durum.ID into durumGroup
+						from durum in durumGroup.DefaultIfEmpty()
+
+						join tur in _RequestTurRepo.GetAll2() on request.TurID equals tur.ID into turGroup
+						from tur in turGroup.DefaultIfEmpty()
 
 						 join urunler in _urunlerRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false) on kayit.UrunID equals urunler.ID
 						 into urunlerGroup
@@ -492,8 +515,17 @@ namespace Ekomers.Data.Services
 							 Miktar = (double)kayit.Miktar,
 							 MiktarSon= (double)kayit.MiktarSon,
 							 OnayliMi=kayit.OnayliMi,
+							 RequestDate = request != null ? request.RequestDate : new DateTime(1000, 1, 1),
+							 RequestDurumAd = durum != null ? durum.Ad : "",
+							 RequestDurumID=(int)request.DurumID,
+							 	 RequestDurumClass = durum != null ? durum.Class : "",
+								 RequestTurID = (int)request.TurID,
+								 RequestTurAd = tur != null ? tur.Ad : "",
 
+								 OfferDurumID=kayit.OfferDurumID,
 
+							 SirketID =(int)request.SirketID,
+							 SirketAd = sirket != null ? sirket.SirketAdi : "",
 
 
 							 IsActive = (bool)kayit.IsActive,
@@ -551,7 +583,7 @@ namespace Ekomers.Data.Services
 			return  RequestUrunlerGenelListe().Where(p => p.OnayliMi == false && p.IsActive==true && p.IsDelete == false && p.RequestID == RequestID).Count();
 		}
 
-		public async Task<PagedResult<RequestUrunlerVM>> UrunListeleAsync(int page, int pageSize, CancellationToken ct = default)
+		public async Task<PagedResult<RequestUrunlerVM>> UrunListeleAsync(int page, int pageSize, CancellationToken ct = default,int offerDurumID = 0)
 		{
 			try
 			{
@@ -559,7 +591,7 @@ namespace Ekomers.Data.Services
 				// mantıklı bir üst sınır koy
 				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
 
-				var query = RequestUrunlerGenelListe(); // IQueryable<RequestUrunlerVM>
+				var query = RequestUrunlerGenelListe().Where(p=>p.OfferDurumID==offerDurumID); // IQueryable<RequestUrunlerVM>
 
 				var total = await query.CountAsync(ct);
 

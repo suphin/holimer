@@ -1,0 +1,243 @@
+﻿@model RequestUrunlerVM
+
+
+
+<div class="card card-custom">
+    <div class="card-header card-header-tabs-line">
+        <div class="card-title">
+
+                     
+            <h3 class="card-label">@Model.ModalTitle</h3>
+        </div>
+        <div class="card-toolbar">
+         
+            <ul class="nav nav-tabs nav-bold nav-tabs-line">
+                <li class="nav-item">
+                    <a class="nav-link active" data-toggle="tab" href="#kt_tab_pane_1_4">
+                        <span class="nav-icon"><i class="flaticon2-search"></i></span>
+                        <span class="nav-text">Detaylar</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#kt_tab_pane_2_4">
+                        <span class="nav-icon"><i class="flaticon2-document"></i></span>
+                        <span class="nav-text">Dosyalar</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#kt_tab_pane_3_4">
+                        <span class="nav-icon"><i class="flaticon-exclamation-1"></i></span>
+                        <span class="nav-text">Hareket Kayıtları</span>
+                    </a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="kt_tab_pane_1_4" role="tabpanel" aria-labelledby="kt_tab_pane_1_4">
+                <form    name="_VeriEkle2" id="_VeriEkle2">
+                    @{
+                        await Html.RenderPartialAsync("_form", Model);
+                    }
+                    <div class="text-right">
+                     
+                        <a type="button" class="btn btn-danger mr-2" href="/offer/index">Geri Dön</a>
+                        @if (Model.OfferDurumID==(int)EnumOfferDurum.TeklifOnaylandi)
+                            {
+                                
+                            }
+                            else
+                            {
+                            <button type="button" name="actionType" value="taslak" class="btn btn-secondary  mr-2" data-toggle="modal" onclick="TeklifForm()" data-target="#ModalVeri">Teklif Geri Çevir</button>
+                            }
+                            
+                      
+                       
+                    </div>
+                </form>
+            </div>
+            <div class="tab-pane fade" id="kt_tab_pane_2_4" role="tabpanel" aria-labelledby="kt_tab_pane_2_4">
+                @{
+                    @await Component.InvokeAsync("CrmDosyaYonetimi",
+                    new { VeriID = Model.ID, ModulID = (int)ModulEnum.Offer, DosyaYolu = "Offer" })
+                }
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<div class="card card-custom mt-5">
+    <div class="card-header card-header-tabs-line">
+        <div class="card-title">
+
+                     
+            <h3 class="card-label">Teklifler</h3>
+        </div>
+        <div class="card-toolbar">
+          
+        </div>
+    </div>
+    <div class="card-body">
+     
+        <form id="teklifSecForm">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>Seç</th>
+                        <th>Firma</th>
+                        <th>Fiyat (₺)</th>
+                        <th>Fiyat (Döviz)</th>
+                        <th>Vade</th>
+                        <th>Teslim</th>
+                        <th>Performans</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        double kur = 1;
+                        string doviz = "";
+                        var enDusukFiyat = Model.OfferVMListe.Min(x => x.Fiyat *
+                            (x.DovizTurID == 1 ? 1 :
+                             x.DovizTurID == 2 ? Convert.ToDouble(x.UsdRate) :
+                             Convert.ToDouble(x.EurRate)));
+                    }
+
+                    @foreach (var item in Model.OfferVMListe)
+                    {
+                        if (item.DovizTurID == 1)
+                        {
+                            kur = 1; doviz = "₺";
+                        }
+                        else if (item.DovizTurID == 2)
+                        {
+                            kur = Convert.ToDouble(item.UsdRate); doviz = "$";
+                        }
+                        else
+                        {
+                            kur = Convert.ToDouble(item.EurRate); doviz = "€";
+                        }
+
+                        var tlFiyat = item.Fiyat * kur;
+                        var enIyi = tlFiyat == enDusukFiyat;
+
+                        <tr class="@(enIyi ? "table-success" : "")">
+                            <td>
+                                @if (Model.OfferDurumID == (int)EnumOfferDurum.TeklifOnaylandi)
+                                {
+                                    if (item.IsSelected)
+                                        {
+                                            <span>Seçildi</span>
+                                        }
+                                }
+                                else
+                                {
+                                    <input type="radio" name="selectedOfferId" value="@item.ID" />
+                                }
+                               
+                            </td>
+                            <td>@item.Musteri?.AdSoyad</td>
+
+                            <td class="text-end fw-bold">
+                                ₺ @tlFiyat.ToString("n2")
+                                @if (enIyi)
+                                {
+                                    <span class="badge bg-success">En Uygun</span>
+                                }
+                            </td>
+
+                            <td class="text-end">
+                                @doviz @item.Fiyat.ToString("n2")
+                            </td>
+
+                            <td>@item.Vade gün</td>
+                            <td>@item.TeslimTarihi.ToString("d")</td>
+
+                            <td>
+                                @{
+                                    int puan = 0;
+                                    if (enIyi) puan += 50;
+                                    if (item.Vade <= 30) puan += 20;
+                                    if ((item.TeslimTarihi - DateTime.Now).Days <= 7) puan += 30;
+                                }
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" style="width:@puan%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (Model.OfferDurumID == (int)EnumOfferDurum.TeklifOnaylandi)
+            {
+                                
+            }
+            else
+            {
+                <button type="button" class="btn btn-success" onclick="teklifOnayla()">
+                    Teklifi Kabul Et
+                </button>
+            }
+           
+        </form>
+    </div>
+    <div class="card-footer">
+       
+        
+    </div>
+</div>
+@{ 
+    await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+	 
+@{
+    await Html.RenderPartialAsync("_PartialModalDosya",
+    new AuthorizeCrudVM { Controller = "Offer", HaritaEkle = false });
+}
+
+
+@section JSSection { 
+    <script>
+        function TeklifForm() {
+            GetAjax('Offer/TeklifRed?requestUrunID=@Model.ID', 'VeriAlan');
+        }
+        function teklifOnayla() {
+            var selectedId = $('input[name="selectedOfferId"]:checked').val();
+
+            if (!selectedId) {
+                toastr.warning("Lütfen bir teklif seçin");
+                return;
+            }
+
+            if (!confirm("Seçili teklifi kabul etmek istediğinize emin misiniz?")) {
+                return;
+            }
+
+            $.ajax({
+                url: '/Offer/KabulEt',
+                type: 'GET',
+                data: { id: selectedId ,requestUrunId:@Model.ID},
+                success: function () {
+
+                    toastr.success("Teklif kabul edildi");
+                    
+                      setTimeout(function () {
+                            location.reload();
+                        }, 1500); // 1.5 saniye bekle
+                }
+            });
+        }
+    </script>
+ 
+    @{
+        await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+        new AuthorizeCrudVM
+        {
+            Controller = "Offer",
+            ModulID = (int)ModulEnum.Offer,
+            DosyaYolu = "Offer"
+        });
+    }
+}

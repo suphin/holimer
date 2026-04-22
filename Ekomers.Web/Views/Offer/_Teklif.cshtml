@@ -1,0 +1,25 @@
+﻿ @model OfferVM
+<form method="post" name="_VeriEkle" id="_VeriEkle" asp-controller="@Model.ControllerName" asp-action="VeriEkle">
+	<div class="modal-content shadow-none">
+		<div class="modal-header">
+			<h5 class="modal-title">@Model.ModalTitle</h5>
+		 
+			<button type="button" class="close no-print" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+		</div>
+		<div class="modal-body">
+			@{
+				await Html.RenderPartialAsync("_TeklifForm", Model);
+			}
+		</div>
+		<div class="modal-footer" id="modal-footer">
+			<input type="hidden" asp-for="CreateDate" value="@DateTime.Now" />
+			<input type="hidden" asp-for="IsActive" value="true" />
+			<input type="hidden" asp-for="IsDelete" value="false" />
+			<input type="hidden" asp-for="CreateUserID" value="@Model.UserID" />
+			<button type="button" class="btn btn-danger no-print" data-dismiss="modal">Kapat</button>
+			<button   class="btn btn-primary" type="submit">
+				Kaydet
+			</button>
+		</div>
+	</div>
+</form>

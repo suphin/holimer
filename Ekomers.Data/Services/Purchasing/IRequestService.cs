@@ -14,12 +14,13 @@ namespace Ekomers.Data.Services.IServices
 	public interface IRequestService : IGenelService<RequestVM, Request>, IPaggingService<RequestVM>
 	{
 		Task<bool> RequestUrunEkle(RequestUrunlerVM modelv);	 
+		Task<bool> RequestUrunGuncelle(RequestUrunlerVM modelv);	 
 		Task<bool> RequestUrunDuzenle(RequestUrunlerVM modelv);	 
 		Task<bool> RequestUrunCikar(int urunId);		 
 		Task<int> RequestUrunDurum(int RequestID);		 
 		Task<List<RequestUrunlerVM>> RequestUrunlerGetir(int RequestID);
 		Task<RequestUrunlerVM> RequestUrunGetir(int UrunId);
-		Task<PagedResult<RequestUrunlerVM>> UrunListeleAsync(int page, int pageSize, CancellationToken ct = default);
+		Task<PagedResult<RequestUrunlerVM>> UrunListeleAsync(int page, int pageSize, CancellationToken ct = default,int offerDurumID = 0);
 
 	}
 }

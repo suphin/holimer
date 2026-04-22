@@ -99,7 +99,7 @@ namespace Ekomers.Web.Controllers
 		{
 			ViewBag.Modul = ModulAd;
 			//await ViewBagListeDoldur();
-			var paged = await _requestService.UrunListeleAsync(page, pageSize, ct);
+			var paged = await _requestService.UrunListeleAsync(page, pageSize, ct, (int)EnumOfferDurum.TeklifAsamasinda);
 
 			var model = new RequestUrunlerVM
 			{
@@ -111,7 +111,22 @@ namespace Ekomers.Web.Controllers
 
 			return View(model);
 		}
-		 
+		public async Task<IActionResult> Onay(int page = 1, int pageSize = 10, CancellationToken ct = default)
+		{
+			ViewBag.Modul = ModulAd;
+			//await ViewBagListeDoldur();
+			var paged = await _requestService.UrunListeleAsync(page, pageSize, ct, (int)EnumOfferDurum.TeklifOnayBekliyor);
+
+			var model = new RequestUrunlerVM
+			{
+				RequestUrunlerVMListe = paged.Items.ToList(),
+				PageIndex = paged.PageIndex,
+				PageSize = paged.PageSize,
+				TotalCount = paged.TotalCount
+			};
+
+			return View(model);
+		}
 
 		[HttpPost]
 		public async Task<IActionResult> Index(OfferVM modelv)
@@ -125,23 +140,61 @@ namespace Ekomers.Web.Controllers
 			return View(model);
 		}
 
-		public async Task<PartialViewResult> VeriGoruntule(int VeriID = 0, string view = "", int pageIndex = 0, int pageSize = 0)
+
+		public async Task<IActionResult> Detail(int Id)
+		{
+			ViewBag.Modul = ModulAd;
+
+			var model = await _requestService.RequestUrunGetir(Id);
+
+			model.UserID = _userId;
+			if (model.OfferDurumID==(int)EnumOfferDurum.TeklifAsamasinda)
+			{
+				var offer = new OfferVM
+				{
+					RequestUrunID = Id
+				};
+				model.OfferVMListe = await _service.VeriListele(offer);
+				return View(model);
+			}
+
+			return RedirectToAction("Index");
+
+		}
+		public async Task<IActionResult> OnayDetail(int Id)
+		{
+			ViewBag.Modul = ModulAd;
+
+			var model = await _requestService.RequestUrunGetir(Id);
+
+			model.UserID = _userId;
+
+			var offer = new OfferVM
+			{
+				RequestUrunID = Id
+			};
+			model.OfferVMListe = await _service.VeriListele(offer);
+			return View(model);
+		}
+
+		public async Task<PartialViewResult> VeriGoruntule(int VeriID = 0, string view = "" )
 		{
 
 			var modelc = await _service.VeriGetir(VeriID);
-			
-			 
+			ViewBag.Kurlar = await _tcmbService.DovizKuruGetir();
+			modelc.ControllerName = "Offer";
+			modelc.ModalTitle = "Talep Bilgileri";
 			modelc.UserID = _userId;
 			return PartialView(view, modelc);
 		}
-		public async Task<IActionResult> VeriGoruntule2(int VeriID = 0, string view = "", int pageIndex = 0, int pageSize = 0)
+		public async Task<IActionResult> VeriGoruntule2(int VeriID = 0, string view = "")
 		{
 			ViewBag.Modul = ModulAd;
 			var modelc = await _service.VeriGetir(VeriID);
 
 			await ViewBagPartialListeDoldur();
 
-
+			ViewBag.Kurlar = await _tcmbService.DovizKuruGetir();
 
 			modelc.ControllerName = "Offer";
 			modelc.ModalTitle = "Talep Bilgileri";
@@ -152,24 +205,16 @@ namespace Ekomers.Web.Controllers
 
 		[Authorize(Roles = "Editor")]
 		[HttpPost]
-		public async Task<IActionResult> VeriEkle(OfferVM model,string actionType)
-		{
-			 
-
-
+		public async Task<IActionResult> VeriEkle(OfferVM model)
+		{ 
 			model.TarihSaat = DateTime.Now;
-
-
 			 
 
-			int sonuc = await _service.VeriEkleReturnIDAsync(model);
-
-
-
-
-			if (sonuc > 0)
+			var sonuc = await _service.VeriEkleAsync(model);
+			 
+			if (sonuc)
 			{
-				return Redirect("/Offer/VeriGoruntule2?view=_VeriGetir2&VeriID=" + sonuc);
+				return RedirectToAction("Detail",new {Id =model.RequestUrunID});
 			} 
 			else
 			{
@@ -191,12 +236,63 @@ namespace Ekomers.Web.Controllers
 				return BadRequest("Veri silinemedi.");
 			}
 		}
+		 
+		[Authorize(Roles = "Editor")]
+		public async Task<IActionResult> Teklif(int requestUrunID)
+		{
+			var requestUrun = await _requestService.RequestUrunGetir(requestUrunID);
 
-	 
-		  
-		 
+			var modelc = new OfferVM();
+			modelc.ModalTitle = "Teklif Bilgileri";
+			modelc.TeslimTarihi = DateTime.Now;
+			modelc.RequestUrunID = requestUrunID;
+			modelc.Miktar = requestUrun.MiktarSon;
+			modelc.UserID = _userId;
 
-		 
-		 
+			ViewBag.Kurlar = await _tcmbService.DovizKuruGetir();
+			modelc.ControllerName = "Offer";
+			return PartialView("_Teklif", modelc);
+		}
+
+		[Authorize(Roles = "Editor")]
+		public async Task<IActionResult> Send(int Id)
+		{
+			var requestUrun = await _requestService.RequestUrunGetir(Id);
+			requestUrun.OfferDurumID = (int)EnumOfferDurum.TeklifOnayBekliyor;
+			var sonuc = _requestService.RequestUrunGuncelle(requestUrun);
+
+			return RedirectToAction("Index");
+		}
+
+		[Authorize(Roles = "Editor")]
+		public async Task<IActionResult> OncekiTeklifler(int requestUrunID)
+		{
+			var model = await _requestService.RequestUrunGetir(requestUrunID);
+			var offer = new OfferVM
+			{
+				UrunID = model.UrunID
+			};
+
+			model.OfferVMListe = await _service.VeriListele(offer);
+
+			return PartialView("_OncekiTeklifler", model);
+		}
+
+		[Authorize(Roles = "Editor")]
+		public async Task<IActionResult> KabulEt(int Id,int requestUrunId)
+		{
+			var requestUrun = await _requestService.RequestUrunGetir(requestUrunId);
+			requestUrun.OfferDurumID = (int)EnumOfferDurum.TeklifOnaylandi;
+			var sonuc = _requestService.RequestUrunGuncelle(requestUrun);
+
+			var modelc = await _service.VeriGetir(Id);
+			modelc.IsSelected = true;
+			 bool cevap  = await _service.VeriEkleAsync(modelc);
+
+			return Ok("Başarılı");
+		}
+
+
+
 	}
 }

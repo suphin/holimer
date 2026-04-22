@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260422101032_add-offerTables2")]
+    partial class addofferTables2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,7 +70,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Departman", (string)null);
+                    b.ToTable("Departman");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.DepartmanBirim", b =>
@@ -120,7 +123,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasIndex("DepartmanID");
 
-                    b.ToTable("DepartmanBirim", (string)null);
+                    b.ToTable("DepartmanBirim");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.Dosya", b =>
@@ -214,7 +217,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Dosya", (string)null);
+                    b.ToTable("Dosya");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.DovizTur", b =>
@@ -258,7 +261,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("DovizTur", (string)null);
+                    b.ToTable("DovizTur");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.Geojson", b =>
@@ -310,7 +313,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Geojson", (string)null);
+                    b.ToTable("Geojson");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.Iade", b =>
@@ -380,7 +383,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Iade", (string)null);
+                    b.ToTable("Iade");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.IadeSebep", b =>
@@ -427,7 +430,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("IadeSebep", (string)null);
+                    b.ToTable("IadeSebep");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.Kullanici", b =>
@@ -580,7 +583,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Mahalle", (string)null);
+                    b.ToTable("Mahalle");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.Malzeme", b =>
@@ -682,7 +685,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Malzeme", (string)null);
+                    b.ToTable("Malzeme");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeBirim", b =>
@@ -734,7 +737,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("MalzemeBirim", (string)null);
+                    b.ToTable("MalzemeBirim");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeDepo", b =>
@@ -793,7 +796,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("MalzemeDepo", (string)null);
+                    b.ToTable("MalzemeDepo");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeFiyat", b =>
@@ -853,7 +856,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasIndex("MalzemeID");
 
-                    b.ToTable("MalzemeFiyat", (string)null);
+                    b.ToTable("MalzemeFiyat");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeGrup", b =>
@@ -906,7 +909,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("MalzemeGrup", (string)null);
+                    b.ToTable("MalzemeGrup");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeHareketTur", b =>
@@ -961,7 +964,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("MalzemeHareketTur", (string)null);
+                    b.ToTable("MalzemeHareketTur");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeIade", b =>
@@ -1031,7 +1034,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("MalzemeIade", (string)null);
+                    b.ToTable("MalzemeIade");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeMaliyetFiyat", b =>
@@ -1091,7 +1094,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasIndex("MalzemeID");
 
-                    b.ToTable("MalzemeMaliyetFiyat", (string)null);
+                    b.ToTable("MalzemeMaliyetFiyat");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeStok", b =>
@@ -1161,7 +1164,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("MalzemeStok", (string)null);
+                    b.ToTable("MalzemeStok");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.MalzemeTipi", b =>
@@ -1213,7 +1216,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("MalzemeTipi", (string)null);
+                    b.ToTable("MalzemeTipi");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.PortalMenu", b =>
@@ -1266,7 +1269,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("PortalMenu", (string)null);
+                    b.ToTable("PortalMenu");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.Rol", b =>
@@ -1355,7 +1358,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Sehirler", (string)null);
+                    b.ToTable("Sehirler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.Sokak", b =>
@@ -1408,7 +1411,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasIndex("MahalleID");
 
-                    b.ToTable("Sokak", (string)null);
+                    b.ToTable("Sokak");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.TableMetadata", b =>
@@ -1467,7 +1470,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("TableMetadata", (string)null);
+                    b.ToTable("TableMetadata");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.UserActivityLog", b =>
@@ -1508,7 +1511,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UserActivityLog", (string)null);
+                    b.ToTable("UserActivityLog");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.UserImage", b =>
@@ -1525,7 +1528,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ImageId");
 
-                    b.ToTable("UserImage", (string)null);
+                    b.ToTable("UserImage");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Ekomers.VergiDairesi", b =>
@@ -1580,7 +1583,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("VergiDairesi", (string)null);
+                    b.ToTable("VergiDairesi");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Aktivite", b =>
@@ -1656,7 +1659,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Aktivite", (string)null);
+                    b.ToTable("Aktivite");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.AktiviteTur", b =>
@@ -1702,7 +1705,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("AktiviteTur", (string)null);
+                    b.ToTable("AktiviteTur");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.AuthorizationCategory", b =>
@@ -1750,7 +1753,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("AuthorizationCategory", (string)null);
+                    b.ToTable("AuthorizationCategory");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.CrmActivityLog", b =>
@@ -1796,7 +1799,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CrmActivityLog", (string)null);
+                    b.ToTable("CrmActivityLog");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.CrmHedefler", b =>
@@ -1855,7 +1858,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("CrmHedefler", (string)null);
+                    b.ToTable("CrmHedefler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Eczane", b =>
@@ -1967,7 +1970,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Eczane", (string)null);
+                    b.ToTable("Eczane");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Firsat", b =>
@@ -2040,7 +2043,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Firsat", (string)null);
+                    b.ToTable("Firsat");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.FirsatDurum", b =>
@@ -2086,7 +2089,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("FirsatDurum", (string)null);
+                    b.ToTable("FirsatDurum");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.MusteriTip", b =>
@@ -2134,7 +2137,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("MusteriTip", (string)null);
+                    b.ToTable("MusteriTip");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Musteriler", b =>
@@ -2250,7 +2253,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Musteriler", (string)null);
+                    b.ToTable("Musteriler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Offer", b =>
@@ -2285,9 +2288,6 @@ namespace Ekomers.Data.Migrations
                     b.Property<int?>("DurumID")
                         .HasColumnType("int");
 
-                    b.Property<double>("EurRate")
-                        .HasColumnType("float");
-
                     b.Property<string>("Firma")
                         .HasColumnType("nvarchar(max)");
 
@@ -2307,9 +2307,6 @@ namespace Ekomers.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsLocked")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsSelected")
                         .HasColumnType("bit");
 
                     b.Property<double>("Miktar")
@@ -2342,15 +2339,12 @@ namespace Ekomers.Data.Migrations
                     b.Property<string>("UpdateUserID")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("UsdRate")
-                        .HasColumnType("float");
-
                     b.Property<int>("Vade")
                         .HasColumnType("int");
 
                     b.HasKey("ID");
 
-                    b.ToTable("Offer", (string)null);
+                    b.ToTable("Offer");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.OfferDurum", b =>
@@ -2399,7 +2393,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("OfferDurum", (string)null);
+                    b.ToTable("OfferDurum");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.OfferTur", b =>
@@ -2445,7 +2439,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("OfferTur", (string)null);
+                    b.ToTable("OfferTur");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Product", b =>
@@ -2482,7 +2476,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.PurchaseRequest", b =>
@@ -2509,7 +2503,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PurchaseRequests", (string)null);
+                    b.ToTable("PurchaseRequests");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.PurchaseRequestItem", b =>
@@ -2541,7 +2535,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasIndex("PurchaseRequestId");
 
-                    b.ToTable("PurchaseRequestItem", (string)null);
+                    b.ToTable("PurchaseRequestItem");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Recete", b =>
@@ -2590,7 +2584,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Recete", (string)null);
+                    b.ToTable("Recete");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.ReceteParametre", b =>
@@ -2636,7 +2630,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("ReceteParametre", (string)null);
+                    b.ToTable("ReceteParametre");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.ReceteParametreDeger", b =>
@@ -2682,7 +2676,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("ReceteParametreDeger", (string)null);
+                    b.ToTable("ReceteParametreDeger");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.ReceteUrunler", b =>
@@ -2746,7 +2740,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("ReceteUrunler", (string)null);
+                    b.ToTable("ReceteUrunler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Request", b =>
@@ -2819,7 +2813,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Request", (string)null);
+                    b.ToTable("Request");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.RequestDurum", b =>
@@ -2868,7 +2862,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("RequestDurum", (string)null);
+                    b.ToTable("RequestDurum");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.RequestTur", b =>
@@ -2914,7 +2908,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("RequestTur", (string)null);
+                    b.ToTable("RequestTur");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.RequestUrunler", b =>
@@ -2978,7 +2972,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("RequestUrunler", (string)null);
+                    b.ToTable("RequestUrunler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Satislar", b =>
@@ -3084,7 +3078,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Satislar", (string)null);
+                    b.ToTable("Satislar");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SatislarDurum", b =>
@@ -3130,7 +3124,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SatislarDurum", (string)null);
+                    b.ToTable("SatislarDurum");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SatislarPlatform", b =>
@@ -3176,7 +3170,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SatislarPlatform", (string)null);
+                    b.ToTable("SatislarPlatform");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SatislarSebep", b =>
@@ -3222,7 +3216,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SatislarSebep", (string)null);
+                    b.ToTable("SatislarSebep");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SatislarTur", b =>
@@ -3268,7 +3262,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SatislarTur", (string)null);
+                    b.ToTable("SatislarTur");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SatislarUrunler", b =>
@@ -3335,7 +3329,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SatislarUrunler", (string)null);
+                    b.ToTable("SatislarUrunler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Siparis", b =>
@@ -3444,7 +3438,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Siparis", (string)null);
+                    b.ToTable("Siparis");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SiparisDurum", b =>
@@ -3490,7 +3484,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SiparisDurum", (string)null);
+                    b.ToTable("SiparisDurum");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SiparisIade", b =>
@@ -3593,7 +3587,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SiparisIade", (string)null);
+                    b.ToTable("SiparisIade");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SiparisIadeDurum", b =>
@@ -3639,7 +3633,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SiparisIadeDurum", (string)null);
+                    b.ToTable("SiparisIadeDurum");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SiparisIadePlatform", b =>
@@ -3685,7 +3679,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SiparisIadePlatform", (string)null);
+                    b.ToTable("SiparisIadePlatform");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SiparisIadeSebep", b =>
@@ -3731,7 +3725,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SiparisIadeSebep", (string)null);
+                    b.ToTable("SiparisIadeSebep");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SiparisIadeTur", b =>
@@ -3777,7 +3771,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SiparisIadeTur", (string)null);
+                    b.ToTable("SiparisIadeTur");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SiparisIadeUrunler", b =>
@@ -3844,7 +3838,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SiparisIadeUrunler", (string)null);
+                    b.ToTable("SiparisIadeUrunler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SiparisIskonto", b =>
@@ -3896,7 +3890,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SiparisIskonto", (string)null);
+                    b.ToTable("SiparisIskonto");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SiparisTur", b =>
@@ -3942,7 +3936,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SiparisTur", (string)null);
+                    b.ToTable("SiparisTur");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SiparisUrunler", b =>
@@ -4009,7 +4003,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SiparisUrunler", (string)null);
+                    b.ToTable("SiparisUrunler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Sirketler", b =>
@@ -4082,7 +4076,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Sirketler", (string)null);
+                    b.ToTable("Sirketler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Sozlesmeler", b =>
@@ -4164,7 +4158,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Sozlesmeler", (string)null);
+                    b.ToTable("Sozlesmeler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SozlesmelerDurum", b =>
@@ -4212,7 +4206,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SozlesmelerDurum", (string)null);
+                    b.ToTable("SozlesmelerDurum");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.SozlesmelerKonu", b =>
@@ -4260,7 +4254,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("SozlesmelerKonu", (string)null);
+                    b.ToTable("SozlesmelerKonu");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.StockCount", b =>
@@ -4292,7 +4286,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasIndex("WarehouseId");
 
-                    b.ToTable("StockCounts", (string)null);
+                    b.ToTable("StockCounts");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Teklif", b =>
@@ -4392,7 +4386,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Teklif", (string)null);
+                    b.ToTable("Teklif");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.TeklifDurum", b =>
@@ -4438,7 +4432,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("TeklifDurum", (string)null);
+                    b.ToTable("TeklifDurum");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.TeklifIskonto", b =>
@@ -4490,7 +4484,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("TeklifIskonto", (string)null);
+                    b.ToTable("TeklifIskonto");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.TeklifTur", b =>
@@ -4536,7 +4530,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("TeklifTur", (string)null);
+                    b.ToTable("TeklifTur");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.TeklifUrunler", b =>
@@ -4603,7 +4597,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("TeklifUrunler", (string)null);
+                    b.ToTable("TeklifUrunler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Uretici", b =>
@@ -4649,7 +4643,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Uretici", (string)null);
+                    b.ToTable("Uretici");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Uretim", b =>
@@ -4731,7 +4725,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Uretim", (string)null);
+                    b.ToTable("Uretim");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.UretimParametreDeger", b =>
@@ -4783,7 +4777,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("UretimParametreDeger", (string)null);
+                    b.ToTable("UretimParametreDeger");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.UretimTeslimat", b =>
@@ -4832,7 +4826,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("UretimTeslimat", (string)null);
+                    b.ToTable("UretimTeslimat");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.UretimUrunler", b =>
@@ -4881,7 +4875,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("UretimUrunler", (string)null);
+                    b.ToTable("UretimUrunler");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.UserShortCut", b =>
@@ -4927,7 +4921,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("UserShortCut", (string)null);
+                    b.ToTable("UserShortCut");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.UserShortCutField", b =>
@@ -4976,7 +4970,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("UserShortCutField", (string)null);
+                    b.ToTable("UserShortCutField");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Warehouse", b =>
@@ -4997,7 +4991,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Warehouses", (string)null);
+                    b.ToTable("Warehouses");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.WarehouseInventory", b =>
@@ -5023,7 +5017,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasIndex("WarehouseId");
 
-                    b.ToTable("WarehouseInventories", (string)null);
+                    b.ToTable("WarehouseInventories");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Yetkilendirme", b =>
@@ -5086,7 +5080,7 @@ namespace Ekomers.Data.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Yetkilendirme", (string)null);
+                    b.ToTable("Yetkilendirme");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

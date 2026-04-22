@@ -354,6 +354,7 @@ namespace Ekomers.Web.Controllers
 
 			 urun.MiktarSon= miktar;
 			urun.OnayliMi = true;
+			urun.OfferDurumID=(int)EnumOfferDurum.TeklifOnayBekliyor;
 
 			await _service.RequestUrunDuzenle(urun);
 
@@ -380,8 +381,7 @@ namespace Ekomers.Web.Controllers
  
 			urun.OnayliMi = false;
 			urun.IsActive = false;
-			urun.IsDelete = true;
-
+			urun.IsDelete = true; 
 			await _service.RequestUrunDuzenle(urun);
 
 			int urunDurum = await _service.RequestUrunDurum(requestId);

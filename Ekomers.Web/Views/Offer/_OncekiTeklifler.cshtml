@@ -1,0 +1,92 @@
+﻿@model RequestUrunlerVM
+ 
+<form method="post" name="_VeriEkle" id="_VeriEkle" asp-controller="@Model.ControllerName" asp-action="VeriEkle">
+	<div class="modal-content shadow-none">
+		<div class="modal-header">
+			<h5 class="modal-title">@Model.UrunKod - @Model.UrunAd</h5>
+		 
+			<button type="button" class="close no-print" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+		</div>
+		<div class="modal-body">
+            <table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+                <thead>
+                    <tr>
+                        <th>Talep No</th>
+                        <th>Firma</th>
+                        <th>Firma Tel</th>
+                        <th>Vade</th>
+                        <th>Teslim Tarihi</th>
+                        <th>Miktar</th>
+                        <th>Fiyat TL</th>
+                        <th>Fiyat Döviz</th>
+                        <th>Not</th>
+                        <th class="no-print crudBtnRow">Düzenle</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                   
+                        double kur = 1;
+                        string DovizTurAd = "";
+                    }
+                    @foreach (OfferVM item in Model.OfferVMListe)
+                    {
+                        <tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")">
+                            <td>@item.ID</td>
+                            <td>@item.Musteri?.AdSoyad</td>
+                            <td>@item.Musteri?.Telefon</td>
+                            <td>@item.Vade</td>
+                            <td>@item.TeslimTarihi.ToString("d")</td>
+                            <td>@item.Miktar</td>
+                            <td class="text-right">
+                                @if (item.DovizTurID == 1)
+                                {
+                                    kur = 1;
+                                    DovizTurAd = "₺";
+                                }
+                                else if (item.DovizTurID == 2)
+                                {
+                                    kur = Convert.ToDouble(item.UsdRate);
+                                    DovizTurAd = "$";
+                                }
+                                else if (item.DovizTurID == 3)
+                                {
+                                    kur = Convert.ToDouble(item.EurRate);
+                                    DovizTurAd = "€";
+                                }
+
+                                ₺ @String.Format("{0:n2}", (item.Fiyat * kur))
+                            </td>
+                            <td class="text-right">
+
+                           
+                                @DovizTurAd  @String.Format("{0:n2}", (item.Fiyat))
+                            </td>
+
+               
+                            <td>@(!string.IsNullOrWhiteSpace(item.Not) ? item.Not : "—")</td>
+                
+                            <td>
+                                <button class="btn btn-primary" type="button">
+                                    Teklif Ekle
+                                </button>
+                               
+                            </td>
+                        </tr>
+                    }
+
+
+                </tbody>
+            </table>
+		</div>
+		<div class="modal-footer" id="modal-footer">
+			<input type="hidden" asp-for="CreateDate" value="@DateTime.Now" />
+			<input type="hidden" asp-for="IsActive" value="true" />
+			<input type="hidden" asp-for="IsDelete" value="false" />
+			<input type="hidden" asp-for="CreateUserID" value="@Model.UserID" />
+			<button type="button" class="btn btn-danger no-print" data-dismiss="modal">Kapat</button>
+			 
+		</div>
+	</div>
+</form>

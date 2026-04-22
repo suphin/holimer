@@ -28,6 +28,7 @@
     <thead>
         <tr>
             <th>Sıra No</th>
+            <th>Talep ID</th>
             <th>Ürün Kodu</th>
             <th>Ürün Adı</th>
             <th>Birim</th>
@@ -46,6 +47,7 @@
              
             <tr class="@(item.IsDelete ? "deleted" : "")">
                 <td>@sayac</td>
+                <td>@item.ID</td>
                 <td>@item.UrunKod</td>
                 <td>@item.UrunAd</td>
                 <td>@item.BirimAd</td>
