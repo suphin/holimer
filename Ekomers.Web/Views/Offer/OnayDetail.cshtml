@@ -43,7 +43,7 @@
                     }
                     <div class="text-right">
                      
-                        <a type="button" class="btn btn-danger mr-2" href="/offer/index">Geri Dön</a>
+                        <a type="button" class="btn btn-danger mr-2" href="/offer/onay">Geri Dön</a>
                         @if (Model.OfferDurumID==(int)EnumOfferDurum.TeklifOnaylandi)
                             {
                                 
@@ -96,13 +96,18 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @{
-                        double kur = 1;
-                        string doviz = "";
-                        var enDusukFiyat = Model.OfferVMListe.Min(x => x.Fiyat *
-                            (x.DovizTurID == 1 ? 1 :
-                             x.DovizTurID == 2 ? Convert.ToDouble(x.UsdRate) :
-                             Convert.ToDouble(x.EurRate)));
+                        @{
+                            double kur = 1;
+                            string doviz = "";
+                            double enDusukFiyat = 0;
+                            if (Model.OfferVMListe.Count>0)
+                            {
+                              enDusukFiyat = Model.OfferVMListe.Min(x => x.Fiyat *
+                               (x.DovizTurID == 1 ? 1 :
+                                x.DovizTurID == 2 ? Convert.ToDouble(x.UsdRate) :
+                                Convert.ToDouble(x.EurRate)));
+                            }
+                       
                     }
 
                     @foreach (var item in Model.OfferVMListe)

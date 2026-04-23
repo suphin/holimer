@@ -1,0 +1,138 @@
+﻿@model PaymentOrderPrintVM
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Mal Kabul ve Ödeme Emri</title>
+    <link href="~/css/_printoffer.css" rel="stylesheet" />
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- HEADER -->
+        <table>
+            <tr>
+                <td style="width:20%"> 
+                    <img src="/img/holimer2025.png" style="height:60px;" />
+                </td>
+                <td class="center bold">
+                    @Model.SirketAd <br />
+                    MAL KABUL VE ÖDEME EMRİ
+                </td>
+            </tr>
+        </table>
+
+        <!-- INFO -->
+        <table>
+            <tr>
+                <td>Standart Kod</td>
+                <td>@Model.BelgeNo</td>
+                <td>Yayın Tarihi</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Doküman Kod</td>
+                <td>@Model.BelgeNo</td>
+                <td>Revizyon No</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Satın Alınan Firma</td>
+                <td colspan="3">@Model.SatinAlinanFirma</td>
+            </tr>
+            <tr>
+                <td>Tanzim Tarihi</td>
+                <td>@Model.TanzimTarihi.ToShortDateString()</td>
+                <td>Fatura Tarihi</td>
+                <td>@Model.FaturaTarihi.ToShortDateString()</td>
+            </tr>
+        </table>
+
+        <!-- ÜRÜNLER -->
+        <table>
+            <thead>
+                <tr class="center bold">
+                    <th>S.NO</th>
+                    <th>ÜRÜN ADI</th>
+                    <th>BELGE TÜRÜ</th>
+                    <th>BELGE NO</th>
+                    <th>TUTAR</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="center">1</td>
+                    <td>@Model.UrunAdi</td>
+                    <td>@Model.BelgeTuru</td>
+                    <td>@Model.BelgeNo</td>
+                    <td class="right">@Model.Tutar.ToString("N2")</td>
+                </tr>
+
+                <tr>
+                    <td colspan="4" class="right">KDV</td>
+                    <td class="right">@Model.Kdv.ToString("N2")</td>
+                </tr>
+
+                <tr class="bold">
+                    <td colspan="4" class="right">Toplam</td>
+                    <td class="right">@Model.ToplamTutar.ToString("N2")</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <br />
+
+        <!-- ALT BİLGİ -->
+        <table class="no-border">
+            <tr>
+                <td><b>Ödenecek Tutar :</b></td>
+                <td>@Model.OdenecekTutar.ToString("N2")</td>
+            </tr>
+            <tr>
+                <td><b>Vade :</b></td>
+                <td>@Model.Vade</td>
+            </tr>
+            <tr>
+                <td><b>Ödeme Yöntemi :</b></td>
+                <td>@Model.OdemeYontemi</td>
+            </tr>
+            <tr>
+                <td><b>Ödeme Tarihi :</b></td>
+                <td>@Model.OdemeTarihi.ToShortDateString()</td>
+            </tr>
+        </table>
+
+        <br /><br />
+
+        <!-- İMZA -->
+        <table>
+            <tr class="center bold">
+                <td>Formu Düzenleyen</td>
+                <td>Bilgi İşlem Uzmanı</td>
+                <td>Muhasebe Müdürü</td>
+                <td>Genel Müdür</td>
+                <td>Koordinatör</td>
+            </tr>
+            <tr class="center">
+                <td>@Model.Hazirlayan</td>
+                <td>@Model.BilgiIslem</td>
+                <td>@Model.MuhasebeMuduru</td>
+                <td>@Model.GenelMuduru</td>
+                <td>@Model.Koordinator</td>
+            </tr>
+        </table>
+
+    </div>
+
+    <script>
+            window.onload = function () {
+                window.print();
+            }
+    </script>
+
+</body>
+</html>

@@ -21,7 +21,7 @@
         {
             <tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")"> 
                 <td>@item.ID</td>
-                <td>@item.RequestDate</td>
+                <td>@item.RequestDate.ToShortDateString()</td>
                 <td>@item.SirketAd</td>
                 <td>@item.UrunKod</td>
                 <td>@item.UrunAd</td>

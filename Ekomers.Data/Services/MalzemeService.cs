@@ -438,7 +438,7 @@ namespace Ekomers.Data.Services
 			//return results;
 			var tumListe = await GetAllCachedAsync();
 			return tumListe
-				.Where(p => p.Ad.Contains(malzemeAd, StringComparison.OrdinalIgnoreCase))
+				.Where(p => p.Ad.Contains(malzemeAd, StringComparison.OrdinalIgnoreCase) || p.Kod.Contains(malzemeAd, StringComparison.OrdinalIgnoreCase))
 				.ToList();
 		}
 		public async Task<List<MalzemelerVM>> Malzemeler()

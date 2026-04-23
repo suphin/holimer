@@ -1,4 +1,5 @@
-﻿using DocumentFormat.OpenXml.Drawing.Charts;
+﻿using Azure.Core;
+using DocumentFormat.OpenXml.Drawing.Charts;
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services.IServices;
@@ -6,6 +7,7 @@ using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
 using Ekomers.Models.Enums;
+using Ekomers.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -248,6 +250,8 @@ namespace Ekomers.Web.Controllers
 			modelc.RequestUrunID = requestUrunID;
 			modelc.Miktar = requestUrun.MiktarSon;
 			modelc.UserID = _userId;
+			modelc.UrunKod = requestUrun.UrunKod;
+			modelc.UrunAd = requestUrun.UrunAd;
 
 			ViewBag.Kurlar = await _tcmbService.DovizKuruGetir();
 			modelc.ControllerName = "Offer";
@@ -270,9 +274,10 @@ namespace Ekomers.Web.Controllers
 			var model = await _requestService.RequestUrunGetir(requestUrunID);
 			var offer = new OfferVM
 			{
-				UrunID = model.UrunID
+				UrunID = model.UrunID,
+				PageSize = 10,
 			};
-
+			 
 			model.OfferVMListe = await _service.VeriListele(offer);
 
 			return PartialView("_OncekiTeklifler", model);
@@ -292,7 +297,76 @@ namespace Ekomers.Web.Controllers
 			return Ok("Başarılı");
 		}
 
+		[Authorize(Roles = "Editor")]
+		public async Task<IActionResult> OncekiTeklif(int teklifId,int RequestUrunID)
+		{
+			var requestUrun = await _requestService.RequestUrunGetir(RequestUrunID);
 
+			var modelc =await  _service.VeriGetir(teklifId);
+			modelc.ModalTitle = "Teklif Bilgileri";
+			 
+			modelc.RequestUrunID = RequestUrunID;
+			modelc.ID = 0;
 
+			ViewBag.Kurlar = await _tcmbService.DovizKuruGetir();
+			modelc.ControllerName = "Offer";
+			return PartialView("_Teklif", modelc);
+		}
+
+		public async Task<IActionResult> Print(int offerId)
+		{
+			var offer = await _service.VeriGetir(offerId);
+
+			if (offer == null)
+				return NotFound();
+			 
+
+			var model = MapToPrintModel(offer);
+			return View("Print", model);
+		}
+
+		public PaymentOrderPrintVM MapToPrintModel(OfferVM x)
+		{
+			decimal tutar = 0;
+
+			// Döviz hesaplama
+			if (x.DovizTurID == 1) // TL
+				tutar = (decimal)(x.Miktar * x.Fiyat);
+			else if (x.DovizTurID == 2) // USD
+				tutar = (decimal)(x.Miktar * x.Fiyat * x.UsdRate);
+			else if (x.DovizTurID == 3) // EUR
+				tutar = (decimal)(x.Miktar * x.Fiyat * x.EurRate);
+
+			var model = new PaymentOrderPrintVM
+			{
+				SatinAlinanFirma = x.Firma,
+				TanzimTarihi = DateTime.Now,
+				FaturaTarihi = x.TarihSaat ?? DateTime.Now,
+				SirketAd=x.SirketAd,
+				UrunAdi = x.UrunAd,
+				BelgeTuru = "Fatura",
+				BelgeNo = x.RequestUrunID.ToString(),
+				Tutar = tutar,
+				UrunAd=x.UrunAd,
+				Kdv = 0,
+				ToplamTutar = tutar,
+				OdenecekTutar = tutar,
+
+				Vade = x.Vade.ToString(),
+
+				OdemeYontemi = x.OdemeTurID switch
+				{
+					1 => "Havale",
+					2 => "Çek",
+					3 => "Nakit",
+					_ => "-"
+				},
+
+				OdemeTarihi = x.TeslimTarihi,
+				Hazirlayan = "Sistem"
+			};
+
+			return model;
+		}
 	}
 }

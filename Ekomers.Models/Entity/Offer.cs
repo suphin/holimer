@@ -60,7 +60,8 @@ namespace Ekomers.Models.Entity
 		[Display(Name = "Döviz Türü")]
 		public int DovizTurID { get; set; }
 		public int UrunID { get; set; }
-
+		public string? UrunKod { get; set; }
+		public string? UrunAd { get; set; }
 		public double UsdRate { get; set; }
 		public double EurRate { get; set; }
 

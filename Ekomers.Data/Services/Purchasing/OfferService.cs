@@ -290,8 +290,16 @@ namespace Ekomers.Data.Services
 				);
 			}
 
-			var donus = liste.OrderByDescending(a => a.ID).Take(1000).ToList();
-			return donus;
+			if (model.PageSize != 0)
+			{
+				return   liste.OrderByDescending(a => a.ID).Take(model.PageSize).ToList();
+			}
+			else
+			{
+				return  liste.OrderByDescending(a => a.ID).Take(1000).ToList();
+			}
+			 
+		 
 		}
 
 		public async Task<List<OfferVM>> VeriListele()

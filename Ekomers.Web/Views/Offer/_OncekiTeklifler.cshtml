@@ -3,24 +3,24 @@
 <form method="post" name="_VeriEkle" id="_VeriEkle" asp-controller="@Model.ControllerName" asp-action="VeriEkle">
 	<div class="modal-content shadow-none">
 		<div class="modal-header">
-			<h5 class="modal-title">@Model.UrunKod - @Model.UrunAd</h5>
+			<h5 class="modal-title">@Model.UrunKod - @Model.UrunAd Son 10 Teklif</h5>
 		 
 			<button type="button" class="close no-print" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
 		</div>
-		<div class="modal-body">
+		<div class="modal-body" id="TeklifCardBody">
             <table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
                 <thead>
                     <tr>
-                        <th>Talep No</th>
+                        <th>Teklif No</th>
                         <th>Firma</th>
                         <th>Firma Tel</th>
                         <th>Vade</th>
-                        <th>Teslim Tarihi</th>
+                        <th>Teklif Tarihi</th>
                         <th>Miktar</th>
                         <th>Fiyat TL</th>
                         <th>Fiyat Döviz</th>
                         <th>Not</th>
-                        <th class="no-print crudBtnRow">Düzenle</th>
+                        <th class="no-print crudBtnRow">İşlem</th>
 
                     </tr>
                 </thead>
@@ -37,7 +37,7 @@
                             <td>@item.Musteri?.AdSoyad</td>
                             <td>@item.Musteri?.Telefon</td>
                             <td>@item.Vade</td>
-                            <td>@item.TeslimTarihi.ToString("d")</td>
+                            <td>@item.CreateDate?.ToString("d")</td>
                             <td>@item.Miktar</td>
                             <td class="text-right">
                                 @if (item.DovizTurID == 1)
@@ -68,7 +68,7 @@
                             <td>@(!string.IsNullOrWhiteSpace(item.Not) ? item.Not : "—")</td>
                 
                             <td>
-                                <button class="btn btn-primary" type="button">
+                                <button class="btn btn-primary" type="button" data-id="@item.ID" onclick="OncekiTeklifEkle('@item.ID')">
                                     Teklif Ekle
                                 </button>
                                
@@ -90,3 +90,22 @@
 		</div>
 	</div>
 </form>
+
+<script>
+    
+    function OncekiTeklifEkle(teklifId) {
+
+        $.ajax({
+            url: '/Offer/OncekiTeklif',
+            type: 'GET',
+            data: { teklifId: teklifId ,RequestUrunID:@Model.ID},
+            success: function (response) {
+                $('#VeriAlan').html(response);
+                    // $('#ModalVeri').modal('hide');
+               
+                    //toastr.success("Teklif kabul edildi");
+                  
+            }
+        });
+    }
+</script>
