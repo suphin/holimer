@@ -1,5 +1,6 @@
 ﻿using Azure.Core;
 using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services.IServices;
@@ -210,7 +211,7 @@ namespace Ekomers.Web.Controllers
 		public async Task<IActionResult> VeriEkle(OfferVM model)
 		{ 
 			model.TarihSaat = DateTime.Now;
-			 
+			model.FirmaID = model.MusteriID;
 
 			var sonuc = await _service.VeriEkleAsync(model);
 			 
@@ -288,7 +289,7 @@ namespace Ekomers.Web.Controllers
 		{
 			var requestUrun = await _requestService.RequestUrunGetir(requestUrunId);
 			requestUrun.OfferDurumID = (int)EnumOfferDurum.TeklifOnaylandi;
-			var sonuc = _requestService.RequestUrunGuncelle(requestUrun);
+			var sonuc =await  _requestService.RequestUrunGuncelle(requestUrun);
 
 			var modelc = await _service.VeriGetir(Id);
 			modelc.IsSelected = true;
@@ -319,54 +320,42 @@ namespace Ekomers.Web.Controllers
 
 			if (offer == null)
 				return NotFound();
-			 
-
-			var model = MapToPrintModel(offer);
-			return View("Print", model);
+			  
+			return View("Print", offer);
 		}
 
-		public PaymentOrderPrintVM MapToPrintModel(OfferVM x)
+		public async Task<IActionResult> Arsiv(int page = 1, int pageSize = 10, CancellationToken ct = default)
 		{
-			decimal tutar = 0;
 
-			// Döviz hesaplama
-			if (x.DovizTurID == 1) // TL
-				tutar = (decimal)(x.Miktar * x.Fiyat);
-			else if (x.DovizTurID == 2) // USD
-				tutar = (decimal)(x.Miktar * x.Fiyat * x.UsdRate);
-			else if (x.DovizTurID == 3) // EUR
-				tutar = (decimal)(x.Miktar * x.Fiyat * x.EurRate);
+			ViewBag.Modul = ModulAd;
+			//await ViewBagListeDoldur();
+			var paged = await _requestService.OfferListeleAsync(page, pageSize, ct);
 
-			var model = new PaymentOrderPrintVM
+			var model = new RequestUrunlerVM
 			{
-				SatinAlinanFirma = x.Firma,
-				TanzimTarihi = DateTime.Now,
-				FaturaTarihi = x.TarihSaat ?? DateTime.Now,
-				SirketAd=x.SirketAd,
-				UrunAdi = x.UrunAd,
-				BelgeTuru = "Fatura",
-				BelgeNo = x.RequestUrunID.ToString(),
-				Tutar = tutar,
-				UrunAd=x.UrunAd,
-				Kdv = 0,
-				ToplamTutar = tutar,
-				OdenecekTutar = tutar,
-
-				Vade = x.Vade.ToString(),
-
-				OdemeYontemi = x.OdemeTurID switch
-				{
-					1 => "Havale",
-					2 => "Çek",
-					3 => "Nakit",
-					_ => "-"
-				},
-
-				OdemeTarihi = x.TeslimTarihi,
-				Hazirlayan = "Sistem"
+				RequestUrunlerVMListe = paged.Items.ToList(),
+				PageIndex = paged.PageIndex,
+				PageSize = paged.PageSize,
+				TotalCount = paged.TotalCount
 			};
 
-			return model;
+			return View(model);
+		}
+
+		public async Task<IActionResult> ArsivGoruntule(int Id)
+		{
+			ViewBag.Modul = ModulAd;
+
+			var model = await _requestService.RequestUrunGetir(Id);
+
+			model.UserID = _userId;
+
+			var offer = new OfferVM
+			{
+				RequestUrunID = Id
+			};
+			model.OfferVMListe = await _service.VeriListele(offer);
+			return PartialView(model);
 		}
 	}
 }

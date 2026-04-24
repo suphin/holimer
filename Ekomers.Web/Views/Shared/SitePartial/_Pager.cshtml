@@ -51,7 +51,6 @@
             <!-- Önceki -->
             <li class="page-item @(Model.PageIndex == 1 ? "disabled" : "")">
                 <a class="page-link"
-                   asp-action="Index"
                    asp-route-page="@(Model.PageIndex - 1)"
                    asp-route-pageSize="@Model.PageSize">Önceki</a>
             </li>
@@ -59,7 +58,6 @@
             <!-- 1. sayfa -->
             <li class="page-item @(Model.PageIndex == 1 ? "active" : "")">
                 <a class="page-link"
-                   asp-action="Index"
                    asp-route-page="1"
                    asp-route-pageSize="@Model.PageSize">1</a>
             </li>
@@ -75,7 +73,6 @@
             {
                 <li class="page-item @(i == Model.PageIndex ? "active" : "")">
                     <a class="page-link"
-                       asp-action="Index"
                        asp-route-page="@i"
                        asp-route-pageSize="@Model.PageSize">@i</a>
                 </li>
@@ -92,7 +89,6 @@
             {
                 <li class="page-item @(Model.PageIndex == Model.TotalPages ? "active" : "")">
                     <a class="page-link"
-                       asp-action="Index"
                        asp-route-page="@Model.TotalPages"
                        asp-route-pageSize="@Model.PageSize">@Model.TotalPages</a>
                 </li>
@@ -100,8 +96,7 @@
 
             <!-- Sonraki -->
             <li class="page-item @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">
-                <a class="page-link"
-                   asp-action="Index"
+                <a class="page-link"                  
                    asp-route-page="@(Model.PageIndex + 1)"
                    asp-route-pageSize="@Model.PageSize">Sonraki</a>
             </li>

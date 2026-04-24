@@ -1,0 +1,92 @@
+﻿@model RequestVM
+
+
+
+<table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+    <thead>
+        <tr> 
+            <th>Talep No</th>
+            <th>Şirket</th>
+            <th>Talep Tarihi</th>
+            <th>Talep Eden</th>
+            <th>Talep Türü</th>
+            <th>Durum</th>          
+            <th>Not</th>  
+            <th>Dosya</th>  
+            <th class="no-print crudBtnRow">Düzenle</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (RequestVM item in Model.RequestVMListe)
+        {
+            <tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")"> 
+                <td>@item.ID</td>
+                <td>@item.SirketAd</td>
+                <td>@item.RequestDate.ToString("dd.MM.yyyy HH:mm")</td>
+                <td>@item.CreateUserName</td>
+                <td>@item.TurAd</td> 
+                <td>
+                    <div class="durum-wrapper">
+                        <span class="@item.DurumClass"></span>
+                        <span class="DurumLabel">@item.DurumAd</span>
+                    </div>
+                   </td>
+                <td>@(!string.IsNullOrWhiteSpace(item.Not) ? item.Not : "—")</td> 
+                <td>
+                    <a href="#" onclick="DosyaGetir('@item.ID')" data-toggle="modal" data-target="#ModalDosyaEkle" class="btn btn-icon btn-light btn-hover-info btn-sm mr-1 crudBtn" data-id="@item.ID">
+                        <span class="svg-icon svg-icon-info svg-icon-md">
+                            <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\General\Clip.svg-->
+                            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                    <rect x="0" y="0" width="24" height="24"></rect>
+                                    <path d="M14,16 L12,16 L12,12.5 C12,11.6715729 11.3284271,11 10.5,11 C9.67157288,11 9,11.6715729 9,12.5 L9,17.5 C9,19.4329966 10.5670034,21 12.5,21 C14.4329966,21 16,19.4329966 16,17.5 L16,7.5 C16,5.56700338 14.4329966,4 12.5,4 L12,4 C10.3431458,4 9,5.34314575 9,7 L7,7 C7,4.23857625 9.23857625,2 12,2 L12.5,2 C15.5375661,2 18,4.46243388 18,7.5 L18,17.5 C18,20.5375661 15.5375661,23 12.5,23 C9.46243388,23 7,20.5375661 7,17.5 L7,12.5 C7,10.5670034 8.56700338,9 10.5,9 C12.4329966,9 14,10.5670034 14,12.5 L14,16 Z" fill="#000000" fill-rule="nonzero" transform="translate(12.500000, 12.500000) rotate(-315.000000) translate(-12.500000, -12.500000) "></path>
+                                </g>
+                            </svg><!--end::Svg Icon-->
+                        </span>
+                    </a>
+                </td>
+                <td>
+                    <a href="#" class="btn btn-icon btn-light btn-hover-warning btn-sm mr-1 crudBtn" onclick="VeriGoruntule('@item.ID')" data-toggle="modal" data-target="#ModalVeri" title="Görüntüle" data-id="@item.ID">
+                        <span class="svg-icon svg-icon-warning svg-icon-2x ">
+                            <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\General\Search.svg-->
+                            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                    <rect x="0" y="0" width="24" height="24"></rect>
+                                    <path d="M14.2928932,16.7071068 C13.9023689,16.3165825 13.9023689,15.6834175 14.2928932,15.2928932 C14.6834175,14.9023689 15.3165825,14.9023689 15.7071068,15.2928932 L19.7071068,19.2928932 C20.0976311,19.6834175 20.0976311,20.3165825 19.7071068,20.7071068 C19.3165825,21.0976311 18.6834175,21.0976311 18.2928932,20.7071068 L14.2928932,16.7071068 Z" fill="#000000" fill-rule="nonzero" opacity="0.3"></path>
+                                    <path d="M11,16 C13.7614237,16 16,13.7614237 16,11 C16,8.23857625 13.7614237,6 11,6 C8.23857625,6 6,8.23857625 6,11 C6,13.7614237 8.23857625,16 11,16 Z M11,18 C7.13400675,18 4,14.8659932 4,11 C4,7.13400675 7.13400675,4 11,4 C14.8659932,4 18,7.13400675 18,11 C18,14.8659932 14.8659932,18 11,18 Z" fill="#000000" fill-rule="nonzero"></path>
+                                </g>
+                            </svg><!--end::Svg Icon-->
+                        </span>
+                    </a>
+                    @if (item.DurumID == (int)EnumRequestDurum.Onaylandi)
+                    {
+                        <a href="/request/print?Id=@item.ID" target="_blank" class="btn btn-icon btn-light btn-hover-success btn-sm mr-1">
+                            <span class="svg-icon svg-icon-primary svg-icon-2x">
+                                <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Devices\Printer.svg-->
+                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+                                    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                        <rect x="0" y="0" width="24" height="24" />
+                                        <path d="M16,17 L16,21 C16,21.5522847 15.5522847,22 15,22 L9,22 C8.44771525,22 8,21.5522847 8,21 L8,17 L5,17 C3.8954305,17 3,16.1045695 3,15 L3,8 C3,6.8954305 3.8954305,6 5,6 L19,6 C20.1045695,6 21,6.8954305 21,8 L21,15 C21,16.1045695 20.1045695,17 19,17 L16,17 Z M17.5,11 C18.3284271,11 19,10.3284271 19,9.5 C19,8.67157288 18.3284271,8 17.5,8 C16.6715729,8 16,8.67157288 16,9.5 C16,10.3284271 16.6715729,11 17.5,11 Z M10,14 L10,20 L14,20 L14,14 L10,14 Z" fill="#000000" />
+                                        <rect fill="#000000" opacity="0.3" x="8" y="2" width="8" height="2" rx="1" />
+                                    </g>
+                                </svg><!--end::Svg Icon-->
+                            </span>
+                        </a>
+                    }
+                </td>
+            </tr>
+        }
+
+
+    </tbody>
+</table>
+
+ 
+
+@if (Model.TotalPages > 1)
+{ 
+    await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_Pager.cshtml", new PagerModel { PageIndex = Model.PageIndex, PageSize = Model.PageSize, TotalCount = Model.TotalCount });
+}
+
+ 

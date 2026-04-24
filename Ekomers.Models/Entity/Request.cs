@@ -60,6 +60,15 @@ namespace Ekomers.Models.Entity
 		public string? SirketAd { get; set; }
 
         public bool IsLocked { get; set; } = false;
+
+		[Display(Name = "Şirket Adres")]
+		public string? SirketAdres { get; set; }
+		[Display(Name = "Şirket Vergi Dairesi")]
+		public string? SirketVergiDairesi { get; set; }
+		[Display(Name = "Şirket Vergi No")]
+		public string? SirketVergiNo { get; set; }
+		[Display(Name = "Şirket Web Sitesi")]
+		public string? SirketWebSitesi { get; set; }
 	}
 
 	public class RequestDurum : BaseEntity

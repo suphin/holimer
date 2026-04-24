@@ -23,29 +23,36 @@
 
   
     <!-- ANTET -->
-    <div class="header">
-            <img src="/img/holimer2025.png" />
-        <div class="title">HOLIMER İLAÇ VE SAĞLIK HİZMETLERİ</div>
+        <div class="header center">
+            @if (Model.SirketID == 1)
+            {
+                <img src="/img/holimer2025.png" style="height:68px;" />
+            }
+            else if (Model.SirketID == 2)
+            {
+                <img src="/img/fw.png" style="height:68px;" />
+            }
+            else if (Model.SirketID == 3)
+            {
+                <img src="/img/anfora.png" style="height:68px;" />
+            }
+            else if (Model.SirketID == 4)
+            {
+                <img src="/img/ebvital.png" style="height:68px;" />
+            }
+            <div class="title">@Model.SirketAd</div>
+         
             <div>
-                Holimer İlaç ve Sağlık Hizmetleri Sanayi ve Tic. A.Ş.
+                @Model.SirketAdres <br />
 
-                Nisbetiye Mh. Nisbetiye Cd. Özden İş Mrk.  No:22 İç Kapı No:3 34520 Beşiktaş / İstanbul
+                Web Sitesi:@Model.SirketWebSitesi
 
-                Tel: 02122135513 Faks: .
+                Vergi Dairesi: @Model.SirketVergiDairesi
 
-                Web Sitesi: www.holimer.com.tr
-
-                e-Posta: muhasebe@holimer.com.tr
-
-                Vergi Dairesi: Beşiktaş
-
-                VKN: 4631527593
-
-                Ticaret Sicil No: 43999-5
-
-                MERSİS No: 0463152759300001
+                VKN: @Model.SirketVergiNo   <br /> <br />
+                <h3>MAL KABUL VE ÖDEME EMRİ</h3>
             </div>
-    </div>
+        </div>
 
     <!-- BİLGİLER -->
     <div class="info">
@@ -76,7 +83,7 @@
                 <tr>
                     <td>@i</td>
                     <td>@item.UrunKod</td>
-                    <td>@item.UrunAd</td>
+                    <td>@item.UrunAd <br />(Talep Not:@item.Aciklama)</td>
                     <td>@item.BirimAd</td>
                     <td class="text-right">@String.Format("{0:n2}", item.Miktar)</td>
                 </tr>
@@ -98,8 +105,15 @@
                 </td>
             </tr>
         </table>
+
     </div> 
-        <input type="button" value="Yazdır" class="btn btn-primary print  no-print" onclick="Yazdir2('#container')" />
+        <div class="row mt-5">
+            <div class="col-lg-12 text-right">
+                <button class="btn btn-danger no-print" onclick="kapat()">Kapat</button>
+                <input type="button" value="Yazdır" class="btn btn-primary print  no-print" onclick="Yazdir2('#container')" />
+            </div>
+          
+        </div>
     </div>
     <script src="~/js/jquery-1.7.2.min.js"></script>
     <script src="~/js/printthis.js"></script>
@@ -109,6 +123,14 @@
                 $(tableid).printThis();
  
             }
+                       
+            function kapat() {
+                if (confirm("Pencereyi kapatmak istediğinize emin misiniz?")) {
+                    window.open('', '_self');
+                    window.close();
+                }
+            }
+   
     </script>
 </body>
 </html>

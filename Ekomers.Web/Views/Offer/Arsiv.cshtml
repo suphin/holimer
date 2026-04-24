@@ -1,0 +1,58 @@
+﻿@model RequestUrunlerVM
+@{
+	ViewData["Title"] = "Talep Listesi";
+	ViewData["Description"] = "Çalışma Sayfası - Request / Görev";
+}
+
+
+
+<!--begin::Card-->
+<div class="card card-custom">
+	<div class="card-header flex-wrap py-3">
+		<div class="card-title">
+			<h3 class="card-label">
+				Teklif Arşivi
+				<span class="d-block text-muted pt-2 font-size-sm">Satınalma talep onayı</span>
+			</h3>
+		</div>
+		<div class="card-toolbar">
+		</div>
+	</div>
+	<div class="card-body " id="cardBody">
+		<!--begin: Datatable-->
+		@{
+			await Html.RenderPartialAsync("_TableArsiv", Model);
+		}
+		<!--end: Datatable-->
+	</div>
+</div>
+<!--end::Card-->
+@{
+	//await Html.RenderPartialAsync("_PartialModalVeri");
+	await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+
+@{
+	await Html.RenderPartialAsync("_PartialModalDosya",
+	new AuthorizeCrudVM { Controller = "Request", HaritaEkle = false });
+}
+
+@section JSSection {
+
+	 
+
+	
+	@{
+		await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+		new AuthorizeCrudVM
+		{
+			Controller = "Request",
+			ModulID = (int)ModulEnum.Request,
+			DosyaYolu = "Request"
+		});
+	}
+
+	 
+}
+
+

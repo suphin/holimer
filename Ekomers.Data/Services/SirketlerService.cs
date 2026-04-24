@@ -87,7 +87,10 @@ namespace Ekomers.Data.Services
 							 SirketLogo = kayit.SirketLogo,
 							 LogoTigerSirketKodu = kayit.LogoTigerSirketKodu,
 							 Aciklama = kayit.Aciklama,
-
+							 SatinalmaMuduru=kayit.SatinalmaMuduru,
+							 MuhasebeMuduru=kayit.MuhasebeMuduru,
+							 GenelMudur=kayit.GenelMudur,
+							 GenelKoordinator=kayit.GenelKoordinator,
 
 
 							 IsActive = (bool)kayit.IsActive,

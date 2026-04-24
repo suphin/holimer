@@ -24,6 +24,8 @@ namespace Ekomers.Data.Services
 		private readonly IRepository<OfferTur> _OfferTurRepo;
 		private readonly IRepository<OfferDurum> _OfferDurumRepo;
 	private readonly IRepository<RequestUrunler> _requestUrunlerRepo;
+		private readonly IRepository<Request> _requestRepo;
+		private readonly IRepository<Departman> _departmanRepo;
 
 		private readonly IRepository<Musteriler> _musterilerRepo;
 		private readonly IRepository<Malzeme> _urunlerRepo;
@@ -36,18 +38,22 @@ namespace Ekomers.Data.Services
 		private readonly ClaimsPrincipal _user;
 		private readonly string _userId;
 		public OfferService(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor
-			, IMapper mapper, IRepository<Kullanici> userRepo, IRepository<Offer> OfferRepo
-			, IRepository<Departman> departmanRepo, IRepository<Mahalle> mahalleRepo
+			, IMapper mapper, IRepository<Kullanici> userRepo
+			, IRepository<Offer> OfferRepo
+			, IRepository<Departman> departmanRepo
+			, IRepository<Mahalle> mahalleRepo
 			, IHttpClientFactory httpClientFactory
 			, IRepository<OfferDurum> OfferDurumRepo
 			, IRepository<OfferTur> OfferTurRepo
-		 , IRepository<Sirketler> sirketRepo 
+			, IRepository<Sirketler> sirketRepo 
 			, IRepository<Malzeme> urunlerRepo
 			, IRepository<MalzemeGrup> altGrupRepo
 			, IRepository<MalzemeBirim> malzemeBirimRepo
 			, IRepository<MalzemeTipi> malzemeTipiRepo
 			 ,IRepository<Musteriler> musterilerRepo
 			, IRepository<RequestUrunler> requestUrunlerRepo
+			, IRepository<Request> requestRepo
+		 
 			)
 		{
 			_context = context;
@@ -65,6 +71,7 @@ namespace Ekomers.Data.Services
 			_malzemeBirimRepo = malzemeBirimRepo;
 			_malzemeTipiRepo = malzemeTipiRepo;
 			 _requestUrunlerRepo = requestUrunlerRepo;
+			_requestRepo = requestRepo;
 			// Get the current user's claims principal and user ID
 			_user = _httpContextAccessor.HttpContext?.User;
 			_userId = _user?.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -99,21 +106,31 @@ namespace Ekomers.Data.Services
 
 						 join firma in _musterilerRepo.GetAll2() on kayit.FirmaID equals firma.ID
 						 	 into firmaGroup
-							from firma in firmaGroup.DefaultIfEmpty()
+						 from firma in firmaGroup.DefaultIfEmpty()
 
 
-							join request in _requestUrunlerRepo.GetAll2() on kayit.RequestUrunID equals request.ID
-							into requestGroup
-							from request in requestGroup.DefaultIfEmpty()
+						 join requestUrun in _requestUrunlerRepo.GetAll2() on kayit.RequestUrunID equals requestUrun.ID
+						 into requestUrunGroup
+						 from requestUrun in requestUrunGroup.DefaultIfEmpty()
 
-							join urun in _urunlerRepo.GetAll2() on request.UrunID equals urun.ID
+						 join request in _requestRepo.GetAll2() on requestUrun.RequestID equals request.ID
+						 into requestGroup
+						 from request in requestGroup.DefaultIfEmpty()
+
+
+						 join urun in _urunlerRepo.GetAll2() on requestUrun.UrunID equals urun.ID
 							into urunGroup
-							from urun in urunGroup.DefaultIfEmpty()
+						 from urun in urunGroup.DefaultIfEmpty()
 
 
-						 join sirket in _sirketRepo.GetAll2() on kayit.FirmaID equals sirket.ID
+						 join sirket in _sirketRepo.GetAll2() on request.SirketID equals sirket.ID
 						 into sirketGroup
-						  from sirket in sirketGroup.DefaultIfEmpty()
+						 from sirket in sirketGroup.DefaultIfEmpty()
+
+
+						 join requestUser in _userRepo.GetAll2() on request.CreateUserID equals requestUser.Id
+						into requestUserGroup
+						 from requestUser in requestUserGroup.DefaultIfEmpty()
 
 						 join createUser in _userRepo.GetAll2() on kayit.CreateUserID equals createUser.Id
 						 into createUserGroup
@@ -132,28 +149,55 @@ namespace Ekomers.Data.Services
 							 ID = kayit.ID,
 							 Aciklama = kayit.Aciklama,
 							 Not = kayit.Not,
+							 TalepNot=requestUrun.Aciklama,
 							 DurumID = kayit.DurumID,
 							 DurumAd = OfferDurum != null ? OfferDurum.Ad : "",
 							 DurumClass = OfferDurum != null ? OfferDurum.Class : "",
-							 Firma = sirket != null ? sirket.SirketAdi : "",
-							 MusteriID = kayit.FirmaID,
-							 RequestUrunID=kayit.RequestUrunID,
+							 FirmaID = kayit.FirmaID,
+							 FirmaAd = firma != null ? firma.AdSoyad : "",
+							 Firma = firma,
+							 RequestUrunID = kayit.RequestUrunID,
+							  
+							 UrunID = requestUrun.UrunID,
+							 UrunAd = urun != null ? urun.Ad : "",
+							 UrunKod = urun != null ? urun.Kod : "",
+							 UrunKdv= urun != null ? (double)urun.Kdv : 0,
+
+							 RequestDate = request != null ? request.RequestDate : new DateTime(1000, 1, 1),
+							 requestID = request != null ? request.ID : 0,
+
+							 requestUserID = requestUser.Id,
+							 requestUserName = requestUser != null ? requestUser.AdSoyad : "",
+							 SirketAd = sirket != null ? sirket.SirketAdi : "",
+							 Sirket = sirket,
+							 SirketID=request.SirketID,
+							 
+							 SatinalmaMuduru = sirket.SatinalmaMuduru,
+							 MuhasebeMuduru = sirket.MuhasebeMuduru,
+							 GenelMudur = sirket.GenelMudur,
+							 GenelKoordinator = sirket.GenelKoordinator,
+							 SirketAdres = sirket.SirketAdres,
+							 SirketVergiDairesi = sirket.SirketVergiDairesi,
+							 SirketVergiNo = sirket.SirketVergiNo,
+							 SirketWebSitesi = sirket.SirketWebSitesi,
+
 							 TurID = kayit.TurID,
 							 TurAd = OfferTur != null ? OfferTur.Ad : "",
-							 Vade=kayit.Vade,
-							 Miktar=kayit.Miktar,
-							 Fiyat=kayit.Fiyat,
+							 Vade = kayit.Vade,
+							 Miktar = kayit.Miktar,
+							 Fiyat = kayit.Fiyat,
 							 IsDone = (bool)kayit.IsDone,
 							 TarihSaat = kayit.TarihSaat != null ? kayit.TarihSaat : new DateTime(1000, 1, 1),
-							 Musteri = firma ,
-							 DovizTurID=kayit.DovizTurID,
-							 EurRate=kayit.EurRate,
-							 UsdRate=kayit.UsdRate,
-							 IsLocked = (bool)kayit.IsLocked, 
-							 OdemeTurID=kayit.OdemeTurID,
-							 TeslimTarihi=kayit.TeslimTarihi,
-							 IsSelected=kayit.IsSelected,
-							 UrunID=request.UrunID,
+
+							 DovizTurID = kayit.DovizTurID,
+							 EurRate = kayit.EurRate,
+							 UsdRate = kayit.UsdRate,
+							 IsLocked = (bool)kayit.IsLocked,
+							 OdemeTurID = kayit.OdemeTurID,
+							 TeslimTarihi = kayit.TeslimTarihi,
+							 OdemeTarihi=kayit.OdemeTarihi,
+							 IsSelected = kayit.IsSelected,
+						
 
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,

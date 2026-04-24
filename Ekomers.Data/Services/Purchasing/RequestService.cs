@@ -23,8 +23,11 @@ namespace Ekomers.Data.Services
 		private readonly IRepository<Request> _RequestRepo;
 		private readonly IRepository<RequestTur> _RequestTurRepo;
 		private readonly IRepository<RequestDurum> _RequestDurumRepo;
-	
+		private readonly IRepository<OfferDurum> _OfferDurumRepo;
+		private readonly IRepository<Offer> _OfferRepo;
 		 
+
+
 		private readonly IRepository<RequestUrunler> _RequestUrunlerRepo;
 		private readonly IRepository<Malzeme> _urunlerRepo;
 		private readonly IRepository<MalzemeGrup> _altGrupRepo;
@@ -47,8 +50,9 @@ namespace Ekomers.Data.Services
 			, IRepository<MalzemeGrup> altGrupRepo
 			, IRepository<MalzemeBirim> malzemeBirimRepo
 			, IRepository<MalzemeTipi> malzemeTipiRepo
-			 
-		 
+			 , IRepository<OfferDurum> OfferDurumRepo
+			 , IRepository<Offer> OfferRepo
+
 			)
 		{
 			_context = context;
@@ -60,13 +64,14 @@ namespace Ekomers.Data.Services
 			_userRepo = userRepo;
 			_RequestDurumRepo = RequestDurumRepo;
 			_sirketRepo = sirketRepo;
-		 
-			_RequestUrunlerRepo = RequestUrunlerRepo;
+			_OfferDurumRepo = OfferDurumRepo;
+			   _RequestUrunlerRepo = RequestUrunlerRepo;
 			_urunlerRepo = urunlerRepo;
 			_altGrupRepo = altGrupRepo;
 			_malzemeBirimRepo = malzemeBirimRepo;
 			_malzemeTipiRepo = malzemeTipiRepo;
-			 
+			_OfferRepo = OfferRepo;
+
 			// Get the current user's claims principal and user ID
 			_user = _httpContextAccessor.HttpContext?.User;
 			_userId = _user?.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -125,6 +130,10 @@ namespace Ekomers.Data.Services
 							 DurumClass = RequestDurum != null ? RequestDurum.Class : "",
 							 SirketAd = sirket != null ? sirket.SirketAdi : "",
 							 SirketID = kayit.SirketID,
+							 SirketAdres = sirket.SirketAdres,
+							 SirketVergiDairesi = sirket.SirketVergiDairesi,
+							 SirketVergiNo = sirket.SirketVergiNo,
+							 SirketWebSitesi = sirket.SirketWebSitesi,
 
 							 TurID = kayit.TurID,
 							 TurAd = RequestTur != null ? RequestTur.Ad : "",
@@ -465,7 +474,14 @@ namespace Ekomers.Data.Services
 						join durum in _RequestDurumRepo.GetAll2() on request.DurumID equals durum.ID into durumGroup
 						from durum in durumGroup.DefaultIfEmpty()
 
-						join tur in _RequestTurRepo.GetAll2() on request.TurID equals tur.ID into turGroup
+						 join OfferDurum in _OfferDurumRepo.GetAll2() on kayit.OfferDurumID equals OfferDurum.ID
+						  into OfferDurumGroup
+						 from OfferDurum in OfferDurumGroup.DefaultIfEmpty()
+ 
+						 
+
+
+						 join tur in _RequestTurRepo.GetAll2() on request.TurID equals tur.ID into turGroup
 						from tur in turGroup.DefaultIfEmpty()
 
 						 join urunler in _urunlerRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false) on kayit.UrunID equals urunler.ID
@@ -523,8 +539,130 @@ namespace Ekomers.Data.Services
 								 RequestTurAd = tur != null ? tur.Ad : "",
 
 								 OfferDurumID=kayit.OfferDurumID,
+								 OfferDurumAd=OfferDurum.Ad,
+								 DurumClass=OfferDurum.Class, 
 
 							 SirketID =(int)request.SirketID,
+							 SirketAd = sirket != null ? sirket.SirketAdi : "",
+							
+
+							 IsActive = (bool)kayit.IsActive,
+							 IsDelete = (bool)kayit.IsDelete,
+
+							 CreateUserID = kayit.CreateUserID,
+							 CreateDate = kayit.CreateDate != null ? kayit.CreateDate : new DateTime(1000, 1, 1),
+							 CreateUserName = createUser != null ? createUser.AdSoyad : "",
+
+							 DeleteUserID = kayit.DeleteUserID,
+							 DeleteDate = kayit.DeleteDate,
+							 DeleteUserName = deleteUser != null ? deleteUser.AdSoyad : "",
+
+							 UpdateUserID = kayit.UpdateUserID,
+							 UpdateDate = kayit.UpdateDate,
+							 UpdateUserName = updateUser != null ? updateUser.AdSoyad : "",
+
+						 };
+
+			return result;
+		}
+
+		public IQueryable<RequestUrunlerVM> OfferGenelListe()
+		{
+			Expression<Func<RequestUrunler, bool>> filter;
+			if (_user.IsInRole("Admin"))
+			{
+				filter = a => a.IsActive == true;
+			}
+			else
+			{
+				filter = a => a.IsActive == true && a.IsDelete == false ;
+			}
+			var result = from kayit in _RequestUrunlerRepo.GetAll2(filter) where  kayit.OfferDurumID!=0 
+
+						 join request in _RequestRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false) on kayit.RequestID equals request.ID
+						 into requestGroup
+						 from request in requestGroup.DefaultIfEmpty()
+
+						 join sirket in _sirketRepo.GetAll2() on request.SirketID equals sirket.ID into sirketGroup
+						 from sirket in sirketGroup.DefaultIfEmpty()
+
+						 join durum in _RequestDurumRepo.GetAll2() on request.DurumID equals durum.ID into durumGroup
+						 from durum in durumGroup.DefaultIfEmpty()
+
+						 join OfferDurum in _OfferDurumRepo.GetAll2() on kayit.OfferDurumID equals OfferDurum.ID
+						  into OfferDurumGroup
+						 from OfferDurum in OfferDurumGroup.DefaultIfEmpty()
+
+						 join offer in _OfferRepo.GetAll2() on kayit.ID equals offer.RequestUrunID
+						 into offerGroup
+						 from offer in offerGroup.DefaultIfEmpty()
+						 where offer.IsSelected == true
+
+
+
+						 join tur in _RequestTurRepo.GetAll2() on request.TurID equals tur.ID into turGroup
+						 from tur in turGroup.DefaultIfEmpty()
+
+						 join urunler in _urunlerRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false) on kayit.UrunID equals urunler.ID
+						 into urunlerGroup
+						 from urunler in urunlerGroup.DefaultIfEmpty()
+
+
+						 join birim in _malzemeBirimRepo.GetAll2() on urunler.BirimID equals birim.ID
+						 into birimGroup
+						 from birim in birimGroup.DefaultIfEmpty()
+
+
+
+						 join tip in _malzemeTipiRepo.GetAll2() on urunler.TipID equals tip.ID
+						into tipGroup
+						 from tip in tipGroup.DefaultIfEmpty()
+
+
+
+						 join createUser in _userRepo.GetAll2() on kayit.CreateUserID equals createUser.Id
+						 into createUserGroup
+						 from createUser in createUserGroup.DefaultIfEmpty()
+
+						 join deleteUser in _userRepo.GetAll2() on kayit.DeleteUserID equals deleteUser.Id
+						 into deleteUserGroup
+						 from deleteUser in deleteUserGroup.DefaultIfEmpty()
+
+						 join updateUser in _userRepo.GetAll2() on kayit.UpdateUserID equals updateUser.Id
+						 into updateUserGroup
+						 from updateUser in updateUserGroup.DefaultIfEmpty()
+
+						 select new RequestUrunlerVM
+						 {
+							 ID = kayit.ID,
+							 UrunAd = urunler.Ad != null ? urunler.Ad : "",
+							 UrunKod = urunler.Kod != null ? urunler.Kod : "",
+
+							 BirimID = urunler.BirimID,
+							 BirimAd = birim.Ad,
+							 TipAd = tip.Ad,
+							 TipID = tip.ID,
+
+							 Aciklama = kayit.Aciklama,
+							 RequestID = kayit.RequestID,
+
+							 UrunID = kayit.UrunID,
+							 Miktar = (double)kayit.Miktar,
+							 MiktarSon = (double)kayit.MiktarSon,
+							 OnayliMi = kayit.OnayliMi,
+							 RequestDate = request != null ? request.RequestDate : new DateTime(1000, 1, 1),
+							 RequestDurumAd = durum != null ? durum.Ad : "",
+							 RequestDurumID = (int)request.DurumID,
+							 RequestDurumClass = durum != null ? durum.Class : "",
+							 RequestTurID = (int)request.TurID,
+							 RequestTurAd = tur != null ? tur.Ad : "",
+
+							 OfferDurumID = kayit.OfferDurumID,
+							 OfferDurumAd = OfferDurum.Ad,
+							 DurumClass = OfferDurum.Class,
+
+							 OfferID = offer != null ? offer.ID : 0,
+							 SirketID = (int)request.SirketID,
 							 SirketAd = sirket != null ? sirket.SirketAdi : "",
 
 
@@ -547,6 +685,7 @@ namespace Ekomers.Data.Services
 
 			return result;
 		}
+
 
 		public async Task<bool> RequestUrunCikar(int urunId)
 		{
@@ -583,7 +722,7 @@ namespace Ekomers.Data.Services
 			return  RequestUrunlerGenelListe().Where(p => p.OnayliMi == false && p.IsActive==true && p.IsDelete == false && p.RequestID == RequestID).Count();
 		}
 
-		public async Task<PagedResult<RequestUrunlerVM>> UrunListeleAsync(int page, int pageSize, CancellationToken ct = default,int offerDurumID = 0)
+		public async Task<PagedResult<RequestUrunlerVM>> UrunListeleAsync(int page, int pageSize, CancellationToken ct = default,int offerDurumID = 0 )
 		{
 			try
 			{
@@ -591,7 +730,102 @@ namespace Ekomers.Data.Services
 				// mantıklı bir üst sınır koy
 				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
 
-				var query = RequestUrunlerGenelListe().Where(p=>p.OfferDurumID==offerDurumID); // IQueryable<RequestUrunlerVM>
+				var query = RequestUrunlerGenelListe(); // IQueryable<RequestUrunlerVM>
+
+				if (offerDurumID!=0)
+				{
+					query = query.Where(p => p.OfferDurumID == offerDurumID);
+				}
+				 
+
+				var total = await query.CountAsync(ct);
+
+				var items = await query
+					.OrderByDescending(a => a.ID)
+					.Skip((page - 1) * pageSize)
+					.Take(pageSize)
+					.ToListAsync(ct);
+
+				return new PagedResult<RequestUrunlerVM>
+				{
+					Items = items,
+					PageIndex = page,
+					PageSize = pageSize,
+					TotalCount = total
+				};
+			}
+			catch
+			{
+				return new PagedResult<RequestUrunlerVM>
+				{
+					Items = new List<RequestUrunlerVM>(),
+					PageIndex = page,
+					PageSize = pageSize,
+					TotalCount = 0
+				};
+			}
+		}
+
+		public async Task<PagedResult<RequestVM>> TalepListeleAsync(int page, int pageSize, CancellationToken ct = default, int durumID = 0)
+		{
+			try
+			{
+				if (page < 1) page = 1;
+				// mantıklı bir üst sınır koy
+				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
+
+				var query = GenelListe(); // IQueryable<RequestVM>
+
+				if (durumID != 0)
+				{
+					query = query.Where(p => p.DurumID == durumID);
+				}
+
+				var total = await query.CountAsync(ct);
+
+				var items = await query
+					.OrderByDescending(a => a.ID)
+					.Skip((page - 1) * pageSize)
+					.Take(pageSize)
+					.ToListAsync(ct);
+
+				return new PagedResult<RequestVM>
+				{
+					Items = items,
+					PageIndex = page,
+					PageSize = pageSize,
+					TotalCount = total
+				};
+			}
+			catch
+			{
+				return new PagedResult<RequestVM>
+				{
+					Items = new List<RequestVM>(),
+					PageIndex = page,
+					PageSize = pageSize,
+					TotalCount = 0
+				};
+			}
+		}
+
+
+
+		public async Task<PagedResult<RequestUrunlerVM>> OfferListeleAsync(int page, int pageSize, CancellationToken ct = default, int offerDurumID = 0)
+		{
+			try
+			{
+				if (page < 1) page = 1;
+				// mantıklı bir üst sınır koy
+				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
+
+				var query = OfferGenelListe(); // IQueryable<RequestUrunlerVM>
+
+				if (offerDurumID != 0)
+				{
+					query = query.Where(p => p.OfferDurumID == offerDurumID);
+				}
+
 
 				var total = await query.CountAsync(ct);
 

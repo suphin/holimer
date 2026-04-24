@@ -54,10 +54,15 @@ namespace Ekomers.Models.Entity
 		public int? TipID { get; set; }
 		public bool OnayliMi { get; set; }
 		public int OfferDurumID { get; set; }
+		public int OfferID { get; set; }
+		public string? OfferDurumAd { get; set; }
+		public string? DurumClass { get; set; }
 		[Display(Name = "Açıklama")]
 		public  string? Aciklama { get; set; }
 		public List<RequestUrunlerVM> RequestUrunlerVMListe { get; set; }
 		public List<OfferVM> OfferVMListe { get; set; }
+
 		 
+
 	}
 }

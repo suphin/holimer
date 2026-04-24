@@ -1,6 +1,7 @@
 ﻿using DocumentFormat.OpenXml.Drawing.Charts;
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
+using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
@@ -106,7 +107,7 @@ namespace Ekomers.Web.Controllers
 		{
 			ViewBag.Modul = ModulAd;
 			//await ViewBagListeDoldur();
-			var paged = await _service.VeriListeleAsync(page, pageSize, ct);
+			var paged = await _service.TalepListeleAsync(page, pageSize, ct,(int)EnumRequestDurum.Taslak);
 
 			var model = new RequestVM
 			{
@@ -354,7 +355,7 @@ namespace Ekomers.Web.Controllers
 
 			 urun.MiktarSon= miktar;
 			urun.OnayliMi = true;
-			urun.OfferDurumID=(int)EnumOfferDurum.TeklifOnayBekliyor;
+			urun.OfferDurumID=(int)EnumOfferDurum.TeklifAsamasinda;
 
 			await _service.RequestUrunDuzenle(urun);
 
@@ -400,6 +401,23 @@ namespace Ekomers.Web.Controllers
 			};
 
 			return PartialView("_OnayUrunEklenen", model);
+		}
+		public async Task<IActionResult> Arsiv(int page = 1, int pageSize = 10, CancellationToken ct = default)
+		{
+
+			ViewBag.Modul = ModulAd;
+			//await ViewBagListeDoldur();
+			var paged = await _service.TalepListeleAsync(page, pageSize, ct);
+
+			var model = new RequestVM
+			{
+				RequestVMListe = paged.Items.ToList(),
+				PageIndex = paged.PageIndex,
+				PageSize = paged.PageSize,
+				TotalCount = paged.TotalCount
+			};
+
+			return View(model);
 		}
 	}
 }

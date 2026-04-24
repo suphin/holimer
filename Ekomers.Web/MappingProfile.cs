@@ -99,10 +99,9 @@ namespace Ekomers.Web
 			CreateMap<RequestUrunler, RequestUrunlerVM>();
 			CreateMap<RequestUrunlerVM, RequestUrunler>();
 
-			CreateMap<Offer, OfferVM>()
-			.ForMember(dest => dest.MusteriID, opt => opt.MapFrom(src => src.FirmaID));
-			CreateMap<OfferVM, Offer>()
-			.ForMember(dest => dest.FirmaID, opt => opt.MapFrom(src => src.MusteriID));
+			CreateMap<Offer, OfferVM>();
+			CreateMap<OfferVM, Offer>();
+	
 
 
 		}

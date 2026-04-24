@@ -4,8 +4,8 @@
 }
  <div class="form-group row">
     <div class="col-lg-12">
-        <label asp-for="Musteri.AdSoyad" class="control-label"></label>
-        <input asp-for="Musteri.AdSoyad" class="form-control form-control-sm" type="text" readonly />
+        <label asp-for="Firma.AdSoyad" class="control-label"></label>
+        <input asp-for="Firma.AdSoyad" class="form-control form-control-sm" type="text" readonly />
     </div>
 </div>
 <div class="form-group row">
@@ -29,6 +29,11 @@
         <label asp-for="TeslimTarihi" class="control-label"></label>
         <input asp-for="TeslimTarihi" class="form-control form-control-sm" type="date"  readonly/>
         <span asp-validation-for="TeslimTarihi" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="OdemeTarihi" class="control-label"></label>
+        <input asp-for="OdemeTarihi" class="form-control form-control-sm" type="date" readonly />
+        <span asp-validation-for="OdemeTarihi" class="text-danger"></span>
     </div>
 </div>
 

@@ -241,3 +241,12 @@
 .DurumLabel {
     font-size: 14px;
 }
+
+.fixed-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+    .fixed-table td {
+        width: auto;
+    }

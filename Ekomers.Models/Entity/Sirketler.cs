@@ -24,7 +24,12 @@ namespace Ekomers.Models.Entity
 		public string? SirketLogo { get; set; }
 		public string? LogoTigerSirketKodu { get; set; }
 		public string? Aciklama { get; set; }
-		 
+
+		public string? SatinalmaMuduru { get; set; }
+		public string? MuhasebeMuduru { get; set; }
+		public string? GenelMudur { get; set; }
+		public string? GenelKoordinator { get; set; }
+
 	}
 
 	public class SirketlerVM : BaseVM
@@ -51,6 +56,15 @@ namespace Ekomers.Models.Entity
 		public string? LogoTigerSirketKodu { get; set; }
 		[Display(Name = "Açıklama")]
 		public string? Aciklama { get; set; }
+
+		[Display(Name = "Satınalma Müdürü")]
+		public string? SatinalmaMuduru { get; set; }
+		[Display(Name = "Muhasebe Müdürü")]
+		public string? MuhasebeMuduru { get; set; }
+		[Display(Name = "Genel Müdür")]
+		public string? GenelMudur { get; set; }
+		[Display(Name = "Genel Koordinatör")]
+		public string? GenelKoordinator { get; set; }
 		public List<SirketlerVM> SirketlerVMListe { get; set; }
 	}
 

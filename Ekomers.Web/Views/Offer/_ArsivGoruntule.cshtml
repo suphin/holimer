@@ -37,24 +37,11 @@
     <div class="card-body">
         <div class="tab-content">
             <div class="tab-pane fade show active" id="kt_tab_pane_1_4" role="tabpanel" aria-labelledby="kt_tab_pane_1_4">
-                <form    name="_VeriEkle2" id="_VeriEkle2">
+                <form name="_VeriEkle2" id="_VeriEkle2">
                     @{
                         await Html.RenderPartialAsync("_form", Model);
                     }
                     <div class="text-right">
-                     
-                        <a type="button" class="btn btn-danger mr-2" href="/offer/onay">Geri Dön</a>
-                        @if (Model.OfferDurumID==(int)EnumOfferDurum.TeklifOnaylandi)
-                            {
-                                
-                            }
-                            else
-                            {
-                            <button type="button" name="actionType" value="taslak" class="btn btn-secondary  mr-2" data-toggle="modal" onclick="TeklifForm()" data-target="#ModalVeri">Teklif Geri Çevir</button>
-                            }
-                            
-                      
-                       
                     </div>
                 </form>
             </div>
@@ -77,7 +64,6 @@
             <h3 class="card-label">Teklifler</h3>
         </div>
         <div class="card-toolbar">
-          
         </div>
     </div>
     <div class="card-body">
@@ -96,17 +82,17 @@
                     </tr>
                 </thead>
                 <tbody>
-                        @{
-                            double kur = 1;
-                            string doviz = "";
-                            double enDusukFiyat = 0;
-                            if (Model.OfferVMListe.Count>0)
-                            {
-                              enDusukFiyat = Model.OfferVMListe.Min(x => x.Fiyat *
-                               (x.DovizTurID == 1 ? 1 :
-                                x.DovizTurID == 2 ? Convert.ToDouble(x.UsdRate) :
-                                Convert.ToDouble(x.EurRate)));
-                            }
+                    @{
+                        double kur = 1;
+                        string doviz = "";
+                        double enDusukFiyat = 0;
+                        if (Model.OfferVMListe.Count > 0)
+                        {
+                            enDusukFiyat = Model.OfferVMListe.Min(x => x.Fiyat *
+                             (x.DovizTurID == 1 ? 1 :
+                              x.DovizTurID == 2 ? Convert.ToDouble(x.UsdRate) :
+                              Convert.ToDouble(x.EurRate)));
+                        }
                        
                     }
 
@@ -133,9 +119,9 @@
                                 @if (Model.OfferDurumID == (int)EnumOfferDurum.TeklifOnaylandi)
                                 {
                                     if (item.IsSelected)
-                                        {
-                                            <span>Seçildi</span>
-                                        }
+                                    {
+                                        <span>Seçildi</span>
+                                    }
                                 }
                                 else
                                 {
@@ -189,11 +175,11 @@
         </form>
     </div>
     <div class="card-footer">
-       
-        
     </div>
 </div>
-@{ 
+
+
+@{
     await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
 }
 	 
@@ -203,7 +189,7 @@
 }
 
 
-@section JSSection { 
+@section JSSection {
     <script>
         function TeklifForm() {
             GetAjax('Offer/TeklifRed?requestUrunID=@Model.ID', 'VeriAlan');

@@ -7,6 +7,7 @@
         <span asp-validation-for="SirketAdi" class="text-danger"></span>
     </div>   
 </div>
+<hr />
 <div class="form-group row">
     <div class="col-lg-4 ">
         <label asp-for="SirketYetkili" class="control-label"></label>
@@ -24,6 +25,30 @@
         <span asp-validation-for="SirketYetkiliTel" class="text-danger"></span>
     </div>
 </div>
+<hr />
+<div class="form-group row">
+    <div class="col-lg-3 ">
+        <label asp-for="SatinalmaMuduru" class="control-label"></label>
+        <input asp-for="SatinalmaMuduru" class="form-control form-control-sm" required />
+        <span asp-validation-for="SatinalmaMuduru" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="MuhasebeMuduru" class="control-label"></label>
+        <input asp-for="MuhasebeMuduru" class="form-control form-control-sm" required />
+        <span asp-validation-for="MuhasebeMuduru" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="GenelMudur" class="control-label"></label>
+        <input asp-for="GenelMudur" class="form-control form-control-sm" required />
+        <span asp-validation-for="GenelMudur" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="GenelKoordinator" class="control-label"></label>
+        <input asp-for="GenelKoordinator" class="form-control form-control-sm" required />
+        <span asp-validation-for="GenelKoordinator" class="text-danger"></span>
+    </div>
+</div>
+<hr />
 <div class="form-group row">
     <div class="col-lg-6 ">
         <label asp-for="SirketVergiDairesi" class="control-label"></label>

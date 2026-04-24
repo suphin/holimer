@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260424071948_add-OdemeTarihToOffer")]
+    partial class addOdemeTarihToOffer
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4041,12 +4044,6 @@ namespace Ekomers.Data.Migrations
                     b.Property<string>("DosyaID")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("GenelKoordinator")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GenelMudur")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
 
@@ -4054,12 +4051,6 @@ namespace Ekomers.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("LogoTigerSirketKodu")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MuhasebeMuduru")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SatinalmaMuduru")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SirketAdi")

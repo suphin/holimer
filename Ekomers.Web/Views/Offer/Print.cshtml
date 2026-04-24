@@ -1,6 +1,13 @@
-﻿@model PaymentOrderPrintVM
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<Kullanici> UserManager
+@model OfferVM
 @{
     Layout = null;
+}
+
+
+@{
+    var user = await UserManager.GetUserAsync(User);
 }
 <!DOCTYPE html>
 <html>
@@ -8,78 +15,113 @@
     <meta charset="utf-8" />
     <title>Mal Kabul ve Ödeme Emri</title>
     <link href="~/css/_printoffer.css" rel="stylesheet" />
+    <link href="~/bootstrap.min.css" rel="stylesheet" />
 </head>
 <body>
 
-    <div class="container">
+    <div class="container" id="container">
+        <!-- ANTET -->
+        <div class="header center">
+            @if (Model.SirketID == 1)
+            {
+                <img src="/img/holimer2025.png" style="height:68px;" />
+            }
+            else if (Model.SirketID == 2)
+            {
+                <img src="/img/fw.png" style="height:68px;" />
+            }
+            else if (Model.SirketID == 3)
+            {
+                <img src="/img/anfora.png" style="height:68px;" />
+            }
+            else if (Model.SirketID == 4)
+            {
+                <img src="/img/ebvital.png" style="height:68px;" />
+            }
+            <div class="title">@Model.SirketAd</div>
+         
+            <div>
+                @Model.SirketAdres <br /> 
 
-        <!-- HEADER -->
-        <table>
-            <tr>
-                <td style="width:20%"> 
-                    <img src="/img/holimer2025.png" style="height:60px;" />
-                </td>
-                <td class="center bold">
-                    @Model.SirketAd <br />
-                    MAL KABUL VE ÖDEME EMRİ
-                </td>
-            </tr>
-        </table>
+                Web Sitesi:@Model.SirketWebSitesi  
+
+                Vergi Dairesi: @Model.SirketVergiDairesi 
+
+                VKN: @Model.SirketVergiNo   <br /> <br />
+                <h3>MAL KABUL VE ÖDEME EMRİ</h3>
+            </div>
+        </div>
+        
 
         <!-- INFO -->
         <table>
             <tr>
                 <td>Standart Kod</td>
-                <td>@Model.BelgeNo</td>
+                <td>@Model.DosyaID</td>
                 <td>Yayın Tarihi</td>
                 <td></td>
             </tr>
             <tr>
                 <td>Doküman Kod</td>
-                <td>@Model.BelgeNo</td>
+                <td>@Model.ID</td>
                 <td>Revizyon No</td>
                 <td></td>
             </tr>
             <tr>
                 <td>Satın Alınan Firma</td>
-                <td colspan="3">@Model.SatinAlinanFirma</td>
+                <td colspan="3">@Model.FirmaAd</td>
             </tr>
             <tr>
                 <td>Tanzim Tarihi</td>
-                <td>@Model.TanzimTarihi.ToShortDateString()</td>
+                <td>@Model.CreateDate?.ToShortDateString()</td>
                 <td>Fatura Tarihi</td>
                 <td>@Model.FaturaTarihi.ToShortDateString()</td>
             </tr>
         </table>
+            @{
+                double tutar = 0;
+                string doviz = "";
+                if (Model.DovizTurID == 1) // TL
+                {
+                    tutar = (double)(Model.Miktar * Model.Fiyat);
+                    doviz = "₺";
+                }
+                else if (Model.DovizTurID == 2) // USD
+            { tutar = (double)(Model.Miktar * Model.Fiyat * Model.UsdRate); doviz = "$"; }
+                else if (Model.DovizTurID == 3) // EUR
+            { tutar = (double)(Model.Miktar * Model.Fiyat * Model.EurRate); doviz = "€"; }
 
+                double kdv=(tutar * Model.UrunKdv)/100;
+                double toplam=kdv+tutar;
+        }
         <!-- ÜRÜNLER -->
         <table>
             <thead>
                 <tr class="center bold">
                     <th>S.NO</th>
                     <th>ÜRÜN ADI</th>
-                    <th>BELGE TÜRÜ</th>
-                    <th>BELGE NO</th>
+                    <th>MİKTAR</th>
+                    <th> KDV</th>
                     <th>TUTAR</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td class="center">1</td>
-                    <td>@Model.UrunAdi</td>
-                    <td>@Model.BelgeTuru</td>
-                    <td>@Model.BelgeNo</td>
-                    <td class="right">@Model.Tutar.ToString("N2")</td>
+                    <td>@Model.UrunAd <br /> (Talep Not:@Model.TalepNot) <br /> (Teklif Not:@Model.Not)</td>
+                    <td class="right">@Model.Miktar</td>
+                    <td class="right">@Model.UrunKdv</td>
+                    <td class="right">@tutar.ToString("N2") @doviz</td>
                 </tr>
 
                 <tr>
                     <td colspan="4" class="right">KDV</td>
-                    <td class="right">@Model.Kdv.ToString("N2")</td>
+                    <td class="right">@kdv.ToString("N2") @doviz</td>
                 </tr>
 
                 <tr class="bold">
                     <td colspan="4" class="right">Toplam</td>
-                    <td class="right">@Model.ToplamTutar.ToString("N2")</td>
+                    <td class="right"> @toplam.ToString("N2") @doviz</td>
                 </tr>
             </tbody>
         </table>
@@ -87,51 +129,104 @@
         <br />
 
         <!-- ALT BİLGİ -->
-        <table class="no-border">
+        <table class="no-border" style="width:50%">
             <tr>
                 <td><b>Ödenecek Tutar :</b></td>
-                <td>@Model.OdenecekTutar.ToString("N2")</td>
+                <td class="text-right"> @toplam.ToString("N2") @doviz</td>
             </tr>
             <tr>
                 <td><b>Vade :</b></td>
-                <td>@Model.Vade</td>
+                <td class="text-right">@Model.Vade</td>
             </tr>
             <tr>
                 <td><b>Ödeme Yöntemi :</b></td>
-                <td>@Model.OdemeYontemi</td>
+                <td class="text-right">
+                    @if(Model.OdemeTurID==1)
+                    {
+                        <span>Havale</span>
+                    }
+                     else if(Model.OdemeTurID==2)
+                    {
+                        <span>Kredi Kartı</span>
+                    }
+                    else if(Model.OdemeTurID==3)
+                    {
+                        <span>Çek</span>
+                    }
+
+                </td>
             </tr>
             <tr>
                 <td><b>Ödeme Tarihi :</b></td>
-                <td>@Model.OdemeTarihi.ToShortDateString()</td>
+                <td class="text-right"> @Model.OdemeTarihi?.ToShortDateString()</td>
             </tr>
         </table>
 
         <br /><br />
 
         <!-- İMZA -->
-        <table>
+        <table class="w-100 fixed-table">
             <tr class="center bold">
-                <td>Formu Düzenleyen</td>
-                <td>Bilgi İşlem Uzmanı</td>
-                <td>Muhasebe Müdürü</td>
-                <td>Genel Müdür</td>
-                <td>Koordinatör</td>
+                <td style="width:16%">Formu Düzenleyen</td>
+                <td style="width:16%">Talep Eden</td>
+                <td style="width:16%">Satınalma Müdürü</td>
+                <td style="width:16%">Muhasebe Müdürü</td>
+                @if (!string.IsNullOrWhiteSpace(@Model.GenelMudur))
+                    {
+                    <td style="width:16%">Genel Müdür</td>
+                    }
+               
+                <td style="width:16%">Koordinatör</td>
             </tr>
             <tr class="center">
-                <td>@Model.Hazirlayan</td>
-                <td>@Model.BilgiIslem</td>
-                <td>@Model.MuhasebeMuduru</td>
-                <td>@Model.GenelMuduru</td>
-                <td>@Model.Koordinator</td>
+                <td>@user?.AdSoyad</td>
+                <td>@Model.requestUserName</td>
+                <td>@Model.SatinalmaMuduru </td>
+                <td>@Model.MuhasebeMuduru </td>
+                @if (!string.IsNullOrWhiteSpace(@Model.GenelMudur))
+                {
+                    <td>@Model.GenelMudur </td>
+                } 
+                <td>@Model.GenelKoordinator</td>
+            </tr>
+            <tr class="center"> 
+                <td style="height:100px"> </td> 
+                <td style="height:100px"> </td> 
+                <td style="height:100px"> </td> 
+                <td style="height:100px"> </td> 
+                @if (!string.IsNullOrWhiteSpace(@Model.GenelMudur))
+                {
+                    <td style="height:100px"> </td>
+                } 
+                <td style="height:100px"> </td> 
             </tr>
         </table>
 
+        <div class="row mt-5">
+            <div class="col-lg-12 text-right">
+                <button class="btn btn-danger no-print" onclick="kapat()">Kapat</button>
+                <input type="button" value="Yazdır" class="btn btn-primary print  no-print" onclick="Yazdir2('#container')" />
+            </div>
+          
+        </div>
     </div>
 
+    <script src="~/js/jquery-1.7.2.min.js"></script>
+    <script src="~/js/printthis.js"></script>
     <script>
-            window.onload = function () {
-                window.print();
+                    function Yazdir2(tableid) {
+        
+                $(tableid).printThis();
+ 
             }
+                       
+            function kapat() {
+                if (confirm("Pencereyi kapatmak istediğinize emin misiniz?")) {
+                    window.open('', '_self');
+                    window.close();
+                }
+            }
+   
     </script>
 
 </body>
