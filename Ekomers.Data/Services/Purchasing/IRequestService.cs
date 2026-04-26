@@ -23,6 +23,7 @@ namespace Ekomers.Data.Services.IServices
 		Task<PagedResult<RequestUrunlerVM>> UrunListeleAsync(int page, int pageSize, CancellationToken ct = default,int offerDurumID = 0); 
 		Task<PagedResult<RequestUrunlerVM>> OfferListeleAsync(int page, int pageSize, CancellationToken ct = default,int offerDurumID = 0); 
 		Task<PagedResult<RequestVM>> TalepListeleAsync(int page, int pageSize, CancellationToken ct = default,int durumID=0); 
+		Task<PagedResult<RequestVM>> TalepListeleAsync(RequestVM requestVM); 
 
 	}
 }

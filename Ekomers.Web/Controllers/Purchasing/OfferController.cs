@@ -76,6 +76,8 @@ namespace Ekomers.Web.Controllers
 	 
 		private async Task ViewBagListeDoldur()
 		{
+			ViewBag.SirketListe = await _sirketCache.GetListeAsync(CacheKeys.SirketAll); 
+			 ViewBag.OfferDurumListe = await _durumCache.GetListeAsync(CacheKeys.OfferDurumAll);
 			 
 		}
 
@@ -328,7 +330,7 @@ namespace Ekomers.Web.Controllers
 		{
 
 			ViewBag.Modul = ModulAd;
-			//await ViewBagListeDoldur();
+			await ViewBagListeDoldur();
 			var paged = await _requestService.OfferListeleAsync(page, pageSize, ct);
 
 			var model = new RequestUrunlerVM

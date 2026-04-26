@@ -37,6 +37,7 @@
 		public const string RequestDurumAll = "RequestDurum:All";
 		public const string RequestTurAll = "RequestTur:All";
 		public const string SirketAll = "Sirket:All";
+		public const string OfferDurumAll = "OfferDurum:All";
 
 	}
 }

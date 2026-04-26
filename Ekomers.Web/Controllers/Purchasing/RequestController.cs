@@ -73,13 +73,9 @@ namespace Ekomers.Web.Controllers
 	 
 		private async Task ViewBagListeDoldur()
 		{
-			var turler = await _durumCache.GetListeAsync(CacheKeys.RequestDurumAll);
-
-			var uiList = new List<RequestDurum>(turler.Count + 1);
-			uiList.Add(new RequestDurum { ID = 0, Ad = "Tümü" });
-			uiList.AddRange(turler);
-
-			ViewBag.RequestDurumListe = new SelectList(uiList, "ID", "Ad");
+			ViewBag.RequestTurListe = await _turCache.GetListeAsync(CacheKeys.RequestTurAll);
+			ViewBag.RequestDurumListe = await _durumCache.GetListeAsync(CacheKeys.RequestDurumAll);
+			ViewBag.SirketListe = await _sirketCache.GetListeAsync(CacheKeys.SirketAll);
 		}
 
 		private async Task ViewBagPartialListeDoldur()
@@ -406,8 +402,26 @@ namespace Ekomers.Web.Controllers
 		{
 
 			ViewBag.Modul = ModulAd;
-			//await ViewBagListeDoldur();
+			await ViewBagListeDoldur();
 			var paged = await _service.TalepListeleAsync(page, pageSize, ct);
+
+			var model = new RequestVM
+			{
+				RequestVMListe = paged.Items.ToList(),
+				PageIndex = paged.PageIndex,
+				PageSize = paged.PageSize,
+				TotalCount = paged.TotalCount
+			};
+
+			return View(model);
+		}
+		[HttpPost]
+		public async Task<IActionResult> Arsiv(RequestVM requestVm)
+		{
+
+			ViewBag.Modul = ModulAd;
+			await ViewBagListeDoldur();
+			var paged = await _service.TalepListeleAsync(requestVm);
 
 			var model = new RequestVM
 			{

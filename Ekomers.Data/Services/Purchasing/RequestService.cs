@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure;
 using Ekomers.Data.Repository.IRepository;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Models;
@@ -850,6 +851,66 @@ namespace Ekomers.Data.Services
 					Items = new List<RequestUrunlerVM>(),
 					PageIndex = page,
 					PageSize = pageSize,
+					TotalCount = 0
+				};
+			}
+		}
+
+		public async Task<PagedResult<RequestVM>> TalepListeleAsync(RequestVM requestVM)
+		{
+			try
+			{
+				if (requestVM.PageIndex < 1) requestVM.PageIndex = 1;
+				// mantıklı bir üst sınır koy
+				if (requestVM.PageSize <= 0 || requestVM.PageSize > 1000) requestVM.PageSize = 50;
+
+				var query = GenelListe(); // IQueryable<RequestVM>
+
+				if (requestVM.DurumID != 0)
+				{
+					query = query.Where(p => p.DurumID == requestVM.DurumID);
+				}
+				if (!string.IsNullOrEmpty(requestVM.Aciklama))
+				{
+					query = query.Where(p => p.Aciklama.Contains(requestVM.Aciklama)
+					 || p.DurumAd.Contains(requestVM.Aciklama)
+					 || p.Not.Contains(requestVM.Aciklama) 
+					 || p.SirketAd.Contains(requestVM.Aciklama)
+					 );
+				}
+				if (requestVM.SirketID != 0)
+				{
+					query = query.Where(p => p.SirketID == requestVM.SirketID);
+				}
+				if (requestVM.TurID != 0)
+				{
+					query = query.Where(p => p.TurID == requestVM.TurID);
+				}
+
+
+				var total = await query.CountAsync(requestVM.ct);
+
+				var items = await query
+					.OrderByDescending(a => a.ID)
+					.Skip((requestVM.PageIndex - 1) * requestVM.PageSize)
+					.Take(requestVM.PageSize)
+					.ToListAsync(requestVM.ct);
+
+				return new PagedResult<RequestVM>
+				{
+					Items = items,
+					PageIndex = requestVM.PageIndex,
+					PageSize = requestVM.PageSize,
+					TotalCount = total
+				};
+			}
+			catch
+			{
+				return new PagedResult<RequestVM>
+				{
+					Items = new List<RequestVM>(),
+					PageIndex = requestVM.PageIndex,
+					PageSize = requestVM.PageSize,
 					TotalCount = 0
 				};
 			}
