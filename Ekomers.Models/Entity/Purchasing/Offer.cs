@@ -45,6 +45,7 @@ namespace Ekomers.Models.Entity
 
 	public class OfferVM : BaseVM
 	{
+		public string TTN { get; set; }
 		public int RequestUrunID { get; set; }
 		public int OfferDurumID { get; set; }
 		public double Miktar { get; set; }

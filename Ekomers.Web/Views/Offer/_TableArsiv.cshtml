@@ -13,7 +13,7 @@
             <th>Miktar</th>         
             <th>Not</th>    
             <th>Durum</th>    
-            <th class="no-print ">Düzenle</th>
+            <th class="no-print" style="width: 95px;">Düzenle</th>
 
         </tr>
     </thead>
@@ -49,7 +49,7 @@
                     </a>
                     @if (item.OfferDurumID==(int)EnumOfferDurum.TeklifOnaylandi)
                     {
-                        <a href="/offer/print?offerId=@item.OfferID" target="_blank" class="btn btn-icon btn-light btn-hover-success btn-sm mr-1">
+                        <a href="/offer/print?offerId=@item.OfferID" target="_blank" class="btn btn-icon btn-light btn-hover-success btn-sm">
                             <span class="svg-icon svg-icon-primary svg-icon-2x">
                                 <!--begin::Svg Icon | path:C:\wamp64\www\keenthemes\themes\metronic\theme\html\demo1\dist/../src/media/svg/icons\Devices\Printer.svg-->
                                 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">

@@ -16,7 +16,13 @@
 			</h3>
 		</div>
 		<div class="card-toolbar">
-		 
+			@{
+				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_AramaButton.cshtml", new AuthorizeCrudVM
+				{
+					Controller = "Musteriler",
+					Action = "Arama"
+				});
+			}
 			 @{
 				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_CreateButton.cshtml");
 			}

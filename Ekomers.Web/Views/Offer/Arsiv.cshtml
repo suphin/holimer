@@ -22,13 +22,7 @@
 								<select asp-for="SirketID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SirketListe, "ID", "SirketAdi"))" required id="SirketListe">
 									<option value="0">Tümü</option>
 								</select>
-							</div>
-						 	<div class="form-group col-lg-2">
-								<label asp-for="OfferDurumAd" class="control-label"></label>
-								<select asp-for="OfferDurumID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.OfferDurumListe, "ID", "Ad"))" required id="OfferDurumListe">
-									<option value="0">Tümü</option>
-								</select>
-							</div>
+							</div>					 
 						 
 							<div class="form-group col-lg-">
 								<label class="control-label">&nbsp;</label>

@@ -8,6 +8,7 @@ using Ekomers.Data.Services.IServices;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.ViewModels;
 using Ekomers.Web.Controllers;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -278,26 +279,27 @@ builder.Services.AddScoped<IEmailService>(provider =>
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<TtnService>();
-
+builder.Services.AddScoped<IMailJobService, MailJobService>();
 
 builder.Services.AddDistributedMemoryCache();
 
 
 //arka plan işlemleri için hangfire kurulumu
-//builder.Services.AddHangfire(config =>
-//	config.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHangfire(config =>
+	config.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//builder.Services.AddHangfireServer();
+builder.Services.AddHangfireServer();
 
 
 
 var app = builder.Build();
 #endregion
 
+//arka plan işlemleri için hangfire kurulumu
+app.UseHangfireDashboard("/hangfire"); // panel
 
 
-
- //SyncfusionLicenseProvider.RegisterLicense("Mgo+DSMBPh8sVXJwS0d+WFBPdEBEQmFJfFdmRGNTe1h6cVNWESFaRnZdRl1iSXlSdkFkW3daeXRd");
+//SyncfusionLicenseProvider.RegisterLicense("Mgo+DSMBPh8sVXJwS0d+WFBPdEBEQmFJfFdmRGNTe1h6cVNWESFaRnZdRl1iSXlSdkFkW3daeXRd");
 /// SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NAaF5cWWJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdnWX5fdnRXRmBZUkNyX0c=");
 // SyncfusionLicenseProvider.RegisterLicense("Mgo+DSMBPh8sVXJwS0d+WFBPd11dXmJWd1p/THNYflR1fV9DaUwxOX1dQl9nSX9ScEVhWX1acXBXT2Y=");
 // Configure the HTTP request pipeline.

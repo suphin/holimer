@@ -27,6 +27,7 @@ namespace Ekomers.Models.Entity
 		public string? Telefon { get; set; }
 		public string? Eposta { get; set; }
 		public string? Adres { get; set; }
+		public string? Iban { get; set; }
 		public string? BizimHesapNo { get; set; }      // “Bizim Hesap No …”
 		public int? ParaBirimiID { get; set; }
 		public string? Aciklama { get; set; } = string.Empty;
@@ -92,6 +93,7 @@ namespace Ekomers.Models.Entity
 		public string? VergiDairesi { get; set; }
 		[Display(Name = "Şirket Ünvanı")]
 		public string? SirketUnvan { get; set; }
+		public string? Iban { get; set; }
 	}
 
 

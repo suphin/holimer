@@ -13,7 +13,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Mal Kabul ve Ödeme Emri</title>
+    <title>Teklif Yazdır</title>
     <link href="~/css/_printoffer.css" rel="stylesheet" />
     <link href="~/bootstrap.min.css" rel="stylesheet" />
 </head>
@@ -48,7 +48,7 @@
                 Vergi Dairesi: @Model.SirketVergiDairesi 
 
                 VKN: @Model.SirketVergiNo   <br /> <br />
-                <h3>MAL KABUL VE ÖDEME EMRİ</h3>
+                <h3>TEKLİF KABUL</h3>
             </div>
         </div>
         
@@ -62,20 +62,26 @@
                 <td></td>
             </tr>
             <tr>
-                <td>Doküman Kod</td>
-                <td>@Model.ID</td>
+                <td>Talep Takip No</td>
+                <td>@Model.TTN</td>
                 <td>Revizyon No</td>
                 <td></td>
             </tr>
             <tr>
                 <td>Satın Alınan Firma</td>
-                <td colspan="3">@Model.FirmaAd</td>
+                <td colspan="3">@Model.FirmaAd 
+                    <br />
+                    Vergi No: @Model.Firma.VergiNo <br />
+                    Vergi Dairesi: @Model.Firma.VergiDairesi <br />
+                    IBAN: @Model.Firma.Iban <br />
+
+                </td>
             </tr>
             <tr>
-                <td>Tanzim Tarihi</td>
+                <td>Düzenleme Tarihi</td>
                 <td>@Model.CreateDate?.ToShortDateString()</td>
-                <td>Fatura Tarihi</td>
-                <td>@Model.FaturaTarihi.ToShortDateString()</td>
+                <td>Teslim Tarihi</td>
+                <td>@Model.TeslimTarihi.ToShortDateString()</td>
             </tr>
         </table>
             @{

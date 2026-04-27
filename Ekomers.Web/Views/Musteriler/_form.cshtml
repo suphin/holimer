@@ -12,7 +12,7 @@
 <div class="form-group row">
     <div class="col-lg-4">
         <label asp-for="TipAd" class="control-label"></label>
-        <select asp-for="TipID" class="form-control form-control-sm" asp-items="@(new SelectList(ViewBag.MusteriTipListe, "ID", "Ad"))"></select>
+        <select asp-for="TipID" class="form-control form-control-sm" @* asp-items="@(new SelectList(ViewBag.MusteriTipListe, "ID", "Ad"))" *@ asp-items="@ViewBag.MusteriTipListe"></select>
         <span asp-validation-for="TipID" class="text-danger"></span>
     </div>
     <div class="col-lg-8">
@@ -71,7 +71,13 @@
             <span asp-validation-for="SirketUnvan" class="text-danger"></span>
         </div>
     </div>
-
+    <div class="form-group row">
+        <div class="col-lg-12">
+            <label asp-for="Iban" class="control-label"></label>
+            <input asp-for="Iban" class="form-control form-control-sm" />
+            <span asp-validation-for="Iban" class="text-danger"></span>
+        </div>
+    </div>
     <div class="form-group row">
         <div class="col-lg-4">
             <label asp-for="BizimHesapNo" class="control-label"></label>

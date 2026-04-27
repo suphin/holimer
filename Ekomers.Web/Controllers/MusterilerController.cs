@@ -77,8 +77,8 @@ namespace Ekomers.Web.Controllers
 		}
 		private async Task ViewBagPartialListeDoldur()
 		{
-			//ViewBag.MusteriTipListe = new SelectList(await _context.MusteriTip.OrderBy(p => p.Ad).ToListAsync(), "ID", "Ad");
-			ViewBag.MusteriTipListe = await _musteriTipCache.GetListeAsync(CacheKeys.MusteriTipAll);
+			ViewBag.MusteriTipListe = new SelectList(await _context.MusteriTip.OrderBy(p => p.Ad).ToListAsync(), "ID", "Ad");
+			//ViewBag.MusteriTipListe = await _musteriTipCache.GetListeAsync(CacheKeys.MusteriTipAll);
 
 			ViewBag.SehirlerListe = new SelectList(await _sehirlerService.GetSehirler(0), "ID", "Ad",34);
 			ViewBag.IlcelerListe = new SelectList(await _sehirlerService.GetSehirler(34), "ID", "Ad");
@@ -174,8 +174,8 @@ namespace Ekomers.Web.Controllers
 					await ViewBagPartialListeDoldur(1,1055);
 				}
 				else
-				{
-					await ViewBagPartialListeDoldur((int)modelc.SehirID, (int)modelc.IlceID);
+				{ 
+					await ViewBagPartialListeDoldur((int)modelc.SehirID, (int)modelc.IlceID);					 
 				}
 				//
 			}
@@ -283,6 +283,50 @@ namespace Ekomers.Web.Controllers
 			return Ok(items);
 		}
 
+		[HttpPost]
+		public async Task<IActionResult> Arama(MusterilerVM modelv)
+		{
+			ViewBag.Modul = "CRM";
+			return RedirectToAction("Arama", new MusterilerVM
+			{
+				AdSoyad = modelv.AdSoyad,
+				Adres = modelv.Adres,
+				Telefon = modelv.Telefon,
+				Eposta = modelv.Eposta,
+				Aciklama = modelv.Aciklama,
+				TipID = modelv.TipID,
+
+				// hangi alanlarla arama yapıyorsan ekle
+			});
+		}
+
+		 
+		 
+		[HttpGet]
+		public async Task<IActionResult> Arama(string AdSoyad, string Adres, string Telefon, string Eposta, string Aciklama, int TipID)
+		{
+			ViewBag.Modul = "CRM";
+
+			var model = new MusterilerVM
+			{
+				AdSoyad = AdSoyad,
+				Adres = Adres,
+				Telefon = Telefon,
+				Eposta = Eposta,
+				Aciklama = Aciklama,
+				TipID = TipID,
+				MusterilerVMListe = new List<MusterilerVM>()
+			};
+
+			// Eğer filtre varsa listele
+			if (!string.IsNullOrEmpty(AdSoyad) || !string.IsNullOrEmpty(Adres) || !string.IsNullOrEmpty(Telefon) || !string.IsNullOrEmpty(Eposta) || !string.IsNullOrEmpty(Aciklama) || TipID != 0)
+			{
+				model.MusterilerVMListe = await _service.VeriListele(model);
+			}
+
+			await ViewBagPartialListeDoldur();
+			return View(model);
+		}
 
 	}
 }

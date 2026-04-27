@@ -1,5 +1,8 @@
 ﻿@model RequestUrunlerVM
-
+@{
+    ViewData["Title"] = "Teklif Onay Sayfası";
+    ViewData["Description"] = "Çalışma Sayfası - Teklif / Onay";
+}
 
 
 <div class="card card-custom">
@@ -50,7 +53,7 @@
                             }
                             else
                             {
-                            <button type="button" name="actionType" value="taslak" class="btn btn-secondary  mr-2" data-toggle="modal" onclick="TeklifForm()" data-target="#ModalVeri">Teklif Geri Çevir</button>
+                            <button type="button" name="actionType" value="taslak" class="btn btn-secondary  mr-2" data-toggle="modal" onclick="TeklifForm()" data-target="#ModalVeri">Teklif Geri Gönder</button>
                             }
                             
                       
@@ -145,15 +148,16 @@
                             </td>
                             <td>@item.Firma?.AdSoyad</td>
 
-                            <td class="text-end fw-bold">
-                                ₺ @tlFiyat.ToString("n2")
+                            <td class="text-right fw-bold">
                                 @if (enIyi)
                                 {
                                     <span class="badge bg-success">En Uygun</span>
                                 }
+                                ₺ @tlFiyat.ToString("n2")
+                             
                             </td>
 
-                            <td class="text-end">
+                            <td class="text-right">
                                 @doviz @item.Fiyat.ToString("n2")
                             </td>
 
@@ -206,7 +210,11 @@
 @section JSSection { 
     <script>
         function TeklifForm() {
-            GetAjax('Offer/TeklifRed?requestUrunID=@Model.ID', 'VeriAlan');
+            if (!confirm("Seçili teklifi kabul geri göndermek istediğinize emin misiniz?")) {
+                return;
+            }
+            //GetAjax('Offer/TeklifRed?requestUrunID=@Model.ID', 'VeriAlan');
+            window.open("Offer/TeklifRed?requestUrunID=@Model.ID","_top")
         }
         function teklifOnayla() {
             var selectedId = $('input[name="selectedOfferId"]:checked').val();

@@ -500,7 +500,13 @@ namespace Ekomers.Data.Services
 						into tipGroup
 						 from tip in tipGroup.DefaultIfEmpty()
 
-						 
+						 join talepEden in _userRepo.GetAll2() on kayit.TalepEdenID equals talepEden.Id
+						 into talepEdenGroup
+						 from talepEden in talepEdenGroup.DefaultIfEmpty()
+
+						 join kabulEden in _userRepo.GetAll2() on kayit.KabulEdenID equals kabulEden.Id
+						 into kabulEdenGroup
+						 from kabulEden in kabulEdenGroup.DefaultIfEmpty()
 
 						 join createUser in _userRepo.GetAll2() on kayit.CreateUserID equals createUser.Id
 						 into createUserGroup
@@ -546,6 +552,13 @@ namespace Ekomers.Data.Services
 							 SirketID =(int)request.SirketID,
 							 SirketAd = sirket != null ? sirket.SirketAdi : "",
 							
+							 TalepEdenID = kayit.TalepEdenID,
+							 TalepEdenAd=talepEden != null ? talepEden.AdSoyad : "",
+							 TalepEdenTarihSaat = kayit.TalepEdenTarihSaat,
+
+							 KabulEdenID = kayit.KabulEdenID,
+							 KabulEdenAd=kabulEden != null ? kabulEden.AdSoyad : "",
+							 KabulEdenTarihSaat = kayit.KabulEdenTarihSaat,
 
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,

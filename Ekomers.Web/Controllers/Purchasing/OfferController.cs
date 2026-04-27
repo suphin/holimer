@@ -1,14 +1,17 @@
 ﻿using Azure.Core;
 using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
+using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
 using Ekomers.Models.Enums;
 using Ekomers.Models.ViewModels;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -266,7 +269,125 @@ namespace Ekomers.Web.Controllers
 		{
 			var requestUrun = await _requestService.RequestUrunGetir(Id);
 			requestUrun.OfferDurumID = (int)EnumOfferDurum.TeklifOnayBekliyor;
-			var sonuc = _requestService.RequestUrunGuncelle(requestUrun);
+			var sonuc =await  _requestService.RequestUrunGuncelle(requestUrun);
+			var teklifler = await _service.VeriListele(new OfferVM { RequestUrunID = Id });
+
+			if (sonuc)
+			{
+				var _urun = requestUrun;
+				var users = _context.MailNotificationUsers
+							.Where(x => x.Type == MailNotificationType.Teklif)
+							.Select(x => x.User.Email)
+							.ToList();
+				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == requestUrun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
+
+				var mesajBody = $@"
+								<h3>Talep Detayları</h3>
+
+								<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
+									<tr>
+										<th align='left'>Talep Takip No</th>
+										<td>{_urun.TTN}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Oluşturan</th>
+										<td>{_urun.TalepEdenAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Oluşturulma Tarihi</th>
+										<td>{_urun.TalepEdenTarihSaat.ToLongTimeString()}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Kabul Eden</th>
+										<td>{_urun.KabulEdenAd}</td>
+									</tr>
+<tr>
+										<th align='left'>Talep Kabul Tarihi</th>
+										<td>{_urun.KabulEdenTarihSaat.ToLongTimeString()}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ürün</th>
+										<td>{_urun.UrunAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ürün Açıklama</th>
+										<td>{_urun.Aciklama}</td>
+									</tr>
+									<tr>
+										<th align='left'>Miktar</th>
+										<td>{_urun.Miktar}</td>
+									</tr>
+									<tr>
+										<th align='left'>Birim</th>
+										<td>{_urun.BirimAd}</td>
+									</tr>
+								</table>
+<br />
+
+<h3>Teklifler</h3>
+
+<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
+    <tr>
+        <th>Firma</th>
+        <th>Fiyat (₺)</th>
+        <th>Fiyat (Döviz)</th>
+        <th>Vade</th>
+        <th>Ödeme Türü</th>
+        <th>Teslim Tarihi</th>
+    </tr>
+							";
+				double kur = 1;
+				string doviz = "";
+				foreach (var teklif in teklifler)
+				{
+					var odemeTurAd = "";
+
+					if (teklif.DovizTurID == 1)
+					{
+						kur = 1; doviz = "₺";
+					}
+					else if (teklif.DovizTurID == 2)
+					{
+						kur = Convert.ToDouble(teklif.UsdRate); doviz = "$";
+					}
+					else
+					{
+						kur = Convert.ToDouble(teklif.EurRate); doviz = "€";
+					}
+					
+					if (teklif.OdemeTurID==1)
+					{
+						odemeTurAd = "Havale";
+
+					}
+					else if(teklif.OdemeTurID==2){
+						odemeTurAd = "Kredi Kartı";
+					}
+					else if(teklif.OdemeTurID==3){
+						odemeTurAd = "Çek";
+					}
+					mesajBody += $@"
+						<tr>
+							<td>{teklif.FirmaAd}</td>
+							<td style='text-align:right;'>₺ {(teklif.Fiyat * kur).ToString("N2")} </td>
+							<td style='text-align:right;'>{doviz} {(teklif.Fiyat).ToString("N2")} </td>
+							<td>{teklif.Vade}</td>
+							<td>{odemeTurAd}</td>
+							<td>{teklif.TeslimTarihi.ToShortDateString()}</td>
+						</tr>
+						";
+				}
+				mesajBody += "</table>";
+
+				foreach (var mail in users)
+				{
+					BackgroundJob.Enqueue<IMailJobService>(x =>
+						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Teklifler girildi ve onaya gönderildi.", mesajBody));
+				}
+			}
+
+
+
 
 			return RedirectToAction("Index");
 		}
@@ -296,9 +417,276 @@ namespace Ekomers.Web.Controllers
 			var modelc = await _service.VeriGetir(Id);
 			modelc.IsSelected = true;
 			 bool cevap  = await _service.VeriEkleAsync(modelc);
+			var teklifler = await _service.VeriListele(new OfferVM { RequestUrunID = requestUrunId });
+
+
+			if (sonuc)
+			{
+				var _urun = requestUrun;
+				var users = _context.MailNotificationUsers
+							.Where(x => x.Type == MailNotificationType.Teklif)
+							.Select(x => x.User.Email)
+							.ToList();
+
+				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == requestUrun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
+				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _userId).Select(x => x.User.Email).FirstOrDefault());
+
+				var mesajBody = $@"
+								<h3>Talep Detayları</h3>
+
+								<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
+									<tr>
+										<th align='left'>Talep Takip No</th>
+										<td>{_urun.TTN}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Oluşturan</th>
+										<td>{_urun.TalepEdenAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Oluşturulma Tarihi</th>
+										<td>{_urun.TalepEdenTarihSaat.ToLongTimeString()}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Kabul Eden</th>
+										<td>{_urun.KabulEdenAd}</td>
+									</tr>
+<tr>
+										<th align='left'>Talep Kabul Tarihi</th>
+										<td>{_urun.KabulEdenTarihSaat.ToLongTimeString()}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ürün</th>
+										<td>{_urun.UrunAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ürün Açıklama</th>
+										<td>{_urun.Aciklama}</td>
+									</tr>
+									<tr>
+										<th align='left'>Miktar</th>
+										<td>{_urun.Miktar}</td>
+									</tr>
+									<tr>
+										<th align='left'>Birim</th>
+										<td>{_urun.BirimAd}</td>
+									</tr>
+								</table>
+<br />
+
+<h3>Teklifler</h3>
+
+<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
+    <tr>
+        <th>Firma</th>
+        <th>Fiyat (₺)</th>
+        <th>Fiyat (Döviz)</th>
+        <th>Vade</th>
+        <th>Ödeme Türü</th>
+        <th>Teslim Tarihi</th>
+        <th>Durum</th>
+    </tr>
+							";
+				double kur = 1;
+				string doviz = "";
+				string durum = "";
+				foreach (var teklif in teklifler)
+				{
+					var odemeTurAd = "";
+
+					if (teklif.DovizTurID == 1)
+					{
+						kur = 1; doviz = "₺";
+					}
+					else if (teklif.DovizTurID == 2)
+					{
+						kur = Convert.ToDouble(teklif.UsdRate); doviz = "$";
+					}
+					else
+					{
+						kur = Convert.ToDouble(teklif.EurRate); doviz = "€";
+					}
+
+					if (teklif.OdemeTurID == 1)
+					{
+						odemeTurAd = "Havale";
+
+					}
+					else if (teklif.OdemeTurID == 2)
+					{
+						odemeTurAd = "Kredi Kartı";
+					}
+					else if (teklif.OdemeTurID == 3)
+					{
+						odemeTurAd = "Çek";
+					}
+					if (teklif.IsSelected)
+					{
+						durum = "Kabul Edildi";
+					}
+					else
+					{
+						durum = "";
+					}
+
+					mesajBody += $@"
+						<tr>
+							<td>{teklif.FirmaAd}</td>
+							<td style='text-align:right;'>₺ {(teklif.Fiyat * kur).ToString("N2")} </td>
+							<td style='text-align:right;'>{doviz} {(teklif.Fiyat).ToString("N2")} </td>
+							<td>{teklif.Vade}</td>
+							<td>{odemeTurAd}</td>
+							<td>{teklif.TeslimTarihi.ToShortDateString()}</td>
+							<td>{durum}</td>
+						</tr>
+						";
+				}
+				mesajBody += "</table>";
+
+				foreach (var mail in users)
+				{
+					BackgroundJob.Enqueue<IMailJobService>(x =>
+						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Teklif kabul edildi.", mesajBody));
+				}
+			}
+
+
+
 
 			return Ok("Başarılı");
 		}
+
+
+		[Authorize(Roles = "Editor")]
+		public async Task<IActionResult> TeklifRed(int requestUrunID)
+		{
+			var requestUrun = await _requestService.RequestUrunGetir(requestUrunID);
+			requestUrun.OfferDurumID = (int)EnumOfferDurum.TeklifAsamasinda;
+			var sonuc = await _requestService.RequestUrunGuncelle(requestUrun);
+			var teklifler = await _service.VeriListele(new OfferVM { RequestUrunID = requestUrunID });
+			if (sonuc)
+			{
+				var _urun = requestUrun;
+				var users = _context.MailNotificationUsers
+							.Where(x => x.Type == MailNotificationType.Teklif)
+							.Select(x => x.User.Email)
+							.ToList();
+
+				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == requestUrun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
+				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _userId).Select(x => x.User.Email).FirstOrDefault());
+
+				var mesajBody = $@"
+								<h3>Talep Detayları</h3>
+
+								<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
+									<tr>
+										<th align='left'>Talep Takip No</th>
+										<td>{_urun.TTN}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Oluşturan</th>
+										<td>{_urun.TalepEdenAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Oluşturulma Tarihi</th>
+										<td>{_urun.TalepEdenTarihSaat.ToLongTimeString()}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Kabul Eden</th>
+										<td>{_urun.KabulEdenAd}</td>
+									</tr>
+<tr>
+										<th align='left'>Talep Kabul Tarihi</th>
+										<td>{_urun.KabulEdenTarihSaat.ToLongTimeString()}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ürün</th>
+										<td>{_urun.UrunAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ürün Açıklama</th>
+										<td>{_urun.Aciklama}</td>
+									</tr>
+									<tr>
+										<th align='left'>Miktar</th>
+										<td>{_urun.Miktar}</td>
+									</tr>
+									<tr>
+										<th align='left'>Birim</th>
+										<td>{_urun.BirimAd}</td>
+									</tr>
+								</table>
+<br />
+
+<h3>Teklifler</h3>
+
+<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
+    <tr>
+        <th>Firma</th>
+        <th>Fiyat (₺)</th>
+        <th>Fiyat (Döviz)</th>
+        <th>Vade</th>
+        <th>Ödeme Türü</th>
+        <th>Teslim Tarihi</th>
+    </tr>
+							";
+				double kur = 1;
+				string doviz = "";
+				foreach (var teklif in teklifler)
+				{
+					var odemeTurAd = "";
+
+					if (teklif.DovizTurID == 1)
+					{
+						kur = 1; doviz = "₺";
+					}
+					else if (teklif.DovizTurID == 2)
+					{
+						kur = Convert.ToDouble(teklif.UsdRate); doviz = "$";
+					}
+					else
+					{
+						kur = Convert.ToDouble(teklif.EurRate); doviz = "€";
+					}
+
+					if (teklif.OdemeTurID == 1)
+					{
+						odemeTurAd = "Havale";
+
+					}
+					else if (teklif.OdemeTurID == 2)
+					{
+						odemeTurAd = "Kredi Kartı";
+					}
+					else if (teklif.OdemeTurID == 3)
+					{
+						odemeTurAd = "Çek";
+					}
+					mesajBody += $@"
+						<tr>
+							<td>{teklif.FirmaAd}</td>
+							<td style='text-align:right;'>₺ {(teklif.Fiyat * kur).ToString("N2")} </td>
+							<td style='text-align:right;'>{doviz} {(teklif.Fiyat).ToString("N2")} </td>
+							<td>{teklif.Vade}</td>
+							<td>{odemeTurAd}</td>
+							<td>{teklif.TeslimTarihi.ToShortDateString()}</td>
+						</tr>
+						";
+				}
+				mesajBody += "</table>";
+
+				foreach (var mail in users)
+				{
+					BackgroundJob.Enqueue<IMailJobService>(x =>
+						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Teklifler geri gönderildi.", mesajBody));
+				}
+			}
+
+
+
+			return RedirectToAction("Onay");
+		}
+
 
 		[Authorize(Roles = "Editor")]
 		public async Task<IActionResult> OncekiTeklif(int teklifId,int RequestUrunID)

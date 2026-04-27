@@ -165,7 +165,7 @@ namespace Ekomers.Data.Services
 
 							 RequestDate = request != null ? request.RequestDate : new DateTime(1000, 1, 1),
 							 requestID = request != null ? request.ID : 0,
-
+							 TTN=requestUrun.TTN,
 							 requestUserID = requestUser.Id,
 							 requestUserName = requestUser != null ? requestUser.AdSoyad : "",
 							 SirketAd = sirket != null ? sirket.SirketAdi : "",

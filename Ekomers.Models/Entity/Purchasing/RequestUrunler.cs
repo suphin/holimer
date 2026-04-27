@@ -23,10 +23,34 @@ namespace Ekomers.Models.Entity
 		public bool OnayliMi { get; set; }
 		public int OfferDurumID { get; set; }
 
+		public string? TalepEdenID { get; set; }		 
+		public DateTime TalepEdenTarihSaat { get; set; }
+	 
+
+		public string? KabulEdenID { get; set; }		 
+		public DateTime KabulEdenTarihSaat { get; set; }
+		 
+
 	}
 
 	public class RequestUrunlerVM : BaseVM
 	{
+		
+		[Display(Name = "Talep Tarihi")]
+		public DateTime TalepEdenTarihSaat { get; set; }
+		public string? TalepEdenAd { get; set; }
+		public string? TalepEdenID { get; set; }
+
+
+		[Display(Name = "Kabul Tarihi")]
+		public DateTime KabulEdenTarihSaat { get; set; }
+		public string? KabulEdenAd { get; set; }		
+		public string? KabulEdenID { get; set; }
+
+
+
+
+
 		public int UrunID { get; set; }
 		public int RequestID { get; set; }
 		[Display(Name = "Talep Tarihi")]

@@ -8,6 +8,7 @@ using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
 using Ekomers.Models.Enums;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -254,8 +255,8 @@ namespace Ekomers.Web.Controllers
 				RequestID=RequestID,
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(RequestID),
 				RequestDurumID=(int)talep.DurumID,
-				 RequestTurID=(int)talep.TurID
-				 
+				 RequestTurID=(int)talep.TurID,
+				 TalepEdenID = _userId,  
 
 			};
 			   
@@ -315,7 +316,8 @@ namespace Ekomers.Web.Controllers
 					Miktar = models.Miktar,
 					BirimID = urun.BirimID,
 					BirimAd = urun.BirimAd,
-					 
+					TalepEdenID = _userId,
+					TalepEdenTarihSaat = DateTime.Now,
 					Aciklama = models.Aciklama,
 					RequestID = models.RequestID
 				};
@@ -360,11 +362,74 @@ namespace Ekomers.Web.Controllers
 		{
 			var urun = await _service.RequestUrunGetir(kayitId);
 
-			 urun.MiktarSon= miktar;
+			urun.MiktarSon= miktar;
 			urun.OnayliMi = true;
 			urun.OfferDurumID=(int)EnumOfferDurum.TeklifAsamasinda;
+			urun.KabulEdenID = _userId;
+			urun.KabulEdenTarihSaat = DateTime.Now;
+			var sonuc = await _service.RequestUrunDuzenle(urun);
 
-			await _service.RequestUrunDuzenle(urun);
+			if (sonuc)
+			{
+				var _urun = await _service.RequestUrunGetir(kayitId);
+				var users = _context.MailNotificationUsers
+							.Where(x => x.Type == MailNotificationType.Talep)
+							.Select(x => x.User.Email)
+							.ToList();
+
+				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _urun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
+				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _urun.KabulEdenID).Select(x => x.User.Email).FirstOrDefault());
+				 
+
+				var mesajBody = $@"
+								<h3>Talep Detayları</h3>
+
+								<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
+									<tr>
+										<th align='left'>Talep Takip No</th>
+										<td>{_urun.TTN}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Oluşturan</th>
+										<td>{_urun.TalepEdenAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Oluşturulma Tarihi</th>
+										<td>{_urun.TalepEdenTarihSaat.ToLongTimeString()}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Kabul Eden</th>
+										<td>{_urun.KabulEdenAd}</td>
+									</tr>
+<tr>
+										<th align='left'>Talep Kabul Tarihi</th>
+										<td>{_urun.KabulEdenTarihSaat.ToLongTimeString()}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ürün</th>
+										<td>{_urun.UrunAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ürün Açıklama</th>
+										<td>{_urun.Aciklama}</td>
+									</tr>
+									<tr>
+										<th align='left'>Miktar</th>
+										<td>{_urun.Miktar}</td>
+									</tr>
+									<tr>
+										<th align='left'>Birim</th>
+										<td>{_urun.BirimAd}</td>
+									</tr>
+								</table>
+								";
+
+				foreach (var mail in users)
+				{
+					BackgroundJob.Enqueue<IMailJobService>(x =>
+						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Talep onaylandı.", mesajBody));
+				}
+			}
 
 			int urunDurum = await  _service.RequestUrunDurum(requestId);
 
@@ -372,7 +437,8 @@ namespace Ekomers.Web.Controllers
 			{
 				var req= await _service.VeriGetir(requestId);
 				req.DurumID=(int)EnumRequestDurum.Onaylandi;
-				await _service.VeriEkleAsync(req);	
+				await _service.VeriEkleAsync(req);
+
 				return BadRequest("Onaylanacak ürün kalmadı.");
 			}
 			var model = new RequestVM

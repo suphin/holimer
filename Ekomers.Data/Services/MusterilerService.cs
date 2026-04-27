@@ -18,6 +18,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Ekomers.Data.Services
 {
@@ -144,7 +145,7 @@ namespace Ekomers.Data.Services
 							VergiDairesi=kayit.VergiDairesi,
 							VergiNo=kayit.VergiNo,
 							KucukResimUrl=kayit.KucukResimUrl,
-
+							Iban=kayit.Iban,
 
 
 							 IsActive = (bool)kayit.IsActive,
@@ -231,12 +232,19 @@ namespace Ekomers.Data.Services
 		{
 			var liste = GenelListe();
 
-
+			if (model.TipID!=0)
+			{
+				liste = liste.Where(p => p.TipID == model.TipID);
+			}
 
 			if (model.Aciklama != null)
 			{
-				liste = liste.Where(p => p.Aciklama.Contains(model.Aciklama)  
-				  
+				liste = liste.Where(p => p.Aciklama.Contains(model.Aciklama)  ||
+
+				p.AdSoyad.Contains(model.Aciklama) ||
+				p.Adres.Contains(model.Aciklama) ||
+				p.Telefon.Contains(model.Aciklama) ||
+				p.Eposta.Contains(model.Aciklama) 
 				);
 			}
 
