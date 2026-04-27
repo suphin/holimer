@@ -91,6 +91,12 @@ builder.Services.AddAuthorization(options =>
 		  context.User.IsInRole("Admin") ||
 		  context.User.HasClaim("Modul", "CRM")));
 
+
+	options.AddPolicy("AdminOrPurchasing", policy =>
+  policy.RequireAssertion(context =>
+	  context.User.IsInRole("Admin") ||
+	  context.User.HasClaim("Modul", "PURCHASING")));
+
 	options.AddPolicy("AdminOrUretim", policy =>
 	  policy.RequireAssertion(context =>
 		  context.User.IsInRole("Admin") ||
@@ -271,10 +277,17 @@ builder.Services.AddScoped<IEmailService>(provider =>
        587));
 
 builder.Services.AddScoped<IUserService, UserService>();
-
+builder.Services.AddScoped<TtnService>();
 
 
 builder.Services.AddDistributedMemoryCache();
+
+
+//arka plan işlemleri için hangfire kurulumu
+//builder.Services.AddHangfire(config =>
+//	config.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+//builder.Services.AddHangfireServer();
 
 
 

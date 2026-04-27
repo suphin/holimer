@@ -35,6 +35,8 @@ namespace Ekomers.Data
      
         public DbSet<TableMetadata> TableMetadata { get; set; }
         public DbSet<Geojson> Geojson { get; set; }
+        public DbSet<TtnSequence> TtnSequences { get; set; }
+        public DbSet<MailNotificationUser> MailNotificationUsers { get; set; }
 
 
         

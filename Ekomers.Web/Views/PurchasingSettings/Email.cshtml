@@ -1,0 +1,139 @@
+﻿@model MailSettingVM
+ 
+@{
+}
+
+<style>
+    .dual-listbox .dual-listbox__container .dual-listbox__selected, .dual-listbox .dual-listbox__container .dual-listbox__available {
+        width: 316px!important;
+    }
+    .dual-listbox .dual-listbox__search {
+        width: 316px !important;
+    }
+</style>
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Satınalma Talep E-posta ayarları
+                <span class="d-block text-muted pt-2 font-size-sm">Talep eklendikten sonra Eposta gönderilecek hesaplar</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+        </div>
+    </div>
+    <div class="card-body" >
+        <!--begin: Datatable-->
+        <select id="kt_dual_listbox_2" class="dual-listbox" multiple
+                data-available-title="Eposta Listesi"
+                data-selected-title="Gönderilecek Epostalar"
+                data-add="<i class='flaticon2-next'></i>"
+                data-remove="<i class='flaticon2-back'></i>"
+                data-add-all="<i class='flaticon2-fast-next'></i>"
+                data-remove-all="<i class='flaticon2-fast-back'></i>">
+            <option value="1">One</option>
+            <option value="2">Two</option>
+          
+        </select>
+        <!--end: Datatable-->
+    </div>
+</div>
+<div class="card card-custom mt-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Satınalma Teklif E-posta ayarları
+                <span class="d-block text-muted pt-2 font-size-sm">Teklif eklendikten sonra Eposta gönderilecek hesaplar</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+        </div>
+    </div>
+    <div class="card-body">
+        <!--begin: Datatable-->
+        <select id="kt_dual_listbox_2" class="dual-listbox"   asp-for="SelectedUserIds"
+                asp-items="Model.Users"
+                multiple
+                data-available-title="Eposta Listesi"
+                data-selected-title="Gönderilecek Epostalar"
+                data-add="<i class='flaticon2-next'></i>"
+                data-remove="<i class='flaticon2-back'></i>"
+                data-add-all="<i class='flaticon2-fast-next'></i>"
+                data-remove-all="<i class='flaticon2-fast-back'></i>">
+           
+          
+        </select>
+        <!--end: Datatable-->
+    </div>
+</div>
+@section JSSection{
+    <script>
+                var KTDualListbox = function() {
+            // Private functions
+            var initDualListbox = function() {
+                // Dual Listbox
+                var listBoxes = $('.dual-listbox');
+
+                listBoxes.each(function() {
+                    var $this = $(this);
+                    // get titles
+                    var availableTitle = ($this.attr('data-available-title') != null) ? $this.attr('data-available-title') : 'Available options';
+                    var selectedTitle = ($this.attr('data-selected-title') != null) ? $this.attr('data-selected-title') : 'Selected options';
+
+                    // get button labels
+                    var addLabel = ($this.attr('data-add') != null) ? $this.attr('data-add') : 'Add';
+                    var removeLabel = ($this.attr('data-remove') != null) ? $this.attr('data-remove') : 'Remove';
+                    var addAllLabel = ($this.attr('data-add-all') != null) ? $this.attr('data-add-all') : 'Add All';
+                    var removeAllLabel = ($this.attr('data-remove-all') != null) ? $this.attr('data-remove-all') : 'Remove All';
+
+                    // get options
+                    var options = [];
+                    $this.children('option').each(function() {
+                        var value = $(this).val();
+                        var label = $(this).text();
+                        options.push({
+                            text: label,
+                            value: value
+                        });
+                    });
+
+                    // get search option
+                    var search = ($this.attr('data-search') != null) ? $this.attr('data-search') : '';
+
+                    // init dual listbox
+                    var dualListBox = new DualListbox($this.get(0), {
+                        addEvent: function(value) {
+                            console.log(value);
+                        },
+                        removeEvent: function(value) {
+                            console.log(value);
+                        },
+                        availableTitle: availableTitle,
+                        selectedTitle: selectedTitle,
+                        addButtonText: addLabel,
+                        removeButtonText: removeLabel,
+                        addAllButtonText: addAllLabel,
+                        removeAllButtonText: removeAllLabel,
+                        
+                    });
+
+                    if (search == 'false') {
+                        dualListBox.search.classList.add('dual-listbox__search--hidden');
+                    }
+                });
+            };
+
+            return {
+                // public functions
+                init: function() {
+                    initDualListbox();
+                },
+            };
+        }();
+
+        jQuery(document).ready(function() {
+            KTDualListbox.init();
+        });
+    </script>
+}

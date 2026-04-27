@@ -1,4 +1,5 @@
-﻿using DocumentFormat.OpenXml.Drawing.Charts;
+﻿using Afbel.Common.Services;
+using DocumentFormat.OpenXml.Drawing.Charts;
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services;
@@ -17,13 +18,13 @@ using System.Security.Claims;
 
 namespace Ekomers.Web.Controllers
 {
-	[Authorize(Policy = "AdminOrCrm")]
+	[Authorize(Policy = "AdminOrPurchasing")]
 	[TypeFilter(typeof(ActionFilter))]
 	[TypeFilter(typeof(ErrorFilter))]
 	public class RequestController : BaseController
 	{
 		private readonly IRequestService _service;
-	 
+		 
 		private readonly IStokService _stokService;
 		private readonly IMalzemeService _malzemeService;
 		private readonly ITcmbService _tcmbService;
@@ -54,7 +55,7 @@ namespace Ekomers.Web.Controllers
 			_service = service;
 			_context = context;
 			_httpClientFactory = httpClientFactory;
-		 
+			
 			_turCache = turCache;
 			_durumCache = durumCache;
 			_kullaniciCache = kullaniciCache;
@@ -254,6 +255,7 @@ namespace Ekomers.Web.Controllers
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(RequestID),
 				RequestDurumID=(int)talep.DurumID,
 				 RequestTurID=(int)talep.TurID
+				 
 
 			};
 			   
@@ -295,23 +297,32 @@ namespace Ekomers.Web.Controllers
 		{
 			var urun = await _malzemeService.VeriGetir(models.UrunID);
 
-			// Yeni eklenen malzemeyi listeye ekliyoruz
-			var RequestUrunekle = new RequestUrunlerVM
+			var eklenmisUrun = await _service.RequestUrunGetir(models.RequestID, models.UrunID);
+			if (eklenmisUrun != null)
 			{
-				UrunAd = urun.Ad,
-				UrunKod = urun.Kod,
-				UrunID = models.UrunID,
-				Miktar = models.Miktar, 
-				BirimID = urun.BirimID,
-				BirimAd = urun.BirimAd,
+				eklenmisUrun.Miktar = models.Miktar;
+				eklenmisUrun.Aciklama = models.Aciklama;
+				await _service.RequestUrunGuncelle(eklenmisUrun);
+			}
+			else
+			{
+				// Yeni eklenen malzemeyi listeye ekliyoruz
+				var RequestUrunekle = new RequestUrunlerVM
+				{
+					UrunAd = urun.Ad,
+					UrunKod = urun.Kod,
+					UrunID = models.UrunID,
+					Miktar = models.Miktar,
+					BirimID = urun.BirimID,
+					BirimAd = urun.BirimAd,
+					 
+					Aciklama = models.Aciklama,
+					RequestID = models.RequestID
+				};
 
-				Aciklama = models.Aciklama,
-				RequestID=models.RequestID
-			};
-
-			await _service.RequestUrunEkle(RequestUrunekle);
-			//ViewBag.Kurlar = await _tcmbService.DovizKuruGetir();
-
+				await _service.RequestUrunEkle(RequestUrunekle);
+				//ViewBag.Kurlar = await _tcmbService.DovizKuruGetir();
+			}
 			var model = new RequestUrunlerVM
 			{
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(models.RequestID),

@@ -26,8 +26,8 @@ namespace Ekomers.Data.Services
 		private readonly IRepository<RequestDurum> _RequestDurumRepo;
 		private readonly IRepository<OfferDurum> _OfferDurumRepo;
 		private readonly IRepository<Offer> _OfferRepo;
-		 
 
+		private readonly TtnService _ttnService;
 
 		private readonly IRepository<RequestUrunler> _RequestUrunlerRepo;
 		private readonly IRepository<Malzeme> _urunlerRepo;
@@ -53,7 +53,7 @@ namespace Ekomers.Data.Services
 			, IRepository<MalzemeTipi> malzemeTipiRepo
 			 , IRepository<OfferDurum> OfferDurumRepo
 			 , IRepository<Offer> OfferRepo
-
+			, TtnService ttnService
 			)
 		{
 			_context = context;
@@ -72,7 +72,7 @@ namespace Ekomers.Data.Services
 			_malzemeBirimRepo = malzemeBirimRepo;
 			_malzemeTipiRepo = malzemeTipiRepo;
 			_OfferRepo = OfferRepo;
-
+			_ttnService = ttnService;
 			// Get the current user's claims principal and user ID
 			_user = _httpContextAccessor.HttpContext?.User;
 			_userId = _user?.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -398,11 +398,11 @@ namespace Ekomers.Data.Services
 				var model = new RequestUrunler
 				{
 					UrunID = modelv.UrunID,
-					RequestID = modelv.RequestID,
-				 
+					RequestID = modelv.RequestID, 
 					Miktar = modelv.Miktar,
 					Aciklama=modelv.Aciklama,
-					 
+
+					TTN = await _ttnService.GenerateTtnAsync(),
 					CreateDate = DateTime.Now,
 					IsActive = true,
 					IsDelete = false,
@@ -524,8 +524,8 @@ namespace Ekomers.Data.Services
 							 BirimAd = birim.Ad,
 							 TipAd = tip.Ad,
 							 TipID = tip.ID, 
-							  
-							 Aciklama=kayit.Aciklama,
+							  TTN = kayit.TTN != null ? kayit.TTN : "",
+							 Aciklama =kayit.Aciklama,
 							 RequestID = kayit.RequestID,
 							 
 							 UrunID = kayit.UrunID,
@@ -643,7 +643,7 @@ namespace Ekomers.Data.Services
 							 BirimAd = birim.Ad,
 							 TipAd = tip.Ad,
 							 TipID = tip.ID,
-
+							 TTN = kayit.TTN != null ? kayit.TTN : "",
 							 Aciklama = kayit.Aciklama,
 							 RequestID = kayit.RequestID,
 
@@ -717,7 +717,10 @@ namespace Ekomers.Data.Services
 		{
 			return await  RequestUrunlerGenelListe().Where(p => p.ID == UrunId).FirstOrDefaultAsync();
 		}
-
+		public async Task<RequestUrunlerVM> RequestUrunGetir(int RequestID,int UrunId)
+		{
+			return await RequestUrunlerGenelListe().Where(p => p.RequestID == RequestID && p.UrunID == UrunId).FirstOrDefaultAsync();
+		}
 		public async  Task<int> RequestUrunDurum(int RequestID)
 		{
 			return  RequestUrunlerGenelListe().Where(p => p.OnayliMi == false && p.IsActive==true && p.IsDelete == false && p.RequestID == RequestID).Count();

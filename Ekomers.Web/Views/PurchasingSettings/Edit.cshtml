@@ -1,0 +1,133 @@
+﻿@model MailSettingVM
+ 
+@{
+}
+
+<style>
+    .dual-listbox .dual-listbox__container .dual-listbox__selected, .dual-listbox .dual-listbox__container .dual-listbox__available {
+        width: 316px !important;
+    }
+
+    .dual-listbox .dual-listbox__search {
+        width: 316px !important;
+    }
+</style>
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                @(Model.Type == MailNotificationType.Talep
+                                            ? "Talep Mail Ayarları"
+                                            : "Teklif Mail Ayarları")
+                <span class="d-block text-muted pt-2 font-size-sm">@Model.Type eklendikten sonra Eposta gönderilecek hesaplar</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+        </div>
+    </div>
+    <div class="card-body">
+        <form asp-action="Save" method="post">
+
+            <input type="hidden" asp-for="Type" />
+
+            <div class="card">
+                <div class="card-body">
+
+                    <h4>
+                        @(Model.Type == MailNotificationType.Talep
+                            ? "Talep Mail Ayarları"
+                            : "Teklif Mail Ayarları")
+                    </h4>
+
+                    <select asp-for="SelectedUserIds"
+                            asp-items="Model.Users"
+                            multiple
+                            class="dual-listbox">
+                    </select>
+                    <a href="/PurchasingSettings" class="btn btn-danger mt-3">
+                        Geri Dön
+                    </a>
+
+                    <button type="submit" class="btn btn-primary mt-3">
+                        Kaydet
+                    </button>
+                 
+                </div>
+            </div>
+
+        </form>
+    </div>
+</div>
+ 
+@section JSSection {
+    <script>
+                var KTDualListbox = function() {
+            // Private functions
+            var initDualListbox = function() {
+                // Dual Listbox
+                var listBoxes = $('.dual-listbox');
+
+                listBoxes.each(function() {
+                    var $this = $(this);
+                    // get titles
+                    var availableTitle = ($this.attr('data-available-title') != null) ? $this.attr('data-available-title') : 'Eposta Listesi';
+                    var selectedTitle = ($this.attr('data-selected-title') != null) ? $this.attr('data-selected-title') : 'Eklenen hesaplar';
+
+                    // get button labels
+                    var addLabel = ($this.attr('data-add') != null) ? $this.attr('data-add') : 'Ekle';
+                    var removeLabel = ($this.attr('data-remove') != null) ? $this.attr('data-remove') : 'Çıkar';
+                    var addAllLabel = ($this.attr('data-add-all') != null) ? $this.attr('data-add-all') : 'Hepsini Ekle';
+                    var removeAllLabel = ($this.attr('data-remove-all') != null) ? $this.attr('data-remove-all') : 'Hepsini Çıkar';
+
+                    // get options
+                    var options = [];
+                    $this.children('option').each(function() {
+                        var value = $(this).val();
+                        var label = $(this).text();
+                        options.push({
+                            text: label,
+                            value: value
+                        });
+                    });
+
+                    // get search option
+                    var search = ($this.attr('data-search') != null) ? $this.attr('data-search') : '';
+
+                    // init dual listbox
+                    var dualListBox = new DualListbox($this.get(0), {
+                        addEvent: function(value) {
+                            console.log(value);
+                        },
+                        removeEvent: function(value) {
+                            console.log(value);
+                        },
+                        availableTitle: availableTitle,
+                        selectedTitle: selectedTitle,
+                        addButtonText: addLabel,
+                        removeButtonText: removeLabel,
+                        addAllButtonText: addAllLabel,
+                        removeAllButtonText: removeAllLabel,
+                        
+                    });
+
+                    if (search == 'false') {
+                        dualListBox.search.classList.add('dual-listbox__search--hidden');
+                    }
+                });
+            };
+
+            return {
+                // public functions
+                init: function() {
+                    initDualListbox();
+                },
+            };
+        }();
+
+        jQuery(document).ready(function() {
+            KTDualListbox.init();
+        });
+    </script>
+}
+

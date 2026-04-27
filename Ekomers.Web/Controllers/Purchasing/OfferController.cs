@@ -19,7 +19,7 @@ using System.Security.Claims;
 
 namespace Ekomers.Web.Controllers
 {
-	[Authorize(Policy = "AdminOrCrm")]
+	[Authorize(Policy = "AdminOrPurchasing")]
 	[TypeFilter(typeof(ActionFilter))]
 	[TypeFilter(typeof(ErrorFilter))]
 	public class OfferController : BaseController

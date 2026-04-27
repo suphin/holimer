@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260427062316_addttnFunction")]
+    partial class addttnFunction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2087,31 +2090,6 @@ namespace Ekomers.Data.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("FirsatDurum");
-                });
-
-            modelBuilder.Entity("Ekomers.Models.Entity.MailNotificationUser", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("MailNotificationUsers");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.MusteriTip", b =>
@@ -5297,17 +5275,6 @@ namespace Ekomers.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Mahalle");
-                });
-
-            modelBuilder.Entity("Ekomers.Models.Entity.MailNotificationUser", b =>
-                {
-                    b.HasOne("Ekomers.Models.Ekomers.Kullanici", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.PurchaseRequestItem", b =>

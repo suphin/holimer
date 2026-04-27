@@ -19,6 +19,7 @@ namespace Ekomers.Models.Entity
 	 
 		public int? BirimID { get; set; }
 		public string? Aciklama { get; set; }
+		public string? TTN { get; set; } // talep takip no
 		public bool OnayliMi { get; set; }
 		public int OfferDurumID { get; set; }
 
@@ -55,14 +56,15 @@ namespace Ekomers.Models.Entity
 		public bool OnayliMi { get; set; }
 		public int OfferDurumID { get; set; }
 		public int OfferID { get; set; }
+		[Display(Name = "Teklif Durum")]
 		public string? OfferDurumAd { get; set; }
 		public string? DurumClass { get; set; }
 		[Display(Name = "Açıklama")]
 		public  string? Aciklama { get; set; }
 		public List<RequestUrunlerVM> RequestUrunlerVMListe { get; set; }
 		public List<OfferVM> OfferVMListe { get; set; }
-
-		 
+		[Display(Name = "Talep Takip No")]
+		public string? TTN { get; set; } // talep takip no
 
 	}
 }

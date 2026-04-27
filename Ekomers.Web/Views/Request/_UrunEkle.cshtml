@@ -132,6 +132,7 @@
     function MalzemeEkle() {
         var UrunID = $('#UrunID').val();
         var Miktar = $('#Miktar').val(); 
+        var BirimID = $('#BirimID').val();
         var Aciklama = $('#Aciklama').val();
         var RequestID=@(Model.RequestID);
     
@@ -143,12 +144,17 @@
             alert("Miktar giriniz!");
            return false;
        }
+          if(Aciklama==""){
+            alert("Açıklama giriniz!");
+           return false;
+       }
         $.ajax({
             url: '@Url.Action("_RequestUrunEkle", "Request")',
             type: 'GET',
             dataType: "html",
             data: {
                 UrunID: UrunID,
+                BirimID: BirimID,
                 Miktar: Miktar, 
                 Aciklama: Aciklama,
                 RequestID:RequestID
