@@ -81,7 +81,10 @@
     new AuthorizeCrudVM { Controller = "Request", HaritaEkle = false });
 }
 
-
+@{
+    //await Html.RenderPartialAsync("_PartialModalVeri");
+    await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
 @section JSSection {
 
    

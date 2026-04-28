@@ -12,7 +12,7 @@
                    // await Html.RenderPartialAsync("_gruplar", Model);
                 }
                 <label asp-for="GrupID" class="control-label text-info" style="font-weight:bold">Geçerli Grup : @(Model.Grup + ">>" + Model.AltGrup)</label>
-                <input name="GrupID" id="GrupID" class="form-control form-control-sm" type="hidden" value="@Model.AltGrupID" />
+                <input name="GrupID" id="GrupID" class="form-control form-control-sm required" type="hidden" value="@Model.AltGrupID" />
                 <input class="form-control form-control-sm" value="@(Model.Grup + ">>" + Model.AltGrup)" id="Grup" />
                 <span asp-validation-for="GrupID" class="text-danger"></span>
             </div>
@@ -48,7 +48,7 @@
             </div>
             <div class="col-lg-3">
                 <label asp-for="Kdv" class="control-label"></label>
-                <input asp-for="Kdv" class="form-control form-control-sm" />
+                <input asp-for="Kdv" class="form-control form-control-sm"  required/>
                 <span asp-validation-for="Kdv" class="text-danger"></span>
             </div>
             <div class="col-lg-3">

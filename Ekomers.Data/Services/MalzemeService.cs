@@ -280,10 +280,10 @@ namespace Ekomers.Data.Services
 				p.Kod.Contains(model.Aciklama)
 				);
 			}
-			//if (model.GrupID != 0)
-			//{
-			//	liste = liste.Where(p =>p.AltGrupID==model.GrupID);
-			//}
+			if (model.GrupID != 0)
+			{
+				liste = liste.Where(p => p.AltGrupID == model.GrupID);
+			}
 
 
 			var donus = liste.OrderByDescending(a => a.ID).Take(1000).ToList();

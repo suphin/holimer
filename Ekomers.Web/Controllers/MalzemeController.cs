@@ -307,6 +307,21 @@ namespace Ekomers.Web.Controllers
 				return BadRequest("Kaydetme başarısız!");
 			}
 		}
+		[Authorize(Roles = "Editor")]
+		[HttpPost]
+		public async Task<IActionResult> YeniVeriEkle(MalzemelerVM modelv)
+		{
+			bool sonuc = await _service.VeriEkleAsync(modelv);
+		 
+			if (sonuc)
+			{
+				return Ok("Kaydetme başarılı");
+			}
+			else
+			{
+				return BadRequest("Kaydetme başarısız!");
+			}
+		}
 
 		[HttpPost]
 		[Authorize(Roles = "Editor")]
@@ -416,5 +431,13 @@ namespace Ekomers.Web.Controllers
 			await _malzemeFiyatService.TopluFiyatGuncelleAsync(model);
 			return Ok();
 		}
+
+		public async Task<IActionResult> GrupUrunleriGetir(int grupId)
+		{
+			var model = await _service.VeriListele(new MalzemelerVM { GrupID=grupId});
+			return PartialView("_GrupUrunleriGetir", model);
+		}
+
+		
 	}
 }
