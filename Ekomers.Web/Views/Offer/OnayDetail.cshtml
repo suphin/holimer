@@ -3,6 +3,12 @@
     ViewData["Title"] = "Teklif Onay Sayfası";
     ViewData["Description"] = "Çalışma Sayfası - Teklif / Onay";
 }
+<style>
+    
+    .table-selected, .table-selected > th, .table-selected > td {
+    background-color: #18f9f0;
+}
+ </style>
 
 
 <div class="card card-custom">
@@ -131,7 +137,7 @@
                         var tlFiyat = item.Fiyat * kur;
                         var enIyi = tlFiyat == enDusukFiyat;
 
-                        <tr class="@(enIyi ? "table-success" : "")">
+                        <tr class="@(enIyi ? "table-success" : "") @(item.IsSelected ? "table-selected" : "")">
                             <td>
                                 @if (Model.OfferDurumID == (int)EnumOfferDurum.TeklifOnaylandi)
                                 {

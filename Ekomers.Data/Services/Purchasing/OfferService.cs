@@ -265,7 +265,7 @@ namespace Ekomers.Data.Services
 			}
 
 			await _context.SaveChangesAsync();
-			var ID = newEntry.ID;
+			//var ID = newEntry.ID;
 			return true;
 		}
 		public async Task<int> VeriEkleReturnIDAsync(OfferVM model)

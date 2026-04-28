@@ -1,6 +1,11 @@
 ﻿@model RequestUrunlerVM
 
-
+<style>
+    
+    .table-selected, .table-selected > th, .table-selected > td {
+    background-color: #18f9f0;
+}
+ </style>
 
 <div class="card card-custom">
     <div class="card-header card-header-tabs-line">
@@ -114,7 +119,7 @@
                         var tlFiyat = item.Fiyat * kur;
                         var enIyi = tlFiyat == enDusukFiyat;
 
-                        <tr class="@(enIyi ? "table-success" : "")">
+                        <tr class="@(enIyi ? "table-success" : "")  @(item.IsSelected ? "table-selected" : "")">
                             <td>
                                 @if (Model.OfferDurumID == (int)EnumOfferDurum.TeklifOnaylandi)
                                 {
