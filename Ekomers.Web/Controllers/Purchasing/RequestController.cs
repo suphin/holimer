@@ -1,4 +1,5 @@
 ﻿using Afbel.Common.Services;
+using Azure.Core;
 using DocumentFormat.OpenXml.Drawing.Charts;
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
@@ -228,7 +229,7 @@ namespace Ekomers.Web.Controllers
 				return BadRequest("Kaydetme başarısız!");
 			}
 		}
-
+	
 		[HttpPost]
 		[Authorize(Roles = "Editor")]
 		public async Task<IActionResult> VeriSil(RequestVM model)
@@ -357,14 +358,54 @@ namespace Ekomers.Web.Controllers
 			modelc.UserID = _userId;
 			return PartialView(modelc);
 		}
+		public async Task<IActionResult> TalepKapat(int RequestId)
+		{
+			 
+			 int urunDurum = await _service.RequestUrunDurum(RequestId);
 
+			if (urunDurum == 0)
+			{
+				var req = await _service.VeriGetir(RequestId);
+				req.DurumID = (int)EnumRequestDurum.Onaylandi;
+				await _service.VeriEkleAsync(req);
+				await _service.RequestUrunKapat(RequestId);
+			}
+			else
+			{
+				return BadRequest("Onaylanmamış talep satırı var!");
+			}
+
+			var modelc = await _service.VeriGetir(RequestId);
+
+
+			modelc.RequestUrunler = await _service.RequestUrunlerGetir(RequestId);
+			modelc.ControllerName = "Request";
+			modelc.ModalTitle = "Talep Bilgileri";
+
+			return PartialView("TalepOnayla", modelc);
+		}
+		public async Task<IActionResult> TalepIptalKapat(int RequestId)
+		{
+			 
+				var req = await _service.VeriGetir(RequestId);
+				req.DurumID = (int)EnumRequestDurum.İptal;
+				await _service.VeriEkleAsync(req); 			 
+
+			var modelc = await _service.VeriGetir(RequestId);
+			 
+			modelc.ControllerName = "Request";
+			modelc.ModalTitle = "Talep Bilgileri";
+			modelc.RequestUrunler = new List<RequestUrunlerVM>();
+
+			return PartialView("TalepOnayla", modelc);
+		}
 		public async Task<IActionResult> TalepUrunOnay(int requestId,int kayitId, double miktar)
 		{
 			var urun = await _service.RequestUrunGetir(kayitId);
 
 			urun.MiktarSon= miktar;
 			urun.OnayliMi = true;
-			urun.OfferDurumID=(int)EnumOfferDurum.TeklifAsamasinda;
+			//urun.OfferDurumID=(int)EnumOfferDurum.TeklifAsamasinda;
 			urun.KabulEdenID = _userId;
 			urun.KabulEdenTarihSaat = DateTime.Now;
 			var sonuc = await _service.RequestUrunDuzenle(urun);
@@ -431,16 +472,7 @@ namespace Ekomers.Web.Controllers
 				}
 			}
 
-			int urunDurum = await  _service.RequestUrunDurum(requestId);
-
-			if (urunDurum==0)
-			{
-				var req= await _service.VeriGetir(requestId);
-				req.DurumID=(int)EnumRequestDurum.Onaylandi;
-				await _service.VeriEkleAsync(req);
-
-				return BadRequest("Onaylanacak ürün kalmadı.");
-			}
+			
 			var model = new RequestVM
 			{
 				RequestUrunler = await _service.RequestUrunlerGetir(requestId),
@@ -455,18 +487,87 @@ namespace Ekomers.Web.Controllers
  
 			urun.OnayliMi = false;
 			urun.IsActive = false;
-			urun.IsDelete = true; 
-			await _service.RequestUrunDuzenle(urun);
+			urun.IsDelete = true;
+			urun.OfferDurumID = 0;
+			urun.DeleteDate = DateTime.Now;
+			urun.DeleteUserID = _userId;
+			var sonuc=await _service.RequestUrunDuzenle(urun);
+
+
+			if (sonuc)
+			{
+				var _urun = urun; // await _service.RequestUrunGetir(kayitId);
+				var users = _context.MailNotificationUsers
+							.Where(x => x.Type == MailNotificationType.Talep)
+							.Select(x => x.User.Email)
+							.ToList();
+
+				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _urun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
+				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _urun.DeleteUserID).Select(x => x.User.Email).FirstOrDefault());
+
+
+				var mesajBody = $@"
+								<h3>Talep Detayları</h3>
+
+								<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
+									<tr>
+										<th align='left'>Talep Takip No</th>
+										<td>{_urun.TTN}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Oluşturan</th>
+										<td>{_urun.TalepEdenAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep Oluşturulma Tarihi</th>
+										<td>{_urun.TalepEdenTarihSaat.ToLongTimeString()}</td>
+									</tr>
+									<tr>
+										<th align='left'>Talep İptal Eden</th>
+										<td>{_urun.DeleteUserName}</td>
+									</tr>
+<tr>
+										<th align='left'>Talep İptal Tarihi</th>
+										<td>{_urun.DeleteDate?.ToLongTimeString()}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ürün</th>
+										<td>{_urun.UrunAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ürün Açıklama</th>
+										<td>{_urun.Aciklama}</td>
+									</tr>
+									<tr>
+										<th align='left'>Miktar</th>
+										<td>{_urun.Miktar}</td>
+									</tr>
+									<tr>
+										<th align='left'>Birim</th>
+										<td>{_urun.BirimAd}</td>
+									</tr>
+								</table>
+								";
+
+				foreach (var mail in users)
+				{
+					BackgroundJob.Enqueue<IMailJobService>(x =>
+						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Talep iptal edildi.", mesajBody));
+				}
+			}
+
+
+
 
 			int urunDurum = await _service.RequestUrunDurum(requestId);
 
-			if (urunDurum == 0)
-			{
-				var req = await _service.VeriGetir(requestId);
-				req.DurumID = (int)EnumRequestDurum.Onaylandi;
-				await _service.VeriEkleAsync(req);
-				return BadRequest("Onaylanacak ürün kalmadı.");
-			}
+			//if (urunDurum == 0)
+			//{
+			//	var req = await _service.VeriGetir(requestId);
+			//	req.DurumID = (int)EnumRequestDurum.Onaylandi;
+			//	await _service.VeriEkleAsync(req);
+			//	return BadRequest("Onaylanacak ürün kalmadı.");
+			//}
 			var model = new RequestVM
 			{
 				RequestUrunler = await _service.RequestUrunlerGetir(requestId),
@@ -510,5 +611,6 @@ namespace Ekomers.Web.Controllers
 
 			return View(model);
 		}
+		
 	}
 }

@@ -1,0 +1,109 @@
+﻿ @model MusterilerVM
+
+<form asp-controller="Musteriler" asp-action="MusteriDuzenle" method="post" name="_VeriEkle2" id="_VeriEkle2">
+<div class="modal-content">
+	<div class="modal-header">
+		<h5 class="modal-title">Müşteri Düzenle</h5>
+		<button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+	</div>
+	<div class="modal-body">
+       
+            <div class="form-group row">
+                <div class="col-lg-12">
+                    <label asp-for="SirketUnvan" class="control-label"></label>
+                    <input asp-for="SirketUnvan" class="form-control form-control-sm" />
+                    <span asp-validation-for="SirketUnvan" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-4 ">
+                    <label asp-for="Telefon" class="control-label"></label>
+                    <input asp-for="Telefon" class="form-control form-control-sm" id="phoneNumber" required />
+                    <span asp-validation-for="Telefon" class="text-danger"></span>
+                </div>
+                <div class="col-lg-4 ">
+                    <label asp-for="Eposta" class="control-label"></label>
+                    <input asp-for="Eposta" class="form-control form-control-sm" />
+                    <span asp-validation-for="Eposta" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-12">
+                    <label asp-for="Adres" class="control-label"></label>
+                    <textarea asp-for="Adres" type="text" class="form-control form-control-sm" rows="2" required></textarea>
+                    <span asp-validation-for="Adres" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-12">
+                    <label asp-for="Iban" class="control-label"></label>
+                    <input asp-for="Iban" class="form-control form-control-sm" />
+                    <span asp-validation-for="Iban" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-4">
+                    <label asp-for="BizimHesapNo" class="control-label"></label>
+                    <input asp-for="BizimHesapNo" class="form-control form-control-sm" />
+                    <span asp-validation-for="BizimHesapNo" class="text-danger"></span>
+                </div>
+                <div class="col-lg-4">
+                    <label asp-for="VergiDairesi" class="control-label"></label>
+                    <input asp-for="VergiDairesi" class="form-control form-control-sm" />
+                    <span asp-validation-for="VergiDairesi" class="text-danger"></span>
+                </div>
+                <div class="col-lg-4">
+                    <label asp-for="VergiNo" class="control-label"></label>
+                    <input asp-for="VergiNo" class="form-control form-control-sm" r />
+                    <span asp-validation-for="VergiNo" class="text-danger"></span>
+                </div>
+            </div>
+      
+	</div>
+	<div class="modal-footer">
+        <input type="hidden" asp-for="ID" />
+        <input type="hidden" asp-for="CreateDate" />
+        <input type="hidden" asp-for="UpdateDate" value="@DateTime.Now" />
+        <input type="hidden" asp-for="IsActive" value="true" />
+        <input type="hidden" asp-for="IsDelete" value="false" />
+        <input type="hidden" asp-for="CreateUserID" value="@Model.CreateUserID" />
+        <input type="hidden" asp-for="UpdateUserID" value="@Model.UserID" />
+		<input asp-for="PageIndex" type="hidden" />
+		<input asp-for="PageSize" type="hidden" />
+		<button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+		<button type="submit" class="btn btn-primary">Kaydet</button>
+	</div>
+</div>
+</form>
+ 
+
+ <script type="text/javascript">
+      
+
+        // Formun submit olayı
+        $('#_VeriEkle2').on('submit', function (e) {
+            e.preventDefault();
+            var form = $(this);
+            var actionUrl = form.attr('action');
+            var formData = form.serialize();
+            $.ajax({
+                type: 'POST',
+                url: actionUrl,
+                data: formData,
+                success: function (response) {
+                   // $('#cardBody').html(response);
+                  $('#ModalVeri').modal('hide');
+                  //  toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+    setTimeout(function () {
+    location.reload();
+    }, 1000); // 1.5 saniye bekle
+                },
+                error: function (xhr, status, error) {
+
+                  //  toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+                }
+            });
+        });
+  
+
+</script> 

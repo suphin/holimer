@@ -1,8 +1,8 @@
-﻿@using Microsoft.AspNetCore.Identity
-@inject UserManager<Kullanici> UserManager
+﻿@* @using Microsoft.AspNetCore.Identity
+@inject UserManager<Kullanici> UserManager *@
 
 @{
-    var user = await UserManager.GetUserAsync(User);
+   // var user = await UserManager.GetUserAsync(User);
 }
  
 @model RequestVM
@@ -76,11 +76,16 @@
             </tr>
         </thead>
         <tbody>
-            @{
-                int i = 1;
-            }
+                    @{
+                        int i = 1;
+                        var TalepEden="";
+                        var KabulEden = "";
+                    }
             @foreach (var item in Model.RequestUrunler.Where(p=>p.OnayliMi && p.IsActive && p.IsDelete==false))
             {
+                        TalepEden = item.TalepEdenAd;
+                        KabulEden = item.KabulEdenAd;
+
                 <tr>
                     <td>@i</td>
                     <td>@item.TTN</td>
@@ -99,11 +104,12 @@
         <table style="border:none;">
             <tr style="border:none;">
                 <td style="border:none; text-align:left;">
-                    Hazırlayan<br /><br /><br />
-                        @user?.AdSoyad
+                    Talep Eden<br /><br /><br />
+                        @TalepEden
                 </td>
                 <td style="border:none; text-align:right;">
                     Onaylayan<br /><br /><br /> 
+                        @KabulEden
                 </td>
             </tr>
         </table>

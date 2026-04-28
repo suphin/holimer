@@ -18,6 +18,7 @@ namespace Ekomers.Data.Services.IServices
 		Task<bool> RequestUrunDuzenle(RequestUrunlerVM modelv);	 
 		Task<bool> RequestUrunCikar(int urunId);		 
 		Task<int> RequestUrunDurum(int RequestID);		 
+		Task<bool> RequestUrunKapat(int RequestID);		 
 		Task<List<RequestUrunlerVM>> RequestUrunlerGetir(int RequestID);
 		Task<RequestUrunlerVM> RequestUrunGetir(int UrunId);
 		Task<RequestUrunlerVM> RequestUrunGetir(int RequestID,int UrunId);

@@ -60,8 +60,8 @@
 <table class="table  table-bordered" id="" width="100%" cellspacing="0">
     <thead>
         <tr>
-            <th>Sıra No</th>
-            <th>Talep ID</th>
+            @* <th>Sıra No</th> *@
+            <th>Talep Ürün ID</th>
             <th>Ürün Kodu</th>
                     <th>Ürün Adı</th>
                     <th>Açıklama</th>
@@ -108,10 +108,19 @@
         }
 		</div>
 		<div class="modal-footer" id="modal-footer">
-			<button type="button" class="btn btn-danger no-print" data-dismiss="modal">Kapat</button> 
-			<a href="/Request/Print/@Model.ID" target="_blank" class="btn btn-primary">
+        @if (Model.DurumID != (int)EnumRequestDurum.Onaylandi && Model.RequestUrunler.Count()>0)
+                {
+                    <button type="button" class="btn btn-success" onclick="TalepKapat('@Model.ID')">Talebi Onayla/Kapat</button>
+                }
+        @if (Model.RequestUrunler.Count() == 0 && Model.DurumID != (int)EnumRequestDurum.İptal)
+                {
+            <button type="button" class="btn btn-info" onclick="TalepIptalKapat('@Model.ID')">Talep İptal/Kapat</button>
+                }
+			
+			<button type="button" class="btn btn-danger" data-dismiss="modal"> Kapat</button> 
+		@* 	<a href="/Request/Print/@Model.ID" target="_blank" class="btn btn-primary">
 				Yazdır
-			</a>
+			</a> *@
 		</div>
 	</div>
 
@@ -181,6 +190,58 @@
              setTimeout(function () {
                     location.reload();
                 }, 3000); // 1.5 saniye bekle
+            }
+        });
+    }
+</script>
+<script>
+    function TalepKapat(RequestId) {
+
+        if (!confirm("Talebi kapatmak istediğinize emin misiniz?")) {
+             return;
+        }
+         
+        $.ajax({
+            url: '@Url.Action("TalepKapat", "Request")',
+            type: 'GET',
+            dataType: "html",
+            data: {
+                RequestId:RequestId, 
+            },
+            success: function(response) {
+                $('#VeriAlan').html(response);
+              toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+            },
+            error: function(xhr, status, error) {
+
+                toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+                 
+            }
+        });
+    }
+</script>
+<script>
+    function TalepIptalKapat(RequestId) {
+
+        if (!confirm("Talebi iptal etmek istediğinize emin misiniz?")) {
+             return;
+        }
+         
+        $.ajax({
+            url: '@Url.Action("TalepIptalKapat", "Request")',
+            type: 'GET',
+            dataType: "html",
+            data: {
+                RequestId:RequestId,
+            },
+            success: function(response) {
+                $('#VeriAlan').html(response);
+              toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+            },
+            error: function(xhr, status, error) {
+
+                toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+                 
             }
         });
     }

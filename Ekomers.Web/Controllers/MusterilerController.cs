@@ -328,5 +328,29 @@ namespace Ekomers.Web.Controllers
 			return View(model);
 		}
 
+
+
+		public async Task<IActionResult> MusteriDuzenle(int FirmaID)
+		{
+			var modelc = await _service.VeriGetir(FirmaID);
+
+			return PartialView(modelc);
+		}
+		[HttpPost]
+		public async Task<IActionResult> MusteriDuzenle(MusterilerVM vm)
+		{
+			var modelc = await _service.VeriGetir(vm.ID);
+			modelc.SirketUnvan = vm.SirketUnvan;
+			modelc.Iban = vm.Iban;
+			modelc.VergiDairesi = vm.VergiDairesi;
+			modelc.VergiNo = vm.VergiNo;
+			modelc.Telefon = vm.Telefon;
+			modelc.Eposta = vm.Eposta;
+			modelc.Adres = vm.Adres;
+
+			bool sonuc = await _service.VeriEkleAsync(modelc);
+
+			return Ok();
+		}
 	}
 }

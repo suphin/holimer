@@ -407,7 +407,9 @@ namespace Ekomers.Data.Services
 					IsActive = true,
 					IsDelete = false,
 					CreateUserID = _userId,
-					DosyaID = newGuid
+					DosyaID = newGuid,
+					TalepEdenID = _userId,
+					TalepEdenTarihSaat = DateTime.Now 
 				};
 				_RequestUrunlerRepo.Add(model);
 			 
@@ -930,6 +932,23 @@ namespace Ekomers.Data.Services
 					TotalCount = 0
 				};
 			}
+		}
+
+		public async Task<bool> RequestUrunKapat(int RequestID)
+		{
+			var urunler = _RequestUrunlerRepo.GetAll2(a => a.RequestID == RequestID && a.IsActive == true && a.IsDelete == false).ToList();
+
+			foreach (var urun in urunler)
+			{
+				urun.OnayliMi = true;
+				urun.OfferDurumID= (int)EnumOfferDurum.TeklifAsamasinda;
+				 
+				await _RequestUrunlerRepo.UpdateAsync(urun);
+
+				await _context.SaveChangesAsync();
+			}
+
+			return true;
 		}
 	}
 }

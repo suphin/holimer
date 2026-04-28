@@ -197,7 +197,7 @@ namespace Ekomers.Data.Services
 							 TeslimTarihi = kayit.TeslimTarihi,
 							 OdemeTarihi=kayit.OdemeTarihi,
 							 IsSelected = kayit.IsSelected,
-						
+						DosyaID=kayit.DosyaID,
 
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,
@@ -254,12 +254,13 @@ namespace Ekomers.Data.Services
 			var newEntry = new Offer();
 			if (existingEntry == null)
 			{
-				  newEntry = _mapper.Map<Offer>(model);
+				  newEntry = _mapper.Map<Offer>(model);				
 				newEntry.DosyaID = "PR-" + DateTime.Now.Ticks;
 				_OfferRepo.Add(newEntry);
 			}
 			else
 			{
+				existingEntry.Firma = model.FirmaAd;
 				_mapper.Map(model, existingEntry);
 				await _OfferRepo.UpdateAsync(existingEntry);
 			}

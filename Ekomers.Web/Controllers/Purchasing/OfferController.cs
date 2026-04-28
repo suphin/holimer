@@ -269,6 +269,7 @@ namespace Ekomers.Web.Controllers
 		{
 			var requestUrun = await _requestService.RequestUrunGetir(Id);
 			requestUrun.OfferDurumID = (int)EnumOfferDurum.TeklifOnayBekliyor;
+
 			var sonuc =await  _requestService.RequestUrunGuncelle(requestUrun);
 			var teklifler = await _service.VeriListele(new OfferVM { RequestUrunID = Id });
 
@@ -280,6 +281,7 @@ namespace Ekomers.Web.Controllers
 							.Select(x => x.User.Email)
 							.ToList();
 				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == requestUrun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
+				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _userId).Select(x => x.User.Email).FirstOrDefault());
 
 				var mesajBody = $@"
 								<h3>Talep Detayları</h3>
