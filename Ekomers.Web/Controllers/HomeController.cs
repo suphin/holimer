@@ -617,5 +617,9 @@ namespace Ekomers.Web.Controllers
 		{
 			return View();
 		}
+		public IActionResult metronic44()
+		{
+			return View("Metronic44/index");
+		}
 	}
 }

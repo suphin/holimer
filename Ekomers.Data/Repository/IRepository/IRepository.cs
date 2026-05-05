@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using static Dapper.SqlMapper;
 
 namespace Ekomers.Data.Repository.IRepository
 {
@@ -32,7 +33,8 @@ namespace Ekomers.Data.Repository.IRepository
         IQueryable<T> Include(params Expression<Func<T, object>>[] includes);
         int Count();
         Task<IEnumerable<T>> GetPagedAsync(int pageNumber, int pageSize);
-    }
+		IQueryable<T> Table { get; }
+	}
 
 	public interface IRepositoryAsync<T> where T : class
 	{

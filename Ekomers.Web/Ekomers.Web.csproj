@@ -110,6 +110,7 @@
     <Folder Include="Areas\" />
     <Folder Include="Infrastructure\Auth\" />
     <Folder Include="Data\" />
+    <Folder Include="wwwroot\erpnext\assets\erpnext\dist\js\" />
     <Folder Include="wwwroot\FileUploads\" />
     <Folder Include="wwwroot\Leaflet\plugIn\Draw\" />
     <Folder Include="wwwroot\Leaflet\plugIn\Fullscreen\" />

@@ -1,0 +1,861 @@
+﻿@*     <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+ 
+        @RenderBody() *@
+ 
+
+<!DOCTYPE html>
+<html data-theme-mode="light" data-theme="light" dir="ltr" lang="tr" class="chrome">
+<head>
+
+	<meta charset="UTF-8">
+	<!-- Chrome, Firefox OS and Opera -->
+	<meta name="theme-color" content="#0089FF">
+	<!-- Windows Phone -->
+	<meta name="msapplication-navbutton-color" content="#0089FF">
+	<!-- iOS Safari -->
+	<meta name="apple-mobile-web-app-status-bar-style" content="#0089FF">
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+	<meta name="author" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0,
+	maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="white">
+	<meta name="mobile-web-app-capable" content="yes">
+	<title>Ana Sayfa</title>
+
+		
+	<link type="text/css" rel="stylesheet" href="/erpnext/assets/frappe/dist/css/desk.bundle.IIC7IMW3.css">
+
+      
+ 
+
+	<link rel="shortcut icon" href="/erpnext/assets/erpnext/images/erpnext-favicon.svg" type="image/x-icon">
+	<link rel="icon" href="/erpnext/assets/erpnext/images/erpnext-favicon.svg" type="image/x-icon">
+</head>
+<body data-ajax-state="complete" data-route="Workspaces/Home" data-sidebar="1" style="overflow: auto;" class="">		
+	<div class="main-section">
+		<div class="sticky-top">
+			<header class="navbar navbar-expand" role="navigation">
+				<div class="container">
+					<a class="navbar-brand navbar-home" href="/app">
+						<img class="app-logo" src="/private/files/logo.webp" alt="Uygulama Logosu">
+					</a>
+					<ul class="nav navbar-nav d-none d-sm-flex" id="navbar-breadcrumbs"></ul>
+					<div class="collapse navbar-collapse justify-content-end">
+						<form class="form-inline fill-width justify-content-end" role="search" onsubmit="return false;">
+							<div class="input-group search-bar text-muted">
+								<div class="awesomplete">
+									<input id="navbar-search" type="text" class="form-control" placeholder="Arama yapın veya komut yazın (Ctrl + G)" aria-haspopup="true" autocomplete="off" aria-expanded="false" aria-owns="awesomplete_list_1" role="combobox">
+									<ul hidden="" role="listbox" id="awesomplete_list_1"></ul>
+									<span class="visually-hidden" role="status" aria-live="assertive" aria-atomic="true">Begin typing for results.</span>
+								</div>
+								<span class="search-icon">
+									<svg class="icon icon-sm"><use href="#icon-search"></use></svg>
+								</span>
+							</div>
+						</form>
+						<ul class="navbar-nav">
+							<li class="nav-item dropdown dropdown-notifications dropdown-mobile">
+								<button class="btn-reset nav-link notifications-icon text-muted" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="" data-original-title="Bildirimler">
+									<span class="notifications-seen">
+										<span class="sr-only">No new notifications</span>
+										<svg class="es-icon icon-sm" style="stroke:none;"><use href="#es-line-notifications"></use></svg>
+									</span>        <span class="notifications-unseen">
+									<span class="sr-only">You have unseen notifications</span>
+									<svg class="es-icon icon-sm"><use href="#es-line-notifications-unseen"></use></svg>
+								</span>
+							</button>
+							<div class="dropdown-menu notifications-list dropdown-menu-right" role="menu">
+								<div class="notification-list-header">
+									<div class="header-items">
+										<ul class="notification-item-tabs nav nav-tabs" role="tablist">
+											<li class="notifications-category active" id="notifications" data-toggle="collapse">Bildirimler</li>
+											<li class="notifications-category" id="todays_events" data-toggle="collapse">Etkinlikler</li>
+											<li class="notifications-category" id="changelog_feed" data-toggle="collapse">Yenilikler</li>
+										</ul>
+									</div>
+									<div class="header-actions">
+										<span class="notification-settings pull-right" data-action="go_to_settings" title="" data-original-title="Bildirim Ayarları">
+
+											<svg class="icon  icon-sm" style="" aria-hidden="true">
+												<use class="" href="#icon-setting-gear"></use>
+											</svg>
+										</span><span class="mark-all-read pull-right" data-action="mark_all_as_read" title="" data-original-title="Hepsini Okundu İşaretle">
+										<svg class="icon  icon-sm" style="" aria-hidden="true">
+											<use class="" href="#icon-mark-as-read"></use>
+										</svg>
+									</span>
+								</div>
+							</div>
+							<div class="notification-list-body">
+								<div class="panel-notifications">
+									<div style="">
+										<div class="notification-null-state">
+											<div class="text-center">
+												<img src="/assets/frappe/images/ui-states/notification-empty-state.svg" alt="Generic Empty State" class="null-state">
+												<div class="title">Yeni Bildirim Yok</div>
+												<div class="subtitle">
+													Henüz yeni bir bildirim almadınız.
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>         <div class="panel-events">
+								<div style="display: none;">
+									<div class="notification-null-state">
+										<div class="text-center">
+											<img src="/assets/frappe/images/ui-states/event-empty-state.svg" alt="Generic Empty State" class="null-state">
+											<div class="title">Yaklaşan Etkinlik Yok</div>
+											<div class="subtitle">
+												Sizin için yaklaşan bir etkinlik bulunamadı.
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>         <div class="panel-changelog-feed">
+							<div style="display: none;">
+								<div class="notification-null-state">
+									<div class="text-center">
+										<img src="/assets/frappe/images/ui-states/notification-empty-state.svg" alt="Generic Empty State" class="null-state">
+										<div class="title">Yeni Bir Şey Yok</div>
+										<div class="subtitle">
+											Şu anda size gösterecek yeni bir şey yok.
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</li>
+			<li class="nav-item dropdown dropdown-message dropdown-mobile hidden">
+				<button class="btn-reset nav-link notifications-icon text-muted" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+							
+					<span>         <svg class="es-icon icon-sm"><use href="#es-line-chat-alt"></use></svg>        </span>
+				</button>
+			</li>
+			<li class="vertical-bar d-none d-sm-block"></li>
+			<li class="nav-item dropdown dropdown-help dropdown-mobile d-none d-lg-block">
+				<button class="btn-reset nav-link" data-toggle="dropdown" aria-controls="toolbar-help" aria-label="Yardım Menüsü">
+					<span>         Yardım         <svg class="es-icon icon-xs"><use href="#es-line-down"></use></svg>        </span>
+				</button>
+				<div class="dropdown-menu dropdown-menu-right" id="toolbar-help" role="menu">
+					<div id="help-links"></div>
+					<div class="dropdown-divider documentation-links" style="display: none;"></div>
+					<a class="dropdown-item" href="https://docs.erpnext.com/">            Dokümantasyon           </a>
+					<a class="dropdown-item" href="https://discuss.frappe.io">            User Forum           </a>
+					<a class="dropdown-item" href="https://frappe.io/school?utm_source=in_app">            Frappe School           </a>
+					<a class="dropdown-item" href="https://github.com/frappe/erpnext/issues">            Report an Issue           </a>
+					<button class="btn-reset dropdown-item" onclick="return frappe.ui.toolbar.show_about()">            Hakkında           </button>
+					<button class="btn-reset dropdown-item" onclick="return frappe.ui.toolbar.show_shortcuts(event)">            Klavye Kısayolları           </button>                                                         <a class="dropdown-item" href="https://frappe.io/support">            Frappe Desteği           </a>
+				</div>
+			</li>
+			<li class="nav-item dropdown dropdown-navbar-user dropdown-mobile">
+				<button class="btn-reset nav-link" data-toggle="dropdown" aria-label="Kullanıcı Menüsü">
+					<span class="avatar avatar-medium" title="Suphi Nohutlu">
+						<span class="avatar-frame" style="background-image: url(&quot;/private/files/suphi.nohutlu.jpg&quot;)" <="" span="" title="Suphi Nohutlu">
+						</span>
+					</span>
+				</button>
+				<div class="dropdown-menu dropdown-menu-right" id="toolbar-user" role="menu">
+					<a class="dropdown-item" href="/app/user-profile">            Profilim           </a>
+					<button class="btn-reset dropdown-item" onclick="return frappe.ui.toolbar.route_to_user()">            Ayarlarım           </button>
+					<button class="btn-reset dropdown-item" onclick="return frappe.ui.toolbar.setup_session_defaults()">            Oturum Varsayılanları           </button>
+					<button class="btn-reset dropdown-item" onclick="return frappe.ui.toolbar.clear_cache()">            Yeniden Yükle           </button>
+					<button class="btn-reset dropdown-item" onclick="return frappe.ui.toolbar.view_website()">            Websitesine Git           </button>
+					<a class="dropdown-item" href="/apps">            Uygulamalar           </a>
+					<button class="btn-reset dropdown-item" onclick="return frappe.ui.toolbar.toggle_full_width()">            Geniş Görünüm           </button>
+					<button class="btn-reset dropdown-item" onclick="return new frappe.ui.ThemeSwitcher().show()">            Toggle Theme           </button>
+					<div class="dropdown-divider"></div>
+					<button class="btn-reset dropdown-item" onclick="return frappe.app.logout()">            Çıkış           </button>
+				</div>
+			</li>
+		</ul>
+					</div>
+				</div>
+			</header>
+		</div>
+		<div id="body">
+			<div class="content page-container" id="page-Workspaces" data-page-route="Workspaces" style="">
+				<div class="page-head flex">
+			<div class="container">
+				<div class="row flex align-center page-head-content justify-between">
+					<div class="col-md-4 col-sm-6 col-xs-7 page-title">
+						<!-- <div class="title-image hide hidden-md hidden-lg"></div> -->     <!-- title -->
+						<button class="btn-reset sidebar-toggle-btn" title="" aria-label="Toggle Sidebar" data-original-title="Toggle Sidebar">
+							<svg class="es-icon icon-md sidebar-toggle-placeholder">       <use href="#es-line-align-justify"></use>      </svg>
+							<span class="sidebar-toggle-icon">
+								<svg class="es-icon icon-md">
+									<use href="#es-line-sidebar-collapse">        </use>
+								</svg>
+							</span>
+						</button>     <div class="flex fill-width title-area">
+						<div>
+							<div class="flex">
+								<h3 class="ellipsis title-text" title="Ana Sayfa">Ana Sayfa</h3>        <span class="indicator-pill whitespace-nowrap"></span>
+							</div>
+							<div class="ellipsis sub-heading hide text-muted"></div>
+						</div>
+						<button class="btn btn-default more-button hide">
+							<svg class="icon icon-sm">
+								<use href="#icon-dot-horizontal">
+								</use>
+							</svg>
+						</button>
+					</div>
+				</div>
+				<div class="flex col page-actions justify-content-end">
+					<!-- buttons -->
+					<div class="custom-actions hide hidden-xs hidden-md"></div>
+					<div class="standard-actions flex">
+						<span class="page-icon-group hide hidden-xs hidden-sm"></span>
+						<div class="menu-btn-group hide">
+							<button type="button" class="btn btn-default icon-btn" data-toggle="dropdown" aria-expanded="false" aria-label="Menü" title="" data-original-title="Menü">
+								<span>
+									<span class="menu-btn-group-label" data-label="">
+										<svg class="icon icon-sm">
+											<use href="#icon-dot-horizontal">
+											</use>
+										</svg>
+									</span>
+								</span>
+							</button>
+							<ul class="dropdown-menu dropdown-menu-right" role="menu"></ul>
+						</div>      <button class="btn btn-secondary btn-default btn-sm hide"></button>
+						<div class="actions-btn-group hide">
+							<button type="button" class="btn btn-primary btn-sm" data-toggle="dropdown" aria-expanded="false">
+								<span>
+									<span class="hidden-xs actions-btn-group-label" data-label="%C4%B0%C5%9Flemler">
+										<span>
+											<span class="alt-underline">İ</span>şlemler
+										</span>
+									</span>
+									<svg class="icon icon-xs">          <use href="#icon-select">          </use>         </svg>
+								</span>
+							</button>
+							<ul class="dropdown-menu dropdown-menu-right" role="menu">       </ul>
+						</div>
+						<button class="btn btn-primary btn-sm hide primary-action"></button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div> 
+				<div class="container page-body">
+					<div class="page-toolbar hide">
+						<div class="container">   </div>
+					</div>  
+					<div class="page-wrapper">
+						<div class="page-content">
+							<div class="workflow-button-area btn-group pull-right hide"></div>
+							<div class="clearfix"></div>  
+							<div class="row layout-main">
+								<div class="col-lg-2 layout-side-section">
+									<button class="sr-only sr-only-focusable btn btn-primary-light my-2" tabindex="0" role="link">Ana içeriğe git</button>
+									<div class="list-sidebar overlay-sidebar hidden-xs hidden-sm">
+										<div class="desk-sidebar list-unstyled sidebar-menu">
+											<div class="standard-sidebar-section nested-container hidden" data-title="Personal">
+												<button class="btn-reset standard-sidebar-label" aria-label="Toggle Section: Kişisel" aria-expanded="true">
+													<span>
+														<svg class="es-icon es-line  icon-xs" style="" aria-hidden="true">
+															<use class="" href="#es-line-down"></use>
+														</svg>
+													</span>
+													<span class="section-title">
+														Kişisel<span>
+													</span>
+												</span>
+											</button>
+										</div>
+											<div class="standard-sidebar-section nested-container" data-title="Public">
+												<button class="btn-reset standard-sidebar-label" aria-label="Toggle Section: Herkese Açık" aria-expanded="true">
+													<span>
+														<svg class="es-icon es-line  icon-xs" style="" aria-hidden="true">
+															<use class="" href="#es-line-down"></use>
+														</svg>
+													</span>
+													<span class="section-title">
+														Herkese Açık<span></span>
+													</span>
+												</button>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Home" item-public="1" item-is-hidden="0">
+											<div class="desk-sidebar-item standard-sidebar-item selected">
+												<a href="/app/home" class="item-anchor" title="Ana Sayfa">
+													<span class="sidebar-item-icon" item-icon="getting-started">
+														<svg class="icon  icon-md" style="" aria-hidden="true">
+															<use class="" href="#icon-getting-started"></use>
+														</svg>
+													</span>
+													<span class="sidebar-item-label">
+														Ana Sayfa<span>
+													</span>
+												</span>
+											</a>
+					 
+										</div>
+										<div class="sidebar-child-item nested-container"></div>
+									</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Accounting" item-public="1" item-is-hidden="0">
+										<div class="desk-sidebar-item standard-sidebar-item ">
+											<a href="/app/accounting" class="item-anchor" title="Muhasebe">
+												<span class="sidebar-item-icon" item-icon="accounting">
+													<svg class="icon  icon-md" style="" aria-hidden="true">
+														<use class="" href="#icon-accounting"></use>
+													</svg>
+												</span>
+												<span class="sidebar-item-label">
+													Muhasebe<span>
+												</span>
+											</span>
+										</a>
+	 
+									</div>
+				
+									<div class="sidebar-child-item nested-container hidden">
+										<div class="sidebar-item-container is-draggable" item-parent="Accounting" item-name="Payables" item-public="1" item-is-hidden="0">
+											<div class="desk-sidebar-item standard-sidebar-item ">
+												<a href="/app/payables" class="item-anchor" title="Borçlar">
+													<span class="sidebar-item-icon" item-icon="arrow-left">
+														<svg class="icon  icon-md" style="" aria-hidden="true">
+															<use class="" href="#icon-arrow-left"></use>
+														</svg>
+													</span>
+													<span class="sidebar-item-label">
+														Borçlar<span>
+													</span>
+												</span>
+											</a>
+		 
+										</div>
+										<div class="sidebar-child-item nested-container"></div>
+									</div>
+									<div class="sidebar-item-container is-draggable" item-parent="Accounting" item-name="Receivables" item-public="1" item-is-hidden="0">
+										<div class="desk-sidebar-item standard-sidebar-item ">
+											<a href="/app/receivables" class="item-anchor" title="Alacaklar">
+												<span class="sidebar-item-icon" item-icon="arrow-right">
+													<svg class="icon  icon-md" style="" aria-hidden="true">
+														<use class="" href="#icon-arrow-right"></use>
+													</svg>
+												</span>
+												<span class="sidebar-item-label">
+													Alacaklar<span>
+												</span>
+											</span>
+										</a>
+	 
+									</div>
+									<div class="sidebar-child-item nested-container"></div>
+								</div>
+								<div class="sidebar-item-container is-draggable" item-parent="Accounting" item-name="Financial Reports" item-public="1" item-is-hidden="0">
+									<div class="desk-sidebar-item standard-sidebar-item ">
+										<a href="/app/financial-reports" class="item-anchor" title="Finansal Raporlar">
+											<span class="sidebar-item-icon" item-icon="file">
+												<svg class="icon  icon-md" style="" aria-hidden="true">
+													<use class="" href="#icon-file"></use>
+												</svg>
+											</span>
+											<span class="sidebar-item-label">
+												Finansal Raporlar<span>
+											</span>
+										</span>
+									</a>
+ 
+								</div>
+								<div class="sidebar-child-item nested-container"></div>
+							</div>
+						</div>
+						</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Buying" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item">
+														<a href="/app/buying" class="item-anchor" title="Satınalma">
+															<span class="sidebar-item-icon" item-icon="buying">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-buying"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Satınalma<span>
+															</span>
+														</span>
+													</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Selling" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/selling" class="item-anchor" title="Satış">
+															<span class="sidebar-item-icon" item-icon="sell">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-sell"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Satış<span>
+															</span>
+														</span>
+													</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Stock" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/stock" class="item-anchor" title="Stok">
+															<span class="sidebar-item-icon" item-icon="stock">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-stock"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Stok<span>
+															</span>
+														</span>
+													</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Assets" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/assets" class="item-anchor" title="Varlıklar">
+															<span class="sidebar-item-icon" item-icon="assets">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-assets"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Varlıklar<span>
+															</span>
+														</span>
+													</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="HR" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/hr" class="item-anchor" title="İnsan Kaynakları">
+															<span class="sidebar-item-icon" item-icon="hr">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-hr"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																İnsan Kaynakları<span>
+															</span>
+														</span>
+													</a>
+ 
+												</div>
+				
+												<div class="sidebar-child-item nested-container hidden">
+													<div class="sidebar-item-container is-draggable" item-parent="HR" item-name="Recruitment" item-public="1" item-is-hidden="0">
+														<div class="desk-sidebar-item standard-sidebar-item ">
+															<a href="/app/recruitment" class="item-anchor" title="İşe Alım">
+																<span class="sidebar-item-icon" item-icon="users">
+																	<svg class="icon  icon-md" style="" aria-hidden="true">
+																		<use class="" href="#icon-users"></use>
+																	</svg>
+																</span>
+																<span class="sidebar-item-label">
+																	İşe Alım<span>
+																</span>
+															</span>
+														</a>
+	 
+													</div>
+													<div class="sidebar-child-item nested-container"></div>
+												</div><div class="sidebar-item-container is-draggable" item-parent="HR" item-name="Employee Lifecycle" item-public="1" item-is-hidden="0">
+												<div class="desk-sidebar-item standard-sidebar-item ">
+													<a href="/app/employee-lifecycle" class="item-anchor" title="Personel Döngüsü">
+														<span class="sidebar-item-icon" item-icon="assign">
+															<svg class="icon  icon-md" style="" aria-hidden="true">
+																<use class="" href="#icon-assign"></use>
+															</svg>
+														</span>
+														<span class="sidebar-item-label">
+															Personel Döngüsü<span>
+														</span>
+													</span>
+												</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div><div class="sidebar-item-container is-draggable" item-parent="HR" item-name="Performance" item-public="1" item-is-hidden="0">
+												<div class="desk-sidebar-item standard-sidebar-item ">
+													<a href="/app/performance" class="item-anchor" title="Performans">
+														<span class="sidebar-item-icon" item-icon="star">
+															<svg class="icon  icon-md" style="" aria-hidden="true">
+																<use class="" href="#icon-star"></use>
+															</svg>
+														</span>
+														<span class="sidebar-item-label">
+															Performans<span>
+														</span>
+													</span>
+												</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div><div class="sidebar-item-container is-draggable" item-parent="HR" item-name="Shift &amp; Attendance" item-public="1" item-is-hidden="0">
+												<div class="desk-sidebar-item standard-sidebar-item ">
+													<a href="/app/shift-&amp;-attendance" class="item-anchor" title="Vardiya &amp; Devamlılık">
+														<span class="sidebar-item-icon" item-icon="milestone">
+															<svg class="icon  icon-md" style="" aria-hidden="true">
+																<use class="" href="#icon-milestone"></use>
+															</svg>
+														</span>
+														<span class="sidebar-item-label">
+															Vardiya &amp; Devamlılık<span>
+														</span>
+													</span>
+												</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div><div class="sidebar-item-container is-draggable" item-parent="HR" item-name="Expense Claims" item-public="1" item-is-hidden="0">
+												<div class="desk-sidebar-item standard-sidebar-item ">
+													<a href="/app/expense-claims" class="item-anchor" title="Harcama Talepleri">
+														<span class="sidebar-item-icon" item-icon="expenses">
+															<svg class="icon  icon-md" style="" aria-hidden="true">
+																<use class="" href="#icon-expenses"></use>
+															</svg>
+														</span>
+														<span class="sidebar-item-label">
+															Harcama Talepleri<span>
+														</span>
+													</span>
+												</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div><div class="sidebar-item-container is-draggable" item-parent="HR" item-name="Leaves" item-public="1" item-is-hidden="0">
+												<div class="desk-sidebar-item standard-sidebar-item ">
+													<a href="/app/leaves" class="item-anchor" title="İzinler">
+														<span class="sidebar-item-icon" item-icon="non-profit">
+															<svg class="icon  icon-md" style="" aria-hidden="true">
+																<use class="" href="#icon-non-profit"></use>
+															</svg>
+														</span>
+														<span class="sidebar-item-label">
+															İzinler<span>
+														</span>
+													</span>
+												</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												</div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Manufacturing" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/manufacturing" class="item-anchor" title="Üretim">
+															<span class="sidebar-item-icon" item-icon="organization">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-organization"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Üretim<span>
+															</span>
+														</span>
+													</a>
+	 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Quality" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/quality" class="item-anchor" title="Kalite">
+															<span class="sidebar-item-icon" item-icon="quality">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-quality"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Kalite<span>
+															</span>
+														</span>
+													</a>
+	 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Projects" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/projects" class="item-anchor" title="Projeler">
+															<span class="sidebar-item-icon" item-icon="project">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-project"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Projeler<span>
+															</span>
+														</span>
+													</a>
+	 
+												</div>
+													<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Support" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/support" class="item-anchor" title="Destek">
+															<span class="sidebar-item-icon" item-icon="support">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-support"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Destek<span>
+															</span>
+														</span>
+													</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Users" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/users" class="item-anchor" title="Kullanıcılar">
+															<span class="sidebar-item-icon" item-icon="users">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-users"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Kullanıcılar<span>
+															</span>
+														</span>
+													</a>
+	 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Website" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/website" class="item-anchor" title="Website">
+															<span class="sidebar-item-icon" item-icon="website">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-website"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Website<span>
+															</span>
+														</span>
+													</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Payroll" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/payroll" class="item-anchor" title="Bordro">
+															<span class="sidebar-item-icon" item-icon="money-coins-1">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-money-coins-1"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Bordro<span>
+															</span>
+														</span>
+													</a>
+	 
+												</div>
+				
+												<div class="sidebar-child-item nested-container hidden">
+													<div class="sidebar-item-container is-draggable" item-parent="Payroll" item-name="Salary Payout" item-public="1" item-is-hidden="0">
+														<div class="desk-sidebar-item standard-sidebar-item ">
+															<a href="/app/salary-payout" class="item-anchor" title="Maaş Ödemesi">
+																<span class="sidebar-item-icon" item-icon="income">
+																	<svg class="icon  icon-md" style="" aria-hidden="true">
+																		<use class="" href="#icon-income"></use>
+																	</svg>
+																</span>
+																<span class="sidebar-item-label">
+																	Maaş Ödemesi<span>
+																</span>
+															</span>
+														</a>
+		 
+													</div>
+													<div class="sidebar-child-item nested-container"></div>
+												</div><div class="sidebar-item-container is-draggable" item-parent="Payroll" item-name="Tax &amp; Benefits" item-public="1" item-is-hidden="0">
+												<div class="desk-sidebar-item standard-sidebar-item ">
+													<a href="/app/tax-&amp;-benefits" class="item-anchor" title="Vergi &amp; Kazançlar">
+														<span class="sidebar-item-icon" item-icon="crm">
+															<svg class="icon  icon-md" style="" aria-hidden="true">
+																<use class="" href="#icon-crm"></use>
+															</svg>
+														</span>
+														<span class="sidebar-item-label">
+															Vergi &amp; Kazançlar<span>
+														</span>
+													</span>
+												</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												</div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="CRM" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/crm" class="item-anchor" title="CRM">
+															<span class="sidebar-item-icon" item-icon="crm">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-crm"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																CRM<span>
+															</span>
+														</span>
+													</a>
+ 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Tools" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/tools" class="item-anchor" title="Araçlar">
+															<span class="sidebar-item-icon" item-icon="tool">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-tool"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Araçlar<span>
+															</span>
+														</span>
+													</a>
+	 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="ERPNext Settings" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/erpnext-settings" class="item-anchor" title="ERPNext Ayarları">
+															<span class="sidebar-item-icon" item-icon="setting">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-setting"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																ERPNext Ayarları<span>
+															</span>
+														</span>
+													</a>
+	 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Integrations" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/integrations" class="item-anchor" title="Entegrasyonlar">
+															<span class="sidebar-item-icon" item-icon="integration">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-integration"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Entegrasyonlar<span>
+															</span>
+														</span>
+													</a>
+	 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="ERPNext Integrations" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/erpnext-integrations" class="item-anchor" title="ERPNext Entegrasyonları">
+															<span class="sidebar-item-icon" item-icon="integration">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-integration"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																ERPNext Entegrasyonları<span>
+															</span>
+														</span>
+													</a>
+	 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+												<div class="sidebar-item-container is-draggable" item-parent="" item-name="Build" item-public="1" item-is-hidden="0">
+													<div class="desk-sidebar-item standard-sidebar-item ">
+														<a href="/app/build" class="item-anchor" title="Geliştir">
+															<span class="sidebar-item-icon" item-icon="tool">
+																<svg class="icon  icon-md" style="" aria-hidden="true">
+																	<use class="" href="#icon-tool"></use>
+																</svg>
+															</span>
+															<span class="sidebar-item-label">
+																Geliştir<span>
+															</span>
+														</span>
+													</a>
+	 
+												</div>
+												<div class="sidebar-child-item nested-container"></div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>			
+								<div class="col layout-main-section-wrapper">
+									<div class="layout-main-section">
+										<div class="page-form row hide"></div>
+										<div class="editor-js-container">
+											<div id="editorjs" class="desk-page page-main-content">
+												<div class="codex-editor">
+													@RenderBody()
+												</div>
+											</div>
+											<div class="workspace-footer">
+												<button data-label="New" class="btn btn-default ellipsis btn-new-workspace">
+													<svg class="es-icon es-line icon-xs" style="" aria-hidden="true">
+														<use class="" href="#es-line-add"></use>
+													</svg>
+													<span class="hidden-xs" data-label="New">Yeni</span>
+												</button>
+												<button class="btn btn-default btn-sm mr-2 btn-edit-workspace" data-label="Edit">
+													<svg class="es-icon es-line  icon-xs" style="" aria-hidden="true">
+														<use class="" href="#es-line-edit"></use>
+													</svg>
+													<span class="hidden-xs" data-label="Edit">Düzenle</span>
+												</button>
+											</div>
+										</div>
+										<div class="layout-footer hide"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<footer></footer>
+		</div>
+
+		
+
+@{
+	await Html.RenderPartialAsync("erpnext/all-symbols");
+}
+@{
+	// await Html.RenderPartialAsync("erpnext/script");
+}
+
+	
+	</div>
+</body>
+</html> 

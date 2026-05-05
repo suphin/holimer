@@ -411,7 +411,7 @@ namespace Ekomers.Data.Services
 					TalepEdenID = _userId,
 					TalepEdenTarihSaat = DateTime.Now 
 				};
-				_RequestUrunlerRepo.Add(model);
+				await _RequestUrunlerRepo.AddAsync(model);
 			 
 
 			await _context.SaveChangesAsync();

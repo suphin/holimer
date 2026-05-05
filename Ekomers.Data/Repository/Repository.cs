@@ -8,15 +8,18 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using static Dapper.SqlMapper;
 
 namespace Ekomers.Data.Repository
 {
     public class Repository<T> : IRepository<T> where T : class
     {
         private readonly ApplicationDbContext _context;
-        private DbSet<T> _dbSet; 
+        private DbSet<T> _dbSet;
 
-        public Repository(ApplicationDbContext context)
+		public virtual IQueryable<T> Table => _dbSet;
+
+		public Repository(ApplicationDbContext context)
         {
             _context = context;
             _dbSet = _context.Set<T>();

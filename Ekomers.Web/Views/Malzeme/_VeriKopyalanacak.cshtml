@@ -18,7 +18,7 @@
 			@{
 				await Html.RenderPartialAsync("_form", Model);
 			}
-		 
+			<div id="GrupUrunleri" class="mt-5"></div>
 
 		</div>
 		<div class="modal-footer"> 
@@ -32,11 +32,15 @@
 	</div>
 </form>
 <script src="js/select2.js?v=7.0.5"></script>
-@* <script type="text/javascript">
+<script type="text/javascript">
 
 
     $(document).ready(function () {        // Formun submit olayı
         $('#_VeriEkle2').on('submit', function (e) {
+			if	($('#GrupID').val() == "") {
+				toastr.error('Lütfen bir grup seçiniz.', 'Hata!');
+				return false;
+			}
             e.preventDefault();
             var form = $(this);
             var actionUrl = form.attr('action');
@@ -59,7 +63,7 @@
         });
     });
 
-</script> *@
+</script>
 <!--begin::Page Vendors(used by this page)-->
 <script src="~/assets1/plugins/custom/jstree/jstree.bundle.js?v=7.0.5"></script>
 <!--end::Page Vendors-->
@@ -71,7 +75,7 @@
 		// Gelen id değerini hidden input'a ekliyoruz
 		document.getElementById("GrupID").value = id;
 		document.getElementById("Grup").value = grupad;
-
+	GetAjax('Malzeme/GrupUrunleriGetir?GrupID='+id, 'GrupUrunleri');
 
 	}
 
