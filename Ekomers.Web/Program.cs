@@ -11,8 +11,10 @@ using Ekomers.Web.Controllers;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -291,6 +293,16 @@ builder.Services.AddHangfire(config =>
 builder.Services.AddHangfireServer();
 
 
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+builder.Services.AddControllersWithViews()
+	.AddViewLocalization()
+	.AddDataAnnotationsLocalization();
+
+var supportedCultures = new[] { "tr", "en" };
+
+
+
 
 var app = builder.Build();
 #endregion
@@ -298,6 +310,13 @@ var app = builder.Build();
 //arka plan işlemleri için hangfire kurulumu
 app.UseHangfireDashboard("/hangfire"); // panel
 
+
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+	DefaultRequestCulture = new RequestCulture("tr"),
+	SupportedCultures = supportedCultures.Select(c => new CultureInfo(c)).ToList(),
+	SupportedUICultures = supportedCultures.Select(c => new CultureInfo(c)).ToList()
+});
 
 //SyncfusionLicenseProvider.RegisterLicense("Mgo+DSMBPh8sVXJwS0d+WFBPdEBEQmFJfFdmRGNTe1h6cVNWESFaRnZdRl1iSXlSdkFkW3daeXRd");
 /// SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NAaF5cWWJCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdnWX5fdnRXRmBZUkNyX0c=");

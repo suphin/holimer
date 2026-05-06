@@ -2,7 +2,8 @@
 @using Ekomers
 @using Ekomers.Models
 @using Ekomers.Models.Ekomers
- 
+@inherits Ekomers.Web.Helpers.MyRazorPage<TModel>
+
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @using Ekomers.Models.ViewModels
 @using System.Security.Claims

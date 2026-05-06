@@ -18,9 +18,7 @@ namespace Ekomers.Data.Repository
         private readonly ApplicationDbContext _context;
        // private PurchasingCRMContext _context;
 
-        private DbSet<TEntity> _dbSet;
-
-        private DbSet<TEntity> _dbCopy;
+        private DbSet<TEntity> _dbSet; 
         public GeneralRepository(ApplicationDbContext Context)
         {
             _context = Context;
