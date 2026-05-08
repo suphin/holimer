@@ -40,9 +40,13 @@
                     </a>
                 </td>
                 <td>
-                    <a href="#" class="btn btn-light btn-hover-warning btn-sm mr-1" onclick="TalepOnayla('@item.ID')" data-toggle="modal" data-target="#ModalVeri" title="Görüntüle" data-id="@item.ID">
-                       Onaya Git
-                    </a>
+                    @if (User.HasClaim("Authorize", "TalepKabul"))
+                    {
+                        <a href="#" class="btn btn-light btn-hover-warning btn-sm mr-1" onclick="TalepOnayla('@item.ID')" data-toggle="modal" data-target="#ModalVeri" title="Görüntüle" data-id="@item.ID">
+                            Onaya Git
+                        </a>
+                    }
+                   
                 </td>
             </tr>
         }

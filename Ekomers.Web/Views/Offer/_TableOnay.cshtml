@@ -31,7 +31,10 @@
                 <td>@(!string.IsNullOrWhiteSpace(item.Aciklama) ? item.Aciklama : "—")</td> 
                 
                 <td>
-                    <a class="btn btn-sm btn-info" href="/offer/onaydetail/@item.ID">Teklif Kabul</a>
+                    @if (User.HasClaim("Authorize", "TeklifKabul"))
+                    {
+                        <a class="btn btn-sm btn-info" href="/offer/onaydetail/@item.ID">Teklif Kabul</a>
+                    }
                 </td>
             </tr>
         }

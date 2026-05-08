@@ -248,8 +248,8 @@ namespace Ekomers.Web.Controllers
 	 
 		public async Task<PartialViewResult> UrunEkle(int RequestID)
 		{
-
-			var talep=await _service.VeriGetir(RequestID);
+            ViewBag.RequestTurListe = await _turCache.GetListeAsync(CacheKeys.RequestTurAll);
+            var talep=await _service.VeriGetir(RequestID);
 			var modelvm = new RequestUrunlerVM()
 			{
 				CreateDate = DateTime.Now,
@@ -318,6 +318,7 @@ namespace Ekomers.Web.Controllers
 					BirimID = urun.BirimID,
 					BirimAd = urun.BirimAd,
 					TalepEdenID = _userId,
+					TalepTurID=models.TalepTurID,
 					TalepEdenTarihSaat = DateTime.Now,
 					Aciklama = models.Aciklama,
 					RequestID = models.RequestID
@@ -343,7 +344,8 @@ namespace Ekomers.Web.Controllers
 			 
 			return View("Print", modelc); // Print.cshtml
 		}
-		public async Task<PartialViewResult> TalepOnayla(int VeriID = 0, int pageIndex = 0, int pageSize = 0)
+        [Authorize(Policy = "TalepKabul")]
+        public async Task<PartialViewResult> TalepOnayla(int VeriID = 0, int pageIndex = 0, int pageSize = 0)
 		{
 
 			var modelc = await _service.VeriGetir(VeriID);
@@ -418,8 +420,8 @@ namespace Ekomers.Web.Controllers
 							.Select(x => x.User.Email)
 							.ToList();
 
-				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _urun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
-				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _urun.KabulEdenID).Select(x => x.User.Email).FirstOrDefault());
+				users.Add(_context.Users.Where(x => x.Id == _urun.TalepEdenID).Select(x => x.Email).FirstOrDefault());
+				users.Add(_context.Users.Where(x => x.Id == _urun.KabulEdenID).Select(x => x.Email).FirstOrDefault());
 				 
 
 				var mesajBody = $@"
@@ -502,8 +504,8 @@ namespace Ekomers.Web.Controllers
 							.Select(x => x.User.Email)
 							.ToList();
 
-				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _urun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
-				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _urun.DeleteUserID).Select(x => x.User.Email).FirstOrDefault());
+				users.Add(_context.Users.Where(x => x.Id == _urun.TalepEdenID).Select(x => x.Email).FirstOrDefault());
+				users.Add(_context.Users.Where(x => x.Id == _urun.DeleteUserID).Select(x => x.Email).FirstOrDefault());
 
 
 				var mesajBody = $@"

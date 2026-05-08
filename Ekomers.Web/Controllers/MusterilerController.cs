@@ -271,11 +271,11 @@ namespace Ekomers.Web.Controllers
 
 			// Güvenli ve performanslı arama (ToLower/EF Core vs. projenize göre uyarlayın)
 			var query = _context.Musteriler
-				.Where(x => (searchName == null || x.AdSoyad.Contains(searchName)))
+				.Where(x => (searchName == null || x.AdSoyad.Contains(searchName) || x.SirketUnvan.Contains(searchName)))
 				.OrderBy(x => x.AdSoyad);
 
 			var items = query  
-				.Select(x => new { id = x.ID, ad = x.AdSoyad })
+				.Select(x => new { id = x.ID, ad = x.AdSoyad, sirket = x.SirketUnvan??"" })
 				.ToList();
 
 		 

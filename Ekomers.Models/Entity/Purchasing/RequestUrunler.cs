@@ -22,6 +22,7 @@ namespace Ekomers.Models.Entity
 		public string? TTN { get; set; } // talep takip no
 		public bool OnayliMi { get; set; }
 		public int OfferDurumID { get; set; }
+		public int TalepTurID { get; set; }
 
 		public string? TalepEdenID { get; set; }		 
 		public DateTime TalepEdenTarihSaat { get; set; }
@@ -29,9 +30,9 @@ namespace Ekomers.Models.Entity
 
 		public string? KabulEdenID { get; set; }		 
 		public DateTime KabulEdenTarihSaat { get; set; }
-		 
 
-	}
+        public string? RedNot { get; set; }
+    }
 
 	public class RequestUrunlerVM : BaseVM
 	{
@@ -89,6 +90,12 @@ namespace Ekomers.Models.Entity
 		public List<OfferVM> OfferVMListe { get; set; }
 		[Display(Name = "Talep Takip No")]
 		public string? TTN { get; set; } // talep takip no
+        [Display(Name = "Talep Türü")]
+        public string? TalepTurAd { get; set; } // talep takip no
+        [Display(Name = "Ret Notu")]
+        public string? RedNot { get; set; }  
 
-	}
+        public int TalepTurID { get; set; }
+
+    }
 }

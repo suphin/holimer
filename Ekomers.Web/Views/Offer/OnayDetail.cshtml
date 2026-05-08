@@ -53,13 +53,18 @@
                     <div class="text-right">
                      
                         <a type="button" class="btn btn-danger mr-2" href="/offer/onay">Geri Dön</a>
-                        @if (Model.OfferDurumID==(int)EnumOfferDurum.TeklifOnaylandi)
+                            @if (Model.OfferDurumID==(int)EnumOfferDurum.TeklifOnaylandi)
                             {
                                 
                             }
                             else
                             {
-                            <button type="button" name="actionType" value="taslak" class="btn btn-secondary  mr-2" data-toggle="modal" onclick="TeklifForm()" data-target="#ModalVeri">Teklif Geri Gönder</button>
+                           
+                            <button type="button" name="actionType" value="taslak" 
+                                class="btn btn-secondary  mr-2" 
+                                data-toggle="modal" 
+                            onclick="TeklifForm()" 
+                            data-target="#ModalVeri">Teklif Geri Gönder</button>
                             }
                             
                       
@@ -97,8 +102,8 @@
                     <tr>
                         <th>Seç</th>
                         <th>Firma</th>
-                        <th>Fiyat (₺)</th>
-                        <th>Fiyat (Döviz)</th>
+                        <th>Fiyatlama</th>
+                        
                         <th>Vade</th>
                         <th>Teslim</th>
                         <th>Performans</th>
@@ -152,21 +157,34 @@
                                 }
                                
                             </td>
-                            <td>@item.Firma?.AdSoyad</td>
-
-                            <td class="text-right fw-bold">
+                            <td>@item.Firma?.AdSoyad <br />
                                 @if (enIyi)
                                 {
-                                    <span class="badge bg-success">En Uygun</span>
+                                    <span class="badge bg-success">En Uygun</span> <br />
                                 }
-                                ₺ @tlFiyat.ToString("n2")
-                             
                             </td>
 
-                            <td class="text-right">
-                                @doviz @item.Fiyat.ToString("n2")
-                            </td>
+                         
 
+                            <td class="fw-bold">
+                              
+                                <table> 
+                                    <tr>
+                                        <td>TL Tutar :</td>
+                                        <td class="text-right">₺ @tlFiyat.ToString("n2")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Dövizli Tutar:</td>
+                                        <td class="text-right">@doviz @item.Fiyat.ToString("n2")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Toplam Tutar:</td>
+                                        <td class="text-right">@doviz @((tlFiyat * Model.MiktarSon).ToString("n2"))</td>
+                                    </tr>
+                                </table> 
+
+                            </td>
+                            
                             <td>@item.Vade gün</td>
                             <td>@item.TeslimTarihi.ToString("d")</td>
 
@@ -216,11 +234,11 @@
 @section JSSection { 
     <script>
         function TeklifForm() {
-            if (!confirm("Seçili teklifi kabul geri göndermek istediğinize emin misiniz?")) {
-                return;
-            }
-            //GetAjax('Offer/TeklifRed?requestUrunID=@Model.ID', 'VeriAlan');
-            window.open("Offer/TeklifRed?requestUrunID=@Model.ID","_top")
+            // if (!confirm("Seçili teklifi kabul geri göndermek istediğinize emin misiniz?")) {
+            //     return;
+            // }
+            GetAjax('Offer/TeklifRed?requestUrunID=@Model.ID', 'VeriAlan');
+           // window.open("Offer/TeklifRed?requestUrunID=@Model.ID","_top")
         }
         function teklifOnayla() {
             var selectedId = $('input[name="selectedOfferId"]:checked').val();

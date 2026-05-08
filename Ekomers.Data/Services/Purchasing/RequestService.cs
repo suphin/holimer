@@ -487,7 +487,10 @@ namespace Ekomers.Data.Services
 						 join tur in _RequestTurRepo.GetAll2() on request.TurID equals tur.ID into turGroup
 						from tur in turGroup.DefaultIfEmpty()
 
-						 join urunler in _urunlerRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false) on kayit.UrunID equals urunler.ID
+                         join talepTur in _RequestTurRepo.GetAll2() on kayit.TalepTurID equals talepTur.ID into talepTurGroup
+                         from talepTur in talepTurGroup.DefaultIfEmpty()
+
+                         join urunler in _urunlerRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false) on kayit.UrunID equals urunler.ID
 						 into urunlerGroup
 						 from urunler in urunlerGroup.DefaultIfEmpty()
 
@@ -546,8 +549,10 @@ namespace Ekomers.Data.Services
 							 	 RequestDurumClass = durum != null ? durum.Class : "",
 								 RequestTurID = (int)request.TurID,
 								 RequestTurAd = tur != null ? tur.Ad : "",
+								 								 TalepTurID = talepTur != null ? talepTur.ID : 0,
+																 TalepTurAd = talepTur != null ? talepTur.Ad : "",
 
-								 OfferDurumID=kayit.OfferDurumID,
+                             OfferDurumID =kayit.OfferDurumID,
 								 OfferDurumAd=OfferDurum.Ad,
 								 DurumClass=OfferDurum.Class, 
 
@@ -619,7 +624,10 @@ namespace Ekomers.Data.Services
 						 join tur in _RequestTurRepo.GetAll2() on request.TurID equals tur.ID into turGroup
 						 from tur in turGroup.DefaultIfEmpty()
 
-						 join urunler in _urunlerRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false) on kayit.UrunID equals urunler.ID
+						 join talepTur in _RequestTurRepo.GetAll2() on kayit.TalepTurID equals talepTur.ID into talepTurGroup
+						 	from talepTur in talepTurGroup.DefaultIfEmpty()
+
+                         join urunler in _urunlerRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false) on kayit.UrunID equals urunler.ID
 						 into urunlerGroup
 						 from urunler in urunlerGroup.DefaultIfEmpty()
 
@@ -672,8 +680,10 @@ namespace Ekomers.Data.Services
 							 RequestDurumClass = durum != null ? durum.Class : "",
 							 RequestTurID = (int)request.TurID,
 							 RequestTurAd = tur != null ? tur.Ad : "",
+							  TalepTurID = talepTur != null ? talepTur.ID : 0,
+							  	TalepTurAd = talepTur != null ? talepTur.Ad : "",
 
-							 OfferDurumID = kayit.OfferDurumID,
+                             OfferDurumID = kayit.OfferDurumID,
 							 OfferDurumAd = OfferDurum.Ad,
 							 DurumClass = OfferDurum.Class,
 
@@ -862,7 +872,7 @@ namespace Ekomers.Data.Services
 					TotalCount = total
 				};
 			}
-			catch
+			catch(Exception ex) 
 			{
 				return new PagedResult<RequestUrunlerVM>
 				{

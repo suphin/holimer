@@ -1,0 +1,37 @@
+﻿@model RequestUrunlerVM
+  
+<form method="post" name="_VeriEkle" id="_VeriEkle" asp-controller="Offer" asp-action="TeklifRed">
+	<div class="modal-content shadow-none">
+		<div class="modal-header">
+			<h5 class="modal-title">@Model.ModalTitle @Model.UrunKod - @Model.UrunAd</h5>
+		 
+			<button type="button" class="close no-print" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+		</div>
+		<div class="modal-body">
+			<div class="form-group row">
+				<div class="col-lg-12">
+					<label asp-for="RedNot" class="control-label"></label>
+					<textarea asp-for="RedNot" type="text" class="form-control form-control-sm" rows="2" required>
+           
+					</textarea>
+					<span asp-validation-for="RedNot" class="text-danger"></span>
+				</div>
+			</div>
+			 
+			<input type="hidden" asp-for="ID" />
+		</div>
+		<div class="modal-footer" id="modal-footer">
+			<input type="hidden" asp-for="CreateDate" value="@DateTime.Now" />
+			<input type="hidden" asp-for="IsActive" value="true" />
+			<input type="hidden" asp-for="IsDelete" value="false" />
+			<input type="hidden" asp-for="CreateUserID" value="@Model.UserID" />
+			<button type="button" class="btn btn-danger no-print" data-dismiss="modal">Kapat</button>
+			<button type="submit" class="btn btn-success">Teklifi Reddet</button>
+		</div>
+	</div>
+</form>
+ 
+
+
+
+

@@ -81,6 +81,11 @@ builder.Services.AddAuthorization(options =>
 
 	options.AddPolicy("Update", policy =>
 		policy.RequireClaim("Authorize", "Update"));
+    options.AddPolicy("TeklifKabul", policy =>
+        policy.RequireClaim("Authorize", "TeklifKabul"));
+
+    options.AddPolicy("TalepKabul", policy =>
+        policy.RequireClaim("Authorize", "TalepKabul"));
 });
 builder.Services.AddAuthorization(options =>
 {

@@ -69,7 +69,11 @@
                     <input asp-for="BirimAd" class="form-control form-control-sm" tabindex="-1"  />
                     <input asp-for="BirimID" type="hidden" />
                 </div>
-              
+        <div class="col-lg-3">
+            <label class="control-label" asp-for="TalepTurAd"></label>
+            <select asp-for="TalepTurID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.RequestTurListe, "ID", "Ad"))"></select>
+            
+        </div>
  
       
             </div>
@@ -107,7 +111,7 @@
     }
 </script>
 
- 
+<script src="js/select2.js?v=7.0.5"></script>
 
 <script>
     $(document).ready(function() {
@@ -158,12 +162,17 @@
         var Miktar = $('#Miktar').val(); 
         var BirimID = $('#BirimID').val();
         var Aciklama = $('#Aciklama').val();
+    var TalepTurID = $('#TalepTurID').val();
         var RequestID=@(Model.RequestID);
     
        if(UrunID==0){
            alert("Malzeme seçiniz!");
            return false;
        }
+    if(TalepTurID==0){
+    alert("Talep türü seçiniz!");
+    return false;
+    }
         if(Miktar==""){
             alert("Miktar giriniz!");
            return false;
@@ -181,12 +190,14 @@
                 BirimID: BirimID,
                 Miktar: Miktar, 
                 Aciklama: Aciklama,
-                RequestID:RequestID
+                RequestID:RequestID,
+                TalepTurID:TalepTurID,
             },
             success: function(response) {
                 $('#MalzemeEklenenListe').html(response);
                 $('#UrunID').val('');
                 $('#Miktar').val('');
+    $('#TalepTurID').val('');
                 
                 $('#BirimAd').val('');
                 $('#BirimID').val('');

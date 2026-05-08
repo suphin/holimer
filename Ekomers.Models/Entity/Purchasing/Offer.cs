@@ -37,8 +37,8 @@ namespace Ekomers.Models.Entity
 		public int? FirmaID { get; set; }
 		public string? Not { get; set; }
 		public string? Aciklama { get; set; }
-		
-		public bool IsLocked { get; set; } = false;		 
+        public string? RedNot { get; set; }
+        public bool IsLocked { get; set; } = false;		 
 		public DateTime TeslimTarihi { get; set; }	 		 
 		public string? TeslimAdres { get; set; }
 	}
@@ -78,6 +78,7 @@ namespace Ekomers.Models.Entity
 		public DateTime RequestDate { get; set; }
 		public DateTime FaturaTarihi { get; set; }
 		public string? Not { get; set; }
+		public string? RedNot { get; set; }
 		public string? TalepNot { get; set; }
 		public virtual Musteriler? Firma { get; set; }
 

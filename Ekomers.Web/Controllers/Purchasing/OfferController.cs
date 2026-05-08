@@ -169,7 +169,32 @@ namespace Ekomers.Web.Controllers
 			return RedirectToAction("Index");
 
 		}
-		public async Task<IActionResult> OnayDetail(int Id)
+		[HttpPost]
+        public async Task<IActionResult> Detail(RequestUrunlerVM modelv)
+        {
+            ViewBag.Modul = ModulAd;
+
+            var model = await _requestService.RequestUrunGetir(modelv.ID);
+			model.Aciklama = modelv.Aciklama;
+            var sonuc = await _requestService.RequestUrunGuncelle(model);
+
+
+            model.UserID = _userId;
+            if (model.OfferDurumID == (int)EnumOfferDurum.TeklifAsamasinda)
+            {
+                var offer = new OfferVM
+                {
+                    RequestUrunID = modelv.ID
+                };
+                model.OfferVMListe = await _service.VeriListele(offer);
+                return View(model);
+            }
+
+            return RedirectToAction("Index");
+
+        }
+        [Authorize(Policy = "TeklifKabul")]
+        public async Task<IActionResult> OnayDetail(int Id)
 		{
 			ViewBag.Modul = ModulAd;
 
@@ -280,10 +305,10 @@ namespace Ekomers.Web.Controllers
 							.Where(x => x.Type == MailNotificationType.Teklif)
 							.Select(x => x.User.Email)
 							.ToList();
-				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == requestUrun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
-				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _userId).Select(x => x.User.Email).FirstOrDefault());
+				users.Add(_context.Users.Where(x => x.Id == requestUrun.TalepEdenID).Select(x => x.Email).FirstOrDefault());
+                users.Add(_context.Users.Where(x => x.Id == _userId).Select(x => x.Email).FirstOrDefault());
 
-				var mesajBody = $@"
+                var mesajBody = $@"
 								<h3>Talep Detayları</h3>
 
 								<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
@@ -430,8 +455,8 @@ namespace Ekomers.Web.Controllers
 							.Select(x => x.User.Email)
 							.ToList();
 
-				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == requestUrun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
-				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _userId).Select(x => x.User.Email).FirstOrDefault());
+				users.Add(_context.Users.Where(x => x.Id == requestUrun.TalepEdenID).Select(x => x.Email).FirstOrDefault());
+				users.Add(_context.Users.Where(x => x.Id == _userId).Select(x => x.Email).FirstOrDefault());
 
 				var mesajBody = $@"
 								<h3>Talep Detayları</h3>
@@ -559,13 +584,25 @@ namespace Ekomers.Web.Controllers
 		}
 
 
-		[Authorize(Roles = "Editor")]
-		public async Task<IActionResult> TeklifRed(int requestUrunID)
+        [Authorize(Roles = "Editor")]
+        public async Task<IActionResult> TeklifRed(int requestUrunID)
+        {
+            var requestUrun = await _requestService.RequestUrunGetir(requestUrunID);
+
+
+            return PartialView(requestUrun);
+        }
+
+
+        [Authorize(Roles = "Editor")]
+		[HttpPost]
+		public async Task<IActionResult> TeklifRed(RequestUrunlerVM model)
 		{
-			var requestUrun = await _requestService.RequestUrunGetir(requestUrunID);
+			var requestUrun = await _requestService.RequestUrunGetir(model.ID);
 			requestUrun.OfferDurumID = (int)EnumOfferDurum.TeklifAsamasinda;
-			var sonuc = await _requestService.RequestUrunGuncelle(requestUrun);
-			var teklifler = await _service.VeriListele(new OfferVM { RequestUrunID = requestUrunID });
+			requestUrun.RedNot = model.RedNot;
+            var sonuc = await _requestService.RequestUrunGuncelle(requestUrun);
+			var teklifler = await _service.VeriListele(new OfferVM { RequestUrunID = model.ID });
 			if (sonuc)
 			{
 				var _urun = requestUrun;
@@ -574,8 +611,8 @@ namespace Ekomers.Web.Controllers
 							.Select(x => x.User.Email)
 							.ToList();
 
-				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == requestUrun.TalepEdenID).Select(x => x.User.Email).FirstOrDefault());
-				users.Add(_context.MailNotificationUsers.Where(x => x.UserId == _userId).Select(x => x.User.Email).FirstOrDefault());
+				users.Add(_context.Users.Where(x => x.Id == requestUrun.TalepEdenID).Select(x => x.Email).FirstOrDefault());
+				users.Add(_context.Users.Where(x => x.Id == _userId).Select(x => x.Email).FirstOrDefault());
 
 				var mesajBody = $@"
 								<h3>Talep Detayları</h3>
@@ -616,6 +653,10 @@ namespace Ekomers.Web.Controllers
 									<tr>
 										<th align='left'>Birim</th>
 										<td>{_urun.BirimAd}</td>
+									</tr>
+	<tr>
+										<th align='left'>Teklif Red Notu</th>
+										<td>{_urun.RedNot}</td>
 									</tr>
 								</table>
 <br />

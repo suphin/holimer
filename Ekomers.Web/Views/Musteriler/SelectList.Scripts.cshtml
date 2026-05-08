@@ -11,7 +11,7 @@
                         var results = $("#results");
                         results.empty();
                         $.each(data, function (index, musteri) {
-                            results.append('<li data-id="' + musteri.id + '">' + musteri.ad + '</li>');
+                            results.append('<li data-id="' + musteri.id + '">' + musteri.ad + ' - ' + musteri.sirket + '</li>');
                         });
                     }
                 });

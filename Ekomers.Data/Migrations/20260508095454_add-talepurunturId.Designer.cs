@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260508095454_add-talepurunturId")]
+    partial class addtalepurunturId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2352,9 +2355,6 @@ namespace Ekomers.Data.Migrations
                     b.Property<int>("OdemeTurID")
                         .HasColumnType("int");
 
-                    b.Property<string>("RedNot")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("RequestUrunID")
                         .HasColumnType("int");
 
@@ -3003,9 +3003,6 @@ namespace Ekomers.Data.Migrations
 
                     b.Property<bool>("OnayliMi")
                         .HasColumnType("bit");
-
-                    b.Property<string>("RedNot")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("RequestID")
                         .HasColumnType("int");
