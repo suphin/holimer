@@ -401,7 +401,7 @@ namespace Ekomers.Data.Services
 					RequestID = modelv.RequestID, 
 					Miktar = modelv.Miktar,
 					Aciklama=modelv.Aciklama,
-
+					TalepTurID=modelv.TalepTurID,
 					TTN = await _ttnService.GenerateTtnAsync(),
 					CreateDate = DateTime.Now,
 					IsActive = true,
@@ -482,11 +482,6 @@ namespace Ekomers.Data.Services
 						 from OfferDurum in OfferDurumGroup.DefaultIfEmpty()
  
 						 
-
-
-						 join tur in _RequestTurRepo.GetAll2() on request.TurID equals tur.ID into turGroup
-						from tur in turGroup.DefaultIfEmpty()
-
                          join talepTur in _RequestTurRepo.GetAll2() on kayit.TalepTurID equals talepTur.ID into talepTurGroup
                          from talepTur in talepTurGroup.DefaultIfEmpty()
 
@@ -538,7 +533,7 @@ namespace Ekomers.Data.Services
 							  TTN = kayit.TTN != null ? kayit.TTN : "",
 							 Aciklama =kayit.Aciklama,
 							 RequestID = kayit.RequestID,
-							 
+							 RedNot=kayit.RedNot,
 							 UrunID = kayit.UrunID,
 							 Miktar = (double)kayit.Miktar,
 							 MiktarSon= (double)kayit.MiktarSon,
@@ -547,10 +542,9 @@ namespace Ekomers.Data.Services
 							 RequestDurumAd = durum != null ? durum.Ad : "",
 							 RequestDurumID=(int)request.DurumID,
 							 	 RequestDurumClass = durum != null ? durum.Class : "",
-								 RequestTurID = (int)request.TurID,
-								 RequestTurAd = tur != null ? tur.Ad : "",
-								 								 TalepTurID = talepTur != null ? talepTur.ID : 0,
-																 TalepTurAd = talepTur != null ? talepTur.Ad : "",
+								 //RequestTurID = (int)request.TurID,
+								TalepTurID = talepTur != null ? talepTur.ID : 0,
+								TalepTurAd = talepTur != null ? talepTur.Ad : "",
 
                              OfferDurumID =kayit.OfferDurumID,
 								 OfferDurumAd=OfferDurum.Ad,
@@ -617,12 +611,8 @@ namespace Ekomers.Data.Services
 						 join offer in _OfferRepo.GetAll2() on kayit.ID equals offer.RequestUrunID
 						 into offerGroup
 						 from offer in offerGroup.DefaultIfEmpty()
-						 where offer.IsSelected == true
-
-
-
-						 join tur in _RequestTurRepo.GetAll2() on request.TurID equals tur.ID into turGroup
-						 from tur in turGroup.DefaultIfEmpty()
+						 where offer.IsSelected == true 
+						  
 
 						 join talepTur in _RequestTurRepo.GetAll2() on kayit.TalepTurID equals talepTur.ID into talepTurGroup
 						 	from talepTur in talepTurGroup.DefaultIfEmpty()
@@ -678,8 +668,7 @@ namespace Ekomers.Data.Services
 							 RequestDurumAd = durum != null ? durum.Ad : "",
 							 RequestDurumID = (int)request.DurumID,
 							 RequestDurumClass = durum != null ? durum.Class : "",
-							 RequestTurID = (int)request.TurID,
-							 RequestTurAd = tur != null ? tur.Ad : "",
+							 
 							  TalepTurID = talepTur != null ? talepTur.ID : 0,
 							  	TalepTurAd = talepTur != null ? talepTur.Ad : "",
 

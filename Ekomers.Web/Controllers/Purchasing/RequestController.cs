@@ -1,6 +1,7 @@
 ﻿using Afbel.Common.Services;
 using Azure.Core;
 using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Presentation;
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services;
@@ -223,6 +224,7 @@ namespace Ekomers.Web.Controllers
 			if (sonuc > 0)
 			{
 				return Redirect("/Request/VeriGoruntule2?view=_VeriGetir2&VeriID=" + sonuc);
+				//return RedirectToAction("Index");
 			} 
 			else
 			{
@@ -256,7 +258,7 @@ namespace Ekomers.Web.Controllers
 				RequestID=RequestID,
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(RequestID),
 				RequestDurumID=(int)talep.DurumID,
-				 RequestTurID=(int)talep.TurID,
+				 //RequestTurID=(int)talep.TurID,
 				 TalepEdenID = _userId,  
 
 			};
@@ -304,6 +306,7 @@ namespace Ekomers.Web.Controllers
 			{
 				eklenmisUrun.Miktar = models.Miktar;
 				eklenmisUrun.Aciklama = models.Aciklama;
+				eklenmisUrun.TalepTurID = models.TalepTurID;
 				await _service.RequestUrunGuncelle(eklenmisUrun);
 			}
 			else
@@ -321,7 +324,7 @@ namespace Ekomers.Web.Controllers
 					TalepTurID=models.TalepTurID,
 					TalepEdenTarihSaat = DateTime.Now,
 					Aciklama = models.Aciklama,
-					RequestID = models.RequestID
+					RequestID = models.RequestID 
 				};
 
 				await _service.RequestUrunEkle(RequestUrunekle);
@@ -351,7 +354,7 @@ namespace Ekomers.Web.Controllers
 			var modelc = await _service.VeriGetir(VeriID);
 
 			
-				modelc.RequestUrunler = await _service.RequestUrunlerGetir(VeriID);
+			modelc.RequestUrunler = await _service.RequestUrunlerGetir(VeriID);
 			
 
 			modelc.ControllerName = "Request";
@@ -384,6 +387,68 @@ namespace Ekomers.Web.Controllers
 			modelc.ControllerName = "Request";
 			modelc.ModalTitle = "Talep Bilgileri";
 
+			var users = _context.MailNotificationUsers
+							.Where(x => x.Type == MailNotificationType.Talep)
+							.Select(x => x.User.Email)
+							.ToList();
+
+
+				users.Add(_context.Users.Where(x => x.Id == modelc.CreateUserID).Select(x => x.Email).FirstOrDefault());
+				users.Add(_context.Users.Where(x => x.Id ==_userId).Select(x => x.Email).FirstOrDefault());
+			modelc.RequestUrunler = await _service.RequestUrunlerGetir(RequestId);
+
+			var urunRows = "";
+
+			foreach (var item in modelc.RequestUrunler)
+			{
+				urunRows += $@"
+				<tr>
+					<td>{item.TalepEdenAd}</td>
+					<td>{item.KabulEdenAd}</td>
+					<td>{item.UrunAd}</td>
+					<td>{item.Aciklama}</td>
+					<td>{item.Miktar}</td>
+					<td>{item.BirimAd}</td>
+					<td>{(item.OnayliMi ? "Onaylandı" : "Onaylanmadı")}</td>
+				</tr>";
+			}
+
+			var mesajBody = $@"
+    <h3>Talep Detayları</h3>  
+    <h3>Ürün Listesi</h3>
+
+    <table border='1' cellpadding='8' cellspacing='0' 
+           style='border-collapse:collapse; width:100%; font-family:Arial;'>
+
+        <thead>
+            <tr style='background-color:#f2f2f2;'>
+                <th>Talep Eden</th>
+                <th>Kabul Eden</th>
+                <th>Ürün</th>
+                <th>Açıklama</th>
+                <th>Miktar</th>
+                <th>Birim</th>
+                <th>Durum</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {urunRows}
+        </tbody>
+
+    </table>
+";
+
+			foreach (var mail in users)
+				{
+					BackgroundJob.Enqueue<IMailJobService>(x =>
+						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Talep onaylandı.", mesajBody));
+				}
+			 
+
+
+
+
 			return PartialView("TalepOnayla", modelc);
 		}
 		public async Task<IActionResult> TalepIptalKapat(int RequestId)
@@ -401,6 +466,28 @@ namespace Ekomers.Web.Controllers
 
 			return PartialView("TalepOnayla", modelc);
 		}
+		public async Task<IActionResult> TalepGeriGonder(int RequestId)
+		{
+
+			var req = await _service.VeriGetir(RequestId);
+			req.DurumID = (int)EnumRequestDurum.Taslak;
+			await _service.VeriEkleAsync(req);
+
+			var request = new RequestUrunlerVM()
+			{ 
+				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(RequestId), 
+
+			};
+
+			foreach (var item in request.RequestUrunlerVMListe)
+			{
+				var urun = _service.RequestUrunGetir(item.ID).Result;
+				urun.OnayliMi = false;
+				await _service.RequestUrunDuzenle(urun);
+			}
+
+			return RedirectToAction("Onay");
+		}
 		public async Task<IActionResult> TalepUrunOnay(int requestId,int kayitId, double miktar)
 		{
 			var urun = await _service.RequestUrunGetir(kayitId);
@@ -412,67 +499,67 @@ namespace Ekomers.Web.Controllers
 			urun.KabulEdenTarihSaat = DateTime.Now;
 			var sonuc = await _service.RequestUrunDuzenle(urun);
 
-			if (sonuc)
-			{
-				var _urun = await _service.RequestUrunGetir(kayitId);
-				var users = _context.MailNotificationUsers
-							.Where(x => x.Type == MailNotificationType.Talep)
-							.Select(x => x.User.Email)
-							.ToList();
+//			if (sonuc)
+//			{
+//				var _urun = await _service.RequestUrunGetir(kayitId);
+//				var users = _context.MailNotificationUsers
+//							.Where(x => x.Type == MailNotificationType.Talep)
+//							.Select(x => x.User.Email)
+//							.ToList();
 
-				users.Add(_context.Users.Where(x => x.Id == _urun.TalepEdenID).Select(x => x.Email).FirstOrDefault());
-				users.Add(_context.Users.Where(x => x.Id == _urun.KabulEdenID).Select(x => x.Email).FirstOrDefault());
+//				users.Add(_context.Users.Where(x => x.Id == _urun.TalepEdenID).Select(x => x.Email).FirstOrDefault());
+//				users.Add(_context.Users.Where(x => x.Id == _urun.KabulEdenID).Select(x => x.Email).FirstOrDefault());
 				 
 
-				var mesajBody = $@"
-								<h3>Talep Detayları</h3>
+//				var mesajBody = $@"
+//								<h3>Talep Detayları</h3>
 
-								<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
-									<tr>
-										<th align='left'>Talep Takip No</th>
-										<td>{_urun.TTN}</td>
-									</tr>
-									<tr>
-										<th align='left'>Talep Oluşturan</th>
-										<td>{_urun.TalepEdenAd}</td>
-									</tr>
-									<tr>
-										<th align='left'>Talep Oluşturulma Tarihi</th>
-										<td>{_urun.TalepEdenTarihSaat.ToLongTimeString()}</td>
-									</tr>
-									<tr>
-										<th align='left'>Talep Kabul Eden</th>
-										<td>{_urun.KabulEdenAd}</td>
-									</tr>
-<tr>
-										<th align='left'>Talep Kabul Tarihi</th>
-										<td>{_urun.KabulEdenTarihSaat.ToLongTimeString()}</td>
-									</tr>
-									<tr>
-										<th align='left'>Ürün</th>
-										<td>{_urun.UrunAd}</td>
-									</tr>
-									<tr>
-										<th align='left'>Ürün Açıklama</th>
-										<td>{_urun.Aciklama}</td>
-									</tr>
-									<tr>
-										<th align='left'>Miktar</th>
-										<td>{_urun.Miktar}</td>
-									</tr>
-									<tr>
-										<th align='left'>Birim</th>
-										<td>{_urun.BirimAd}</td>
-									</tr>
-								</table>
-								";
+//								<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
+//									<tr>
+//										<th align='left'>Talep Takip No</th>
+//										<td>{_urun.TTN}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Talep Oluşturan</th>
+//										<td>{_urun.TalepEdenAd}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Talep Oluşturulma Tarihi</th>
+//										<td>{_urun.TalepEdenTarihSaat.ToLongTimeString()}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Talep Kabul Eden</th>
+//										<td>{_urun.KabulEdenAd}</td>
+//									</tr>
+//<tr>
+//										<th align='left'>Talep Kabul Tarihi</th>
+//										<td>{_urun.KabulEdenTarihSaat.ToLongTimeString()}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Ürün</th>
+//										<td>{_urun.UrunAd}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Ürün Açıklama</th>
+//										<td>{_urun.Aciklama}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Miktar</th>
+//										<td>{_urun.Miktar}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Birim</th>
+//										<td>{_urun.BirimAd}</td>
+//									</tr>
+//								</table>
+//								";
 
-				foreach (var mail in users)
-				{
-					BackgroundJob.Enqueue<IMailJobService>(x =>
-						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Talep onaylandı.", mesajBody));
-				}
-			}
+//				foreach (var mail in users)
+//				{
+//					BackgroundJob.Enqueue<IMailJobService>(x =>
+//						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Talep onaylandı.", mesajBody));
+//				}
+//			}
 
 			
 			var model = new RequestVM
@@ -496,67 +583,67 @@ namespace Ekomers.Web.Controllers
 			var sonuc=await _service.RequestUrunDuzenle(urun);
 
 
-			if (sonuc)
-			{
-				var _urun = urun; // await _service.RequestUrunGetir(kayitId);
-				var users = _context.MailNotificationUsers
-							.Where(x => x.Type == MailNotificationType.Talep)
-							.Select(x => x.User.Email)
-							.ToList();
+//			if (sonuc)
+//			{
+//				var _urun = urun; // await _service.RequestUrunGetir(kayitId);
+//				var users = _context.MailNotificationUsers
+//							.Where(x => x.Type == MailNotificationType.Talep)
+//							.Select(x => x.User.Email)
+//							.ToList();
 
-				users.Add(_context.Users.Where(x => x.Id == _urun.TalepEdenID).Select(x => x.Email).FirstOrDefault());
-				users.Add(_context.Users.Where(x => x.Id == _urun.DeleteUserID).Select(x => x.Email).FirstOrDefault());
+//				users.Add(_context.Users.Where(x => x.Id == _urun.TalepEdenID).Select(x => x.Email).FirstOrDefault());
+//				users.Add(_context.Users.Where(x => x.Id == _urun.DeleteUserID).Select(x => x.Email).FirstOrDefault());
 
 
-				var mesajBody = $@"
-								<h3>Talep Detayları</h3>
+//				var mesajBody = $@"
+//								<h3>Talep Detayları</h3>
 
-								<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
-									<tr>
-										<th align='left'>Talep Takip No</th>
-										<td>{_urun.TTN}</td>
-									</tr>
-									<tr>
-										<th align='left'>Talep Oluşturan</th>
-										<td>{_urun.TalepEdenAd}</td>
-									</tr>
-									<tr>
-										<th align='left'>Talep Oluşturulma Tarihi</th>
-										<td>{_urun.TalepEdenTarihSaat.ToLongTimeString()}</td>
-									</tr>
-									<tr>
-										<th align='left'>Talep İptal Eden</th>
-										<td>{_urun.DeleteUserName}</td>
-									</tr>
-<tr>
-										<th align='left'>Talep İptal Tarihi</th>
-										<td>{_urun.DeleteDate?.ToLongTimeString()}</td>
-									</tr>
-									<tr>
-										<th align='left'>Ürün</th>
-										<td>{_urun.UrunAd}</td>
-									</tr>
-									<tr>
-										<th align='left'>Ürün Açıklama</th>
-										<td>{_urun.Aciklama}</td>
-									</tr>
-									<tr>
-										<th align='left'>Miktar</th>
-										<td>{_urun.Miktar}</td>
-									</tr>
-									<tr>
-										<th align='left'>Birim</th>
-										<td>{_urun.BirimAd}</td>
-									</tr>
-								</table>
-								";
+//								<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse; width:100%; font-family:Arial;'>
+//									<tr>
+//										<th align='left'>Talep Takip No</th>
+//										<td>{_urun.TTN}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Talep Oluşturan</th>
+//										<td>{_urun.TalepEdenAd}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Talep Oluşturulma Tarihi</th>
+//										<td>{_urun.TalepEdenTarihSaat.ToLongTimeString()}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Talep İptal Eden</th>
+//										<td>{_urun.DeleteUserName}</td>
+//									</tr>
+//<tr>
+//										<th align='left'>Talep İptal Tarihi</th>
+//										<td>{_urun.DeleteDate?.ToLongTimeString()}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Ürün</th>
+//										<td>{_urun.UrunAd}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Ürün Açıklama</th>
+//										<td>{_urun.Aciklama}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Miktar</th>
+//										<td>{_urun.Miktar}</td>
+//									</tr>
+//									<tr>
+//										<th align='left'>Birim</th>
+//										<td>{_urun.BirimAd}</td>
+//									</tr>
+//								</table>
+//								";
 
-				foreach (var mail in users)
-				{
-					BackgroundJob.Enqueue<IMailJobService>(x =>
-						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Talep iptal edildi.", mesajBody));
-				}
-			}
+//				foreach (var mail in users)
+//				{
+//					BackgroundJob.Enqueue<IMailJobService>(x =>
+//						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Talep iptal edildi.", mesajBody));
+//				}
+//			}
 
 
 

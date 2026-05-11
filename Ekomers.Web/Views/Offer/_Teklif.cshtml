@@ -17,9 +17,68 @@
 			<input type="hidden" asp-for="IsDelete" value="false" />
 			<input type="hidden" asp-for="CreateUserID" value="@Model.UserID" />
 			<button type="button" class="btn btn-danger no-print" data-dismiss="modal">Kapat</button>
-			<button   class="btn btn-primary" type="submit">
+			<button id="btnKaydet" class="btn btn-primary" type="button">
 				Kaydet
 			</button>
 		</div>
 	</div>
 </form>
+
+<script>
+	$(document).ready(function () {
+
+		$("#btnKaydet").on("click", function (e) {
+
+			e.preventDefault();
+
+			var form = document.getElementById("_VeriEkle");
+
+			var musteriID = $("#MusteriID").val();
+			var fiyat = $("#Fiyat").val();
+			var odemeTarihi = $("#OdemeTarihi").val();
+
+			// özel kontrol
+			if (!musteriID || musteriID == "0") {
+
+				alert("Müşteri seçiniz.");
+
+				$("#MusteriID").focus();
+
+				return false;
+			}
+
+			if (!odemeTarihi || odemeTarihi == "0") {
+
+				alert("Ödeme Tarihi seçiniz.");
+
+				$("#OdemeTarihi").focus();
+
+				return false;
+			}
+
+
+			if (!fiyat || fiyat == "0") {
+
+				alert("Fiyat giriniz.");
+
+				$("#Fiyat").focus();
+
+				return false;
+			}
+
+			// required kontrollerini çalıştırır
+			if (form.checkValidity()) {
+
+				form.submit();
+
+			} else {
+
+				// validation mesajlarını gösterir
+				form.reportValidity();
+
+			}
+
+		});
+
+	});
+</script>

@@ -8,7 +8,7 @@
             <th>Talep No</th>
             <th>Talep Tarihi</th>
             <th>Talep Eden</th>
-            <th>Talep Türü</th>
+        @*     <th>Talep Türü</th> *@
             <th>Durum</th>          
             <th>Not</th>  
             <th>Dosya</th>  
@@ -23,7 +23,7 @@
                 <td>@item.ID</td>
                 <td>@item.RequestDate.ToString("dd.MM.yyyy HH:mm")</td>
                 <td>@item.CreateUserName</td>
-                <td>@item.TurAd</td> 
+            @*     <td>@item.TurAd</td>  *@
                 <td>@item.DurumAd</td> 
                 <td>@(!string.IsNullOrWhiteSpace(item.Not) ? item.Not : "—")</td> 
                 <td>

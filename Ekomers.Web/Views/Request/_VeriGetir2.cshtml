@@ -54,7 +54,7 @@
                                     <input type="hidden" asp-for="UpdateUserID" value="@Model.UserID" />
                                     <a type="button" class="btn btn-danger mr-2" href="/request/index" >Geri Dön</a>
                                     @* <button type="submit" class="btn btn-success">Kaydet</button> *@
-                                    @if (Model.DurumID!=(int)EnumRequestDurum.Onaylandi)
+                                    @if (Model.DurumID==(int)EnumRequestDurum.Taslak)
                             {
                             <button type="submit" name="actionType" value="taslak" class="btn btn-secondary  mr-2">Taslak Kaydet</button>
                             <button type="submit" name="actionType" value="onay" class="btn btn-success  mr-2">Kaydet ve Onaya Gönder</button>

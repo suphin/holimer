@@ -22,6 +22,7 @@ namespace Ekomers.Data.Services
 		private readonly IRepository<Sirketler> _sirketRepo;
 		private readonly IRepository<Offer> _OfferRepo;
 		private readonly IRepository<OfferTur> _OfferTurRepo;
+		private readonly IRepository<RequestTur> _requestTurRepo;
 		private readonly IRepository<OfferDurum> _OfferDurumRepo;
 	private readonly IRepository<RequestUrunler> _requestUrunlerRepo;
 		private readonly IRepository<Request> _requestRepo;
@@ -53,7 +54,7 @@ namespace Ekomers.Data.Services
 			 ,IRepository<Musteriler> musterilerRepo
 			, IRepository<RequestUrunler> requestUrunlerRepo
 			, IRepository<Request> requestRepo
-		 
+		 , IRepository<RequestTur> requestTurRepo
 			)
 		{
 			_context = context;
@@ -76,6 +77,8 @@ namespace Ekomers.Data.Services
 			_user = _httpContextAccessor.HttpContext?.User;
 			_userId = _user?.FindFirstValue(ClaimTypes.NameIdentifier);
 			_httpClientFactory = httpClientFactory;
+			 _departmanRepo = departmanRepo;
+			 _requestTurRepo = requestTurRepo;
 		}
 
 		 
@@ -116,6 +119,10 @@ namespace Ekomers.Data.Services
 						 join request in _requestRepo.GetAll2() on requestUrun.RequestID equals request.ID
 						 into requestGroup
 						 from request in requestGroup.DefaultIfEmpty()
+
+						 join talepTur in _requestTurRepo.GetAll2() on request.TurID equals talepTur.ID
+						 into talepTurGroup
+						 from talepTur in talepTurGroup.DefaultIfEmpty()
 
 
 						 join urun in _urunlerRepo.GetAll2() on requestUrun.UrunID equals urun.ID
@@ -158,7 +165,9 @@ namespace Ekomers.Data.Services
 							 FirmaAd = firma != null ? firma.AdSoyad : "",
 							 Firma = firma,
 							 RequestUrunID = kayit.RequestUrunID,
-							  
+							 TalepTurID = talepTur != null ? talepTur.ID : 0,
+							 TalepTurAd = talepTur != null ? talepTur.Ad : "",
+							 RetNot=requestUrun.RedNot,
 							 UrunID = requestUrun.UrunID,
 							 UrunAd = urun != null ? urun.Ad : "",
 							 UrunKod = urun != null ? urun.Kod : "",

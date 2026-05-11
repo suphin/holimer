@@ -31,7 +31,7 @@
             }
 </style>
  
-@if (Model.RequestDurumID != (int)EnumRequestDurum.Onaylandi)
+@if (Model.RequestDurumID == (int)EnumRequestDurum.Taslak)
 {
     @if (User.HasClaim("Authorize", "NewProduct"))
     {
@@ -58,7 +58,9 @@
              
                     <input type="text" class="form-control form-control-sm" id="search-box-urun" placeholder="Malzeme Ara..." autocomplete="off"  />
                     <input type="hidden" asp-for="UrunID" />
-                    <ul class="col-md-12" id="results-urun"></ul>
+                    <ul class="col-md-12" id="results-urun">
+
+                    </ul>
                 </div>
                 <div class="col-lg-1">
                     <label asp-for="Miktar" class="control-label"></label>
@@ -107,6 +109,8 @@
        
 <script>
     function YeniMalzemeEkle() {
+        $("#results-urun").empty();
+        $("#search-box-urun").val();
         GetAjax('Malzeme/VeriGoruntule?view=_VeriYeni&VeriID=0', 'VeriAlan');
     }
 </script>
@@ -130,7 +134,10 @@
                         $.each(data, function(index, malzeme) {
                             console.log("data:",data);
                             results.append('<li data-id="' + malzeme.id + '" data-birim-id="' + malzeme.birimID + '" data-birim-ad="' + malzeme.birimAd + '">' + malzeme.kod + ' ' + malzeme.ad + '</li>');
+                           
                         });
+                         results.append('<li>--------------</li>');
+                         results.append('<li data-toggle="modal" data-target="#ModalVeri" onclick="YeniMalzemeEkle()">Yeni Ekle</li>');
                     }
                 });
             } else {
@@ -163,6 +170,7 @@
         var BirimID = $('#BirimID').val();
         var Aciklama = $('#Aciklama').val();
     var TalepTurID = $('#TalepTurID').val();
+    alert(TalepTurID);
         var RequestID=@(Model.RequestID);
     
        if(UrunID==0){
@@ -196,9 +204,7 @@
             success: function(response) {
                 $('#MalzemeEklenenListe').html(response);
                 $('#UrunID').val('');
-                $('#Miktar').val('');
-    $('#TalepTurID').val('');
-                
+                $('#Miktar').val('');                 
                 $('#BirimAd').val('');
                 $('#BirimID').val('');
                 $('#Aciklama').val('');

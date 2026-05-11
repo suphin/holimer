@@ -121,6 +121,9 @@ namespace Ekomers.Models.Entity
 		public string? SirketVergiNo { get; set; }
 		[Display(Name = "Şirket Web Sitesi")]
 		public string? SirketWebSitesi { get; set; }
+		public int TalepTurID { get; set; }
+		public string ? TalepTurAd { get; set; }
+		public string ? RetNot { get; set; }
 	}
 
 	public class OfferDurum : BaseEntity

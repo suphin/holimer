@@ -38,9 +38,9 @@
             <div class="col-lg-6">
                 <label asp-for="SirketAd" class="control-label"></label>  <input asp-for="SirketAd" class="form-control form-control-sm" readonly />
             </div>
-    <div class="col-lg-3">
+   @*  <div class="col-lg-3">
                     <label asp-for="TurAd" class="control-label"></label>  <input asp-for="TurAd" class="form-control form-control-sm" readonly />
-    </div>
+    </div> *@
    
     <div class="col-lg-3">
                     <label asp-for="RequestDate" class="control-label"></label>   <input asp-for="RequestDate" class="form-control form-control-sm" readonly />
@@ -61,7 +61,7 @@
     <thead>
         <tr>
             @* <th>Sıra No</th> *@
-            <th>Talep Ürün ID</th>
+            <th>Talep Türü</th>
             <th>Ürün Kodu</th>
                     <th>Ürün Adı</th>
                     <th>Açıklama</th>
@@ -107,20 +107,35 @@
             </div>
         }
 		</div>
-		<div class="modal-footer" id="modal-footer">
-        @if (Model.DurumID != (int)EnumRequestDurum.Onaylandi && Model.RequestUrunler.Count()>0)
-                {
-                    <button type="button" class="btn btn-success" onclick="TalepKapat('@Model.ID')">Talebi Onayla/Kapat</button>
-                }
-        @if (Model.RequestUrunler.Count() == 0 && Model.DurumID != (int)EnumRequestDurum.İptal)
-                {
-            <button type="button" class="btn btn-info" onclick="TalepIptalKapat('@Model.ID')">Talep İptal/Kapat</button>
-                }
-			
-			<button type="button" class="btn btn-danger" data-dismiss="modal"> Kapat</button> 
-		@* 	<a href="/Request/Print/@Model.ID" target="_blank" class="btn btn-primary">
-				Yazdır
-			</a> *@
+    <div class="modal-footer d-flex justify-content-between" id="modal-footer">
+        <!-- Sol taraf -->
+        <div>
+            @if (Model.DurumID == (int)EnumRequestDurum.OnayBekliyor && Model.RequestUrunler.Count() > 0)
+            {
+                <button type="button" class="btn btn-primary" onclick="TalepGeriGonder('@Model.ID')">Talebi Geri Gönder</button>
+            }
+        </div>
+        <!-- Sağ taraf -->
+        <div class="d-flex gap-2">
+            @if (Model.DurumID != (int)EnumRequestDurum.Onaylandi && Model.RequestUrunler.Count() > 0)
+            {
+                <button type="button" class="btn btn-success mr-2" onclick="TalepKapat('@Model.ID')">Talebi Onayla/Kapat</button>
+            }
+
+            @if (Model.RequestUrunler.Count() == 0 && Model.DurumID != (int)EnumRequestDurum.İptal)
+            {
+                <button type="button" class="btn btn-info mr-2" onclick="TalepIptalKapat('@Model.ID')">Talep İptal/Kapat</button>
+            }
+            @if (Model.DurumID != (int)EnumRequestDurum.Onaylandi && Model.RequestUrunler.Count() > 0)
+            {
+                <a type="button" class="btn btn-danger" href="/Request/Onay" data-dismiss="modal"> Kapat</a>
+            } 
+            else
+                    {
+                <a type="button" class="btn btn-danger" href="/Request/Onay"  > Kapat</a>
+                    }
+                </div>
+        
 		</div>
 	</div>
 
@@ -218,6 +233,16 @@
                  
             }
         });
+    }
+</script>
+<script>
+    function TalepGeriGonder(RequestId) {
+
+        if (!confirm("Talebi geri göndermek istediğinize emin misiniz?")) {
+             return;
+        }
+         
+        window.location.href = '@Url.Action("TalepGeriGonder", "Request")?RequestId=' + RequestId;
     }
 </script>
 <script>

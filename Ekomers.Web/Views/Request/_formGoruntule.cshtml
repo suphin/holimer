@@ -36,9 +36,9 @@
     <div class="col-lg-6">
         <label asp-for="SirketAd" class="control-label"></label>  <input asp-for="SirketAd" class="form-control form-control-sm" readonly />
     </div>
-    <div class="col-lg-3">
+ @*    <div class="col-lg-3">
         <label asp-for="TurAd" class="control-label"></label>  <input asp-for="TurAd" class="form-control form-control-sm" readonly />
-    </div>
+    </div> *@
    
     <div class="col-lg-3">
         <label asp-for="RequestDate" class="control-label"></label>   <input asp-for="RequestDate" class="form-control form-control-sm" readonly />
@@ -58,7 +58,7 @@
 <table class="table  table-bordered" id="" width="100%" cellspacing="0">
     <thead>
         <tr>
-            <th>Sıra No</th>
+            <th>Talep Türü</th>
             <th>Ürün Kodu</th>
             <th>Ürün Adı</th>
             <th>Açıklama</th>
@@ -74,8 +74,8 @@
         @foreach (RequestUrunlerVM item in Model.RequestUrunler)
         {
              
-            <tr class="@(item.IsDelete ? "deleted" : "")">
-                <td>@sayac</td>
+            <tr class="@(item.IsDelete ? "deleted" : "")"> 
+                <td>@item.TalepTurAd</td>
                 <td>@item.UrunKod</td>
                 <td>@item.UrunAd</td>
                 <td>@item.Aciklama</td>

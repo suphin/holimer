@@ -29,12 +29,12 @@
 									<option value="0">Tümü</option>
 								</select>
 							</div>
-								<div class="form-group col-lg-2">
+							@* 	<div class="form-group col-lg-2">
 								<label asp-for="TurAd" class="control-label"></label>
 								<select asp-for="TurID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.RequestTurListe, "ID", "Ad"))" required id="RequestTurListe">
 									<option value="0">Tümü</option>
 								</select>
-							</div>
+							</div> *@
 					<div class="form-group col-lg-">
 								<label class="control-label">&nbsp;</label>
 								<button type="submit" class="btn btn-primary form-control btn-sm">Ara</button>
@@ -65,7 +65,7 @@
 		<div class="card-toolbar">
 		 
 			@{
-				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_CreateButton.cshtml");
+				//await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_CreateButton.cshtml");
 			}
 			@{
 				await Html.RenderPartialAsync("_PartialHaritaGenel", new AuthorizeCrudVM
