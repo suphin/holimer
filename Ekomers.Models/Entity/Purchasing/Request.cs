@@ -18,6 +18,7 @@ namespace Ekomers.Models.Entity
 		public int? DurumID { get; set; }
 		public int? TurID { get; set; }
 		public bool IsDone { get; set; }
+		public bool IsGroup { get; set; } = false;
 		public DateTime TarihSaat { get; set; }=DateTime.Now;
 		
 		public string? Not { get; set; }
@@ -69,6 +70,7 @@ namespace Ekomers.Models.Entity
 		public string? SirketVergiNo { get; set; }
 		[Display(Name = "Şirket Web Sitesi")]
 		public string? SirketWebSitesi { get; set; }
+		public bool IsGroup { get; set; }
 	}
 
 	public class RequestDurum : BaseEntity

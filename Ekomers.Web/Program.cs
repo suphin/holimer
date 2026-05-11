@@ -23,11 +23,17 @@ builder.Services.AddHttpContextAccessor();
 // Add services to the container.
 //var connectionString = builder.Configuration.GetConnectionString("LocalConnection");
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+var encryptedConn = builder.Configuration.GetConnectionString("DefaultConnection");
 
-//var maksString = builder.Configuration.GetConnectionString("NumaratajConnection");
+var conn = CryptoHelper.Decrypt(encryptedConn);
+
+var encryptedLogoConn = builder.Configuration.GetConnectionString("LogoConnection");
+
+var Logoconn = CryptoHelper.Decrypt(encryptedLogoConn);
+//var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
  
+
 builder.Services.Configure<SmsSettings>(builder.Configuration.GetSection("SmsSettings"));
 builder.Services.Configure<FileSettings>(builder.Configuration.GetSection("FileSettings")); 
 builder.Services.Configure<PageSettings>(builder.Configuration.GetSection("PageSettings"));
@@ -35,10 +41,10 @@ builder.Services.Configure<PageSettings>(builder.Configuration.GetSection("PageS
 
 //builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseSqlServer(conn));
 
 builder.Services.AddDbContext<LogoContext>(options =>
-	options.UseSqlServer(builder.Configuration.GetConnectionString("LogoConnection")));
+	options.UseSqlServer(Logoconn));
 
 builder.Services.AddDbContext<OrtomolekulerDernek>(options =>
 	options.UseSqlite(builder.Configuration.GetConnectionString("DernekConnection")));
@@ -293,7 +299,7 @@ builder.Services.AddDistributedMemoryCache();
 
 //arka plan işlemleri için hangfire kurulumu
 builder.Services.AddHangfire(config =>
-	config.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+	config.UseSqlServerStorage(conn));
 
 builder.Services.AddHangfireServer();
 

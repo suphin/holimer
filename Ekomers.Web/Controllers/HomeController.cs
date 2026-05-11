@@ -49,6 +49,7 @@ namespace Ekomers.Web.Controllers
 
         public IActionResult Index()
         {
+			//var encrypted = CryptoHelper.Encrypt("");
 			return RedirectToAction(nameof(HomeController.SignIn));
 		}
 
@@ -617,6 +618,7 @@ namespace Ekomers.Web.Controllers
 		{
 			return View();
 		}
+        [Route("apps")]
 		public IActionResult metronic44()
 		{
 			return View("Metronic44/index");

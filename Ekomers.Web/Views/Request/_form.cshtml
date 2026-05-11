@@ -34,7 +34,11 @@
         <input asp-for="RequestDate" class="form-control form-control-sm" type="date" />
         <span asp-validation-for="RequestDate" class="text-danger"></span>
     </div> 
-  
+    <div class="col-lg-3">
+        <label asp-for="IsGroup" class="control-label"></label>
+        <input asp-for="IsGroup" class="form-control form-control-sm" type="checkbox" />
+        <span asp-validation-for="IsGroup" class="text-danger"></span>
+    </div>
 </div>
  
 <div class="form-group row">

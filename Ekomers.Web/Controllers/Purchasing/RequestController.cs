@@ -259,7 +259,7 @@ namespace Ekomers.Web.Controllers
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(RequestID),
 				RequestDurumID=(int)talep.DurumID,
 				 //RequestTurID=(int)talep.TurID,
-				 TalepEdenID = _userId,  
+				 TalepEdenID = _userId,
 
 			};
 			   
@@ -700,6 +700,11 @@ namespace Ekomers.Web.Controllers
 
 			return View(model);
 		}
-		
-	}
+		[Route("apps/purchasing")]
+		public async Task<IActionResult> Mainpage()
+		{
+			return View();
+		}
+
+		}
 }

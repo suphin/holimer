@@ -135,6 +135,7 @@ namespace Ekomers.Data.Services
 							 SirketVergiDairesi = sirket.SirketVergiDairesi,
 							 SirketVergiNo = sirket.SirketVergiNo,
 							 SirketWebSitesi = sirket.SirketWebSitesi,
+							 IsGroup = kayit.IsGroup,
 
 							 TurID = kayit.TurID,
 							 TurAd = RequestTur != null ? RequestTur.Ad : "",
