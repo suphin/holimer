@@ -5,14 +5,19 @@
 <html lang="tr">
 <!--begin::Head-->
 <head>
-	<base href="../../../" />
-	<title>@ViewBag.Title</title>
+	<base href="../../../" /> 
+	<title>@ViewData["Title"] - Holimer İlaç Grup</title>
+	<meta name="description" content="@ViewData["description"]" />
 	<meta charset="utf-8" />
+	@RenderSection("js_firstScripts", false)
   <meta name="viewport" content="width=device-width" />
 	<link rel="shortcut icon" href="~/assets44/media/logos/favicon.ico" />
 	<!--begin::Fonts(mandatory for all pages)-->
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 	<!--end::Fonts-->
+	@await RenderSectionAsync("CSSection", false)
+	<!--end::Page Vendors Styles-->
+	@RenderSection("css_plugins", false)
 	<!--begin::Vendor Stylesheets(used for this page only)-->
 	<link href="~/assets44/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" />
 	<!--end::Vendor Stylesheets-->
@@ -59,7 +64,7 @@
 							<div class="app-header-menu app-header-mobile-drawer align-items-stretch" data-kt-drawer="true" data-kt-drawer-name="app-header-menu" data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'200px', '300px': '250px'}" data-kt-drawer-direction="start" data-kt-drawer-toggle="#kt_app_header_menu_toggle" data-kt-swapper="true" data-kt-swapper-mode="prepend" data-kt-swapper-parent="{default: '#kt_app_body', lg: '#kt_app_header_menu_wrapper'}">
 								<!--begin::Menu-->
 								@{
-						//	await Html.RenderPartialAsync("~/Views/Shared/Metronic44/menu.cshtml");
+							await Html.RenderPartialAsync("~/Views/Shared/Metronic44/menu.cshtml");
 						}
 							<!--end::Menu-->
 							</div>
@@ -197,20 +202,23 @@
 	<!--begin::Modals-->
 		@{
 						await Html.RenderPartialAsync("~/Views/Shared/Metronic44/modal.cshtml");
-												}
+		 }
+	@await RenderSectionAsync("Modals", false)
 	<!--end::Modals-->
 	<!--begin::Javascript-->
 	<script>var hostUrl = "~/assets44/";</script>
 	<!--begin::Global Javascript Bundle(mandatory for all pages)-->
 	<script src="~/assets44/plugins/global/plugins.bundle.js"></script>
 	<script src="~/assets44/js/scripts.bundle.js"></script>
+	<script src="@Url.Content("~/js/ajax.js")"></script>
+	@RenderSection("js_plugins", false)
 	<!--end::Global Javascript Bundle-->
 	<!--begin::Vendors Javascript(used for this page only)-->
+	@await RenderSectionAsync("JSSection", false)
 	<script src="~/assets44/plugins/custom/datatables/datatables.bundle.js"></script>
 	<!--end::Vendors Javascript-->
 	<!--begin::Custom Javascript(used for this page only)-->
-	<script src="~/assets44/js/custom/apps/user-management/roles/list/add.js"></script>
-	<script src="~/assets44/js/custom/apps/user-management/roles/list/update-role.js"></script>
+	<script src="~/assets44/js/custom/apps/customers/add.js"></script>
 	<script src="~/assets44/js/widgets.bundle.js"></script>
 	<script src="~/assets44/js/custom/widgets.js"></script>
 	<script src="~/assets44/js/custom/apps/chat/chat.js"></script>

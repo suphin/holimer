@@ -49,9 +49,10 @@
         <span asp-validation-for="Not" class="text-danger"></span>
     </div>
 </div>
-<hr class="border-1 mt-5 mb-5" />
+
 @if (Model.ID>0)
 {
+    <hr class="border-1 mt-5 mb-5" />
   @*  <div class="form-group row">
         <div class="col-lg-12">
             <button onclick="UrunSeciniz('@Model.ID')" class="btn btn-sm btn-info font-weight-bold" type="button">Ürün Seçiniz</button>

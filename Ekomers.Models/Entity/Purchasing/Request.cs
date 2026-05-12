@@ -70,6 +70,7 @@ namespace Ekomers.Models.Entity
 		public string? SirketVergiNo { get; set; }
 		[Display(Name = "Şirket Web Sitesi")]
 		public string? SirketWebSitesi { get; set; }
+		[Display(Name = "Toplu Satınalma")]
 		public bool IsGroup { get; set; }
 	}
 

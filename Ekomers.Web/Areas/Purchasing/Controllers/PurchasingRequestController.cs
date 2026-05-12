@@ -24,7 +24,8 @@ namespace Ekomers.Web.Controllers
 	[Authorize(Policy = "AdminOrPurchasing")]
 	[TypeFilter(typeof(ActionFilter))]
 	[TypeFilter(typeof(ErrorFilter))]
-	public class RequestController : BaseController
+	[Area("Purchasing")]
+	public class PurchasingRequestController : BaseController
 	{
 		private readonly IRequestService _service;
 		 
@@ -40,7 +41,7 @@ namespace Ekomers.Web.Controllers
 		private readonly ICacheService<Kullanici> _kullaniciCache;
 		private readonly ICacheService<Sirketler> _sirketCache;
 		private string ModulAd = "PURCHASING";
-		public RequestController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
+		public PurchasingRequestController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			 IRequestService service
 			, IWebHostEnvironment hostingEnvironment, IFileService fileService
 			, ApplicationDbContext context
@@ -90,19 +91,8 @@ namespace Ekomers.Web.Controllers
 			ViewBag.SirketListe = await _sirketCache.GetListeAsync(CacheKeys.SirketAll);
 		}
 
-			 
-		private void PageToastr(bool sonuc)
-		{
-			if (sonuc)
-			{
-				TempData["SuccessMessage"] = "Kaydetme işlemi başarılı!";
-			}
-			else
-			{
-				TempData["ErrorMessage"] = "Bir hata oluştu.";
-			}
-		}
 
+		[Route("PurchasingRequest/Index")]
 		public async Task<IActionResult> Index(int page = 1, int pageSize = 10, CancellationToken ct = default)
 		{
 			ViewBag.Modul = ModulAd;
@@ -147,7 +137,7 @@ namespace Ekomers.Web.Controllers
 			};
 			return View(model);
 		}
-
+		[Route("PurchasingRequest/VeriGoruntule")]
 		public async Task<PartialViewResult> VeriGoruntule(int VeriID = 0, string view = "", int pageIndex = 0, int pageSize = 0)
 		{
 
@@ -700,7 +690,11 @@ namespace Ekomers.Web.Controllers
 
 			return View(model);
 		}
-	 
+		[Route("apps/purchasing")]
+		public async Task<IActionResult> Mainpage()
+		{
+			return View();
+		}
 
 		}
 }

@@ -27,10 +27,14 @@ builder.Services.AddHttpContextAccessor();
 var encryptedConn = builder.Configuration.GetConnectionString("DefaultConnection");
 
 var conn = CryptoHelper.Decrypt(encryptedConn);
+//var conn = encryptedConn;
 
 var encryptedLogoConn = builder.Configuration.GetConnectionString("LogoConnection");
 
 var Logoconn = CryptoHelper.Decrypt(encryptedLogoConn);
+//var Logoconn = encryptedLogoConn;
+
+
 //var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
  
 

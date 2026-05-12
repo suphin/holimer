@@ -1,0 +1,47 @@
+﻿@model RequestVM
+
+@{
+}
+
+	 
+<form asp-controller="@Model.ControllerName" asp-action="VeriEkle" method="post" name="_VeriEkle2" id="_VeriEkle2">
+<div class="modal-content">
+	<!--begin::Modal header-->
+	<div class="modal-header pb-0 border-0 justify-content-end">		
+		<!--begin::Close-->
+		<div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal">
+			<i class="ki-outline ki-cross fs-1"></i>
+		</div>
+		<!--end::Close-->
+	</div>
+	<!--begin::Modal header-->
+	<!--begin::Modal body-->
+	<div class="modal-body">
+			<div class="text-center mb-13">
+				<!--begin::Title-->
+				<h1 class="mb-3">@Model.ModalTitle</h1>
+				<!--end::Title-->
+				<!--begin::Description-->
+			@* 	<div class="text-muted fw-semibold fs-5">
+					If you need more info, please check out our
+					<a href="#" class="link-primary fw-bold">Users Directory</a>.
+				</div> *@
+				<!--end::Description-->
+			</div> 
+		@{
+			await Html.RenderPartialAsync("_form", Model);
+		}
+	</div>
+	<!--end::Modal body-->
+	<div class="modal-footer">
+		<input type="hidden" asp-for="CreateDate" value="@DateTime.Now" />
+		<input type="hidden" asp-for="IsActive" value="true" />
+		<input type="hidden" asp-for="IsDelete" value="false" />
+		<input type="hidden" asp-for="CreateUserID" value="@Model.UserID" />
+		<button type="button" class="btn btn-danger" data-bs-dismiss="modal">Kapat</button>
+		<button type="submit" class="btn btn-success width100">Kaydet</button>
+	</div>
+</div>
+
+</form>
+<script src="js/select2.js?v=7.0.5"></script>

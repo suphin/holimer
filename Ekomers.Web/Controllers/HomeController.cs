@@ -49,7 +49,7 @@ namespace Ekomers.Web.Controllers
 
         public IActionResult Index()
         {
-			//var encrypted = CryptoHelper.Encrypt("");
+			 //var encrypted = CryptoHelper.Encrypt("Server=SUPHILENOVOPC;Database=EkomersDB;User ID=sa;Password=123;Trusted_Connection=True;Integrated Security=false;TrustServerCertificate=true;");
 			return RedirectToAction(nameof(HomeController.SignIn));
 		}
 

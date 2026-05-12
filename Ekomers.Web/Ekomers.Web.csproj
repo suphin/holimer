@@ -107,7 +107,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\" />
+    <Folder Include="Areas\Purchasing\ViewModels\" />
     <Folder Include="Infrastructure\Auth\" />
     <Folder Include="Data\" />
     <Folder Include="wwwroot\erpnext\assets\erpnext\dist\js\" />

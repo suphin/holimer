@@ -1,8 +1,7 @@
-﻿@model RequestVM
+﻿ @model RequestVM
 @{
 	ViewData["Title"] = "Request Listesi";
 	ViewData["Description"] = "Çalışma Sayfası - Request / Görev";
-	//Layout = "~/Views/Shared/Metronic44/_LayoutMetronic44.cshtml";
 }
 
 
@@ -19,7 +18,7 @@
 		<div class="card-toolbar">
 		 
 			 @{
-				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_CreateButton.cshtml");
+				await Html.RenderPartialAsync("~/Areas/Purchasing/Views/Shared/SitePartial/_CreateButton.cshtml");
 			}
 			@{
 				await Html.RenderPartialAsync("_PartialHaritaGenel", new AuthorizeCrudVM
@@ -43,9 +42,17 @@
 @section Modals {
 @{
 	//await Html.RenderPartialAsync("_PartialModalVeri");
-	await Html.RenderPartialAsync("~/Views/Shared/_PartialModal.cshtml", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+	//await Html.RenderPartialAsync("~/Views/Shared/_PartialModal.cshtml", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
 }
-
+	<div class="modal fade" id="ModalVeri" tabindex="-1" style="display: none;" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+		<!--begin::Modal dialog-->
+		<div class="modal-dialog modal-xl" id="VeriAlan">
+			<!--begin::Modal content-->
+			 
+			<!--end::Modal content-->
+		</div>
+		<!--end::Modal dialog-->
+	</div>
 @{
 	await Html.RenderPartialAsync("_PartialModalDosya",
 	new AuthorizeCrudVM { Controller = "Request", HaritaEkle = false });
@@ -54,12 +61,12 @@
 @section JSSection {
 	
 	@{
-		await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+		await Html.RenderPartialAsync("~/Areas/Purchasing/Views/Shared/SitePartial/_PartialAuthorizeCrud.cshtml",
 		new AuthorizeCrudVM
 		{
-			Controller = "Request",
+			Controller = "PurchasingRequest",
 			ModulID = (int)ModulEnum.Request,
-			DosyaYolu = "Request"
+			DosyaYolu = "PurchasingRequest"
 		});
 	}
 	 
