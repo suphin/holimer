@@ -696,5 +696,27 @@ namespace Ekomers.Web.Controllers
 			return View();
 		}
 
+		[Route("PurchasingRequest/new")]
+		public async Task<IActionResult> New(string view, int VeriID)
+		{
+			await ViewBagPartialListeDoldur();
+
+			var modelc = new RequestVM
+			{
+				ControllerName = "PurchasingRequest",
+				ModalTitle = "Talep Bilgileri",
+				RequestDate = DateTime.Now,
+				UserID = _userId
+			};
+
+
+			if (view == "partial")
+			{
+				modelc.ViewString = view;
+				return PartialView(modelc);
+
+			}
+			return View(  modelc); 
 		}
+	}
 }

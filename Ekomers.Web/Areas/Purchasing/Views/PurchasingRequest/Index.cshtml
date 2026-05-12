@@ -39,6 +39,9 @@
 	</div>
 </div>
 <!--end::Card-->
+
+ 
+
 @section Modals {
 @{
 	//await Html.RenderPartialAsync("_PartialModalVeri");
@@ -46,9 +49,14 @@
 }
 	<div class="modal fade" id="ModalVeri" tabindex="-1" style="display: none;" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
 		<!--begin::Modal dialog-->
-		<div class="modal-dialog modal-xl" id="VeriAlan">
+		<div class="modal-dialog modal-xl" >
 			<!--begin::Modal content-->
+			<div class="modal-content">
+				<div class="modal-body" id="VeriAlan">
 			 
+	 
+				</div>
+			</div>
 			<!--end::Modal content-->
 		</div>
 		<!--end::Modal dialog-->
@@ -60,6 +68,8 @@
 }
 @section JSSection {
 	
+	<script src="~/assets44/js/custom/apps/invoices/create.js"></script>
+
 	@{
 		await Html.RenderPartialAsync("~/Areas/Purchasing/Views/Shared/SitePartial/_PartialAuthorizeCrud.cshtml",
 		new AuthorizeCrudVM

@@ -25,6 +25,7 @@ namespace Ekomers.Models.ViewModels
 		public string? UpdateUserName { get; set; }
         public string? ControllerName { get; set; }
         public string? ModalTitle { get; set; }
+        public string? ViewString { get; set; }
         public bool IsDisabled { get; set; }
 		public int PageIndex { get; set; }
 		public int PageSize { get; set; }
