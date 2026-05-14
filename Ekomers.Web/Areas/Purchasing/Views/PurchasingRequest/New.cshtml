@@ -1,0 +1,52 @@
+﻿@model RequestVM
+
+@{ 
+}
+
+<div class="card card-flush py-4">
+	<!--begin::Card header-->
+	<div class="card-header">
+		<div class="card-title">
+			<h2>@Model.ModalTitle</h2>
+		</div>
+	</div>
+	<!--end::Card header-->
+	<!--begin::Card body-->
+	<div class="card-body pt-0">
+		<form asp-controller="@Model.ControllerName" asp-action="VeriEkle" method="post" name="_VeriEkle2" id="_VeriEkle2">
+ 
+			@{
+				await Html.RenderPartialAsync("_form", Model);
+			}
+	
+			<div class="d-flex justify-content-end mt-5">
+				<input type="hidden" asp-for="CreateDate" value="@DateTime.Now" />
+				<input type="hidden" asp-for="IsActive" value="true" />
+				<input type="hidden" asp-for="IsDelete" value="false" />
+				<input type="hidden" asp-for="CreateUserID" value="@Model.UserID" />
+				@if (Model.ViewString=="partial")
+					{
+                    <button type="button" class="btn btn-danger me-5" data-bs-dismiss="modal">Kapat</button>
+					}
+					else
+					{
+					<button type="button" class="btn btn-danger me-5" onclick="javascript:history.back()">Geri</button>
+					}
+
+				<button type="submit" class="btn btn-success width100">Kaydet</button>
+			</div>
+			
+
+		
+	
+		</form>
+	</div>
+	<!--end::Card header-->
+</div>
+
+
+@section JSSection {
+	
+	<script src="~/assets44/js/custom/apps/invoices/create.js"></script>
+
+}
