@@ -32,7 +32,8 @@ namespace Ekomers.Models.Entity
 		public DateTime KabulEdenTarihSaat { get; set; }
 
         public string? RedNot { get; set; }
-    }
+		public string? KabulNot { get; set; }
+	}
 
 	public class RequestUrunlerVM : BaseVM
 	{
@@ -93,7 +94,9 @@ namespace Ekomers.Models.Entity
         [Display(Name = "Talep Türü")]
         public string? TalepTurAd { get; set; } // talep takip no
         [Display(Name = "Ret Notu")]
-        public string? RedNot { get; set; }  
+        public string? RedNot { get; set; }
+		[Display(Name = "Kabul Notu")]
+		public string? KabulNot { get; set; }  
 
         public int TalepTurID { get; set; }
 

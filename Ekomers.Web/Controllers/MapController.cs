@@ -226,7 +226,7 @@ namespace Ekomers.Web.Controllers
 			ModulEnum modul = (ModulEnum)ModulID;
 
 			ViewBag.DosyaYolu = modul.ToString();
-			dynamic model = null;
+			dynamic model = null ;
 
 			switch (ModulID)
 			{

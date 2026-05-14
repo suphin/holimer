@@ -4,15 +4,15 @@ using Ekomers.Data.Services.IServices;
 using Ekomers.Models;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
-using Ekomers.Models.Enums;
+using Ekomers.Models.ViewModels; 
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Security.Claims;
+using System.Security.Claims; 
 
 namespace Ekomers.Data.Services
 {
-	public class OfferService : IOfferService
+	public class OrderService : IOrderService
 	{
 		private readonly ApplicationDbContext _context;
 		private readonly IHttpContextAccessor _httpContextAccessor;
@@ -24,38 +24,31 @@ namespace Ekomers.Data.Services
 		private readonly IRepository<OfferTur> _OfferTurRepo;
 		private readonly IRepository<RequestTur> _requestTurRepo;
 		private readonly IRepository<OfferDurum> _OfferDurumRepo;
-	private readonly IRepository<RequestUrunler> _requestUrunlerRepo;
+		private readonly IRepository<RequestUrunler> _requestUrunlerRepo;
 		private readonly IRepository<Request> _requestRepo;
 		private readonly IRepository<Departman> _departmanRepo;
+		private readonly IRepository<DovizTur> _dovizTurRepo;
+		private readonly IRepository<OfferOdemeTur> _offerOdemeTurRepo;
 
 		private readonly IRepository<Musteriler> _musterilerRepo;
 		private readonly IRepository<Malzeme> _urunlerRepo;
 		private readonly IRepository<MalzemeGrup> _altGrupRepo;
- 
+
 
 		private readonly IRepository<MalzemeBirim> _malzemeBirimRepo;
 		private readonly IRepository<MalzemeTipi> _malzemeTipiRepo;
-		 
+
 		private readonly ClaimsPrincipal _user;
 		private readonly string _userId;
-		public OfferService(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor
-			, IMapper mapper, IRepository<Kullanici> userRepo
-			, IRepository<Offer> OfferRepo
-			, IRepository<Departman> departmanRepo
-			, IRepository<Mahalle> mahalleRepo
-			, IHttpClientFactory httpClientFactory
-			, IRepository<OfferDurum> OfferDurumRepo
-			, IRepository<OfferTur> OfferTurRepo
-			, IRepository<Sirketler> sirketRepo 
-			, IRepository<Malzeme> urunlerRepo
-			, IRepository<MalzemeGrup> altGrupRepo
-			, IRepository<MalzemeBirim> malzemeBirimRepo
-			, IRepository<MalzemeTipi> malzemeTipiRepo
-			 ,IRepository<Musteriler> musterilerRepo
-			, IRepository<RequestUrunler> requestUrunlerRepo
-			, IRepository<Request> requestRepo
-		 , IRepository<RequestTur> requestTurRepo
-			)
+		public OrderService(ApplicationDbContext context, 
+			IHttpContextAccessor httpContextAccessor, 
+			IMapper mapper, IHttpClientFactory httpClientFactory, IRepository<Kullanici> userRepo, 
+			IRepository<Sirketler> sirketRepo, IRepository<Offer> OfferRepo, IRepository<OfferTur> OfferTurRepo,
+			IRepository<RequestTur> requestTurRepo, IRepository<OfferDurum> OfferDurumRepo, 
+			IRepository<RequestUrunler> requestUrunlerRepo, IRepository<Request> requestRepo, 
+			IRepository<Departman> departmanRepo, IRepository<Musteriler> musterilerRepo, 
+			IRepository<Malzeme> urunlerRepo, IRepository<MalzemeGrup> altGrupRepo, 
+			IRepository<MalzemeBirim> malzemeBirimRepo, IRepository<MalzemeTipi> malzemeTipiRepo, IRepository<DovizTur> dovizTurRepo, IRepository<OfferOdemeTur> offerOdemeTurRepo)
 		{
 			_context = context;
 			_httpContextAccessor = httpContextAccessor;
@@ -71,21 +64,23 @@ namespace Ekomers.Data.Services
 			_altGrupRepo = altGrupRepo;
 			_malzemeBirimRepo = malzemeBirimRepo;
 			_malzemeTipiRepo = malzemeTipiRepo;
-			 _requestUrunlerRepo = requestUrunlerRepo;
+			_requestUrunlerRepo = requestUrunlerRepo;
 			_requestRepo = requestRepo;
 			// Get the current user's claims principal and user ID
 			_user = _httpContextAccessor.HttpContext?.User;
 			_userId = _user?.FindFirstValue(ClaimTypes.NameIdentifier);
 			_httpClientFactory = httpClientFactory;
-			 _departmanRepo = departmanRepo;
-			 _requestTurRepo = requestTurRepo;
+			_departmanRepo = departmanRepo;
+			_requestTurRepo = requestTurRepo;
+			_dovizTurRepo = dovizTurRepo;
+			_offerOdemeTurRepo = offerOdemeTurRepo;
+		}
+		public IQueryable<OfferVM> GenelListe()
+		{
+			throw new NotImplementedException();
 		}
 
-		 
-
-	 
-
-		public IQueryable<OfferVM> GenelListe()
+		public IQueryable<OfferVM> SiparisFirmaGrupListe()
 		{
 			Expression<Func<Offer, bool>> filter;
 			if (_user.IsInRole("Admin"))
@@ -99,13 +94,19 @@ namespace Ekomers.Data.Services
 			var result = from kayit in _OfferRepo.GetAll2(filter)
 
 
-						 join OfferDurum in _OfferDurumRepo.GetAll2() on kayit.DurumID equals OfferDurum.ID
-						 into OfferDurumGroup
-						 from OfferDurum in OfferDurumGroup.DefaultIfEmpty()
+						
 
 						 join OfferTur in _OfferTurRepo.GetAll2() on kayit.TurID equals OfferTur.ID
 						into OfferTurGroup
 						 from OfferTur in OfferTurGroup.DefaultIfEmpty()
+
+						 join dovizTur in _dovizTurRepo.GetAll2() on kayit.DovizTurID equals dovizTur.ID
+						 into dovizTurGroup
+						 from dovizTur in dovizTurGroup.DefaultIfEmpty()
+
+						 join odemeTur in _offerOdemeTurRepo.GetAll2() on kayit.OdemeTurID equals odemeTur.ID
+						 into odemeTurGroup
+						 from odemeTur in odemeTurGroup.DefaultIfEmpty()
 
 						 join firma in _musterilerRepo.GetAll2() on kayit.FirmaID equals firma.ID
 						 	 into firmaGroup
@@ -116,6 +117,11 @@ namespace Ekomers.Data.Services
 						 into requestUrunGroup
 						 from requestUrun in requestUrunGroup.DefaultIfEmpty()
 
+
+						 join OfferDurum in _OfferDurumRepo.GetAll2() on requestUrun.OfferDurumID equals OfferDurum.ID
+						into OfferDurumGroup
+						 from OfferDurum in OfferDurumGroup.DefaultIfEmpty()
+
 						 join request in _requestRepo.GetAll2() on requestUrun.RequestID equals request.ID
 						 into requestGroup
 						 from request in requestGroup.DefaultIfEmpty()
@@ -124,7 +130,7 @@ namespace Ekomers.Data.Services
 						 into talepTurGroup
 						 from talepTur in talepTurGroup.DefaultIfEmpty()
 
-
+						
 						 join urun in _urunlerRepo.GetAll2() on requestUrun.UrunID equals urun.ID
 							into urunGroup
 						 from urun in urunGroup.DefaultIfEmpty()
@@ -157,31 +163,32 @@ namespace Ekomers.Data.Services
 							 Aciklama = kayit.Aciklama,
 							 Not = kayit.Not,
 							 RedNot = kayit.RedNot,
-                             TalepNot =requestUrun.Aciklama,
-							 DurumID = kayit.DurumID,
-							 DurumAd = OfferDurum != null ? OfferDurum.Ad : "",
-							 DurumClass = OfferDurum != null ? OfferDurum.Class : "",
+							 TalepNot = requestUrun.Aciklama,
+							 OfferDurumID = requestUrun.OfferDurumID,
+							 OfferDurumAd = OfferDurum != null ? OfferDurum.Ad : "",
+							 OfferDurumClass = OfferDurum != null ? OfferDurum.Class : "",
+							 
 							 FirmaID = kayit.FirmaID,
 							 FirmaAd = firma != null ? firma.AdSoyad : "",
 							 Firma = firma,
 							 RequestUrunID = kayit.RequestUrunID,
 							 TalepTurID = talepTur != null ? talepTur.ID : 0,
 							 TalepTurAd = talepTur != null ? talepTur.Ad : "",
-							 RetNot=requestUrun.RedNot,
+							 RetNot = requestUrun.RedNot,
 							 UrunID = requestUrun.UrunID,
 							 UrunAd = urun != null ? urun.Ad : "",
 							 UrunKod = urun != null ? urun.Kod : "",
-							 UrunKdv= urun != null ? (double)urun.Kdv : 0,
+							 UrunKdv = urun != null ? (double)urun.Kdv : 0,
 
 							 RequestDate = request != null ? request.RequestDate : new DateTime(1000, 1, 1),
 							 requestID = request != null ? request.ID : 0,
-							 TTN=requestUrun.TTN,
+							 TTN = requestUrun.TTN,
 							 requestUserID = requestUser.Id,
 							 requestUserName = requestUser != null ? requestUser.AdSoyad : "",
 							 SirketAd = sirket != null ? sirket.SirketAdi : "",
 							 Sirket = sirket,
-							 SirketID=request.SirketID,
-							 
+							 SirketID = request.SirketID,
+
 							 SatinalmaMuduru = sirket.SatinalmaMuduru,
 							 MuhasebeMuduru = sirket.MuhasebeMuduru,
 							 GenelMudur = sirket.GenelMudur,
@@ -200,14 +207,17 @@ namespace Ekomers.Data.Services
 							 TarihSaat = kayit.TarihSaat != null ? kayit.TarihSaat : new DateTime(1000, 1, 1),
 
 							 DovizTurID = kayit.DovizTurID,
+							 DovizTurAd = dovizTur != null ? dovizTur.Ad : "",
 							 EurRate = kayit.EurRate,
 							 UsdRate = kayit.UsdRate,
 							 IsLocked = (bool)kayit.IsLocked,
 							 OdemeTurID = kayit.OdemeTurID,
+							 OdemeTurAd = odemeTur != null ? odemeTur.Ad : "",
+
 							 TeslimTarihi = kayit.TeslimTarihi,
-							 OdemeTarihi=kayit.OdemeTarihi,
+							 OdemeTarihi = kayit.OdemeTarihi,
 							 IsSelected = kayit.IsSelected,
-						DosyaID=kayit.DosyaID,
+							 DosyaID = kayit.DosyaID,
 
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,
@@ -227,9 +237,8 @@ namespace Ekomers.Data.Services
 						 };
 
 			return result;
+
 		}
-
-
 
 		public Task<OfferVM> VeriDoldurGenel(params string[] listTypes)
 		{
@@ -238,164 +247,25 @@ namespace Ekomers.Data.Services
 
 		public bool VeriEkle(OfferVM model)
 		{
-			model.Not = model.Not.Replace("\r\n", "");
-			Offer? existingEntry = _OfferRepo.GetById(model.ID);
-			var newEntry = new Offer();
-			if (existingEntry == null)
-			{
-				 newEntry = _mapper.Map<Offer>(model);
-				newEntry.DosyaID = "PR-" + DateTime.Now.Ticks;
-				_OfferRepo.Add(newEntry);
-			}
-			else
-			{
-				_mapper.Map(model, existingEntry);
-				_OfferRepo.Update(existingEntry);
-			}
-
-			_context.SaveChanges();
-			var ID = newEntry.ID;
-			return true;
+			throw new NotImplementedException();
 		}
-		public async Task<bool> VeriEkleAsync(OfferVM model)
+
+		public Task<OfferVM> VeriGetir(int id)
 		{
-			model.Not = model.Not.Replace("\r\n", "");
-			Offer? existingEntry = _OfferRepo.GetById(model.ID);
-			var newEntry = new Offer();
-			if (existingEntry == null)
-			{
-				  newEntry = _mapper.Map<Offer>(model);				
-				newEntry.DosyaID = "PR-" + DateTime.Now.Ticks;
-				_OfferRepo.Add(newEntry);
-			}
-			else
-			{
-				existingEntry.Firma = model.FirmaAd;
-				_mapper.Map(model, existingEntry);
-				await _OfferRepo.UpdateAsync(existingEntry);
-			}
-
-			await _context.SaveChangesAsync();
-			//var ID = newEntry.ID;
-			return true;
+			throw new NotImplementedException();
 		}
-		public async Task<int> VeriEkleReturnIDAsync(OfferVM model)
+
+		public Task<List<OfferVM>> VeriListele(OfferVM model)
 		{
-			model.Not = (model.Not ?? string.Empty).Replace("\r\n", "");
-
-			Offer entity;
-
-			// Güncelleme mi, ekleme mi?
-			if (model.ID > 0)
-			{
-				// Tercihen async repo kullan
-				entity = await _OfferRepo.GetByIdAsync(model.ID);
-				if (entity == null)
-					throw new KeyNotFoundException($"Offer {model.ID} bulunamadı.");
-
-				_mapper.Map(model, entity);
-				await _OfferRepo.UpdateAsync(entity);
-			}
-			else
-			{
-				entity = _mapper.Map<Offer>(model);
-				entity.DosyaID = "PR-" + DateTime.Now.Ticks;
-				// Tercihen async ekleme
-				await _OfferRepo.AddAsync(entity);
-				// Eğer Add async değilse: _OfferRepo.Add(entity);
-			}
-
-			await _context.SaveChangesAsync();
-
-			// EF Core SaveChanges sonrası ID atanır
-			return entity.ID;
+			throw new NotImplementedException();
 		}
 
-		public async Task<OfferVM> VeriGetir(int id)
+		public Task<List<OfferVM>> VeriListele()
 		{
-			if (id <= 0)
-			{
-				return new OfferVM();
-			}
-
-			OfferVM kayit = GenelListe().Where(p => p.ID == id).FirstOrDefault();
-			if (kayit == null)
-			{
-				return new OfferVM();
-			}
-
-			return kayit;
+			throw new NotImplementedException();
 		}
 
-		public async Task<List<OfferVM>> VeriListele(OfferVM model)
-		{
-			var liste = GenelListe();
-			if (model.RequestUrunID != 0)
-			{
-				liste = liste.Where(p => p.RequestUrunID==model.RequestUrunID);
-			}
-
-			if (model.IsSelected ==true)
-			{
-				liste = liste.Where(p => p.IsSelected == true);
-			}
-
-			if (model.UrunID != 0)
-			{
-				liste = liste.Where(p => p.UrunID == model.UrunID);
-			}
-			if (model.Aciklama != null)
-			{
-				liste = liste.Where(p => p.Aciklama.Contains(model.Aciklama)
-
-				);
-			}
-
-			if (model.PageSize != 0)
-			{
-				return   liste.OrderByDescending(a => a.ID).Take(model.PageSize).ToList();
-			}
-			else
-			{
-				return  liste.OrderByDescending(a => a.ID).Take(1000).ToList();
-			}
-			 
-		 
-		}
-
-		public async Task<List<OfferVM>> VeriListele()
-		{
-			try
-			{
-				var List = await GenelListe().OrderByDescending(a => a.ID)
-								  .Take(1000)
-								  .ToListAsync();
-				return List;
-			}
-			catch (Exception ex)
-			{
-
-				return [];
-			}
-		}
-
-
-
-		public async Task<bool> VeriSil(int id)
-		{
-			Offer? kayit = _OfferRepo.GetById(id);
-			if (kayit != null)
-			{
-				kayit.DeleteDate = DateTime.Now;
-				kayit.IsDelete = true;
-				kayit.DeleteUserID = _userId;
-				await _OfferRepo.UpdateAsync(kayit);
-				await _context.SaveChangesAsync();
-			}
-			return true;
-		}
-
-		public async Task<PagedResult<OfferVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default)
+		public async Task<PagedResult<SiparisFirmaGrupVM>> VeriListeleFirmaGrup(int page, int pageSize, CancellationToken ct = default)
 		{
 			try
 			{
@@ -403,17 +273,50 @@ namespace Ekomers.Data.Services
 				// mantıklı bir üst sınır koy
 				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
 
-				var query = GenelListe(); // IQueryable<OfferVM>
+				//var query = SiparisFirmaGrupListe(); // IQueryable<OfferVM>
 
-				var total = await query.CountAsync(ct);
 
-				var items = await query
-					.OrderByDescending(a => a.ID)
+
+				var data = SiparisFirmaGrupListe()
+	.Where(x => x.IsSelected == true)
+	.ToList();
+
+				var grouped = data
+					.GroupBy(x => new
+					{
+						x.FirmaID,
+						x.FirmaAd
+					})
+					.Select(g => new SiparisFirmaGrupVM
+					{
+						FirmaID = g.Key.FirmaID??0,
+						FirmaAd = g.Key.FirmaAd??string.Empty,
+
+						TalepSayisi = g.Select(x => x.requestID).Distinct().Count(),
+						ToplamUrunSayisi=g.Select(x=>x.RequestUrunID).Distinct().Count(),
+						ToplamUrunAdedi = g.Sum(x => x.Miktar),
+
+						ToplamTutar = g.Sum(x => x.Miktar * x.Fiyat),
+
+						Urunler = g.ToList()
+					});
+
+
+
+
+
+
+
+
+				var total = grouped.Count();
+
+				var items =   grouped
+					.OrderByDescending(a => a.FirmaID)
 					.Skip((page - 1) * pageSize)
 					.Take(pageSize)
-					.ToListAsync(ct);
+					.ToList();
 
-				return new PagedResult<OfferVM>
+				return new PagedResult<SiparisFirmaGrupVM>
 				{
 					Items = items,
 					PageIndex = page,
@@ -421,64 +324,33 @@ namespace Ekomers.Data.Services
 					TotalCount = total
 				};
 			}
-			catch
+			catch(Exception ex)
 			{
-				return new PagedResult<OfferVM>
+				return new PagedResult<SiparisFirmaGrupVM>
 				{
-					Items = new List<OfferVM>(),
+					Items = new List<SiparisFirmaGrupVM>(),
 					PageIndex = page,
 					PageSize = pageSize,
 					TotalCount = 0
 				};
 			}
 		}
-		 
+
 		public Task<PagedResult<OfferVM>> VeriListeleAsync(OfferVM model)
 		{
 			throw new NotImplementedException();
 		}
 
-		public async Task<PagedResult<OfferVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default, int durumId = 0)
+		public Task<bool> VeriSil(int id)
 		{
-			try
-			{
-				if (page < 1) page = 1;
-				// mantıklı bir üst sınır koy
-				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
+			throw new NotImplementedException();
+		}
 
-				var query = GenelListe(); // IQueryable<OfferVM>
+		 
 
-				if (durumId!=0)
-				{
-					query = query.Where(p => p.DurumID == durumId);
-				}
-
-				var total = await query.CountAsync(ct);
-
-				var items = await query
-					.OrderByDescending(a => a.ID)
-					.Skip((page - 1) * pageSize)
-					.Take(pageSize)
-					.ToListAsync(ct);
-
-				return new PagedResult<OfferVM>
-				{
-					Items = items,
-					PageIndex = page,
-					PageSize = pageSize,
-					TotalCount = total
-				};
-			}
-			catch
-			{
-				return new PagedResult<OfferVM>
-				{
-					Items = new List<OfferVM>(),
-					PageIndex = page,
-					PageSize = pageSize,
-					TotalCount = 0
-				};
-			}
+		public Task<PagedResult<OfferVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

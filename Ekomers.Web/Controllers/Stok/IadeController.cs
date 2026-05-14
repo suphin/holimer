@@ -36,7 +36,7 @@ namespace Ekomers.Web.Controllers
 		private readonly ICacheService<IadeSebep> _iadeSebepCache;
 		private readonly string _uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "IadeUpload");
 		private readonly string _uploadFotoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "IadeUpload", "malzeme");
-		private readonly string _path2 = "IadeUpload";
+		//private readonly string _path2 = "IadeUpload";
 		public IadeController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			IIadeService iadeService, IWebHostEnvironment hostingEnvironment, IFileService fileService ,
 			ICacheService<IadeSebep> iadeSebepCache
@@ -206,7 +206,7 @@ namespace Ekomers.Web.Controllers
 			await ViewBagPartialListeDoldur();
 
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
-			var DepoListe = await _iadeRepo.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _iadeRepo.DepoListele(user.DepartmanID ?? 0);
 			var depoViewList = DepoListe.Select(d => new
 			{
 				d.ID,
@@ -956,7 +956,7 @@ namespace Ekomers.Web.Controllers
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
 			var modelvm = new MalzemeDepoVM()
 			{ 
-				MalzemeDepoVMListe = await _iadeRepo.DepoListele((int)user.DepartmanID)
+				MalzemeDepoVMListe = await _iadeRepo.DepoListele(user.DepartmanID??0)
 			};
 			var DepartmanListe = await _iadeRepo.DepartmanListele();
 			DepartmanListe?.Insert(0, new Departman { ID = 0, Ad = "Tümü" });

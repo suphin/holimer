@@ -47,10 +47,12 @@ namespace Ekomers.Models.Entity
 	{
 		public string TTN { get; set; }
 		public int RequestUrunID { get; set; }
-		public int OfferDurumID { get; set; }
+		
 		public double Miktar { get; set; }
 		public double Fiyat { get; set; }
 		public int Vade { get; set; }
+		[Display(Name = "Ödeme Türü")]
+		public string? OdemeTurAd { get; set; }
 		[Display(Name = "Ödeme Türü")]
 		public int OdemeTurID { get; set; }
 		public string? DovizTur { get; set; }
@@ -61,6 +63,15 @@ namespace Ekomers.Models.Entity
 		[Display(Name = "Son Durum")]
 		public string? DurumAd { get; set; }
 		public string? DurumClass { get; set; }
+
+		public int? OfferDurumID { get; set; }
+		[Display(Name = "Son Durum")]
+		public string? OfferDurumAd { get; set; }
+		public string? OfferDurumClass { get; set; }
+
+
+		[Display(Name = "Döviz Türü")]
+		public string? DovizTurAd { get; set; }
 		[Display(Name = "Döviz Türü")]
 		public int DovizTurID { get; set; }
 		public int UrunID { get; set; }
@@ -137,5 +148,10 @@ namespace Ekomers.Models.Entity
 		public string? Ad { get; set; }
 		public string? Aciklama { get; set; }
 	}
- 
+	public class OfferOdemeTur : BaseEntity
+	{
+		public string? Ad { get; set; }
+		public string? Aciklama { get; set; }
+	}
+
 }

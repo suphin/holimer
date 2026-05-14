@@ -1,0 +1,233 @@
+﻿@model SiparisDetayVM
+<!--begin::Card-->
+<div class="card card-custom" id="container">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label font-weight-bolder">
+               
+                            SATINALMA SİPARİŞ FORMU
+                      
+                <span class="d-block text-muted pt-2 font-size-sm">Satınalma sipariş onay</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <a href="/order/FirmaGrup" class="btn btn-primary font-weight-bolder no-print mr-2">
+                <i class="la la-list"></i>
+                Listeye Dön
+            </a>
+            <input type="button" value="Yazdır" class="btn btn-info print  no-print" onclick="Yazdir2('#container')" />
+        </div>
+    </div>
+    <div class="card-body " id="cardBody">
+        <!--begin: Datatable-->
+        
+
+                <!-- HEADER -->
+
+                <div class="row mb-10">
+
+                    <div class="col-md-6">
+                         
+
+                            <div>
+                                <strong>Firma :</strong>
+                                @Model.FirmaAd
+                            </div>
+
+                          @*   <div>
+                                <strong>Yetkili :</strong>
+                                @Model.Firma.AdSoyad
+                            </div> *@
+
+                            <div>
+                                <strong>Telefon :</strong>
+                                @Model.Firma.Telefon
+                            </div>
+
+                            <div>
+                                <strong>Eposta :</strong>
+                                @Model.Firma.Eposta
+                            </div>
+
+                     
+
+                    </div>
+
+                    <div class="col-md-6 text-right">
+
+                        <h3>
+                            Sipariş Tarihi
+                        </h3>
+
+                        <div>
+                            @DateTime.Now.ToString("dd.MM.yyyy")
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- TABLE -->
+
+                <div class="table-responsive">
+
+                    <table class="table table-bordered">
+
+                        <thead class="thead-light">
+
+                            <tr>
+
+                                <th>#</th>
+
+                                <th>Ürün</th>
+
+                       @*          <th>Kod</th> *@
+
+                                <th>Açıklama</th>
+
+                                <th class="text-center">
+                                    Miktar
+                                </th>
+
+                                <th class="text-right">
+                                    Birim Fiyat
+                                </th>
+
+                                <th class="text-center">
+                                    KDV
+                                </th>
+
+                                <th class="text-right">
+                                    Toplam
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @{
+                                int sira = 1;
+                            }
+
+                            @foreach (var item in Model.Urunler)
+                            {
+                                var toplam =
+                                    item.Miktar * item.Fiyat;
+
+                                <tr>
+
+                                    <td>
+                                        @sira
+                                    </td>
+
+                                    <td>
+                                        @item.UrunAd
+                                    </td>
+
+                                  @*   <td>
+                                        @item.UrunKod
+                                    </td> *@
+
+                                    <td>
+                                        @item.TalepNot
+                                    </td>
+
+                                    <td class="text-center">
+
+                                        @item.Miktar
+
+                                    </td>
+
+                                    <td class="text-right">
+
+                                        @item.Fiyat.ToString("N2")
+
+                                    </td>
+
+                                    <td class="text-center">
+
+                                        %@item.UrunKdv
+
+                                    </td>
+
+                                    <td class="text-right">
+
+                                        @toplam.ToString("N2")
+
+                                    </td>
+
+                                </tr>
+
+                                sira++;
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <!-- TOTALS -->
+
+                <div class="row justify-content-end mt-10">
+
+                    <div class="col-md-4">
+
+                        <table class="table table-bordered">
+
+                            <tr>
+
+                                <th>
+                                    Ara Toplam
+                                </th>
+
+                                <td class="text-right">
+
+                                    @Model.AraToplam.ToString("N2") ₺
+
+                                </td>
+
+                            </tr>
+
+                            <tr>
+
+                                <th>
+                                    KDV
+                                </th>
+
+                                <td class="text-right">
+
+                                    @Model.KdvToplam.ToString("N2") ₺
+
+                                </td>
+
+                            </tr>
+
+                            <tr class="font-weight-bolder">
+
+                                <th>
+                                    Genel Toplam
+                                </th>
+
+                                <td class="text-right">
+
+                                    @Model.GenelToplam.ToString("N2") ₺
+
+                                </td>
+
+                            </tr>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+          
+        <!--end: Datatable-->
+    </div>
+</div>
+<!--end::Card-->
+

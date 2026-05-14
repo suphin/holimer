@@ -409,7 +409,7 @@ namespace Ekomers.Web.Controllers
 				foreach (var mail in users)
 				{
 					BackgroundJob.Enqueue<IMailJobService>(x =>
-						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Teklifler girildi ve onaya gönderildi.", mesajBody));
+						x.SendMailAsync(mail ?? string.Empty, "Satınalma Portalı Bilgilendirme: Teklifler girildi ve onaya gönderildi.", mesajBody));
 				}
 			}
 
@@ -435,14 +435,16 @@ namespace Ekomers.Web.Controllers
 		}
 
 		[Authorize(Roles = "Editor")]
-		public async Task<IActionResult> KabulEt(int Id,int requestUrunId)
+		public async Task<IActionResult> KabulEt(int Id,int requestUrunId,string kabulNot)
 		{
 			var requestUrun = await _requestService.RequestUrunGetir(requestUrunId);
 			requestUrun.OfferDurumID = (int)EnumOfferDurum.TeklifOnaylandi;
+			requestUrun.KabulNot = kabulNot;
 			var sonuc =await  _requestService.RequestUrunGuncelle(requestUrun);
 
 			var modelc = await _service.VeriGetir(Id);
 			modelc.IsSelected = true;
+			modelc.DurumID = (int)EnumOrderDurum.SiparisAsamasinda;
 			 bool cevap  = await _service.VeriEkleAsync(modelc);
 			var teklifler = await _service.VeriListele(new OfferVM { RequestUrunID = requestUrunId });
 
@@ -497,6 +499,14 @@ namespace Ekomers.Web.Controllers
 									<tr>
 										<th align='left'>Birim</th>
 										<td>{_urun.BirimAd}</td>
+									</tr>
+									<tr>
+										<th align='left'>Ret Notu</th>
+										<td>{_urun.RedNot}</td>
+									</tr>
+									<tr>
+										<th align='left'>Kabul Notu</th>
+										<td>{_urun.KabulNot}</td>
 									</tr>
 								</table>
 <br />

@@ -24,12 +24,12 @@ builder.Services.AddHttpContextAccessor();
 //var connectionString = builder.Configuration.GetConnectionString("LocalConnection");
 
 
-var encryptedConn = builder.Configuration.GetConnectionString("DefaultConnection");
+var encryptedConn = builder.Configuration.GetConnectionString("DefaultConnection")??"";
 
 var conn = CryptoHelper.Decrypt(encryptedConn);
 //var conn = encryptedConn;
 
-var encryptedLogoConn = builder.Configuration.GetConnectionString("LogoConnection");
+var encryptedLogoConn = builder.Configuration.GetConnectionString("LogoConnection")??"";
 
 var Logoconn = CryptoHelper.Decrypt(encryptedLogoConn);
 //var Logoconn = encryptedLogoConn;
@@ -283,6 +283,7 @@ builder.Services.AddScoped<IPurchaseRequestRepository, PurchaseRequestRepository
 
 builder.Services.AddScoped<IRequestService, RequestService>();
 builder.Services.AddScoped<IOfferService, OfferService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 builder.Services.AddScoped<ITcmbService, TcmbService>();
 builder.Services.AddScoped<IMapService, MapService>();

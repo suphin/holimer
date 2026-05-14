@@ -1,0 +1,297 @@
+﻿@model RequestUrunlerVM
+@{
+    ViewData["Title"] = "Sipariş Onay Sayfası";
+    ViewData["Description"] = "Çalışma Sayfası - Sipariş / Onay";
+}
+<style>
+
+    .table-selected, .table-selected > th, .table-selected > td {
+        background-color: #18f9f0;
+    }
+
+    .custom-radio-group {
+        display: flex;
+        gap: 25px;
+        flex-wrap: wrap;
+    }
+
+    .custom-radio {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: 500;
+        gap: 12px;
+        user-select: none;
+        position: relative;
+    }
+        /* Gerçek radio gizleniyor */
+        .custom-radio input[type="radio"] {
+            display: none;
+        }
+    /* Büyük radio görünümü */
+    .radio-mark {
+        width: 28px;
+        height: 28px;
+        border: 3px solid #3699FF;
+        border-radius: 50%;
+        display: inline-block;
+        position: relative;
+        transition: all .2s ease;
+        background: #fff;
+    }
+    /* İç dolgu */
+    .custom-radio input[type="radio"]:checked + .radio-mark::after {
+        content: "";
+        width: 14px;
+        height: 14px;
+        background: #3699FF;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    /* Hover efekti */
+    .custom-radio:hover .radio-mark {
+        box-shadow: 0 0 0 5px rgba(54, 153, 255, 0.15);
+    }
+
+</style>
+
+
+<div class="card card-custom">
+    <div class="card-header card-header-tabs-line">
+        <div class="card-title">
+
+                     
+            <h3 class="card-label">@Model.ModalTitle</h3>
+        </div>
+        <div class="card-toolbar">
+
+            <ul class="nav nav-tabs nav-bold nav-tabs-line">
+                <li class="nav-item">
+                    <a class="nav-link active" data-toggle="tab" href="#kt_tab_pane_1_4">
+                        <span class="nav-icon"><i class="flaticon2-search"></i></span>
+                        <span class="nav-text">Detaylar</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#kt_tab_pane_2_4">
+                        <span class="nav-icon"><i class="flaticon2-document"></i></span>
+                        <span class="nav-text">Dosyalar</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#kt_tab_pane_3_4">
+                        <span class="nav-icon"><i class="flaticon-exclamation-1"></i></span>
+                        <span class="nav-text">Hareket Kayıtları</span>
+                    </a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="kt_tab_pane_1_4" role="tabpanel" aria-labelledby="kt_tab_pane_1_4">
+                <form name="_VeriEkle2" id="_VeriEkle2">
+                    @{
+                        await Html.RenderPartialAsync("_form", Model);
+                    }
+
+                
+                    <div class="text-right">
+
+                        <a type="button" class="btn btn-danger mr-2" href="/offer/onay">Geri Dön</a>
+                        
+                    </div>
+                </form>
+            </div>
+            <div class="tab-pane fade" id="kt_tab_pane_2_4" role="tabpanel" aria-labelledby="kt_tab_pane_2_4">
+                @{
+                    @await Component.InvokeAsync("CrmDosyaYonetimi",
+                    new { VeriID = Model.ID, ModulID = (int)ModulEnum.Offer, DosyaYolu = "Offer" })
+                }
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@{
+    var teklif = Model.OfferVMListe.FirstOrDefault();
+
+    double kur = 1;
+    string doviz = "₺";
+
+    if (teklif.DovizTurID == 2)
+    {
+        kur = Convert.ToDouble(teklif.UsdRate);
+        doviz = "$";
+    }
+    else if (teklif.DovizTurID == 3)
+    {
+        kur = Convert.ToDouble(teklif.EurRate);
+        doviz = "€";
+    }
+
+    var birimFiyatTL = teklif.Fiyat * kur;
+    var toplamTutar = teklif.Fiyat * Model.MiktarSon;
+    var toplamTL = birimFiyatTL * Model.MiktarSon;
+}
+
+<div class="card shadow-sm border-0 mt-5" id="container">
+    <div class="card-body p-5">
+
+        <!-- HEADER -->
+        <div class="row mb-5">
+            <div class="col-md-6">
+                <h2 class="fw-bold text-primary mb-1">
+                    PROFORMA FATURA
+                </h2>
+
+                <div class="text-muted">
+                    Teklif No : @teklif.ID <br />
+                    Tarih : @DateTime.Now.ToString("dd.MM.yyyy")
+                </div>
+            </div>
+
+            <div class="col-md-6 text-end">
+                <div class="text-muted">
+                    Satıcı Firma
+                </div>  
+                <h4 class="fw-bold mb-2">
+                    @teklif.Firma?.AdSoyad
+                </h4>
+
+              
+            </div>
+        </div>
+
+        <!-- URUN TABLO -->
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Ürün</th>
+                        <th width="120">Miktar</th>
+                        <th width="180">Birim Fiyat</th>
+                        <th width="180">Toplam</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="fw-bold">
+                                @Model.UrunAd
+                            </div>
+
+                            <div class="text-muted small mt-1">
+                                @teklif.Not
+                            </div>
+                        </td>
+
+                        <td>
+                            @Model.MiktarSon
+                        </td>
+
+                        <td>
+                            @doviz @teklif.Fiyat.ToString("n2")
+                        </td>
+
+                        <td class="fw-bold">
+                            @doviz @toplamTutar.ToString("n2")
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- DETAYLAR -->
+        <div class="row mt-5">
+
+            <div class="col-md-7">
+
+                <table class="table table-sm">
+                    <tr>
+                        <td class="fw-bold">Vade</td>
+                        <td>@teklif.Vade Gün</td>
+                    </tr>
+
+                    <tr>
+                        <td class="fw-bold">Teslim Tarihi</td>
+                        <td>@teklif.TeslimTarihi.ToString("dd.MM.yyyy")</td>
+                    </tr>
+
+                    <tr>
+                        <td class="fw-bold">Döviz Türü</td>
+                        <td>@doviz</td>
+                    </tr>
+
+                    <tr>
+                        <td class="fw-bold">Kur Bilgisi</td>
+                        <td>₺ @kur.ToString("n2")</td>
+                    </tr>
+                </table>
+
+            </div>
+
+            <div class="col-md-5">
+
+                <div class="border rounded p-4 bg-light">
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Ara Toplam</span>
+                        <strong>
+                            ₺ @toplamTL.ToString("n2")
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>KDV</span>
+                        <strong>Hariç</strong>
+                    </div>
+
+                    <hr />
+
+                    <div class="d-flex justify-content-between">
+                        <h5 class="fw-bold mb-0">Genel Toplam</h5>
+
+                        <h5 class="fw-bold text-success mb-0">
+                            ₺ @toplamTL.ToString("n2")
+                        </h5>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-12 text-right mt-5">
+            <input type="button" value="Yazdır" class="btn btn-primary print  no-print" onclick="Yazdir2('#container')" />
+            <input type="button" value="Siparişi Onayla" class="btn btn-success no-print" onclick="SiparisOnay('@Model.ID')" />
+        </div>
+        <!-- ALT NOT -->
+        <div class="mt-5 pt-3 border-top text-muted small">
+            Bu belge sistem üzerinden oluşturulmuş proforma teklif çıktısıdır. 
+        </div>
+
+    </div>
+</div>
+@{
+    await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+
+@{
+    await Html.RenderPartialAsync("_PartialModalDosya",
+    new AuthorizeCrudVM { Controller = "Offer", HaritaEkle = false });
+}
+ 
+
+@section JSSection {
+  
+ 
+}

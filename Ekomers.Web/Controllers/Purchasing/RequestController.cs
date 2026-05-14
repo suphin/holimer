@@ -257,7 +257,7 @@ namespace Ekomers.Web.Controllers
 				CreateDate = DateTime.Now,
 				RequestID=RequestID,
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(RequestID),
-				RequestDurumID=(int)talep.DurumID,
+				RequestDurumID=talep.DurumID??0,
 				 //RequestTurID=(int)talep.TurID,
 				 TalepEdenID = _userId,
 
@@ -280,7 +280,7 @@ namespace Ekomers.Web.Controllers
 			var model = new RequestUrunlerVM
 			{
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(RequestID),
-				RequestDurumID = (int)talep.DurumID,
+				RequestDurumID = talep.DurumID??0,
 			};
 
 			//ViewBag.Kurlar = await _tcmbService.DovizKuruGetir();
@@ -333,7 +333,7 @@ namespace Ekomers.Web.Controllers
 			var model = new RequestUrunlerVM
 			{
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(models.RequestID),
-				RequestDurumID = (int)talep.DurumID,
+				RequestDurumID = talep.DurumID??0,
 			};
 
 			return PartialView("_UrunEklenen", model);

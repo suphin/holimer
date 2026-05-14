@@ -1,8 +1,4 @@
-﻿using Afbel.Common.Services;
-using Azure.Core;
-using DocumentFormat.OpenXml.Drawing.Charts;
-using DocumentFormat.OpenXml.Presentation;
-using Ekomers.Common.Services.IServices;
+﻿using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
@@ -15,7 +11,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Security.Claims;
 
 
@@ -67,7 +62,7 @@ namespace Ekomers.Web.Controllers
 			_stokService = stokService;
 			_malzemeService = malzemeService;
 			_tcmbService = tcmbService;
-		 
+			 
 		}
 	
 		public override void OnActionExecuting(ActionExecutingContext context)
@@ -247,7 +242,7 @@ namespace Ekomers.Web.Controllers
 				CreateDate = DateTime.Now,
 				RequestID=RequestID,
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(RequestID),
-				RequestDurumID=(int)talep.DurumID,
+				RequestDurumID= talep.DurumID??0,
 				 //RequestTurID=(int)talep.TurID,
 				 TalepEdenID = _userId,
 
@@ -270,7 +265,7 @@ namespace Ekomers.Web.Controllers
 			var model = new RequestUrunlerVM
 			{
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(RequestID),
-				RequestDurumID = (int)talep.DurumID,
+				RequestDurumID = talep.DurumID??0,
 			};
 
 			//ViewBag.Kurlar = await _tcmbService.DovizKuruGetir();
@@ -323,7 +318,7 @@ namespace Ekomers.Web.Controllers
 			var model = new RequestUrunlerVM
 			{
 				RequestUrunlerVMListe = await _service.RequestUrunlerGetir(models.RequestID),
-				RequestDurumID = (int)talep.DurumID,
+				RequestDurumID = talep.DurumID??0,
 			};
 
 			return PartialView("_UrunEklenen", model);
@@ -432,7 +427,7 @@ namespace Ekomers.Web.Controllers
 			foreach (var mail in users)
 				{
 					BackgroundJob.Enqueue<IMailJobService>(x =>
-						x.SendMailAsync(mail, "Satınalma Portalı Bilgilendirme: Talep onaylandı.", mesajBody));
+						x.SendMailAsync(mail??string.Empty, "Satınalma Portalı Bilgilendirme: Talep onaylandı.", mesajBody));
 				}
 			 
 

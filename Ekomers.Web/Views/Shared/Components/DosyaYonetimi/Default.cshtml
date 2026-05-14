@@ -12,7 +12,7 @@
     @{
         var sayac = 0;
     }
-    @foreach (var dosya in Model.DosyaListe.Where(d => imageExtensions.Contains(d.DosyaUzantisi.ToLower()) && d.Is360 == false))
+    @foreach (var dosya in Model.DosyaListe.Where(d => imageExtensions.Contains((d.DosyaUzantisi ?? string.Empty).ToLower()) && d.Is360 == false))
     {
         <div class="thumbnail" onclick="openLightbox('image',@sayac)">
             <img src="~/@dosya.ModulDosyaYolu/@dosya.DosyaAdi" alt="@dosya.DosyaAdi" />
@@ -24,7 +24,7 @@
 <h3>Görseller 360 Derece</h3>
 <div class="gallery">
 
-    @foreach (var dosya in Model.DosyaListe.Where(d => imageExtensions.Contains(d.DosyaUzantisi.ToLower()) && d.Is360 == true))
+    @foreach (var dosya in Model.DosyaListe.Where(d => imageExtensions.Contains((d.DosyaUzantisi ?? string.Empty).ToLower()) && d.Is360 == true))
     {
 
         <button type="button" class="btn btn-primary btn-sm thumbnail" data-filename="@dosya.DosyaAdi" data-filepath="@dosya.ModulDosyaYolu" onclick="View360(this)">
@@ -40,7 +40,7 @@
     @{
         sayac = 0;
     }
-    @foreach (var dosya in Model.DosyaListe.Where(d => videoExtensions.Contains(d.DosyaUzantisi.ToLower())))
+    @foreach (var dosya in Model.DosyaListe.Where(d => videoExtensions.Contains((d.DosyaUzantisi ?? string.Empty).ToLower())))
     {
         <div class="thumbnail" onclick="openLightbox('video', @sayac)">
             <img src="~/img/video-thumbnail.png" alt="@dosya.DosyaAdi" />
@@ -55,7 +55,7 @@
     <div class="file-group">
 
         <div class="file-list">
-            @foreach (var dosya in Model.DosyaListe.Where(d => d.DosyaUzantisi.ToLower() == pdfExtension))
+            @foreach (var dosya in Model.DosyaListe.Where(d => (d.DosyaUzantisi ?? string.Empty).ToLower() == pdfExtension))
             {
                 <div class="file-item">
 
@@ -75,7 +75,7 @@
     <div class="file-group">
 
         <div class="file-list">
-            @foreach (var dosya in Model.DosyaListe.Where(d => !imageExtensions.Contains(d.DosyaUzantisi.ToLower()) && !videoExtensions.Contains(d.DosyaUzantisi.ToLower()) && d.DosyaUzantisi.ToLower() != pdfExtension))
+            @foreach (var dosya in Model.DosyaListe.Where(d => !imageExtensions.Contains((d.DosyaUzantisi ?? string.Empty).ToLower()) && !videoExtensions.Contains((d.DosyaUzantisi ?? string.Empty).ToLower()) && (d.DosyaUzantisi ?? string.Empty).ToLower() != pdfExtension))
             {
                 <div class="file-item">
 
@@ -125,8 +125,8 @@
 <script>
 
     var currentSlideIndex = 0;
-     var images = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DosyaListe.Where(d => imageExtensions.Contains(d.DosyaUzantisi.ToLower())).Select(d => new { src = "../" + d.ModulDosyaYolu + "/" + d.DosyaAdi, caption = d.DosyaAdi }).ToList()));
-     var videos = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DosyaListe.Where(d => videoExtensions.Contains(d.DosyaUzantisi.ToLower())).Select(d => new { src = "../" + d.ModulDosyaYolu + "/" + d.DosyaAdi, caption = d.DosyaAdi }).ToList()));
+     var images = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DosyaListe.Where(d => imageExtensions.Contains((d.DosyaUzantisi??string.Empty).ToLower())).Select(d => new { src = "../" + d.ModulDosyaYolu + "/" + d.DosyaAdi, caption = d.DosyaAdi }).ToList()));
+     var videos = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DosyaListe.Where(d => videoExtensions.Contains((d.DosyaUzantisi??string.Empty).ToLower())).Select(d => new { src = "../" + d.ModulDosyaYolu + "/" + d.DosyaAdi, caption = d.DosyaAdi }).ToList()));
      var currentMediaType = 'image';
 
 

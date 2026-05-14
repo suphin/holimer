@@ -1,0 +1,67 @@
+﻿@model SiparisFirmaGrupVM
+@{
+}
+<!--begin::Card-->
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Talep Listesi
+                <span class="d-block text-muted pt-2 font-size-sm">Satınalma sipariş onay</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <a href="/order/Index" class="btn btn-primary font-weight-bolder">
+                <i class="la la-list"></i>
+               Sipariş Listesi
+            </a>
+        </div>
+    </div>
+    <div class="card-body " id="cardBody">
+        <!--begin: Datatable-->
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Firma</th>
+                    <th>Talep Sayısı</th>
+                    <th>Ürün Sayısı</th>
+                    <th>Ürün Adedi</th>
+                    <th>Toplam Tutar</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @foreach (var item in Model.SiparisFirmaGrupVMListe)
+                {
+                    <tr>
+
+                        <td>@item.FirmaAd</td>
+
+                        <td class="text-right">@item.TalepSayisi</td>
+                        <td class="text-right">@item.ToplamUrunSayisi</td>
+
+                        <td class="text-right">@item.ToplamUrunAdedi</td>
+
+                        <td class="text-right">
+                            @item.ToplamTutar.ToString("N2") ₺
+                        </td>
+
+                        <td>
+                            <a asp-action="Detay"
+                               asp-route-firmaId="@item.FirmaID"
+                               class="btn btn-sm btn-primary">
+                                Detay
+                            </a>
+                        </td>
+
+                    </tr>
+                }
+
+            </tbody>
+        </table>
+        <!--end: Datatable-->
+    </div>
+</div>
+<!--end::Card-->

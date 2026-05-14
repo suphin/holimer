@@ -81,7 +81,7 @@ namespace Ekomers.Web.Controllers
 					Email = model.Email,
 					DepartmanID = model.DepartmanID,
 					IsActive = true,
-				}, model.Password);
+				}, model.Password??string.Empty);
 
 				if (identRes.Succeeded)
 				{
@@ -159,7 +159,7 @@ namespace Ekomers.Web.Controllers
 				await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 				user.SonGirisTarihi = DateTime.Now;
 				await _userManager.UpdateAsync(user);
-				_userService.AddUserActivityLog("Ekomers", "SignIn", user.Email, "UserLoggedIn", user.UserName);
+				_userService.AddUserActivityLog("Ekomers", "SignIn", user.Email??string.Empty, "UserLoggedIn", user.UserName ?? string.Empty);
 				return Redirect(returnUrl);
 			}
 
@@ -178,7 +178,7 @@ namespace Ekomers.Web.Controllers
 			if (User.Identity.IsAuthenticated == true)
 			{
 				var user = await _userManager.FindByNameAsync(User.Identity!.Name);
-				_userService.AddUserActivityLog("Ekomers", "LogOut", "", "UserLoggedOut", user.UserName);
+				_userService.AddUserActivityLog("Ekomers", "LogOut", "", "UserLoggedOut", user.UserName ?? string.Empty);
 				await _signInManager.SignOutAsync();
 			}
 
@@ -229,12 +229,12 @@ namespace Ekomers.Web.Controllers
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
 			var vm = new SignUpVM()
 			{
-				UserName = user.UserName,
-				AdSoyad = user.AdSoyad,
-				Email = user.Email,
-				PhoneNumber = user.PhoneNumber,
-				Bolum = user.Bolum,
-				Unvan = user.Unvan,
+				UserName = user.UserName ?? string.Empty,
+				AdSoyad = user.AdSoyad ?? string.Empty,
+				Email = user.Email ?? string.Empty,
+				PhoneNumber = user.PhoneNumber ?? string.Empty,
+				Bolum = user.Bolum ?? string.Empty,
+				Unvan = user.Unvan ?? string.Empty,
 			};
 			return View(vm);
 		}
@@ -245,13 +245,13 @@ namespace Ekomers.Web.Controllers
 		{
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
 
-			user.PhoneNumber = model.PhoneNumber;
-			user.AdSoyad = model.AdSoyad;
-			user.Bolum = model.Bolum;
-			user.Unvan = model.Unvan;
+			user.PhoneNumber = model.PhoneNumber ?? string.Empty;
+			user.AdSoyad = model.AdSoyad ?? string.Empty;
+			user.Bolum = model.Bolum ?? string.Empty;
+			user.Unvan = model.Unvan ?? string.Empty;
 			if (model.Email != user.Email)
 			{
-				await _userManager.SetEmailAsync(user, model.Email);
+				await _userManager.SetEmailAsync(user, model.Email ?? string.Empty);
 			}
 			await _userManager.UpdateAsync(user);
 			return RedirectToAction(nameof(EkomersController.Member));
@@ -338,7 +338,7 @@ namespace Ekomers.Web.Controllers
 			{
 				graphics.DrawImage(image, 0, 0, width, height);
 
-				using (MemoryStream memoryStream = new MemoryStream())
+				using (var memoryStream = new MemoryStream())
 				{
 					resizedImage?.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Jpeg);
 					return memoryStream.ToArray();

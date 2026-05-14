@@ -1,14 +1,12 @@
-﻿using DocumentFormat.OpenXml.Office2013.Drawing.ChartStyle;
-using Ekomers.Data;
+﻿using Ekomers.Data;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.ViewModels;
 using Ekomers.Models.ViewModels.Admin;
- 
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -538,7 +536,7 @@ namespace Ekomers.Web.Controllers
 
 		public class ClaimComparer : IEqualityComparer<Claim>
 		{
-			public bool Equals(Claim x, Claim y)
+			public bool Equals(Claim? x, Claim? y)
 			{
 				if (x == null || y == null) return false;
 				return x.Type == y.Type && x.Value == y.Value;

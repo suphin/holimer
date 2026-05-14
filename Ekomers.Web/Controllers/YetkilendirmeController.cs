@@ -1,25 +1,18 @@
 ﻿
- 
+
 using Ekomers.Data;
-using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
 using Ekomers.Models.ViewModels;
-using Ekomers.Web.Controllers;
-using HtmlAgilityPack;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using System.Linq;
-using System.Net.Http;
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 
 namespace Ekomers.Web.Controllers
 {
@@ -35,7 +28,6 @@ namespace Ekomers.Web.Controllers
 		private string ModulAd = "Admin";
 		public YetkilendirmeController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			 IYetkilendirmeService service
-			, IWebHostEnvironment hostingEnvironment, IFileService fileService
 			, ApplicationDbContext context
 			, IHttpClientFactory httpClientFactory
 			) : base(userManager, roleManager)

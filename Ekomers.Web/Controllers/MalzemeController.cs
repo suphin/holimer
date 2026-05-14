@@ -1,22 +1,8 @@
-﻿ 
-
-
-
-
-
-using Azure.Core;
-using DocumentFormat.OpenXml.Drawing;
-using DocumentFormat.OpenXml.Drawing.Charts;
-using DocumentFormat.OpenXml.Wordprocessing;
-using Ekomers.Data;
-using Ekomers.Data.Services;
+﻿using Ekomers.Data;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
 using Ekomers.Models;
 using Ekomers.Models.Ekomers;
-using Ekomers.Models.Entity;
-using Ekomers.Models.Enums;
-using Ekomers.Models.FilterVM;
 using Ekomers.Models.Models;
 using Ekomers.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -25,13 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.Extensions.Caching.Memory;
-using Newtonsoft.Json;
-using System.Drawing.Printing;
-using System.Linq.Expressions;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 
 namespace Ekomers.Web.Controllers
@@ -56,7 +36,7 @@ namespace Ekomers.Web.Controllers
 		 
 		public MalzemeController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			 IMalzemeService service
-			, IWebHostEnvironment hostingEnvironment, IFileService fileService
+			 
 			, ApplicationDbContext context
 			, IHttpClientFactory httpClientFactory
 			

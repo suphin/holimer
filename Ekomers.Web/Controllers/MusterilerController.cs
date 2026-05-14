@@ -1,25 +1,19 @@
-﻿ 
- 
- 
+﻿
+
+
 using Ekomers.Data;
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
-using Ekomers.Models.ViewModels;
-using Ekomers.Web.Controllers;
-using HtmlAgilityPack;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using System.Net.Http;
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 
 namespace Ekomers.Web.Controllers
 {
@@ -37,7 +31,7 @@ namespace Ekomers.Web.Controllers
 		private string ModulAd = "CRM";
 		public MusterilerController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			 IMusterilerService service
-			, IWebHostEnvironment hostingEnvironment, IFileService fileService
+		 
 			, ApplicationDbContext context
 			, IHttpClientFactory httpClientFactory
 			, ISehirlerService sehirlerService
@@ -148,7 +142,7 @@ namespace Ekomers.Web.Controllers
 			}
 			else
 			{
-				await ViewBagPartialListeDoldur((int)modelc.SehirID, (int)modelc.IlceID);
+				await ViewBagPartialListeDoldur(modelc.SehirID??0, modelc.IlceID??0);
 			}
 
 				
@@ -169,13 +163,13 @@ namespace Ekomers.Web.Controllers
 			}
 			else
 			{
-				if ((int)modelc.SehirID==0 && (int)modelc.IlceID==0)
+				if (modelc.SehirID==0 && modelc.IlceID==0)
 				{
 					await ViewBagPartialListeDoldur(1,1055);
 				}
 				else
 				{ 
-					await ViewBagPartialListeDoldur((int)modelc.SehirID, (int)modelc.IlceID);					 
+					await ViewBagPartialListeDoldur(modelc.SehirID??0, modelc.IlceID??0);					 
 				}
 				//
 			}
@@ -271,7 +265,7 @@ namespace Ekomers.Web.Controllers
 
 			// Güvenli ve performanslı arama (ToLower/EF Core vs. projenize göre uyarlayın)
 			var query = _context.Musteriler
-				.Where(x => (searchName == null || x.AdSoyad.Contains(searchName) || x.SirketUnvan.Contains(searchName)))
+				.Where(x => (searchName == null || x.AdSoyad.Contains(searchName) || (x.SirketUnvan??string.Empty).Contains(searchName)))
 				.OrderBy(x => x.AdSoyad);
 
 			var items = query  

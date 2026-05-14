@@ -95,7 +95,7 @@ namespace Ekomers.Web.Controllers
                     DepartmanID= model.DepartmanID,
                     SirketID= model.SirketID,
                     IsActive=true,
-                }, model.Password);
+                }, model.Password??string.Empty);
 
                 if (identRes.Succeeded)
                 {
@@ -183,7 +183,7 @@ namespace Ekomers.Web.Controllers
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,new ClaimsPrincipal(claimsIdentity));
                 user.SonGirisTarihi = DateTime.Now;
                 await _userManager.UpdateAsync(user);
-                _userService.AddUserActivityLog("Home", "SignIn", user.Email, "UserLoggedIn", user.UserName);
+                _userService.AddUserActivityLog("Home", "SignIn", user.Email??string.Empty, "UserLoggedIn", user.UserName??string.Empty);
                 return Redirect(returnUrl);
             }
 

@@ -1,7 +1,7 @@
 ﻿
- 
- 
- 
+
+
+
 using Ekomers.Data;
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
@@ -14,8 +14,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using System.Linq.Expressions;
 using System.Security.Claims;
 
@@ -37,7 +35,7 @@ namespace Ekomers.Web.Controllers
 		private string ModulAd = "CRM";
 		public FirsatController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			 IFirsatService service
-			, IWebHostEnvironment hostingEnvironment, IFileService fileService
+			 
 			, ApplicationDbContext context
 			, IHttpClientFactory httpClientFactory
 			, ISehirlerService sehirlerService

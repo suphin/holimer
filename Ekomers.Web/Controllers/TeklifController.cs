@@ -1,10 +1,4 @@
-﻿
-
-
-
-using DocumentFormat.OpenXml.Drawing;
-using DocumentFormat.OpenXml.Drawing.Charts;
-using Ekomers.Common.Services.IServices;
+﻿using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
@@ -12,15 +6,11 @@ using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
 using Ekomers.Models.Enums;
-using Ekomers.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using Newtonsoft.Json;
 using System.Linq.Expressions;
 using System.Security.Claims;
 
@@ -47,7 +37,7 @@ namespace Ekomers.Web.Controllers
 		private string ModulAd = "CRM";
 		public TeklifController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			 ITeklifService service
-			, IWebHostEnvironment hostingEnvironment, IFileService fileService
+			 
 			, ApplicationDbContext context
 			, IHttpClientFactory httpClientFactory
 			, ISehirlerService sehirlerService

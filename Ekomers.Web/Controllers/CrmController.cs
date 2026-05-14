@@ -83,7 +83,7 @@ namespace Ekomers.Web.Controllers
 				KullaniciHedefleri = users.Select(u => new KullaniciHedefVM
 				{
 					UserID = u.Id,
-					UserName = u.UserName,
+					UserName = u.UserName??u.AdSoyad,
 					Hedefler = Enumerable.Range(1, 12).Select(ay =>
 					{
 						var h = hedefler.FirstOrDefault(x => x.UserID == u.Id && x.Ay == ay);

@@ -40,7 +40,7 @@
 	</div>
 </div>
 <!--end::Card-->
-@section Modals {
+ 
 @{
 	//await Html.RenderPartialAsync("_PartialModalVeri");
 	await Html.RenderPartialAsync("~/Views/Shared/_PartialModal.cshtml", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
@@ -50,7 +50,7 @@
 	await Html.RenderPartialAsync("_PartialModalDosya",
 	new AuthorizeCrudVM { Controller = "Request", HaritaEkle = false });
 }
-}
+ 
 @section JSSection {
 	
 	@{

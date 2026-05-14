@@ -17,5 +17,10 @@ namespace Ekomers.Models.ViewModels
 		public int OnayBekleyenTeklif { get; set; }
 
 		public int OnaylananTeklif { get; set; }
+		public int SiparisAsamasında { get; set; }
+		public int OnayBekleyenSiparis { get; set; }
+		public int OnaylananSiparis { get; set; }
+
+
 	}
 }

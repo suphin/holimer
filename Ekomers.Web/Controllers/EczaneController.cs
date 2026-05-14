@@ -1,13 +1,11 @@
-﻿ 
- 
+﻿
+
 using Ekomers.Data;
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
-using Ekomers.Models.ViewModels;
-using Ekomers.Web.Controllers;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,11 +13,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
-using System.Net.Http;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 
@@ -42,7 +37,7 @@ namespace Ekomers.Web.Controllers
 		private readonly string _path2 = "Eczane";
 		public EczaneController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			 IEczaneService service
-			, IWebHostEnvironment hostingEnvironment, IFileService fileService
+			 
 			, ApplicationDbContext context
 			, IHttpClientFactory httpClientFactory
 			, ICacheService<Sehirler> sehirlerCache
@@ -515,8 +510,8 @@ namespace Ekomers.Web.Controllers
 				foreach (var eczane in eczaneler)
 				{
 					// Eczane tablosundaki enlem-boylam bilgileri
-					string boylam = eczane.Boylam; // X
-					string enlem = eczane.Enlem;  // Y
+					string boylam = eczane.Boylam ?? string.Empty; // X
+					string enlem = eczane.Enlem ?? string.Empty;  // Y
 
 					// GeoJSON formatına yerleştir
 					string haritaJson =

@@ -40,6 +40,10 @@ namespace Ekomers.Web.Component
 			model.TeklifAsamasında = await _context.RequestUrunler
 				.CountAsync(x => x.OfferDurumID == (int)EnumOfferDurum.TeklifAsamasinda);
 
+			model.SiparisAsamasında = await _context.Offer.CountAsync(x => x.DurumID == (int)EnumOrderDurum.SiparisAsamasinda);
+
+
+
 			return View(model);
 		}
 	}

@@ -6,6 +6,7 @@ using Ekomers.Models;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
 using Ekomers.Models.Enums;
+using Ekomers.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -546,7 +547,8 @@ namespace Ekomers.Data.Services
 								 //RequestTurID = (int)request.TurID,
 								TalepTurID = talepTur != null ? talepTur.ID : 0,
 								TalepTurAd = talepTur != null ? talepTur.Ad : "",
-
+								KabulNot=kayit.KabulNot,
+							
                              OfferDurumID =kayit.OfferDurumID,
 								 OfferDurumAd=OfferDurum.Ad,
 								 DurumClass=OfferDurum.Class, 
@@ -660,6 +662,8 @@ namespace Ekomers.Data.Services
 							 TTN = kayit.TTN != null ? kayit.TTN : "",
 							 Aciklama = kayit.Aciklama,
 							 RequestID = kayit.RequestID,
+							 RedNot=kayit.RedNot,
+							 KabulNot=kayit.KabulNot,
 
 							 UrunID = kayit.UrunID,
 							 Miktar = (double)kayit.Miktar,

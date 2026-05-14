@@ -306,6 +306,6 @@ namespace Ekomers.Web.Controllers
 	
 	public class FileSettings
 	{
-		public List<string> AllowedFileExtensions { get; set; }
+		public List<string> AllowedFileExtensions { get; set; }= ".jpg,.jpeg,.png,.gif,.bmp,.tiff,.heic,.pdf,.mp4,.avi,.mov,.wmv,.webp".Split(',').ToList();
 	}
 }

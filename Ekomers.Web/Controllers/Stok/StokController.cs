@@ -36,7 +36,7 @@ namespace Ekomers.Web.Controllers
 		private readonly IFileService _fileService; 
 		private readonly string _uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "StokUpload");
 		private readonly string _uploadFotoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "StokUpload", "malzeme");
-		private readonly string _path2 = "StokUpload";
+		//private readonly string _path2 = "StokUpload";
         private readonly ICacheService<MalzemeBirim> _malzemeBirimCache;
         private readonly ICacheService<MalzemeTipi> _malzemeTipiCache;
         private readonly ICacheService<DovizTur> _dovizTurCache;

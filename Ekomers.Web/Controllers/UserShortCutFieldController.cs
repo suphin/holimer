@@ -1,19 +1,13 @@
 ﻿
 using Ekomers.Data;
-using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
-using Ekomers.Models.ViewModels;
-using Ekomers.Web.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 namespace Ekomers.Web.Controllers
@@ -28,7 +22,7 @@ namespace Ekomers.Web.Controllers
 		private readonly ApplicationDbContext _context;
 		public UserShortCutFieldController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
 			 IUserShortCutFieldService service
-			, IWebHostEnvironment hostingEnvironment, IFileService fileService
+		 
 			, ApplicationDbContext context
 			) : base(userManager, roleManager)
 		{

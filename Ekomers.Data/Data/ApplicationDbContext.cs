@@ -203,7 +203,8 @@ namespace Ekomers.Data
 		public DbSet<Offer> Offer { get; set; }
 		public DbSet<OfferDurum> OfferDurum { get; set; }
 		public DbSet<OfferTur> OfferTur { get; set; }
-		  
+		public DbSet<OfferOdemeTur> OfferOdemeTur { get; set; }
+
 
 
 	}

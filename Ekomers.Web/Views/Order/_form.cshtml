@@ -189,32 +189,14 @@
                         @Model.MiktarSon @Model.BirimAd
                     </div>
                 </div>
-            </div>
-
-        
-            @if (Model.OfferDurumID==(int)EnumOfferDurum.TeklifOnaylandi)
-    {
-        <div class="col-md-12 mb-5">
-            <div class="info-box">
-                <div class="info-title">Aciklama</div>
-                <div class="info-value">
-                    @Model.Aciklama
+            </div> 
+    <div class="col-md-12 mb-5">
+                <div class="info-box">
+                    <div class="info-title">Açıklama</div>
+                    <div class="info-value"> @Model.Aciklama
+                    </div>
                 </div>
             </div>
-        </div>
-    }
-    else
-    {
-        <div class="col-md-12  mb-5">
-            <div class="info-box">
-                <div class="info-title">Açıklama</div>
-                <div class="info-value">
-                    <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="2"></textarea>
-                </div>
-            </div>
-        </div>
-    }
-           
     <div class="col-md-12">
         <div class="info-box">
             <div class="info-title">Kabul Notu</div>

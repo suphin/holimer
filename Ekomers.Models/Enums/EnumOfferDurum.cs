@@ -12,4 +12,11 @@ namespace Ekomers.Models.Enums
 		TeklifOnayBekliyor = 2,
 		TeklifOnaylandi = 3, 
 	}
+
+	public enum EnumOrderDurum
+	{
+		SiparisAsamasinda = 1,
+		SiparisOnayBekliyor = 2,
+		SiparisOnaylandi = 3,
+	}
 }

@@ -185,7 +185,7 @@ namespace Ekomers.Web.Controllers
 			 
 			var modelvm = new PortalMenuVM()
 			{
-				PortalMenuListe = await _service.MenuListele((int)modelc.ParentID)
+				PortalMenuListe = await _service.MenuListele(modelc.ParentID??0)
 			};
 			return PartialView("_MenuListesiGetir", modelvm);
 		}
