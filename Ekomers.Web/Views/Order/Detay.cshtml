@@ -30,8 +30,11 @@
                          
 
                             <div>
-                                <strong>Firma :</strong>
-                                @Model.FirmaAd
+                                
+                    <h3>
+                        <strong>Firma :</strong>
+                        @Model.FirmaAd
+                    </h3>
                             </div>
 
                           @*   <div>
@@ -222,7 +225,9 @@
                         </table>
 
                     </div>
-
+            <div class="col-md-12 text-right mt-5"> 
+                <input type="button" value="Siparişi Onayla" class="btn btn-success no-print" onclick="SiparisTopluOnay('@Model.FirmaID')" />
+            </div>
                 </div>
 
           
@@ -231,3 +236,34 @@
 </div>
 <!--end::Card-->
 
+@section JSSection {
+    <script>
+        function SiparisTopluOnay(FirmaID) {
+
+            if (!confirm("Siparişi onaylamak istediğinize emin misiniz?")) {
+                 return;
+            }
+
+            $.ajax({
+                url: '@Url.Action("SiparisTopluOnay", "Order")',
+                type: 'GET',
+                dataType: "html",
+                data: {
+                    FirmaID:FirmaID,
+                },
+                success: function(response) {
+                  toastr.success('Onaylama İşlemi Başarılı', 'Başarılı');
+                   setTimeout(function () {
+                    window.open('@Url.Action("FirmaGrup", "Order")', '_top');
+                }, 3000);
+                },
+                error: function(xhr, status, error) {
+
+                    toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+
+                }
+            });
+        }
+    </script>
+
+}

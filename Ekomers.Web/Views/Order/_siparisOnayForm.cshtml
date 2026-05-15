@@ -1,0 +1,149 @@
+﻿@model OrderVM
+
+@{
+    var teklif = Model.Teklifler.FirstOrDefault();
+
+}
+ 
+
+<form asp-controller="Order" asp-action="SiparisOnayla" method="post" name="VeriSil" id="VeriSil">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Sipariş Onay Formu</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+
+            <div class="form-group row">
+                <div class="col-lg-3">
+                    <label asp-for="TeslimTarihi" class="control-label"></label>
+                    <input asp-for="TeslimTarihi" class="form-control form-control-sm" type="date" />
+                </div>
+
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-12">
+                    <label asp-for="TeslimYeri" class="control-label"></label>
+                    <textarea asp-for="TeslimYeri" type="text" class="form-control form-control-sm" rows="2"></textarea>
+                    <span asp-validation-for="TeslimYeri" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group row">
+                <div class="col-lg-12">
+                    <label asp-for="Aciklama" class="control-label"></label>
+                    <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="2"></textarea>
+                    <span asp-validation-for="Aciklama" class="text-danger"></span>
+                </div>
+            </div> 
+            <div class="form-group row">
+                <div class="col-lg-12">
+                    <label  class="control-label">E-Posta Gönder</label>
+                   <input id="tagifyEpostalar" class="form-control tagify " name='tagifyEpostalar' placeholder="Eposta ekle"  multiple />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label>E-Posta İçeriği</label>
+                <textarea name="Content" id="kt-ckeditor-1">
+          
+                 </textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <input type="hidden" asp-for="ID" />
+           
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+            <button type="submit" class="btn btn-success">Sipariş İşlemini Onayla</button>
+        </div>
+    </div>
+</form>
+
+<script src="~/assets1/plugins/custom/ckeditor/ckeditor-classic.bundle.js?v=7.0.5"></script>
+<!--end::Page Vendors-->
+<!--begin::Page Scripts(used by this page)-->
+<script src="~/assets1/js/pages/crud/forms/editors/ckeditor-classic.js?v=7.0.5"></script>
+
+
+@{
+    var kisiListe = new List<string>();
+
+    foreach (var kisi in ViewBag.tagifyEpostalar)
+    {
+        var ad = kisi.AdSoyad?.Replace("'", "\\'");
+
+        kisiListe.Add($@"
+                        {{
+                            value: '{ad}<{kisi.Email}>',
+                            eposta: '{kisi.Email}',
+                            id: '{kisi.Id}',
+                            initials: '',
+                            initialsState: '',
+                            class: 'tagify__tag--primary'
+                        }}");
+    }
+
+    var kisiJson = string.Join(",", kisiListe);
+}
+<script>
+            // Class definition
+    var CokluSelectList = function() {
+        // Private functions
+
+
+        var Gruplar = function() {
+            // Init autocompletes
+            var toEl = document.getElementById('tagifyEpostalar');
+                    var tagifyTo = new Tagify(toEl, {
+                    delimiters: ", ",
+                    maxTags: 10,
+                    blacklist: ["fuck", "shit", "pussy"],
+                    keepInvalidTags: true,
+                    whitelist: [@Html.Raw(kisiJson)],
+                    templates: {
+                        dropdownItem: function (tagData) {
+                            try {
+                                var html = '';
+
+                                 html += '<div class="tagify__dropdown__item">';
+                                html += '   <div class="d-flex align-items-center">';
+                                html += '       <span class="symbol sumbol-' + (tagData.initialsState ? tagData.initialsState : '') + ' mr-2">';
+                               // html += '           <span class="symbol-label" style="background-image: url(\''+ (tagData.pic ? tagData.pic : '') + '\')">' + (tagData.initials ? tagData.initials : '') + '</span>';
+                                html += '       </span>';
+                                html += '       <div class="d-flex flex-column">';
+                                html += '           <a href="#" class="text-dark-75 text-hover-primary font-weight-bold">'+ (tagData.value ? tagData.value : '') + '</a>';
+                                html += '           <span class="text-muted font-weight-bold">' + (tagData.kod ? tagData.kod : '') + '</span>';
+                                html += '       </div>';
+                                html += '   </div>';
+                                html += '</div>';
+
+                                return html;
+                            } catch (err) { }
+                        }
+                    },
+                    transformTag: function (tagData) {
+                        tagData.class = 'tagify__tag tagify__tag--primary';
+                    },
+                    dropdown: {
+                        classname: "color-blue",
+                        enabled: 1,
+                        maxItems: 5
+                    }
+                });
+
+        }
+
+        return {
+            // public functions
+            init: function() {
+
+                Gruplar();
+            }
+        };
+    }();
+
+    jQuery(document).ready(function() {
+        CokluSelectList.init();
+    });
+</script>
+
+ 

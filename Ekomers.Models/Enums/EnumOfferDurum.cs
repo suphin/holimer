@@ -18,5 +18,6 @@ namespace Ekomers.Models.Enums
 		SiparisAsamasinda = 1,
 		SiparisOnayBekliyor = 2,
 		SiparisOnaylandi = 3,
+		SiparisIptal = 4,
 	}
 }

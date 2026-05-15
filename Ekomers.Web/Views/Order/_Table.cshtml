@@ -46,8 +46,15 @@
                 <td class="text-right">@item.Miktar</td>
                 <td class="text-right">₺ @tlFiyat.ToString("n2")</td>
                 <td class="text-right">@doviz @((tlFiyat * item.Miktar).ToString("n2"))</td>
-                <td>    
-                    <a class="btn btn-light btn-hover-warning btn-sm mr-1" href="/order/onaydetail/@item.RequestUrunID">Sipariş Ver</a>
+                <td>   
+                    @if (item.DurumID==(int)EnumOrderDurum.SiparisAsamasinda)
+                    {
+                        <a class="btn btn-light btn-hover-warning btn-sm mr-1" href="/order/onaydetail/@item.RequestUrunID">Sipariş Ver</a>
+                    }
+                    @if (item.DurumID == (int)EnumOrderDurum.SiparisOnaylandi)
+                    {
+                        <a class="btn btn-light btn-hover-success btn-sm mr-1" href="/order/onaydetail/@item.RequestUrunID">İncele</a>
+                    }
                 </td>
              
             </tr>

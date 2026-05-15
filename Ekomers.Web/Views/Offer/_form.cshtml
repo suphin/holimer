@@ -125,8 +125,60 @@
                 }
             </span>
         </div>
+<div class="row mb-8">
+    <div class="col-md-6">
+        <table class="table">           
+            <tbody>
+                <tr>
+                    <th>Şirket</th>
+                    <td> @Model.SirketAd</td>
+                </tr>
+                <tr>
+                    <th>Talep Eden</th>
+                    <td> @Model.TalepEdenAd</td>
+                </tr>
+                <tr>
+                    <th>Kabul Eden</th>
+                    <td> @Model.KabulEdenAd</td>
+                </tr>
+                <tr>
+                    <th>Talep Türü</th>
+                    <td> @Model.TalepTurAd</td>
+                </tr>
+                <tr>
+                    <th>Talep Tarihi</th>
+                    <td> @Model.RequestDate.ToLongDateString()</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
-        <div class="row mb-8">
+    <div class="col-md-6">
+        <table class="table">
+            <tbody>
+                <tr>
+                    <th>Malzeme Kodu ve Adı</th>
+                    <td> @Model.UrunKod -   @Model.UrunAd</td>
+                </tr>
+                <tr>
+                    <th>Miktar</th>
+                    <td> @Model.MiktarSon @Model.BirimAd</td>
+                </tr>
+                <tr>
+                    <th>Açıklama</th>
+                    <td> @Model.Aciklama</td>
+                </tr>
+                <tr>
+                    <th>Kabul Notu</th>
+                    <td> @Model.KabulNot</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+     
+</div>
+       @*  <div class="row mb-8">
 
             <div class="col-md-6 mb-5">
                 <div class="info-box">
@@ -224,7 +276,7 @@
         </div>
     </div>
 
-        </div>
+        </div> *@
 
  
 

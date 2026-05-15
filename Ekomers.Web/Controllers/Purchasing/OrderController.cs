@@ -1,5 +1,4 @@
 ﻿using DocumentFormat.OpenXml.Office2010.Excel;
-using DocumentFormat.OpenXml.Wordprocessing;
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services;
@@ -13,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Ekomers.Web.Controllers
@@ -129,7 +129,7 @@ namespace Ekomers.Web.Controllers
 			ViewBag.Modul = ModulAd;
 			var model = _orderService
 				.SiparisFirmaGrupListe()
-				.Where(x => x.FirmaID == firmaId && x.IsSelected==true)
+				.Where(x => x.FirmaID == firmaId && x.IsSelected==true && x.DurumID == (int)EnumOrderDurum.SiparisAsamasinda)
 				.ToList();
 
 			if (!model.Any())
@@ -176,6 +176,70 @@ namespace Ekomers.Web.Controllers
 
 			};
 			model.OfferVMListe = await _offerService.VeriListele(offer);
+			return View(model);
+		}
+
+
+		public async Task<IActionResult> SiparisOnay(int OfferID)
+		{
+			//bool sonuc =  await _orderService.SiparisOnay(OfferID);
+			//if (sonuc)
+			//{
+			//	return Ok("Sipariş onaylandı.");
+			//}
+			//else
+			//{
+			//	return BadRequest("İşlem sırasında hata oluştu.");
+			//}
+
+			var model = await _requestService.RequestUrunGetir(OfferID);
+
+			model.UserID = _userId;
+
+			var offer = new OfferVM
+			{
+				RequestUrunID = OfferID,
+				IsSelected = true,
+
+			}; 
+
+
+			var models = new OrderVM();
+			models.Teklifler= await _offerService.VeriListele(offer);
+			models.TeslimTarihi = DateTime.Now;
+
+			ViewBag.tagifyEpostalar =await  _context.Users.ToListAsync();
+			return PartialView("_siparisOnayForm", models);
+
+		}
+		public async Task<IActionResult> SiparisTopluOnay(int FirmaID)
+		{
+			bool sonuc =  await _orderService.SiparisTopluOnay(FirmaID);
+			if (sonuc)
+			{
+				return Ok("Sipariş onaylandı.");
+			}
+			else
+			{
+				return BadRequest("İşlem sırasında hata oluştu.");
+			}
+		}
+
+		public async Task<IActionResult> Arsiv(int page = 1, int pageSize = 10, CancellationToken ct = default)
+		{
+			ViewBag.Modul = ModulAd;
+
+			var paged = await _offerService.VeriListeleAsync(page, pageSize, ct, (int)EnumOrderDurum.SiparisOnaylandi);
+			//var paged = await _orderService.VeriListeleAsync(page, pageSize, ct);
+
+			var model = new OfferVM
+			{
+				OfferVMListe = paged.Items.ToList(),
+				PageIndex = paged.PageIndex,
+				PageSize = paged.PageSize,
+				TotalCount = paged.TotalCount
+			};
+
 			return View(model);
 		}
 	}

@@ -1,12 +1,11 @@
 ﻿using AutoMapper;
 using Ekomers.Data.Repository.IRepository;
-using Ekomers.Data.Services.IServices;
 using Ekomers.Models;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
+using Ekomers.Models.Enums;
 using Ekomers.Models.ViewModels; 
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using System.Security.Claims; 
 
@@ -167,7 +166,7 @@ namespace Ekomers.Data.Services
 							 OfferDurumID = requestUrun.OfferDurumID,
 							 OfferDurumAd = OfferDurum != null ? OfferDurum.Ad : "",
 							 OfferDurumClass = OfferDurum != null ? OfferDurum.Class : "",
-							 
+							 DurumID=kayit.DurumID,
 							 FirmaID = kayit.FirmaID,
 							 FirmaAd = firma != null ? firma.AdSoyad : "",
 							 Firma = firma,
@@ -278,7 +277,7 @@ namespace Ekomers.Data.Services
 
 
 				var data = SiparisFirmaGrupListe()
-	.Where(x => x.IsSelected == true)
+	.Where(x => x.IsSelected == true && x.DurumID==(int)EnumOrderDurum.SiparisAsamasinda)
 	.ToList();
 
 				var grouped = data
@@ -351,6 +350,43 @@ namespace Ekomers.Data.Services
 		public Task<PagedResult<OfferVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default)
 		{
 			throw new NotImplementedException();
+		}
+
+		public async Task<bool> SiparisOnay(int OfferID)
+		{
+		
+			try
+			{
+				var offer = _OfferRepo.GetFirstOrDefault(x => x.ID == OfferID);
+				offer.DurumID = (int)EnumOrderDurum.SiparisOnaylandi;
+				_OfferRepo.Update(offer);
+				await _context.SaveChangesAsync();
+				return true;
+			}
+			catch (Exception)
+			{
+
+				return false;
+			}
+			
+		}
+
+		public async Task<bool> SiparisTopluOnay(int FirmaID)
+		{
+			var model =  SiparisFirmaGrupListe()
+			.Where(x => x.FirmaID == FirmaID && x.IsSelected == true && x.DurumID == (int)EnumOrderDurum.SiparisAsamasinda)
+			.ToList();
+
+			foreach (var item in model)
+			{
+				var offer = _OfferRepo.GetFirstOrDefault(x => x.ID == item.ID);
+				offer.DurumID = (int)EnumOrderDurum.SiparisOnaylandi;
+				_OfferRepo.Update(offer);
+			}
+
+			await _context.SaveChangesAsync();
+			return true;
+
 		}
 	}
 }

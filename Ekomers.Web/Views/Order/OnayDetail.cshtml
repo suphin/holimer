@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Sipariş Onay Sayfası";
     ViewData["Description"] = "Çalışma Sayfası - Sipariş / Onay";
+    var teklif = Model.OfferVMListe.FirstOrDefault();
 }
 <style>
 
@@ -102,8 +103,14 @@
 
                 
                     <div class="text-right">
-
-                        <a type="button" class="btn btn-danger mr-2" href="/offer/onay">Geri Dön</a>
+                        @if (teklif.DurumID == (int)EnumOrderDurum.SiparisOnayBekliyor)
+                        {
+                            <a type="button" class="btn btn-danger mr-2" href="/order/Index">Geri Dön</a>
+                        }
+                        @if (teklif.DurumID == (int)EnumOrderDurum.SiparisOnaylandi)
+                        {
+                            <a type="button" class="btn btn-danger mr-2" href="/order/arsiv">Geri Dön</a>
+                        }
                         
                     </div>
                 </form>
@@ -120,7 +127,7 @@
 </div>
 
 @{
-    var teklif = Model.OfferVMListe.FirstOrDefault();
+   
 
     double kur = 1;
     string doviz = "₺";
@@ -272,7 +279,11 @@
 
         <div class="col-md-12 text-right mt-5">
             <input type="button" value="Yazdır" class="btn btn-primary print  no-print" onclick="Yazdir2('#container')" />
-            <input type="button" value="Siparişi Onayla" class="btn btn-success no-print" onclick="SiparisOnay('@Model.ID')" />
+
+            @if (teklif.DurumID == (int)EnumOrderDurum.SiparisAsamasinda)
+            {
+                <input type="button" value="Siparişi Onayla" class="btn btn-success no-print" data-toggle="modal" data-target="#ModalVeri" onclick="SiparisOnay('@teklif.ID')" />
+            } 
         </div>
         <!-- ALT NOT -->
         <div class="mt-5 pt-3 border-top text-muted small">
@@ -292,6 +303,10 @@
  
 
 @section JSSection {
-  
+    <script>
+        function SiparisOnay(OfferID) {
+            GetAjax('Order/SiparisOnay?OfferID='+OfferID, 'VeriAlan');
+                 }
+    </script>
  
 }

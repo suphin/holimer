@@ -126,90 +126,59 @@
             </span>
         </div>
 
-        <div class="row mb-8">
-
-            <div class="col-md-6 mb-5">
-                <div class="info-box">
-                    <div class="info-title">Şirket</div>
-                    <div class="info-value">
-                       @Model.SirketAd
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-5">
-                <div class="info-box">
-                    <div class="info-title">Talep Eden</div>
-                    <div class="info-value">
-                        @Model.TalepEdenAd
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-5">
-                <div class="info-box">
-                    <div class="info-title">Kabul Eden</div>
-                    <div class="info-value">
-                        @Model.KabulEdenAd
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-5">
-                <div class="info-box">
-                    <div class="info-title">Talep Türü</div>
-                    <div class="info-value">
-                        @Model.TalepTurAd
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-5">
-                <div class="info-box">
-                    <div class="info-title">Talep Tarihi</div>
-                    <div class="info-value">
-                        @Model.RequestDate.ToLongDateString()
-                    </div>
-                </div>
-            </div>
-
-    <div class="col-md-7 mb-5">
-        <div class="info-box">
-            <div class="info-title">Malzeme Kodu ve Adı</div>
-            <div class="info-value">
-                @Model.UrunKod -   @Model.UrunAd
-            </div>
-        </div>
+<div class="row mb-8">
+    <div class="col-md-6">
+        <table class="table">
+            <tbody>
+                <tr>
+                    <th>Şirket</th>
+                    <td> @Model.SirketAd</td>
+                </tr>
+                <tr>
+                    <th>Talep Eden</th>
+                    <td> @Model.TalepEdenAd</td>
+                </tr>
+                <tr>
+                    <th>Kabul Eden</th>
+                    <td> @Model.KabulEdenAd</td>
+                </tr>
+                <tr>
+                    <th>Talep Türü</th>
+                    <td> @Model.TalepTurAd</td>
+                </tr>
+                <tr>
+                    <th>Talep Tarihi</th>
+                    <td> @Model.RequestDate.ToLongDateString()</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
-            <div class="col-md-2 mb-5">
-                <div class="info-box">
-                    <div class="info-title">Miktar</div>
-                    <div class="info-value">
-                        @Model.MiktarSon @Model.BirimAd
-                    </div>
-                </div>
-            </div> 
-    <div class="col-md-12 mb-5">
-                <div class="info-box">
-                    <div class="info-title">Açıklama</div>
-                    <div class="info-value"> @Model.Aciklama
-                    </div>
-                </div>
-            </div>
-    <div class="col-md-12">
-        <div class="info-box">
-            <div class="info-title">Kabul Notu</div>
-            <div class="info-value">
-                @Model.KabulNot
-            </div>
-        </div>
+    <div class="col-md-6">
+        <table class="table">
+            <tbody>
+                <tr>
+                    <th>Malzeme Kodu ve Adı</th>
+                    <td> @Model.UrunKod -   @Model.UrunAd</td>
+                </tr>
+                <tr>
+                    <th>Miktar</th>
+                    <td> @Model.MiktarSon @Model.BirimAd</td>
+                </tr>
+                <tr>
+                    <th>Açıklama</th>
+                    <td> @Model.Aciklama</td>
+                </tr>
+                <tr>
+                    <th>Kabul Notu</th>
+                    <td> @Model.KabulNot</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
-        </div>
-
- 
-
+     
+</div>
 
 
  
