@@ -368,10 +368,16 @@ namespace Ekomers.Web.Controllers
 			 
 			 int urunDurum = await _service.RequestUrunDurum(RequestId);
 
+			var sirket = "";
+			var talepTarihi = DateTime.Now;
+			var not = "";
 			if (urunDurum == 0)
 			{
 				var req = await _service.VeriGetir(RequestId);
 				req.DurumID = (int)EnumRequestDurum.Onaylandi;
+				sirket=req.SirketAd;
+				talepTarihi = req.TarihSaat ?? DateTime.Now;
+				not = req.Not ?? "";
 				await _service.VeriEkleAsync(req);
 				await _service.RequestUrunKapat(RequestId);
 			}
@@ -415,6 +421,10 @@ namespace Ekomers.Web.Controllers
 
 			var mesajBody = $@"
     <h3>Talep Detayları</h3>  
+<b>Şirket:</b> {sirket} <br> 
+<b>Tarih:</b> {talepTarihi} <br>
+<b>Açıklama:</b> {not} <br>
+
     <h3>Ürün Listesi</h3>
 
     <table border='1' cellpadding='8' cellspacing='0' 

@@ -29,5 +29,7 @@ namespace Ekomers.Models.Enums
 		Sozlesmeler = 1014,
 		Request = 1015,
 		Offer = 1016,
+		Envanter = 1017,
+		Personel = 1018,
 	}
 }

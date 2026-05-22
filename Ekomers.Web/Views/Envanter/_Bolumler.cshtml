@@ -1,0 +1,8 @@
+﻿@{
+}
+<option value="">Seçiniz</option>
+@foreach (EnvanterBolum item in ViewBag.BolumlerListe)
+{
+   
+    <option value="@item.ID">@item.Kod - @item.Ad </option>
+}

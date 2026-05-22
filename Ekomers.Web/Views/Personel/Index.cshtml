@@ -1,0 +1,69 @@
+﻿@model PersonelVM
+@{
+	ViewData["Title"] = "Kullanıcı Listesi";
+	ViewData["Description"] = "Çalışma Sayfası - Zimmet / Personel";
+	//Layout = "~/Views/Shared/Metronic44/_LayoutMetronic44.cshtml";
+}
+
+
+
+<!--begin::Card-->
+<div class="card card-custom">
+	<div class="card-header flex-wrap py-3">
+		<div class="card-title">
+			<h3 class="card-label">
+				Personel Listesi
+				<span class="d-block text-muted pt-2 font-size-sm">Personel girişi</span>
+			</h3>
+		</div>
+		<div class="card-toolbar">
+
+			@{
+				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_CreateButton.cshtml");
+			}
+			@{
+				await Html.RenderPartialAsync("_PartialHaritaGenel", new AuthorizeCrudVM
+				{
+					ModulID = (int)ModulEnum.Personel,
+					HaritaEkle = false
+				});
+
+			}
+		</div>
+	</div>
+	<div class="card-body " id="cardBody">
+		<!--begin: Datatable-->
+		@{
+			await Html.RenderPartialAsync("_Table", Model);
+		}
+		<!--end: Datatable-->
+	</div>
+</div>
+<!--end::Card-->
+@{
+	//await Html.RenderPartialAsync("_PartialModalVeri");
+	await Html.RenderPartialAsync("~/Views/Shared/_PartialModal.cshtml", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+
+@{
+	await Html.RenderPartialAsync("_PartialModalDosya",
+	new AuthorizeCrudVM { Controller = "Personel", HaritaEkle = false });
+}
+
+@section JSSection {
+
+	@{
+		await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+		new AuthorizeCrudVM
+		{
+			Controller = "Personel",
+			ModulID = (int)ModulEnum.Personel,
+			DosyaYolu = "Personel"
+		});
+	}
+
+	 
+}
+
+
+

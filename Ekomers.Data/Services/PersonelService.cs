@@ -107,7 +107,9 @@ namespace Ekomers.Data.Services
 							 Not = kayit.Not,
 							 DepartmanAd = departman != null ? departman.Ad : "",
 							 SirketAd = sirket != null ? sirket.SirketAdi : "",
-							 
+							 DogumTarihi = kayit.DogumTarihi,
+							 Adres = kayit.Adres,
+							 Tckn = kayit.Tckn,
 
 
 

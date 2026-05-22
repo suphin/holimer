@@ -183,6 +183,7 @@
                     <tr>
                         <th>Ürün</th>
                         <th width="120">Miktar</th>
+                        <th width="120">Kdv</th>
                         <th width="180">Birim Fiyat</th>
                         <th width="180">Toplam</th>
                     </tr>
@@ -199,9 +200,11 @@
                                 @teklif.Not
                             </div>
                         </td>
-
                         <td>
                             @Model.MiktarSon
+                        </td>
+                        <td>
+                            @teklif.UrunKdv
                         </td>
 
                         <td>
@@ -258,7 +261,10 @@
 
                     <div class="d-flex justify-content-between mb-2">
                         <span>KDV</span>
-                        <strong>Hariç</strong>
+                        @{
+                            var kdv = (teklif.UrunKdv / 100) * toplamTL;
+                        }
+                        <strong>@kdv.ToString("n2") </strong>
                     </div>
 
                     <hr />
@@ -267,7 +273,7 @@
                         <h5 class="fw-bold mb-0">Genel Toplam</h5>
 
                         <h5 class="fw-bold text-success mb-0">
-                            ₺ @toplamTL.ToString("n2")
+                            ₺ @((toplamTL+kdv).ToString("n2"))
                         </h5>
                     </div>
 
@@ -280,9 +286,10 @@
         <div class="col-md-12 text-right mt-5">
             <input type="button" value="Yazdır" class="btn btn-primary print  no-print" onclick="Yazdir2('#container')" />
 
-            @if (teklif.DurumID == (int)EnumOrderDurum.SiparisAsamasinda)
+            @if (teklif.DurumID == (int)EnumOrderDurum.SiparisAsamasinda || teklif.DurumID != (int)EnumOrderDurum.SiparisIptal)
             {
                 <input type="button" value="Siparişi Onayla" class="btn btn-success no-print" data-toggle="modal" data-target="#ModalVeri" onclick="SiparisOnay('@teklif.ID')" />
+                <input type="button" value="Siparişi İptal Et" class="btn btn-success no-print" data-toggle="modal" data-target="#ModalVeri" onclick="SiparisIptal('@teklif.ID')" />
             } 
         </div>
         <!-- ALT NOT -->
@@ -304,9 +311,35 @@
 
 @section JSSection {
     <script>
-        function SiparisOnay(OfferID) {
+        function SiparisOnay(OfferID) 
+        {
             GetAjax('Order/SiparisOnay?OfferID='+OfferID, 'VeriAlan');
                  }
+
+          function SiparisIptal(OfferID) 
+          {
+
+               if (!confirm("Seçili sipariş iptal edilecektir!")) 
+               {
+                  return;
+               }
+
+                GetAjax('Order/SiparisIptal?OfferID='+OfferID, 'VeriAlan');
+
+                  $.ajax({
+                url: '/Order/SiparisIptal',
+                type: 'GET',
+                data: { OfferID: OfferID },
+                success: function () {
+
+                    toastr.success("Sipariş iptal  edildi");
+
+                      setTimeout(function () {
+                            location.reload();
+                        }, 1000); // 1.5 saniye bekle
+                }
+            });
+          }
     </script>
  
 }

@@ -1,4 +1,5 @@
 ﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using DocumentFormat.OpenXml.Office2019.Drawing.Model3D;
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services;
@@ -212,6 +213,28 @@ namespace Ekomers.Web.Controllers
 			return PartialView("_siparisOnayForm", models);
 
 		}
+
+		public async Task<IActionResult> SiparisIptal(int OfferID)
+		{
+			  var offer = await _offerService.VeriGetir(OfferID); 
+
+			offer.DurumID = (int)EnumOrderDurum.SiparisIptal;
+			bool sonuc = await _offerService.VeriEkleAsync(offer);
+
+
+			if (sonuc)
+			{
+				return Ok("Sipariş iptal edildi.");
+			}
+			else
+			{
+				return BadRequest("İşlem sırasında hata oluştu.");
+			}
+
+
+		}
+
+
 		public async Task<IActionResult> SiparisTopluOnay(int FirmaID)
 		{
 			bool sonuc =  await _orderService.SiparisTopluOnay(FirmaID);

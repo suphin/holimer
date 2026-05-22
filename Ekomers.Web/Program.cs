@@ -120,6 +120,11 @@ builder.Services.AddAuthorization(options =>
 		  context.User.IsInRole("Admin") ||
 		  context.User.HasClaim("Modul", "Uretim")));
 
+	options.AddPolicy("AdminOrEnvanter", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Modul", "ENVANTER")));
+
 	options.AddPolicy("AdminOrMalzeme", policy =>
   policy.RequireAssertion(context =>
 	  context.User.IsInRole("Admin") ||
@@ -276,6 +281,7 @@ builder.Services.AddScoped<IReceteService, ReceteService>();
 builder.Services.AddScoped<IUretimService, UretimService>();
 builder.Services.AddScoped<ISatislarService, SatislarService>();
 builder.Services.AddScoped<ISozlesmelerService, SozlesmelerService>();
+builder.Services.AddScoped<IPersonelService, PersonelService>();
 
 
 builder.Services.AddScoped<IPurchaseRequestService, PurchaseRequestService>();
@@ -284,6 +290,8 @@ builder.Services.AddScoped<IPurchaseRequestRepository, PurchaseRequestRepository
 builder.Services.AddScoped<IRequestService, RequestService>();
 builder.Services.AddScoped<IOfferService, OfferService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+
+builder.Services.AddScoped<IEnvanterService, EnvanterService>();
 
 builder.Services.AddScoped<ITcmbService, TcmbService>();
 builder.Services.AddScoped<IMapService, MapService>();

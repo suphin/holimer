@@ -1,0 +1,158 @@
+﻿@model EnvanterVM
+
+<div class="form-group row">
+
+    <div class="col-lg-4 ">
+        <label asp-for="Sirket" class="control-label"></label>
+        <select asp-for="SirketID" class="kt_select2" data-live-search="true" data-size="5" id="selectSirket" 
+        asp-items="@(new SelectList(ViewBag.SirketlerListe, "ID", "SirketAdi"))" required></select>
+        <span asp-validation-for="SirketID" class="text-danger"></span>
+    </div>
+    
+
+</div>
+
+<div class="form-group row">
+
+    <div class="col-lg-4 ">
+        <label asp-for="Departman" class="control-label"></label>
+        <select asp-for="EnvanterDepartmanID" class="kt_select2" data-live-search="true" data-size="5"  asp-items="@(new SelectList(
+                                           ((IEnumerable<EnvanterDepartman>)ViewBag.DepartmanlarListe).Select(x => new
+                            {
+                                ID = x.ID,
+                                Text = x.Kod + " - " + x.Ad
+                            }),
+                            "ID",
+                            "Text"
+                        ))" required>
+            <option value="">Seçiniz</option>
+                    </select>
+        <span asp-validation-for="EnvanterDepartmanID" class="text-danger"></span>
+    </div>
+    @if (Model.ID!=0)
+    {
+        <div class="col-lg-4 ">
+            <label asp-for="Bolum" class="control-label"></label>
+            <select asp-for="EnvanterBolumID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(
+                                                                                   ((IEnumerable<EnvanterBolum>)ViewBag.BolumlerListe).Where(p=>p.EnvanterDepartmanID==Model.EnvanterDepartmanID).Select(x => new
+                                                               {
+                                                                   ID = x.ID,
+                                                                   Text = x.Kod + " - " + x.Ad
+                                                               }),
+                                                "ID",
+                                                "Text"
+                                            ))" required>
+                <option value="">Seçiniz</option>
+            </select>
+            <span asp-validation-for="EnvanterBolumID" class="text-danger"></span>
+        </div>
+    }
+    else
+    {
+        <div class="col-lg-4 ">
+            <label asp-for="Bolum" class="control-label"></label>
+            <select asp-for="EnvanterBolumID" class="kt_select2" data-live-search="true" data-size="5" required></select>
+            <span asp-validation-for="EnvanterBolumID" class="text-danger"></span>
+        </div>
+    }
+ 
+</div>
+<div class="form-group row">
+     
+    <div class="col-lg-4 ">
+        <label asp-for="Tur" class="control-label"></label>
+        <select asp-for="TurID" class="kt_select2" data-live-search="true" data-size="5"   asp-items="@(new SelectList(
+                                                                    ((IEnumerable<EnvanterTur>)ViewBag.EnvanterTurListe).Select(x => new
+                                                                    {
+                                                                        ID = x.ID,
+                                                                        Text = x.Kod + " - " + x.Ad
+                                                                                    }), "ID", "Text"))" required></select>
+        <span asp-validation-for="TurID" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="Numara" class="control-label"></label>
+        <input asp-for="Numara" class="form-control form-control-sm" required />
+        <span asp-validation-for="Numara" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+
+    <div class="col-lg-12">
+        <label asp-for="Ad" class="control-label"></label>
+        <input asp-for="Ad" class="form-control form-control-sm" required />
+        <span asp-validation-for="Ad" class="text-danger"></span>
+    </div> 
+</div>
+<div class="form-group row">
+
+    <div class="col-lg-4">
+        <label asp-for="Marka" class="control-label"></label>
+        <input asp-for="Marka" class="form-control form-control-sm" />
+        <span asp-validation-for="Marka" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="Model" class="control-label"></label>
+        <input asp-for="Model" class="form-control form-control-sm" />
+        <span asp-validation-for="Model" class="text-danger"></span>
+    </div> 
+    <div class="col-lg-4">
+        <label asp-for="SeriNo" class="control-label"></label>
+        <input asp-for="SeriNo" class="form-control form-control-sm" />
+        <span asp-validation-for="SeriNo" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">   
+    <div class="col-lg-4">
+        <label asp-for="AlimTarihi" class="control-label"></label>
+        <input asp-for="AlimTarihi" class="form-control form-control-sm" type="date" />
+        <span asp-validation-for="AlimTarihi" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="GarantiBas" class="control-label"></label>
+        <input asp-for="GarantiBas" class="form-control form-control-sm" type="date" />
+        <span asp-validation-for="GarantiBas" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="GarantiBit" class="control-label"></label>
+        <input asp-for="GarantiBit" class="form-control form-control-sm" type="date" />
+        <span asp-validation-for="GarantiBit" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-4">
+        <label asp-for="AlimFiyati" class="control-label"></label>
+        <input asp-for="AlimFiyati" class="form-control form-control-sm" type="number" step="0.01" />
+        <span asp-validation-for="AlimFiyati" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="DovizKuru" class="control-label"></label>
+        <input asp-for="DovizKuru" class="form-control form-control-sm" type="number" step="0.01" />
+        <span asp-validation-for="DovizKuru" class="text-danger"></span>
+    </div>
+    <div class="col-lg-4">
+        <label asp-for="DovizTuru" class="control-label"></label>
+        <select  class="kt_select2" data-live-search="true" data-size="5" id="selectDovizCinsi" >
+            <option value="">Seçiniz</option>
+            <option value="1">TL</option>
+            <option value="2">USD</option>
+            <option value="3">EUR</option>
+        </select>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-12">
+        <label asp-for="Aciklama" class="control-label"></label>
+        <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="2"  ></textarea>
+        <span asp-validation-for="Aciklama" class="text-danger"></span>
+    </div>
+</div>
+<script src="js/select2.js?v=7.0.5"></script>
+<script>
+
+    $('#EnvanterDepartmanID').change(function () {
+    var selectedDepartmentId = $(this).val(); // Get the selected department ID
+    GetAjax('Envanter/GetBolumler?ParametreID=' + selectedDepartmentId, 'EnvanterBolumID'); 
+    });
+    
+
+</script>

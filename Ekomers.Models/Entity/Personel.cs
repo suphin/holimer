@@ -8,26 +8,34 @@ namespace Ekomers.Models.Entity
 {
 	public class Personel: BaseEntity  
 	{
-		public string UserID { get; set; }
+		public string? UserID { get; set; }
 		public string AdSoyad { get; set; } = string.Empty;
-		public string Email { get; set; } = string.Empty;
+		public string? Email { get; set; } = string.Empty;
 		public string Telefon { get; set; } = string.Empty;
-		public string KullaniciAdi { get; set; } = string.Empty;
-		public string Sifre { get; set; } = string.Empty;
-		public string Not { get; set; } = string.Empty;
+		public string? KullaniciAdi { get; set; } = string.Empty;
+		public string? Sifre { get; set; } = string.Empty;
+		public string? Not { get; set; } = string.Empty;
+		public string? Adres { get; set; } = string.Empty;
+		public string? Tckn { get; set; } = string.Empty;
+		public DateTime DogumTarihi {  get; set; }
 	}
 
 	public class PersonelVM : BaseVM
 	{
-		public string UserID { get; set; }
+		public string? UserID { get; set; }
 		public string AdSoyad { get; set; } = string.Empty;
-		public string Email { get; set; } = string.Empty;
-		public string Telefon { get; set; } = string.Empty;
-		public string KullaniciAdi { get; set; } = string.Empty;
-		public string Sifre { get; set; } = string.Empty;
+		public string? Email { get; set; } = string.Empty;
+		public string? Telefon { get; set; } = string.Empty;
+		public string? KullaniciAdi { get; set; } = string.Empty;
+		public string? Sifre { get; set; } = string.Empty;
 		public string? tagifyPersoneller { get; set; }
-		public string Not { get; set; } = string.Empty;
-		public string DepartmanAd { get; set; } = string.Empty;
-		public string SirketAd { get; set; } = string.Empty;
+		public string? Not { get; set; } = string.Empty;
+		public DateTime DogumTarihi { get; set; }
+		public string? Adres { get; set; } = string.Empty;
+		public string? Tckn { get; set; } = string.Empty;
+		public string? DepartmanAd { get; set; } = string.Empty;
+		public string? SirketAd { get; set; } = string.Empty;
+
+		public List<PersonelVM> PersonelVMListe { get; set; }
 	}
 }

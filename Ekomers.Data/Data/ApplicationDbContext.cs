@@ -206,6 +206,15 @@ namespace Ekomers.Data
 		public DbSet<OfferOdemeTur> OfferOdemeTur { get; set; }
 
 
+		public DbSet<Envanter> Envanter { get; set; }
+		public DbSet<EnvanterTur> EnvanterTur { get; set; }
+		public DbSet<EnvanterTip> EnvanterTip { get; set; }
+
+		public DbSet<EnvanterDepartman> EnvanterDepartman { get; set; }
+		public DbSet<EnvanterBolum> EnvanterBolum { get; set; }
+
+		public DbSet<Zimmet> Zimmet { get; set; }	
+		public DbSet<Personel> Personel { get; set; }
 
 	}
 }

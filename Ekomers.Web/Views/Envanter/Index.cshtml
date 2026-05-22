@@ -1,0 +1,241 @@
+﻿@model EnvanterVM
+@{
+	ViewData["Title"] = "Demirbaş Tanımlama";
+	ViewData["Description"] = "Zimmet Ayarlar - Demirbaş Tanımlama";
+}
+@section CSSection {
+	<!--begin::Page Vendors Styles(used by this page)-->
+	<link href="~/assets1/plugins/custom/datatables/datatables.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+
+	<!--end::Page Vendors Styles-->
+}
+
+<!--begin::Notice-->
+@{
+	// await Html.RenderPartialAsync("_PartialNotice",
+	// new NoticeVM { Baslik = "Eczaneler", Aciklama = "Eczaneler Bilgi Girişi" });
+}
+<!--end::Notice-->
+@* <br /> *@
+<div class="card shadow">
+	<div class="card-header">
+		Arama Seçenekleri
+	</div>
+	<div class="card-body">
+		<div class="table-responsive">
+			<form asp-action="Index" asp-controller="Envanter" method="post" name="VeriFiltre" id="VeriFiltre">
+				<table class="table table-bordered table-sm TableSmallFont" width="100%" cellspacing="0">
+					<tr>
+						<td>
+							<div class="form-group">
+								<label class="control-label">Genel Arama</label>
+								<input asp-for="Aciklama" class="form-control form-control-sm" />
+							</div>
+                        </td>
+                        <td>
+                            <div class="form-group">
+                                <label asp-for="Departman" class="control-label"></label>
+                                <select asp-for="EnvanterDepartmanID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.DepartmanlarListe, "ID", "Ad"))" id="DepartmanlarListe">
+                                    <option value="0">Tümü</option>
+                                </select>
+                            </div>
+                        </td>
+						<td>
+							@if (Model.EnvanterBolumID!=0)
+								{
+								<div class="form-group">
+									<label asp-for="Bolum" class="control-label"></label>
+									<select asp-for="EnvanterBolumID" class="kt_select2" data-live-search="true"
+											asp-items="@(new SelectList(((IEnumerable<EnvanterBolum>)ViewBag.BolumlerListe).Where(p => p.EnvanterDepartmanID == Model.EnvanterDepartmanID), "ID", "Ad"))"
+									data-size="5" id="BolumlerListe">
+										<option value="0">Tümü</option>
+									</select>
+								</div>
+								}
+								else
+								{
+                                <div class="form-group">
+									<label asp-for="Bolum" class="control-label"></label>
+                                    <select asp-for="EnvanterBolumID" class="kt_select2" data-live-search="true" data-size="5" id="BolumlerListe">
+                                        <option value="0">Tümü</option>
+                                    </select>
+                                </div>
+								}
+								
+						</td>
+						
+						<td>
+							<div class="form-group">
+								<label asp-for="Tur" class="control-label"></label>
+								<select asp-for="TurID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.EnvanterTurListe, "ID", "Ad"))"  id="EnvanterTurListe">
+									<option value="0">Tümü</option>
+								</select>
+							</div>
+						</td>
+						<td>
+							<div class="form-group">
+								<label asp-for="Sirket" class="control-label"></label>
+								<select asp-for="SirketID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SirketlerListe, "ID", "SirketAdi"))"  id="SirketlerListe">
+									<option value="0">Tümü</option>
+								</select>
+							</div>
+						</td>
+						<td>
+							<div class="form-group">
+								<label class="control-label">&nbsp;</label>
+								<button type="submit" class="btn btn-primary form-control btn-sm">Ara</button>
+
+							</div>
+						</td>
+					</tr>
+				</table>
+			</form>
+		</div>
+	</div>
+</div>
+<br />
+<!--begin::Card-->
+<div class="card card-custom">
+	<div class="card-header flex-wrap py-3">
+		<div class="card-title">
+			<h3 class="card-label">
+				Envanter Tanımlama
+				<span class="d-block text-muted pt-2 font-size-sm">Detay</span>
+			</h3>
+		</div>
+		<div class="card-toolbar">
+			 
+			 
+			@{
+				await Html.RenderPartialAsync("_PartialAuthorizeCreate");
+			}
+			 
+		</div>
+	</div>
+	<div class="card-body">
+		<!--begin: Datatable-->
+		<table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+			<thead>
+				<tr>
+					<th class="no-print" style="width:30px"></th>
+                    <th>Fotograf</th>
+                    <th>Şirket</th>
+                  @*   
+                    <th>Departman</th>
+                    <th>Bölüm</th>
+                    <th>Tür</th> *@
+                    <th>Yer Kodu</th>
+                    <th>Envanter Adı</th> 
+                    <th>Marka / Model</th>               
+                    <th>Seri No</th>               
+                   
+					<th>Foto Ekle</th>
+					<th class="no-print">Dosya</th> 
+					<th class="no-print crudBtnRow">Düzenle</th>
+
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (EnvanterVM item in Model.EnvanterVMListe)
+				{
+					<tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")">
+						<td class="no-print"><input type="checkbox" class="form-control" /></td>
+						<td><img src="/Envanter/img/@item.Fotograf" height="35px"/></td>
+                        <td>@item.Sirket</td>
+                      @*   <td>@item.Departman</td>
+                        <td>@item.Bolum</td>
+                        <td>@item.Tur</td> *@
+						<td>@item.DepartmanKod - @item.BolumKod - @item.TurKod - @item.Numara</td>
+                        <td>@item.Ad</td> 
+                        <td>@item.Marka / @item.Model</td>                   				 
+                        <td>@item.SeriNo</td>                   				 
+                       
+						<td class="no-print"><a href="#" onclick="FotoGetir('@item.ID')" data-toggle="modal" data-target="#ModalFotoEkle"><i class="icon-x   flaticon-attachment"></i>&nbsp; Foto</a></td>
+
+						 
+						@{
+							await Html.RenderPartialAsync("_PartialAuthorizeScript",
+							new AuthorizeCrudVM { ID = item.ID, DosyaEkle = true, HaritaEkle = false, ModulID = (int)ModulEnum.Envanter });
+						}
+					</tr>
+				}
+
+
+			</tbody>
+		</table>
+		<!--end: Datatable-->
+	</div>
+</div>
+<!--end::Card-->
+@{
+	//await Html.RenderPartialAsync("_PartialModalVeri");
+	await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+}
+
+@{
+	await Html.RenderPartialAsync("_PartialModalDosya",
+	new AuthorizeCrudVM { Controller = "Envanter", HaritaEkle = false });
+}
+ 
+
+<div id="ModalFotoEkle" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+	<div class="modal-dialog modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Foto Ekle</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Kapat">
+					<span aria-hidden="true">&times;</span>
+					<i aria-hidden="true" class="ki ki-close"></i>
+				</button>
+			</div>
+
+			<div class="modal-body" id="DetaylarFoto">
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+			</div>
+
+		</div>
+
+	</div>
+</div>
+
+@section JSSection {
+
+	<script src="~/assets1/plugins/custom/datatables/datatables.bundle.js?v=7.0.5"></script>
+	<script src="~/assets1/js/pages/crud/datatables/extensions/buttonsCustom.js?v=7.0.5"></script>
+	 <script>
+		  
+		  
+		   function FotoGetir(id) {
+		GetAjax('Envanter/_FotoGetir?demirbasID=' + id, 'DetaylarFoto');
+		}
+		 </script>
+
+
+	<script src="js/select2.js?v=7.0.5"></script>
+	@{
+		await Html.RenderPartialAsync("_PartialAuthorizeCrud",
+		new AuthorizeCrudVM
+		{
+			Controller = "Envanter",
+			ModulID = (int)ModulEnum.Envanter,
+			DosyaYolu = "Envanter"
+		});
+	}
+	@{
+		await Html.RenderPartialAsync("_PartialDataTableScript");
+	}
+	<script>
+
+		$('#DepartmanlarListe').change(function () {
+		var selectedDepartmentId = $(this).val(); // Get the selected department ID
+		GetAjax('Envanter/GetBolumler?ParametreID=' + selectedDepartmentId, 'BolumlerListe');
+		});
+
+    
+	</script>
+	 
+}
+
+

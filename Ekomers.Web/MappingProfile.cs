@@ -101,9 +101,13 @@ namespace Ekomers.Web
 
 			CreateMap<Offer, OfferVM>();
 			CreateMap<OfferVM, Offer>();
-	
 
 
+			CreateMap<EnvanterVM, Envanter>();
+			CreateMap<Envanter, EnvanterVM>();
+
+			CreateMap<PersonelVM, Personel>();
+			CreateMap<Personel, PersonelVM>();
 		}
     }
 }
