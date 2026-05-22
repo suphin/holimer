@@ -18,6 +18,10 @@ namespace Ekomers.Models.Entity
 		public string? Adres { get; set; } = string.Empty;
 		public string? Tckn { get; set; } = string.Empty;
 		public DateTime DogumTarihi {  get; set; }
+		public int DepartmanID { get; set; }
+		public int SirketID { get; set; }
+		public int BolumID { get; set; }
+
 	}
 
 	public class PersonelVM : BaseVM
@@ -34,8 +38,12 @@ namespace Ekomers.Models.Entity
 		public string? Adres { get; set; } = string.Empty;
 		public string? Tckn { get; set; } = string.Empty;
 		public string? DepartmanAd { get; set; } = string.Empty;
-		public string? SirketAd { get; set; } = string.Empty;
+		public string? BolumAd { get; set; } = string.Empty;
 
+		public string? SirketAd { get; set; } = string.Empty;
+		public int DepartmanID { get; set; }
+		public int SirketID { get; set; }
+		public int BolumID { get; set; }
 		public List<PersonelVM> PersonelVMListe { get; set; }
 	}
 }

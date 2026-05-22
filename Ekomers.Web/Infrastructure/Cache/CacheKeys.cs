@@ -41,6 +41,9 @@
 		public const string EnvanterDepartmanAll = "EnvanterDepartman:All";
 		public const string EnvanterBolumAll = "EnvanterBolum:All";
 		public const string OfferDurumAll = "OfferDurum:All";
+		public const string DepartmanAll = "Departman:All";
+		public const string DepartmanBirimAll = "DepartmanBirim:All";
+
 
 	}
 }

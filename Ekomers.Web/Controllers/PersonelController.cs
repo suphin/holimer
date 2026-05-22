@@ -28,6 +28,11 @@ namespace Ekomers.Web.Controllers
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly ISehirlerService _sehirlerService;
 		private readonly ICacheService<MusteriTip> _musteriTipCache;
+		private readonly ICacheService<Departman> _departmanCache;
+		private readonly ICacheService<DepartmanBirim> _departmanBirimCache;
+		private readonly ICacheService<Sirketler> _sirketlerCache;
+
+
 		private readonly string _uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ENVANTER");
 		private readonly string _uploadFotoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ENVANTER","PERSONEL", "img");
 		private readonly string _path2 = "ENVANTER";
@@ -38,14 +43,18 @@ namespace Ekomers.Web.Controllers
 			, ApplicationDbContext context
 			, IHttpClientFactory httpClientFactory
 			, ISehirlerService sehirlerService
-			, ICacheService<MusteriTip> musteriTipCache
+			, ICacheService<Departman> departmanCache
+			, ICacheService<DepartmanBirim> departmanBirimCache
+			, ICacheService<Sirketler> sirketlerCache	
 			) : base(userManager, roleManager)
 		{
 			_service = service;
 			_context = context;
 			_httpClientFactory = httpClientFactory;
 			_sehirlerService = sehirlerService;
-			_musteriTipCache = musteriTipCache;
+			_departmanCache = departmanCache;
+			_departmanBirimCache = departmanBirimCache;
+			_sirketlerCache = sirketlerCache;
 		}
 
 		public override void OnActionExecuting(ActionExecutingContext context)
@@ -56,21 +65,18 @@ namespace Ekomers.Web.Controllers
 
 		private async Task ViewBagListeDoldur()
 		{
-
-
-			//var MusteriTipListe = await _context.MusteriTip.OrderBy(p => p.Ad).ToListAsync();
-			//MusteriTipListe.Insert(0, new MusteriTip { ID = 0, Ad = "Tümü" });
-			//ViewBag.MusteriTipListe = new SelectList(MusteriTipListe, "ID", "Ad");
-			ViewBag.MusteriTipListe = await _musteriTipCache.GetListeAsync(CacheKeys.MusteriTipAll);
+ 
+			ViewBag.DepartmanListe = await _departmanCache.GetListeAsync(CacheKeys.DepartmanAll);
+			ViewBag.BolumListe = await _departmanBirimCache.GetListeAsync(CacheKeys.DepartmanBirimAll);
+			ViewBag.SirketListe = await _sirketlerCache.GetListeAsync(CacheKeys.SirketlerAll);
 
 		}
-		private async Task ViewBagPartialListeDoldur(int sehirId,int ilceId)
-		{
-			 
-		}
+		 
 		private async Task ViewBagPartialListeDoldur()
 		{
-			 
+			ViewBag.DepartmanListe = await _departmanCache.GetListeAsync(CacheKeys.DepartmanAll);
+			ViewBag.BolumListe = await _departmanBirimCache.GetListeAsync(CacheKeys.DepartmanBirimAll);
+			ViewBag.SirketListe = await _sirketlerCache.GetListeAsync(CacheKeys.SirketlerAll);
 		}
 	 
 		 
