@@ -3,6 +3,8 @@
 	ViewData["Title"] = "Kullanıcı Listesi";
 	ViewData["Description"] = "Çalışma Sayfası - Zimmet / Personel";
 	//Layout = "~/Views/Shared/Metronic44/_LayoutMetronic44.cshtml";
+	var controllerName = "Personel";
+    var tablaAdi = "Personel Listesi";
 }
 
 
@@ -12,8 +14,7 @@
 	<div class="card-header flex-wrap py-3">
 		<div class="card-title">
 			<h3 class="card-label">
-				Personel Listesi
-				<span class="d-block text-muted pt-2 font-size-sm">Personel girişi</span>
+				@tablaAdi				 
 			</h3>
 		</div>
 		<div class="card-toolbar">
@@ -42,12 +43,13 @@
 <!--end::Card-->
 @{
 	//await Html.RenderPartialAsync("_PartialModalVeri");
-	await Html.RenderPartialAsync("~/Views/Shared/_PartialModal.cshtml", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
+	await Html.RenderPartialAsync("~/Views/Shared/_PartialModal.cshtml", 
+	new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
 }
 
 @{
 	await Html.RenderPartialAsync("_PartialModalDosya",
-	new AuthorizeCrudVM { Controller = "Personel", HaritaEkle = false });
+	new AuthorizeCrudVM { Controller = controllerName, HaritaEkle = false });
 }
 
 @section JSSection {
@@ -56,9 +58,9 @@
 		await Html.RenderPartialAsync("_PartialAuthorizeCrud",
 		new AuthorizeCrudVM
 		{
-			Controller = "Personel",
+			Controller = controllerName,
 			ModulID = (int)ModulEnum.Personel,
-			DosyaYolu = "Personel"
+			DosyaYolu = controllerName
 		});
 	}
 

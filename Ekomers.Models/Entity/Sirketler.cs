@@ -14,6 +14,7 @@ namespace Ekomers.Models.Entity
 	{
 		 
 		public string? SirketAdi { get; set; }
+		public string? SirketKisaAdi { get; set; }
 		public string? SirketYetkili { get; set; }
 		public string? SirketYetkiliTel { get; set; }
 		public string? SirketYetkiliEmail { get; set; }
@@ -34,6 +35,8 @@ namespace Ekomers.Models.Entity
 
 	public class SirketlerVM : BaseVM
 	{
+		[Display(Name = "Şirket Kısa Adı")]
+		public string? SirketKisaAdi { get; set; }
 		[Display(Name = "Şirket Adı")]
 		public string? SirketAdi { get; set; }
 		[Display(Name = "Şirket Yetkili")]

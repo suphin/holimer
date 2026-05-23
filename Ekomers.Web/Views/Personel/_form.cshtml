@@ -5,50 +5,66 @@
         <label asp-for="SirketAd" class="control-label"></label>
         <select asp-for="SirketID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SirketListe, "ID", "SirketAdi"))"></select>
         <span asp-validation-for="SirketAd" class="text-danger"></span>
-    </div>
-</div>
-<div class="form-group row">
-   
+    </div>  
     <div class="col-lg-6">
-        <label asp-for="DepartmanAd" class="control-label"></label>
-        <select asp-for="DepartmanID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.DepartmanListe, "ID", "Ad"))"></select>
-        <span asp-validation-for="DepartmanAd" class="text-danger"></span>
-    </div>
-
-    <div class="col-lg-6">
-        <label asp-for="BolumAd" class="control-label"></label>
-        <select asp-for="BolumID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.BolumListe, "ID", "Ad"))"></select>
-        <span asp-validation-for="BolumAd" class="text-danger"></span>
-    </div>
-
-   
+    <label asp-for="DepartmanAd" class="control-label"></label>
+    <select asp-for="DepartmanID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.DepartmanListe, "ID", "Ad"))"></select>
+    <span asp-validation-for="DepartmanAd" class="text-danger"></span>
 </div>
-<div class="form-group row">
+</div>
 
+<div class="form-group row">
+    <div class="col-lg-3">
+        <label asp-for="PersonelKod" class="control-label"></label>
+        <input asp-for="PersonelKod" class="form-control form-control-sm" required />
+        <span asp-validation-for="PersonelKod" class="text-danger"></span>
+    </div>
     <div class="col-lg-3">
         <label asp-for="AdSoyad" class="control-label"></label>
-        <input asp-for="AdSoyad" class="form-control form-control-sm" />
+        <input asp-for="AdSoyad" class="form-control form-control-sm" required />
         <span asp-validation-for="AdSoyad" class="text-danger"></span>
     </div>
     <div class="col-lg-3">
         <label asp-for="Tckn" class="control-label"></label>
-        <input asp-for="Tckn" class="form-control form-control-sm" />
+        <input asp-for="Tckn" class="form-control form-control-sm" required />
         <span asp-validation-for="Tckn" class="text-danger"></span>
     </div>
     <div class="col-lg-3">
         <label asp-for="DogumTarihi" class="control-label"></label>
         <input asp-for="DogumTarihi" class="form-control form-control-sm" type="date" />
         <span asp-validation-for="DogumTarihi" class="text-danger"></span>
-    </div>
-
-   
+    </div>   
 </div>
 <div class="form-group row">
+    <div class="col-lg-3">
+        <label asp-for="IseBaslamaTarihi" class="control-label"></label>
+        <input asp-for="IseBaslamaTarihi" class="form-control form-control-sm" type="date" />
+        <span asp-validation-for="IseBaslamaTarihi" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="AyrilisTarihi" class="control-label"></label>
+        <input asp-for="AyrilisTarihi" class="form-control form-control-sm" type="date" />
+        <span asp-validation-for="AyrilisTarihi" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-lg-3">
+           <label asp-for="Cinsiyet" class="control-label"></label>
+           <select asp-for="Cinsiyet" class="form-control form-control-sm">
+               <option value="1">Erkek</option>
+               <option value="2">Kadın</option>
+           </select>
+       </div>
 
     <div class="col-lg-3">
         <label asp-for="Telefon" class="control-label"></label>
         <input asp-for="Telefon" class="form-control form-control-sm" />
         <span asp-validation-for="Telefon" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="TelefonSirket" class="control-label"></label>
+        <input asp-for="TelefonSirket" class="form-control form-control-sm" />
+        <span asp-validation-for="TelefonSirket" class="text-danger"></span>
     </div>
     <div class="col-lg-3">
         <label asp-for="Email" class="control-label"></label>

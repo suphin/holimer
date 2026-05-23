@@ -73,11 +73,11 @@ namespace Ekomers.Data.Services
 						into userGroup
 						 from user in userGroup.DefaultIfEmpty()
 
-						 join departman in _departmanRepo.GetAll2() on user.DepartmanID equals departman.ID
+						 join departman in _departmanRepo.GetAll2() on kayit.DepartmanID equals departman.ID
 					   into departmanGroup
 						 from departman in departmanGroup.DefaultIfEmpty()
 
-						 join sirket in _sirketRepo.GetAll2() on user.SirketID equals sirket.ID
+						 join sirket in _sirketRepo.GetAll2() on kayit.SirketID equals sirket.ID
 						 into sirketGroup
 						 from sirket in sirketGroup.DefaultIfEmpty()
 
@@ -101,17 +101,18 @@ namespace Ekomers.Data.Services
 							 UserID = kayit.UserID,
 							 AdSoyad = kayit.AdSoyad,
 							 Email = kayit.Email,
-							 Telefon = kayit.Telefon,
-							 KullaniciAdi = kayit.KullaniciAdi,
-							 Sifre = kayit.Sifre,
+							 Telefon = kayit.Telefon, 
 							 Not = kayit.Not,
 							 DepartmanAd = departman != null ? departman.Ad : "",
-							 SirketAd = sirket != null ? sirket.SirketAdi : "",
+							 SirketAd = sirket != null ? sirket.SirketKisaAdi : "",
 							 DogumTarihi = kayit.DogumTarihi,
 							 Adres = kayit.Adres,
 							 Tckn = kayit.Tckn,
-
-
+							 PersonelKod=kayit.PersonelKod,
+							 TelefonSirket=kayit.TelefonSirket,
+							 DepartmanID=kayit.DepartmanID,
+							 SirketID=kayit.SirketID,
+							 
 
 
 							 IsActive = (bool)kayit.IsActive,

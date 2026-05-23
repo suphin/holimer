@@ -118,31 +118,17 @@ namespace Ekomers.Web.Controllers
 			var modelc = await _service.VeriGetir(VeriID);
 			 
 				await ViewBagPartialListeDoldur();
-			 
 
-				
+			modelc.PageIndex = pageIndex;
+			modelc.PageSize = pageSize;
+
 			modelc.ControllerName = "Personel";
 			modelc.ModalTitle = "Personel Bilgileri";
 
 			modelc.UserID = _userId;
 			return PartialView(view, modelc);
 		}
-		public async Task<IActionResult> VeriGoruntule2(int VeriID = 0, string view = "", int pageIndex = 0, int pageSize = 0)
-		{
-			ViewBag.Modul = ModulAd;
-			var modelc = await _service.VeriGetir(VeriID);
- 
-				await ViewBagPartialListeDoldur();
-			 
-
-
-
-			modelc.ControllerName = "Personel";
-			modelc.ModalTitle = "Müşteri Bilgileri";
-
-			modelc.UserID = _userId;
-			return View(view, modelc);
-		}
+	
 		[Authorize(Roles = "Editor")]
 		[HttpPost]
 		public async Task<IActionResult> VeriEkle(PersonelVM modelv)
@@ -161,50 +147,22 @@ namespace Ekomers.Web.Controllers
 			//{
 			//	return BadRequest("Kaydetme başarısız!");
 			//}
-			 var paged = await _service.VeriListeleAsync(1, 10, default);
+			 var paged = await _service.VeriListeleAsync(modelv.PageIndex, modelv.PageSize, default);
 
-			////PageToastr(sonuc);
-			////return RedirectToAction("Index");
-			if (sonuc)
-			{
-				var modelc = new PersonelVM
+			 	var modelc = new PersonelVM
 				{
 					PersonelVMListe = paged.Items.ToList(),
 					PageIndex = paged.PageIndex,
 					PageSize = paged.PageSize,
 					TotalCount = paged.TotalCount
 				};
-				 
-				if (modelv.ID == 0)
-				{
-					return PartialView("~/Views/Personel/_List.cshtml", modelc);
-				}
 
-				return Ok("Kayıt işlemi başarılı");
-			}
-			else
-			{
-				return BadRequest("Kaydetme başarısız!");
-			}
+			return RedirectToAction("Index", new { page = modelv.PageIndex, pageSize = modelv.PageSize });
+
 		}
 
 
-		[Authorize(Roles = "Editor")]
-		[HttpPost]
-		public async Task<IActionResult> VeriEkleAjax(PersonelVM modelv)
-		{
-			bool sonuc = await _service.VeriEkleAsync(modelv);
-			if (sonuc)
-			{
-				return Ok("Kayıt işlemi başarılı");
-			}
-			else
-			{
-				return BadRequest("Kaydetme başarısız!");
-			}			 
-		}
-
-
+		
 		[HttpPost]
 		[Authorize(Roles = "Editor")]
 		public async Task<IActionResult> VeriSil(PersonelVM model)

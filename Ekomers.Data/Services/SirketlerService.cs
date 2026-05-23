@@ -77,6 +77,7 @@ namespace Ekomers.Data.Services
 						 {
 							 ID = kayit.ID,
 							 SirketAdi = kayit.SirketAdi,
+							 SirketKisaAdi = kayit.SirketKisaAdi,
 							 SirketYetkili = kayit.SirketYetkili,
 							 SirketYetkiliTel = kayit.SirketYetkiliTel,
 							 SirketYetkiliEmail = kayit.SirketYetkiliEmail,

@@ -13,6 +13,8 @@
 		</div>
 		<div class="modal-footer">
 			<input type="hidden" asp-for="ID" />
+			<input type="hidden" asp-for="PageIndex" />
+			<input type="hidden" asp-for="PageSize" />
 			<input type="hidden" asp-for="CreateDate"  />
 			<input type="hidden" asp-for="UpdateDate" value="@DateTime.Now" />
 			<input type="hidden" asp-for="IsActive" value="true" />
@@ -27,30 +29,30 @@
 <script src="js/select2.js?v=7.0.5"></script>
 
 <script type="text/javascript">
-    $(document).ready(function () {
+    // $(document).ready(function () {
 
-        // Formun submit olayı
-        $('#_VeriEkle').on('submit', function (e) {
-            e.preventDefault();
-            var form = $(this);
-            var actionUrl = form.attr('action');
-            var formData = form.serialize();
-            $.ajax({
-                type: 'POST',
-                url: actionUrl,
-                data: formData,
-                success: function (response) {
-                    // $('#cardBody').html(response);
-                    // $('#ModalVeri').modal('hide');
-                    toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+    //     // Formun submit olayı
+    //     $('#_VeriEkle').on('submit', function (e) {
+    //         e.preventDefault();
+    //         var form = $(this);
+    //         var actionUrl = form.attr('action');
+    //         var formData = form.serialize();
+    //         $.ajax({
+    //             type: 'POST',
+    //             url: actionUrl,
+    //             data: formData,
+    //             success: function (response) {
+    //                 // $('#cardBody').html(response);
+    //                 // $('#ModalVeri').modal('hide');
+    //                 toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
 
-                },
-                error: function (xhr, status, error) {
+    //             },
+    //             error: function (xhr, status, error) {
 
-                    toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
-                }
-            });
-        });
-    });
+    //                 toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+    //             }
+    //         });
+    //     });
+    // });
     
 </script>
