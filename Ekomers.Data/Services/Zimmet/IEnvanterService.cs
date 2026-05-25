@@ -7,5 +7,8 @@ namespace Ekomers.Data.Services
 	{
 		void FotoYukle(EnvanterVM model);
 		Task<List<EnvanterBolum>> GetBolumler(int ParametreID);
+
+		Task<List<EnvanterVM>> VeriListeleZimmet(string personelID);
+		
 	}
 }

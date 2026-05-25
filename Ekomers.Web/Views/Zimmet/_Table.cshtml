@@ -1,0 +1,49 @@
+﻿@model ZimmetVM
+
+
+
+<table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+    <thead>
+        <tr> 
+            <th>Envanter No</th>
+            <th>Envanter Ad</th>
+            <th>Şirket</th> 
+            <th>Envanter</th> 
+            <th>Ad Soyad</th>     
+            <th>Dosya</th>  
+            <th class="no-print crudBtnRow">Düzenle</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (ZimmetVM item in Model.ZimmetVMListe)
+        {
+            <tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")"> 
+              <td>@item.Envanter.YerKodu</td>
+              <td>@item.Envanter.Ad</td>
+              <td>@item.Sirket.SirketKisaAdi</td>
+              <td>@item.Kullanici.AdSoyad</td>
+              <td>@item.ZimmetTarihi.ToString("dd.MM.yyyy")</td>
+
+  
+					@{
+						await Html.RenderPartialAsync("_PartialAuthorizeScript",
+						new AuthorizeCrudVM { ID = item.ID, DosyaEkle = true, HaritaEkle = false, ModulID = (int)ModulEnum.Personel });
+					}
+				 
+            </tr>
+        }
+
+
+    </tbody>
+</table>
+
+ 
+
+@if (Model.TotalPages > 1)
+{ 
+    await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_Pager.cshtml", 
+    new PagerModel { PageIndex = Model.PageIndex, PageSize = Model.PageSize, TotalCount = Model.TotalCount });
+}
+
+ 

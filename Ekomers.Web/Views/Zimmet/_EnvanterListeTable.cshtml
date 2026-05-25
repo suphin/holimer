@@ -1,0 +1,32 @@
+﻿@model ZimmetVM
+<table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+	<thead>
+		<tr> 
+			<th>Fotograf</th>
+			<th>Şirket</th> 
+			<th>Yer Kodu</th>
+			<th>Envanter Adı</th>
+			<th>Marka / Model</th>
+			<th>Seri No</th> 
+			<th class="no-print crudBtnRow">Düzenle</th>
+
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (EnvanterVM item in Model.EnvanterVMListe)
+		{
+			<tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")"> 
+				<td><img src="/Envanter/img/@item.Fotograf" height="35px" /></td>
+				<td>@item.Sirket</td> 
+				<td>@item.DepartmanKod - @item.BolumKod - @item.TurKod - @item.Numara</td>
+				<td>@item.Ad</td>
+				<td>@item.Marka / @item.Model</td>
+				<td>@item.SeriNo</td>
+				<td></td>
+				 
+			</tr>
+		}
+
+
+	</tbody>
+</table>

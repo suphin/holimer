@@ -35,6 +35,8 @@ namespace Ekomers.Data.Services
 		private const string CacheKey = "TumPersonelListesi";
 		private readonly IRepository<Kullanici> _userRepo;
 		private readonly IRepository<Personel> _PersonelRepo;
+		private readonly IRepository<PersonelDurum> _PersonelDurumRepo;
+		private readonly IRepository<PersonelGorev> _PersonelGorevRepo;
 
 		private readonly IRepository<Departman> _departmanRepo;
 		private readonly IRepository<Sirketler> _sirketRepo;
@@ -47,7 +49,9 @@ namespace Ekomers.Data.Services
 			IRepository<Personel> PersonelRepo,
 			IRepository<Departman> departmanRepo,
 			IRepository<Sirketler> sirketRepo,
-			IWebHostEnvironment hostingEnvironment, IMemoryCache cache, LogoContext logo)
+			IWebHostEnvironment hostingEnvironment, IMemoryCache cache, LogoContext logo
+			, IRepository<PersonelDurum> PersonelDurumRepo, IRepository<PersonelGorev> PersonelGorevRepo
+			)
 		{
 			_httpContextAccessor = httpContextAccessor;
 			_user = _httpContextAccessor.HttpContext.User;
@@ -58,6 +62,8 @@ namespace Ekomers.Data.Services
 			_mapper = mapper;
 			_userRepo = userRepo;
 			_PersonelRepo = PersonelRepo;
+			_PersonelDurumRepo = PersonelDurumRepo;
+			_PersonelGorevRepo = PersonelGorevRepo;
 			_departmanRepo = departmanRepo;
 			_sirketRepo = sirketRepo;
 			_hostingEnvironment = hostingEnvironment;
@@ -80,6 +86,14 @@ namespace Ekomers.Data.Services
 						 join sirket in _sirketRepo.GetAll2() on kayit.SirketID equals sirket.ID
 						 into sirketGroup
 						 from sirket in sirketGroup.DefaultIfEmpty()
+
+						 join durum in _PersonelDurumRepo.GetAll2() on kayit.DurumID equals durum.ID
+						 into durumGroup
+						 from durum in durumGroup.DefaultIfEmpty()
+
+						 join gorev in _PersonelGorevRepo.GetAll2() on kayit.GorevID equals gorev.ID
+						 into gorevGroup
+						 from gorev in gorevGroup.DefaultIfEmpty()
 
 
 						 join createUser in _userRepo.GetAll2() on kayit.CreateUserID equals createUser.Id
@@ -106,14 +120,18 @@ namespace Ekomers.Data.Services
 							 DepartmanAd = departman != null ? departman.Ad : "",
 							 SirketAd = sirket != null ? sirket.SirketKisaAdi : "",
 							 DogumTarihi = kayit.DogumTarihi,
+							 IseBaslamaTarihi=kayit.IseBaslamaTarihi,
+							 AyrilisTarihi=kayit.AyrilisTarihi,
 							 Adres = kayit.Adres,
 							 Tckn = kayit.Tckn,
 							 PersonelKod=kayit.PersonelKod,
 							 TelefonSirket=kayit.TelefonSirket,
 							 DepartmanID=kayit.DepartmanID,
 							 SirketID=kayit.SirketID,
-							 
-
+							 PersonelDurum = durum != null ? new PersonelDurum { ID = durum.ID, Ad = durum.Ad } : null,
+							 PersonelGorev = gorev != null ? new PersonelGorev { ID = gorev.ID, Ad = gorev.Ad } : null,
+							 DurumID=kayit.DurumID,
+							 GorevID = kayit.GorevID,
 
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,

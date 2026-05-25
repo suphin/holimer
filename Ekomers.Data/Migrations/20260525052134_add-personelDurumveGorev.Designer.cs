@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260525052134_add-personelDurumveGorev")]
+    partial class addpersonelDurumveGorev
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2065,9 +2068,6 @@ namespace Ekomers.Data.Migrations
 
                     b.Property<string>("YerKodu")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Zimmetli")
-                        .HasColumnType("bit");
 
                     b.HasKey("ID");
 
@@ -5761,7 +5761,7 @@ namespace Ekomers.Data.Migrations
                     b.Property<bool?>("IsDelete")
                         .HasColumnType("bit");
 
-                    b.Property<string>("PersonelID")
+                    b.Property<string>("KullaniciID")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

@@ -6,11 +6,16 @@
         <select asp-for="SirketID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SirketListe, "ID", "SirketAdi"))"></select>
         <span asp-validation-for="SirketAd" class="text-danger"></span>
     </div>  
-    <div class="col-lg-6">
-    <label asp-for="DepartmanAd" class="control-label"></label>
-    <select asp-for="DepartmanID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.DepartmanListe, "ID", "Ad"))"></select>
-    <span asp-validation-for="DepartmanAd" class="text-danger"></span>
-</div>
+    <div class="col-lg-3">
+        <label asp-for="DepartmanAd" class="control-label"></label>
+        <select asp-for="DepartmanID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.DepartmanListe, "ID", "Ad").OrderBy(p => p.Text))"></select>
+        <span asp-validation-for="DepartmanAd" class="text-danger"></span>
+    </div>
+    <div class="col-lg-3">
+        <label asp-for="PersonelGorev.Ad" class="control-label"></label>
+        <select asp-for="GorevID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.PersonelGorevListe, "ID", "Ad").OrderBy(p => p.Text))"></select>
+        <span asp-validation-for="PersonelGorev.Ad" class="text-danger"></span>
+    </div>
 </div>
 
 <div class="form-group row">
@@ -45,6 +50,11 @@
         <label asp-for="AyrilisTarihi" class="control-label"></label>
         <input asp-for="AyrilisTarihi" class="form-control form-control-sm" type="date" />
         <span asp-validation-for="AyrilisTarihi" class="text-danger"></span>
+    </div>
+     <div class="col-lg-6">
+        <label asp-for="PersonelDurum.Ad" class="control-label"></label>
+        <select asp-for="DurumID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.PersonelDurumListe, "ID", "Ad"))"></select>
+        <span asp-validation-for="PersonelDurum.Ad " class="text-danger"></span>
     </div>
 </div>
 <div class="form-group row">

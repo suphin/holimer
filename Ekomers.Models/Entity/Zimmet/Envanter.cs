@@ -30,6 +30,7 @@ namespace Ekomers.Models.Entity
 		public int DovizTuru { get; set; } = 0;
 		public double DovizKuru { get; set; } = 0;
 		public string? Fotograf { get; set; }
+		public bool Zimmetli { get; set; } = false;
 
 	}
 
@@ -87,6 +88,7 @@ namespace Ekomers.Models.Entity
 		public List<EnvanterVM> EnvanterVMListe { get; set; }
 		public string? Fotograf { get; set; }
 		public IFormFile? Dosya { get; set; }
+		public Zimmet Zimmet { get; set; }
 
 	}
 

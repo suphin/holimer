@@ -215,6 +215,10 @@ namespace Ekomers.Data
 
 		public DbSet<Zimmet> Zimmet { get; set; }	
 		public DbSet<Personel> Personel { get; set; }
+		public DbSet<PersonelGorev> PersonelGorev { get; set; }
+		public DbSet<PersonelDurum> PersonelDurum { get; set; }
+
+
 
 	}
 }

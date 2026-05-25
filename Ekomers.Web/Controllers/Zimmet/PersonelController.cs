@@ -31,7 +31,8 @@ namespace Ekomers.Web.Controllers
 		private readonly ICacheService<Departman> _departmanCache;
 		private readonly ICacheService<DepartmanBirim> _departmanBirimCache;
 		private readonly ICacheService<Sirketler> _sirketlerCache;
-
+		private readonly ICacheService<PersonelDurum> _personelDurumCache;
+		private readonly ICacheService<PersonelGorev> _personelGorevCache;
 
 		private readonly string _uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ENVANTER");
 		private readonly string _uploadFotoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ENVANTER","PERSONEL", "img");
@@ -46,6 +47,8 @@ namespace Ekomers.Web.Controllers
 			, ICacheService<Departman> departmanCache
 			, ICacheService<DepartmanBirim> departmanBirimCache
 			, ICacheService<Sirketler> sirketlerCache	
+			,ICacheService<PersonelDurum> personelDurumCache
+			, ICacheService<PersonelGorev> personelGorevCache
 			) : base(userManager, roleManager)
 		{
 			_service = service;
@@ -55,6 +58,8 @@ namespace Ekomers.Web.Controllers
 			_departmanCache = departmanCache;
 			_departmanBirimCache = departmanBirimCache;
 			_sirketlerCache = sirketlerCache;
+			_personelDurumCache = personelDurumCache;
+			_personelGorevCache = personelGorevCache;
 		}
 
 		public override void OnActionExecuting(ActionExecutingContext context)
@@ -69,7 +74,8 @@ namespace Ekomers.Web.Controllers
 			ViewBag.DepartmanListe = await _departmanCache.GetListeAsync(CacheKeys.DepartmanAll);
 			ViewBag.BolumListe = await _departmanBirimCache.GetListeAsync(CacheKeys.DepartmanBirimAll);
 			ViewBag.SirketListe = await _sirketlerCache.GetListeAsync(CacheKeys.SirketlerAll);
-
+			ViewBag.PersonelDurumListe = await _personelDurumCache.GetListeAsync(CacheKeys.PersonelDurumAll);
+			ViewBag.PersonelGorevListe = await _personelGorevCache.GetListeAsync(CacheKeys.PersonelGorevAll);
 		}
 		 
 		private async Task ViewBagPartialListeDoldur()
@@ -77,6 +83,8 @@ namespace Ekomers.Web.Controllers
 			ViewBag.DepartmanListe = await _departmanCache.GetListeAsync(CacheKeys.DepartmanAll);
 			ViewBag.BolumListe = await _departmanBirimCache.GetListeAsync(CacheKeys.DepartmanBirimAll);
 			ViewBag.SirketListe = await _sirketlerCache.GetListeAsync(CacheKeys.SirketlerAll);
+			ViewBag.PersonelDurumListe = await _personelDurumCache.GetListeAsync(CacheKeys.PersonelDurumAll);
+			ViewBag.PersonelGorevListe = await _personelGorevCache.GetListeAsync(CacheKeys.PersonelGorevAll);
 		}
 	 
 		 

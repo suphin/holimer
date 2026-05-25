@@ -31,5 +31,6 @@ namespace Ekomers.Models.Enums
 		Offer = 1016,
 		Envanter = 1017,
 		Personel = 1018,
+		Zimmet = 1019,
 	}
 }

@@ -281,7 +281,7 @@ builder.Services.AddScoped<IReceteService, ReceteService>();
 builder.Services.AddScoped<IUretimService, UretimService>();
 builder.Services.AddScoped<ISatislarService, SatislarService>();
 builder.Services.AddScoped<ISozlesmelerService, SozlesmelerService>();
-builder.Services.AddScoped<IPersonelService, PersonelService>();
+
 
 
 builder.Services.AddScoped<IPurchaseRequestService, PurchaseRequestService>();
@@ -292,6 +292,8 @@ builder.Services.AddScoped<IOfferService, OfferService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
 builder.Services.AddScoped<IEnvanterService, EnvanterService>();
+builder.Services.AddScoped<IPersonelService, PersonelService>();
+builder.Services.AddScoped<IZimmetService, ZimmetService>();
 
 builder.Services.AddScoped<ITcmbService, TcmbService>();
 builder.Services.AddScoped<IMapService, MapService>();

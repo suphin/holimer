@@ -25,6 +25,8 @@ namespace Ekomers.Models.Entity
 		public int DepartmanID { get; set; }
 		public int SirketID { get; set; }
 		public int BolumID { get; set; }
+		public int GorevID { get; set; }
+		public int DurumID { get; set; }
 		public int Cinsiyet { get; set; }
 
 	}
@@ -60,5 +62,24 @@ namespace Ekomers.Models.Entity
 		public int BolumID { get; set; }
 		public int Cinsiyet { get; set; }
 		public List<PersonelVM> PersonelVMListe { get; set; }
+		public PersonelGorev PersonelGorev { get; set; }
+		public PersonelDurum PersonelDurum { get; set; }
+		public int GorevID { get; set; }
+		public int DurumID { get; set; }
 	}
+
+	public class PersonelGorev : BaseEntity
+	{
+		[Display(Name = "Görev Adı")]
+		public string? Ad { get; set; } 
+		public string? Aciklama { get; set; }
+	}
+
+	public class PersonelDurum: BaseEntity
+	{
+		[Display(Name = "Durum Adı")]
+		public string? Ad { get; set; }
+		public string? Aciklama { get; set; }
+	}
+
 }

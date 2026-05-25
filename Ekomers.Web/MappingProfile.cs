@@ -108,6 +108,9 @@ namespace Ekomers.Web
 
 			CreateMap<PersonelVM, Personel>();
 			CreateMap<Personel, PersonelVM>();
+
+			CreateMap<Zimmet, ZimmetVM>();
+			CreateMap<ZimmetVM, Zimmet>();
 		}
     }
 }

@@ -36,6 +36,7 @@ namespace Ekomers.Data.Services
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly IRepository<Kullanici> _userRepo;
 		private readonly IRepository<Envanter> _EnvanterRepo;
+		private readonly IRepository<Zimmet> _ZimmetRepo;
 		private readonly IRepository<EnvanterDepartman> _EnvanterDepartmanRepo;
 		private readonly IRepository<EnvanterBolum> _EnvanterBolumRepo;
 
@@ -57,6 +58,7 @@ namespace Ekomers.Data.Services
 			, IRepository<Sirketler> SirketlerRepo
 			, IHttpClientFactory httpClientFactory
 			, IFileService fileService 
+			, IRepository<Zimmet> ZimmetRepo
 			)
 		{
 			_context = context;
@@ -67,6 +69,7 @@ namespace Ekomers.Data.Services
 			_envanterTurRepo = envanterTurRepo;
 			_EnvanterDepartmanRepo = EnvanterDepartmanRepo;
 			_EnvanterBolumRepo = EnvanterBolumRepo;
+			_ZimmetRepo = ZimmetRepo;
 			_userRepo = userRepo; 
 		 
 			// Get the current user's claims principal and user ID
@@ -164,7 +167,95 @@ namespace Ekomers.Data.Services
 			return result;
 		}
 
+		public IQueryable<EnvanterVM> GenelListeZimmet()
+		{
 
+			var result = from kayit in _EnvanterRepo.GetAll2()
+
+						 join zimmet in _ZimmetRepo.GetAll2() on kayit.ID equals zimmet.EnvanterID
+						 into zimmetGroup
+						 from zimmet in zimmetGroup.DefaultIfEmpty()
+
+
+						 join departman in _EnvanterDepartmanRepo.GetAll2() on kayit.EnvanterDepartmanID equals departman.ID
+						 into departmanGroup
+						 from departman in departmanGroup.DefaultIfEmpty()
+
+						 join bolum in _EnvanterBolumRepo.GetAll2() on kayit.EnvanterBolumID equals bolum.ID
+						 into bolumGroup
+						 from bolum in bolumGroup.DefaultIfEmpty()
+
+
+						 join demirbastur in _envanterTurRepo.GetAll2() on kayit.TurID equals demirbastur.ID
+						 into demirbasturGroup
+						 from demirbastur in demirbasturGroup.DefaultIfEmpty()
+
+						 join sirket in _SirketlerRepo.GetAll2() on kayit.SirketID equals sirket.ID
+						 into sirketGroup
+						 from sirket in sirketGroup.DefaultIfEmpty()
+
+						 join createUser in _userRepo.GetAll2() on kayit.CreateUserID equals createUser.Id
+						 into createUserGroup
+						 from createUser in createUserGroup.DefaultIfEmpty()
+
+						 join deleteUser in _userRepo.GetAll2() on kayit.DeleteUserID equals deleteUser.Id
+						 into deleteUserGroup
+						 from deleteUser in deleteUserGroup.DefaultIfEmpty()
+
+						 join updateUser in _userRepo.GetAll2() on kayit.UpdateUserID equals updateUser.Id
+						 into updateUserGroup
+						 from updateUser in updateUserGroup.DefaultIfEmpty()
+
+						 select new EnvanterVM
+						 {
+							 ID = kayit.ID,
+							 Model = kayit.Model,
+							 Marka = kayit.Marka,
+							 SeriNo = kayit.SeriNo,
+							 YerKodu = kayit.YerKodu,
+							 AlimTarihi = kayit.AlimTarihi,
+							 GarantiBas = kayit.GarantiBas,
+							 GarantiBit = kayit.GarantiBit,
+							 Aciklama = kayit.Aciklama,
+							 AlimFiyati = kayit.AlimFiyati,
+							 DovizKuru = kayit.DovizKuru,
+							 DovizTuru = kayit.DovizTuru,
+							 Numara = kayit.Numara,
+							 Ad = kayit.Ad,
+							 EnvanterBolumID = kayit.EnvanterBolumID,
+							 Bolum = bolum != null ? bolum.Ad : "",
+							 BolumKod = bolum != null ? bolum.Kod : "",
+							 Fotograf = kayit.Fotograf,
+							 EnvanterDepartmanID = kayit.EnvanterDepartmanID,
+							 Departman = departman != null ? departman.Ad : "",
+							 DepartmanKod = departman != null ? departman.Kod : "",
+
+							 TurID = kayit.TurID,
+							 Tur = demirbastur != null ? demirbastur.Ad : "",
+							 TurKod = demirbastur != null ? demirbastur.Kod : "",
+							 SirketID = kayit.SirketID,
+							 Sirket = sirket != null ? sirket.SirketAdi : "",
+							 Zimmet= zimmet != null ? zimmet : new Zimmet(),
+
+							 IsActive = (bool)kayit.IsActive,
+							 IsDelete = (bool)kayit.IsDelete,
+
+							 CreateUserID = kayit.CreateUserID,
+							 CreateDate = kayit.CreateDate != null ? kayit.CreateDate : new DateTime(1000, 1, 1),
+							 CreateUserName = createUser != null ? createUser.AdSoyad : "",
+
+							 DeleteUserID = kayit.DeleteUserID,
+							 DeleteDate = kayit.DeleteDate,
+							 DeleteUserName = deleteUser != null ? deleteUser.AdSoyad : "",
+
+							 UpdateUserID = kayit.UpdateUserID,
+							 UpdateDate = kayit.UpdateDate,
+							 UpdateUserName = updateUser != null ? updateUser.AdSoyad : "",
+
+						 };
+
+			return result;
+		}
 
 		public Task<EnvanterVM> VeriDoldurGenel(params string[] listTypes)
 		{
@@ -313,6 +404,12 @@ namespace Ekomers.Data.Services
 		public Task<PagedResult<EnvanterVM>> VeriListeleAsync(EnvanterVM model)
 		{
 			throw new NotImplementedException();
+		}
+
+		public async  Task<List<EnvanterVM>> VeriListeleZimmet(string personelID)
+		{
+			var list = GenelListeZimmet().Where(p => p.Zimmet.PersonelID == personelID).ToList();
+			return list;
 		}
 	}
 }

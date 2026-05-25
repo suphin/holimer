@@ -43,6 +43,8 @@
 		public const string OfferDurumAll = "OfferDurum:All";
 		public const string DepartmanAll = "Departman:All";
 		public const string DepartmanBirimAll = "DepartmanBirim:All";
+		public const string PersonelDurumAll = "PersonelDurum:All";
+		public const string PersonelGorevAll = "PersonelGorev:All";
 
 
 	}
