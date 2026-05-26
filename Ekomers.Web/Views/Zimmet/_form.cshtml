@@ -4,9 +4,13 @@
 <div class="form-group row">
    
     <div class="col-lg-6">
-        <label asp-for="Kullanici.AdSoyad" class="control-label"></label>
-        <select asp-for="PersonelID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.PersonellerListe, "ID", "AdSoyad").OrderBy(p => p.Text))"></select>
-        <span asp-validation-for="Kullanici.AdSoyad" class="text-danger"></span>
+        <label asp-for="Personel.AdSoyad" class="control-label"></label>
+        <select asp-for="PersonelID" class="kt_select2" data-live-search="true" 
+                onchange="PersonelSecildi(this.value)"
+        data-size="5" asp-items="@(new SelectList(ViewBag.PersonellerListe, "ID", "AdSoyad").OrderBy(p => p.Text))">
+    <option value="0">Seçiniz</option>
+    </select>
+        <span asp-validation-for="Personel.AdSoyad" class="text-danger"></span>
     </div>
    
 </div>
@@ -21,7 +25,7 @@
     <div class="col-lg-3">
         <label class="control-label">&nbsp;</label>
         <input class="btn btn-sm btn-primary form-control form-control-sm" 
-               type="button" value="Envanter Listesi" onclick="EnvanterListesi()" data-toggle="modal" data-target="#ModalEnvanterListe" />
+               type="button" value="Envanter Listesi" onclick="EnvanterListesi()"  />
        
     </div>
 </div>
@@ -32,15 +36,37 @@
         <span asp-validation-for="AciklamaIlk" class="text-danger"></span>
     </div>
 </div>
+<div id="ZimmetEkliListe">
 
+</div>
 <script src="js/select2.js?v=7.0.5"></script>
 
 
 <script>
-    function EnvanterListesi()
-    {
-    GetAjax('Zimmet/EnvanterListesi', 'EnvanterListeVeriAlan');
-    }
+    
+        var secilenPersonelId = 0;
+
+        function PersonelSecildi(id) {
+        secilenPersonelId = id;
+        } 
+
+        function EnvanterListesi()
+        {
+         
+            if (secilenPersonelId>0)
+            {
+                const myModal = new bootstrap.Modal(document.getElementById('ModalEnvanterListe'));
+                
+                // Show the modal
+                myModal.show(); 
+                GetAjax('Zimmet/EnvanterListesi?personelID=' + secilenPersonelId, 'EnvanterListeVeriAlan');
+            }
+            else{
+                toastr.error("Bir personel seçiniz!");
+            }
+     
+        }
+     
 </script>
 
  

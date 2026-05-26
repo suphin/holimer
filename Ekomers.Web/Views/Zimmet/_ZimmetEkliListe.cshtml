@@ -1,0 +1,25 @@
+﻿@using Ekomers.Web.Controllers
+@model List<GeciciZimmetItem>
+
+<table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
+    <thead>
+        <tr> 
+            <th>Yer Kodu</th>
+            <th>Envanter Adı</th>
+            <th>Marka / Model</th>
+            <th>Seri No</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Yerkodu</td>
+                <td>@item.EnvanterAdi</td>
+                <td>@item.Marka / @item.Model</td>
+                <td>@item.Serino</td>
+            </tr>
+        }
+
+    </tbody>
+</table>

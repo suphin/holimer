@@ -11,6 +11,7 @@ namespace Ekomers.Models.Entity
 	{
 		public string? UserID { get; set; }
 		public string? PersonelKod { get; set; }
+		[Display(Name ="Ad Soyad")]
 		public string AdSoyad { get; set; } = string.Empty;
 		public string? Email { get; set; } = string.Empty;
 		public string? Telefon { get; set; } = string.Empty;

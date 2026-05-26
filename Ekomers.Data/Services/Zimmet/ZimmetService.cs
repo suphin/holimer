@@ -22,6 +22,7 @@ namespace Ekomers.Data.Services
 		private readonly IRepository<Kullanici> _userRepo;
 		private readonly IRepository<Envanter> _EnvanterRepo;
 		private readonly IRepository<Zimmet> _ZimmetRepo;
+		private readonly IRepository<Personel> _PersonelRepo;
 		private readonly IRepository<Sirketler> _SirketlerRepo;
 		private readonly ClaimsPrincipal _user;
 		private readonly string _userId;
@@ -30,7 +31,7 @@ namespace Ekomers.Data.Services
 		public ZimmetService(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor
 			, IMapper mapper, IRepository<Zimmet> ZimmetRepo, IHttpClientFactory httpClientFactory, 
 			IFileService fileService, IRepository<Kullanici> userRepo, IRepository<Envanter> EnvanterRepo
-			, IRepository<Sirketler> SirketlerRepo
+			, IRepository<Sirketler> SirketlerRepo, IRepository<Personel> PersonelRepo
 			)
 		{
 			_context = context;
@@ -40,7 +41,7 @@ namespace Ekomers.Data.Services
 			_userRepo = userRepo;
 			_ZimmetRepo = ZimmetRepo;
 			_SirketlerRepo = SirketlerRepo;
-
+			_PersonelRepo = PersonelRepo;
 			// Get the current user's claims principal and user ID
 			_user = _httpContextAccessor.HttpContext?.User;
 			_userId = _user?.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -57,9 +58,9 @@ namespace Ekomers.Data.Services
 						  into envanterGroup
 						 from e in envanterGroup.DefaultIfEmpty()
 
-						 join k in _userRepo.GetAll2() on kayit.PersonelID equals k.Id
-						 into kullaniciGroup
-						 from k in kullaniciGroup.DefaultIfEmpty()
+						 join p in _PersonelRepo.GetAll2() on kayit.PersonelID equals p.ID
+						 into personelGroup
+						 from p in personelGroup.DefaultIfEmpty()
 
 						 join s in _SirketlerRepo.GetAll2() on e.SirketID equals s.ID
 						 into sirketGroup
@@ -85,10 +86,10 @@ namespace Ekomers.Data.Services
 						 {
 							 ID = kayit.ID,
 							 EnvanterID = kayit.EnvanterID,
-							 Envanter = _mapper.Map<EnvanterVM>(e),
-							 Sirket = s,
+							 Envanter = _mapper.Map<EnvanterVM>(e)??new EnvanterVM(),
+							 Sirket = s??new Sirketler(),
 							 PersonelID = kayit.PersonelID,
-							 Kullanici = k,
+							 Personel = p??new Personel(),
 							 ZimmetTarihi = kayit.ZimmetTarihi,
 							 TeslimTarihi = kayit.TeslimTarihi,
 							 AciklamaIlk = kayit.AciklamaIlk,

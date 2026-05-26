@@ -18,7 +18,8 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
-
+using Microsoft.AspNetCore.Http;
+using System.Text.Json;
 namespace Ekomers.Web.Controllers
 {
 	//[Authorize(Roles = "Admin")]
@@ -169,16 +170,71 @@ namespace Ekomers.Web.Controllers
 			}
 		}
 
-		public async Task<IActionResult> EnvanterListesi()
+		public async Task<IActionResult> EnvanterListesi(int personelID)
 		{
 			var model = new ZimmetVM
 			{
-				EnvanterVMListe = await _envanterService.VeriListele(),
+				EnvanterVMListe = await _envanterService.VeriListeleZimmet(personelID),
 				ControllerName = "Zimmet",
-				ModalTitle = "Zimmet Bilgileri"
+				ModalTitle = "Envanter Bilgileri"
 			};
 
 			return PartialView("_EnvanterListesi",model);
+		}
+		public async Task<IActionResult> ZimmetListeyeEkle(int envanterID)
+		{
+			// Session'daki mevcut liste
+			var liste = HttpContext.Session
+				.GetObject<List<GeciciZimmetItem>>("ZimmetListe")
+				?? new List<GeciciZimmetItem>();
+
+			// Aynı kayıt tekrar eklenmesin
+			if (!liste.Any(x => x.EnvanterID == envanterID))
+			{
+				var envanter = await _envanterService.VeriGetir(envanterID);
+
+				liste.Add(new GeciciZimmetItem
+				{
+					EnvanterID = envanter.ID,
+					EnvanterAdi = envanter.Ad??string.Empty,
+					Yerkodu = envanter.DepartmanKod +"_"+ envanter.BolumKod + "_" + envanter.TurKod + "_" + envanter.Numara,
+					Marka = envanter.Marka ?? string.Empty,
+					Model = envanter.Model ?? string.Empty,
+					Serino = envanter.SeriNo ?? string.Empty
+				});
+			}
+
+			// Session'a geri yaz
+			HttpContext.Session.SetObject("ZimmetListe", liste);
+
+			return PartialView("_ZimmetEkliListe", liste);
+		}
+	}
+
+	public class GeciciZimmetItem
+	{
+		public int EnvanterID { get; set; }
+		public string EnvanterAdi { get; set; }
+		public string Yerkodu { get; set; }
+		public string Marka { get; set; }
+		public string Model { get; set; }
+		public string Serino { get; set; }
+	}
+	
+	public static class SessionExtensions
+	{
+		public static void SetObject<T>(this ISession session, string key, T value)
+		{
+			session.SetString(key, JsonSerializer.Serialize(value));
+		}
+
+		public static T GetObject<T>(this ISession session, string key)
+		{
+			var value = session.GetString(key);
+
+			return value == null
+				? default
+				: JsonSerializer.Deserialize<T>(value);
 		}
 	}
 }

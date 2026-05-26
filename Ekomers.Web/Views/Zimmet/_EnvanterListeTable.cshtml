@@ -8,7 +8,7 @@
 			<th>Envanter Adı</th>
 			<th>Marka / Model</th>
 			<th>Seri No</th> 
-			<th class="no-print crudBtnRow">Düzenle</th>
+			<th class="no-print crudBtnRow">İşlem</th>
 
 		</tr>
 	</thead>
@@ -22,7 +22,16 @@
 				<td>@item.Ad</td>
 				<td>@item.Marka / @item.Model</td>
 				<td>@item.SeriNo</td>
-				<td></td>
+				<td>
+					@if (item.PersonelID==0)
+					{
+						<button class="btn btn-sm btn-info" onclick="ZimmetEkle(@item.ID)" type="button">Ekle</button>
+					}
+					else
+					{
+						<span>Ekli</span>
+					}
+				</td>
 				 
 			</tr>
 		}
@@ -30,3 +39,10 @@
 
 	</tbody>
 </table>
+
+<script type="text/javascript">
+    function ZimmetEkle(envanterID) {
+    $('#EnvanterID').val(envanterID);
+		GetAjax('Zimmet/ZimmetListeyeEkle?envanterID=' + envanterID, 'ZimmetEkliListe');
+    }
+</script>

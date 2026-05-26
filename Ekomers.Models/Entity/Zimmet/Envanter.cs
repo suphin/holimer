@@ -89,6 +89,7 @@ namespace Ekomers.Models.Entity
 		public string? Fotograf { get; set; }
 		public IFormFile? Dosya { get; set; }
 		public Zimmet Zimmet { get; set; }
+		public int PersonelID { get; set; }
 
 	}
 

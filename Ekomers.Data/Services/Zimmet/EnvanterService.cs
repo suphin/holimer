@@ -37,6 +37,7 @@ namespace Ekomers.Data.Services
 		private readonly IRepository<Kullanici> _userRepo;
 		private readonly IRepository<Envanter> _EnvanterRepo;
 		private readonly IRepository<Zimmet> _ZimmetRepo;
+		private readonly IRepository<Personel> _PersonelRepo;
 		private readonly IRepository<EnvanterDepartman> _EnvanterDepartmanRepo;
 		private readonly IRepository<EnvanterBolum> _EnvanterBolumRepo;
 
@@ -59,6 +60,7 @@ namespace Ekomers.Data.Services
 			, IHttpClientFactory httpClientFactory
 			, IFileService fileService 
 			, IRepository<Zimmet> ZimmetRepo
+			, IRepository<Personel> PersonelRepo
 			)
 		{
 			_context = context;
@@ -77,7 +79,7 @@ namespace Ekomers.Data.Services
 			_userId = _user?.FindFirstValue(ClaimTypes.NameIdentifier);
 			_httpClientFactory = httpClientFactory;
 			_fileService = fileService;
-		  
+			_PersonelRepo = PersonelRepo;
 		}
 
 	 
@@ -167,14 +169,20 @@ namespace Ekomers.Data.Services
 			return result;
 		}
 
-		public IQueryable<EnvanterVM> GenelListeZimmet()
+		public IQueryable<EnvanterVM> GenelListeZimmet(int personelID)
 		{
 
 			var result = from kayit in _EnvanterRepo.GetAll2()
 
-						 join zimmet in _ZimmetRepo.GetAll2() on kayit.ID equals zimmet.EnvanterID
-						 into zimmetGroup
+						 join zimmet in _ZimmetRepo.GetAll2(z => z.PersonelID == personelID) on kayit.ID equals zimmet.EnvanterID	
+						 
+						 into zimmetGroup 						 
 						 from zimmet in zimmetGroup.DefaultIfEmpty()
+						 
+
+						 //join personel in _PersonelRepo.GetAll2() on zimmet.PersonelID equals personel.ID
+						 //into personelGroup
+						 //from personel in personelGroup.DefaultIfEmpty()
 
 
 						 join departman in _EnvanterDepartmanRepo.GetAll2() on kayit.EnvanterDepartmanID equals departman.ID
@@ -235,7 +243,8 @@ namespace Ekomers.Data.Services
 							 TurKod = demirbastur != null ? demirbastur.Kod : "",
 							 SirketID = kayit.SirketID,
 							 Sirket = sirket != null ? sirket.SirketAdi : "",
-							 Zimmet= zimmet != null ? zimmet : new Zimmet(),
+							 //Zimmet= zimmet,
+							 PersonelID=zimmet.PersonelID !=null ? zimmet.PersonelID:0,
 
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,
@@ -406,9 +415,9 @@ namespace Ekomers.Data.Services
 			throw new NotImplementedException();
 		}
 
-		public async  Task<List<EnvanterVM>> VeriListeleZimmet(string personelID)
+		public async  Task<List<EnvanterVM>> VeriListeleZimmet(int personelID)
 		{
-			var list = GenelListeZimmet().Where(p => p.Zimmet.PersonelID == personelID).ToList();
+			var list = GenelListeZimmet(personelID).ToList();
 			return list;
 		}
 	}
