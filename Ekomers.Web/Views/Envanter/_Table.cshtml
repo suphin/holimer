@@ -1,0 +1,74 @@
+﻿@model EnvanterVM
+
+
+
+<table class="table table-bordered table-hover table-checkable">
+    <thead>
+        <tr> 
+            <th class="no-print" style="width:30px"></th>
+            <th>Fotograf</th>
+            <th>Şirket</th>
+            @*
+                    <th>Departman</th>
+                    <th>Bölüm</th>
+                    <th>Tür</th> *@
+            <th>Yer Kodu</th>
+            <th>Envanter Adı</th>
+            <th>Marka / Model</th>
+            <th>Seri No</th>
+
+            <th>Foto Ekle</th>
+            <th class="no-print">Dosya</th>
+            <th class="no-print crudBtnRow">Düzenle</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (EnvanterVM item in Model.EnvanterVMListe)
+        {
+            <tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")">
+                <td class="no-print"><input type="checkbox" class="form-control" /></td>
+                <td>
+                    @if (!String.IsNullOrEmpty(@item.Fotograf))
+                    {
+                        <img src="/Envanter/img/@item.Fotograf"
+                             style="height:35px; cursor:pointer"
+                             class="resimOnizleme"
+                             data-resim="/Envanter/img/@item.Fotograf" />
+                    }
+
+                </td>
+                <td>@item.Sirket</td>
+                @*   <td>@item.Departman</td>
+                        <td>@item.Bolum</td>
+                        <td>@item.Tur</td> *@
+                @* <td>@item.DepartmanKod - @item.BolumKod - @item.TurKod - @item.Numara</td> *@
+                <td>@(item.DepartmanKod + "_" + item.BolumKod + "_" + item.TurKod + "_" + item.Numara)</td>
+                <td>@item.Ad</td>
+                <td>@item.Marka / @item.Model</td>
+                <td>@item.SeriNo</td>
+
+                <td class="no-print"><a href="#" onclick="FotoGetir('@item.ID')" data-toggle="modal" data-target="#ModalFotoEkle"><i class="icon-x   flaticon-attachment"></i>&nbsp; Foto</a></td>
+
+						 
+                @{
+                    await Html.RenderPartialAsync("_PartialAuthorizeScript",
+                    new AuthorizeCrudVM { ID = item.ID, DosyaEkle = true, HaritaEkle = false, ModulID = (int)ModulEnum.Envanter });
+                }
+            </tr>
+        }
+      
+
+
+    </tbody>
+</table>
+
+ 
+
+@if (Model.TotalPages > 1)
+{ 
+    await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_Pager.cshtml", 
+    new PagerModel { PageIndex = Model.PageIndex, PageSize = Model.PageSize, TotalCount = Model.TotalCount });
+}
+
+ 

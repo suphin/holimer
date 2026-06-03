@@ -125,6 +125,10 @@ namespace Ekomers.Web.Controllers
 		[Authorize(Policy = "View")]
 		public async Task<PartialViewResult> VeriGoruntule(int VeriID = 0, string view = "", int pageIndex = 0, int pageSize = 0)
 		{
+			if (view== "_VeriKopyalanacak")
+			{
+				HttpContext.Session.Remove("ZimmetListe");
+			}
 
 			var modelc = await _service.VeriGetir(VeriID);
 			 

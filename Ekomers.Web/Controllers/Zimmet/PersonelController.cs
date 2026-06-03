@@ -186,7 +186,19 @@ namespace Ekomers.Web.Controllers
 			}
 		}
 
-		  
-		 
+		public async Task<IActionResult> BordroPersonelAktar()
+		{
+			bool sonuc = await _service.BordroPersonelAktar();
+
+			if (sonuc)
+			{
+				return Ok("Veri aktarma başarılı");
+			}
+			else
+			{
+				return BadRequest("Veri aktarılamadı.");
+			}
+		}
+
 	}
 }

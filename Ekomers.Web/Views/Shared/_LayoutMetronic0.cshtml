@@ -219,6 +219,25 @@
 	<!--begin::Page Scripts(used by this page)-->
 	@await RenderSectionAsync("JSSection", false)
 	@await RenderSectionAsync("ModalSection", false)
+	<div class="modal fade" id="resimModal" tabindex="-1">
+		<div class="modal-dialog modal-xl">
+			<div class="modal-content">
+				<div class="modal-body text-center">
+					<img id="buyukResim" src="" class="img-fluid" />
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		$(document).on("click", ".resimOnizleme", function () {
+
+		var resimYolu = $(this).data("resim");
+
+		$("#buyukResim").attr("src", resimYolu);
+
+		$("#resimModal").modal("show");
+		});
+	</script>
 	<!--end::Page Scripts-->
 	<script>
 		var KTInputmask = function () {

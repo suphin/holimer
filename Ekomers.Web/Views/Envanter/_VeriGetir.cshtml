@@ -13,7 +13,10 @@
 		</div>
 		<div class="modal-footer">
 			<input type="hidden" asp-for="ID" />
+			<input type="hidden" asp-for="PageIndex" />
+			<input type="hidden" asp-for="PageSize" />
 			<input type="hidden" asp-for="CreateDate"  />
+			<input type="hidden" asp-for="Fotograf"  />
 			<input type="hidden" asp-for="UpdateDate" value="@DateTime.Now" />
 			<input type="hidden" asp-for="IsActive" value="true" />
 			<input type="hidden" asp-for="IsDelete" value="false" />

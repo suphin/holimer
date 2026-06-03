@@ -18,7 +18,11 @@
 			</h3>
 		</div>
 		<div class="card-toolbar">
-
+			@if (User.HasClaim("Authorize", "PersonelAdd") || User.IsInRole("Admin"))
+			{
+				<buton onclick="BordroPersonelAktar()" class="btn btn-info  btn-sm ml-2">Bordrodan Personel Aktar</buton>
+			}
+			 
 			@{
 				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_CreateButton.cshtml");
 			}
@@ -64,6 +68,26 @@
 		});
 	}
 
+	<script type="text/javascript">
+
+		function BordroPersonelAktar(){
+
+				$.ajax({
+					type: 'GET',
+					url: 'Personel/BordroPersonelAktar',
+					success: function (response) {
+						// $('#cardBody').html(response);
+						// $('#ModalVeri').modal('hide');
+						toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+
+					},
+					error: function (xhr, status, error) {
+
+						toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+					}
+				});
+		}
+	</script>
 	 
 }
 

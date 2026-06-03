@@ -2,6 +2,7 @@
 
  
 using AutoMapper;
+using Azure;
 using Ekomers.Data.Repository.IRepository;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Models;
@@ -297,6 +298,25 @@ namespace Ekomers.Data.Services
 			_context.SaveChanges();
 			return true;
 		}
+		public async Task<bool> VeriEkleAsync(EnvanterVM model)
+		{
+
+			Envanter? existingEntry = _EnvanterRepo.GetById(model.ID);
+			if (existingEntry == null)
+			{
+				var newEntry = _mapper.Map<Envanter>(model);
+				_EnvanterRepo.Add(newEntry);
+			}
+			else
+			{
+				_mapper.Map(model, existingEntry);
+				await _EnvanterRepo.UpdateAsync(existingEntry);
+			}
+
+			await _context.SaveChangesAsync();
+			 
+			return true;
+		}
 
 		public async Task<EnvanterVM> VeriGetir(int id)
 		{
@@ -405,14 +425,120 @@ namespace Ekomers.Data.Services
 
 		}
 
-		public Task<PagedResult<EnvanterVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default)
+		public async Task<PagedResult<EnvanterVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default)
 		{
-			throw new NotImplementedException();
+			try
+			{
+				if (page < 1) page = 1;
+				// mantıklı bir üst sınır koy
+				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
+
+				var liste = GenelListe();  
+
+
+
+
+
+
+
+				var total = await liste.CountAsync(ct);
+
+				var items = await liste
+					.OrderByDescending(a => a.ID)
+					.Skip((page - 1) * pageSize)
+					.Take(pageSize)
+					.ToListAsync(ct);
+
+				return new PagedResult<EnvanterVM>
+				{
+					Items = items,
+					PageIndex = page,
+					PageSize = pageSize,
+					TotalCount = total
+				};
+			}
+			catch
+			{
+				return new PagedResult<EnvanterVM>
+				{
+					Items = new List<EnvanterVM>(),
+					PageIndex = page,
+					PageSize = pageSize,
+					TotalCount = 0
+				};
+			}
 		}
 
-		public Task<PagedResult<EnvanterVM>> VeriListeleAsync(EnvanterVM model)
+		public async Task<PagedResult<EnvanterVM>> VeriListeleAsync(EnvanterVM model)
 		{
-			throw new NotImplementedException();
+			try
+			{
+				if (model.PageIndex < 1) model.PageIndex = 1;
+				// mantıklı bir üst sınır koy
+				if (model.PageSize <= 0 || model.PageSize > 1000) model.PageSize = 50;
+
+				var liste = GenelListe();
+
+
+				if (model.TurID != 0)
+				{
+					liste = liste.Where(p => p.TurID == model.TurID);
+				}
+				if (model.EnvanterBolumID != 0)
+				{
+					liste = liste.Where(p => p.EnvanterBolumID == model.EnvanterBolumID);
+				}
+				if (model.EnvanterDepartmanID != 0)
+				{
+					liste = liste.Where(p => p.EnvanterDepartmanID == model.EnvanterDepartmanID);
+				}
+				if (model.SirketID != 0)
+				{
+					liste = liste.Where(p => p.SirketID == model.SirketID);
+				}
+
+				if (model.Aciklama != null)
+				{
+					liste = liste.Where(p => p.Aciklama.Contains(model.Aciklama) ||
+					p.Marka.Contains(model.Aciklama) ||
+					p.Model.Contains(model.Aciklama) ||
+					p.Ad.Contains(model.Aciklama) ||
+					p.Departman.Contains(model.Aciklama) ||
+					p.Bolum.Contains(model.Aciklama) ||
+					p.SeriNo.Contains(model.Aciklama)
+					);
+				}
+
+
+
+
+
+				var total = await liste.CountAsync(model.ct);
+
+				var items = await liste
+					.OrderByDescending(a => a.ID)
+					.Skip((model.PageIndex - 1) * model.PageSize)
+					.Take(model.PageSize)
+					.ToListAsync(model.ct);
+
+				return new PagedResult<EnvanterVM>
+				{
+					Items = items,
+					PageIndex = model.PageIndex,
+					PageSize = model.PageSize,
+					TotalCount = total
+				};
+			}
+			catch
+			{
+				return new PagedResult<EnvanterVM>
+				{
+					Items = new List<EnvanterVM>(),
+					PageIndex = model.PageIndex,
+					PageSize = model.PageSize,
+					TotalCount = 0
+				};
+			}
 		}
 
 		public async  Task<List<EnvanterVM>> VeriListeleZimmet(int personelID)

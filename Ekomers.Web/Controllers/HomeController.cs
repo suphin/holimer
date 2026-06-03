@@ -49,7 +49,9 @@ namespace Ekomers.Web.Controllers
 
         public IActionResult Index()
         {
-			 //var encrypted = CryptoHelper.Encrypt("Server=SUPHILENOVOPC;Database=EkomersDB;User ID=sa;Password=123;Trusted_Connection=True;Integrated Security=false;TrustServerCertificate=true;");
+			//var encrypted = CryptoHelper.Encrypt("Server=SUPHILENOVOPC;Database=EkomersDB;User ID=sa;Password=123;Trusted_Connection=True;Integrated Security=false;TrustServerCertificate=true;");
+			 //var encrypted = CryptoHelper.Encrypt("Server=192.168.1.203;Database=BORDROPLUS;User ID=sa;Password=DB2025Hlmr81;Trusted_Connection=True;Integrated Security=false;TrustServerCertificate=true;");
+
 			return RedirectToAction(nameof(HomeController.SignIn));
 		}
 

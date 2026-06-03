@@ -32,7 +32,11 @@ var conn = CryptoHelper.Decrypt(encryptedConn);
 var encryptedLogoConn = builder.Configuration.GetConnectionString("LogoConnection")??"";
 
 var Logoconn = CryptoHelper.Decrypt(encryptedLogoConn);
-//var Logoconn = encryptedLogoConn;
+
+var encryptedBordroConn = builder.Configuration.GetConnectionString("BordroConnection")??"";
+
+var Bordroconn = CryptoHelper.Decrypt(encryptedBordroConn);
+ 
 
 
 //var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -49,6 +53,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddDbContext<LogoContext>(options =>
 	options.UseSqlServer(Logoconn));
+
+builder.Services.AddDbContext<BordroContext>(options =>
+	options.UseSqlServer(Bordroconn));
 
 builder.Services.AddDbContext<OrtomolekulerDernek>(options =>
 	options.UseSqlite(builder.Configuration.GetConnectionString("DernekConnection")));

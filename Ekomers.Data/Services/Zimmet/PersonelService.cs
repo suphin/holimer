@@ -25,7 +25,7 @@ namespace Ekomers.Data.Services
 	public class PersonelService : IPersonelService
 	{
 		private readonly ApplicationDbContext _context;
-		private readonly LogoContext _logo;
+		private readonly BordroContext _bordro;
 		private readonly IHttpContextAccessor _httpContextAccessor;
 		private readonly IWebHostEnvironment _hostingEnvironment;
 		private readonly IMapper _mapper;
@@ -49,8 +49,8 @@ namespace Ekomers.Data.Services
 			IRepository<Personel> PersonelRepo,
 			IRepository<Departman> departmanRepo,
 			IRepository<Sirketler> sirketRepo,
-			IWebHostEnvironment hostingEnvironment, IMemoryCache cache, LogoContext logo
-			, IRepository<PersonelDurum> PersonelDurumRepo, IRepository<PersonelGorev> PersonelGorevRepo
+			IWebHostEnvironment hostingEnvironment, IMemoryCache cache
+			, IRepository<PersonelDurum> PersonelDurumRepo, IRepository<PersonelGorev> PersonelGorevRepo,BordroContext bordro
 			)
 		{
 			_httpContextAccessor = httpContextAccessor;
@@ -58,7 +58,7 @@ namespace Ekomers.Data.Services
 			_userId = _user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 			_cache = cache;
 			_context = context;
-			_logo = logo;
+			_bordro = bordro;
 			_mapper = mapper;
 			_userRepo = userRepo;
 			_PersonelRepo = PersonelRepo;
@@ -388,6 +388,50 @@ namespace Ekomers.Data.Services
 			});
 		}
 
+		public async Task<bool> BordroPersonelAktar()
+		{
+			var bordroPersoneller = await _bordro.Personel.ToListAsync();
 
+			var mevcutPersoneller = await _PersonelRepo
+				.GetAll2()
+				.ToListAsync();
+
+			// Mevcut personel kodlarını HashSet'e al (hızlı arama için)
+			var mevcutKodlar = mevcutPersoneller
+				.Where(x => !string.IsNullOrEmpty(x.PersonelKod))
+				.Select(x => x.PersonelKod!)
+				.ToHashSet();
+
+			var yeniPersoneller = bordroPersoneller
+				.Where(x => !string.IsNullOrEmpty(x.CODE)
+						 && !mevcutKodlar.Contains(x.CODE))
+				.Select(x => new Personel
+				{
+					PersonelKod = x.CODE,
+					AdSoyad = $"{x.NAME} {x.SURNAME}".Trim(),
+
+					DogumTarihi = x.BIRTHDATE ?? DateTime.MinValue,
+					IseBaslamaTarihi = x.INDATE ?? DateTime.MinValue,
+					AyrilisTarihi = x.OUTDATE ?? DateTime.MinValue,
+
+					Cinsiyet = x.SEX ?? 0,
+
+					// Varsayılan değerler
+					DepartmanID = 0,
+					SirketID = x.FIRMNR ?? 0,
+					BolumID = 0,
+					GorevID = 0,
+					DurumID = (x.STATUS ?? 0) == 0 ? 1 : x.STATUS.Value
+				})
+				.ToList();
+
+			if (yeniPersoneller.Any())
+			{
+				await _context.Personel.AddRangeAsync(yeniPersoneller);
+				await _context.SaveChangesAsync();
+			}
+
+			return true;
+		}
 	}
 }

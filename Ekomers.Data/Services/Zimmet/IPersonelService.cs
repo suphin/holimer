@@ -11,6 +11,6 @@ namespace Ekomers.Data.Services.IServices
  
 	public interface IPersonelService : IGenelService<PersonelVM, Personel>, IPaggingService<PersonelVM>
 	{
-		 
+		Task<bool> BordroPersonelAktar();
 	}
 }

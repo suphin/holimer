@@ -1,5 +1,7 @@
 ﻿
 
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Ekomers.Data;
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
@@ -13,6 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Drawing.Printing;
 using System.Linq.Expressions;
 using System.Net;
 using System.Security.Claims;
@@ -85,35 +88,65 @@ namespace Ekomers.Web.Controllers
 		}  
 
 		[Authorize(Policy = "View")]
-		public async Task<IActionResult> Index()
+		public async Task<IActionResult> Index(int page = 1, int pageSize = 20, CancellationToken ct = default)
 		{
+			//ViewBag.Modul = ModulAd;
+			//await ViewBagListeDoldur();
+			//var model = new EnvanterVM
+			//{
+			//	EnvanterVMListe	 = await _service.VeriListele()
+			//};
+
+			//return View(model);
+
 			ViewBag.Modul = ModulAd;
 			await ViewBagListeDoldur();
+			var paged = await _service.VeriListeleAsync(page, pageSize, ct);
+
 			var model = new EnvanterVM
 			{
-				EnvanterVMListe	 = await _service.VeriListele()
+				EnvanterVMListe = paged.Items.ToList(),
+				PageIndex = paged.PageIndex,
+				PageSize = paged.PageSize,
+				TotalCount = paged.TotalCount
 			};
-
+			ViewBag.PageIndex = page;
+			ViewBag.PageSize = pageSize;
 			return View(model);
 		}
 
 
-		public async Task<IActionResult> Bayiler()
-		{
-			ViewBag.Modul = ModulAd;
-			await ViewBagListeDoldur();
-			var model = new EnvanterVM
-			{
-				EnvanterVMListe	 = await _service.VeriListele()
-			};
+		//public async Task<IActionResult> Bayiler()
+		//{
+		//	ViewBag.Modul = ModulAd;
+		//	await ViewBagListeDoldur();
+		//	var model = new EnvanterVM
+		//	{
+		//		EnvanterVMListe	 = await _service.VeriListele()
+		//	};
 
-			return View(model);
-		}
+		//	return View(model);
+		//}
 
 		[HttpPost]
 		[Authorize(Policy = "View")]
 		public async Task<IActionResult> Index(EnvanterVM modelv)
 		{
+			//ViewBag.Modul = ModulAd;
+			//await ViewBagListeDoldur();
+			//var paged = await _service.VeriListeleAsync(modelv);
+
+			//var model = new EnvanterVM
+			//{
+			//	EnvanterVMListe = paged.Items.ToList(),
+			//	PageIndex = paged.PageIndex,
+			//	PageSize = paged.PageSize,
+			//	TotalCount = paged.TotalCount
+			//};
+			//ViewBag.PageIndex = modelv.PageIndex;
+			//ViewBag.PageSize = modelv.PageSize;
+			//return View(model);
+
 			ViewBag.Modul = ModulAd;
 			await ViewBagListeDoldur();
 
@@ -123,13 +156,16 @@ namespace Ekomers.Web.Controllers
 		}
 		
 		[Authorize(Policy = "View")]
-		public async Task<PartialViewResult> VeriGoruntule(int VeriID = 0, string view = "")
+		public async Task<PartialViewResult> VeriGoruntule(int VeriID = 0, string view = "", int pageIndex = 0, int pageSize = 0)
 		{
 			 
 			var modelc = await _service.VeriGetir(VeriID);
 			 
 				await ViewBagPartialListeDoldur();
-			 
+
+			modelc.PageIndex = pageIndex;
+			modelc.PageSize = pageSize;
+
 			modelc.ControllerName = "Envanter";
 			modelc.ModalTitle = "Envanter Bilgileri";
 
@@ -139,12 +175,12 @@ namespace Ekomers.Web.Controllers
 
 		[Authorize(Policy = "Create")]
 		[HttpPost]
-		public IActionResult VeriEkle(EnvanterVM vm)
+		public async Task<IActionResult> VeriEkle(EnvanterVM vm)
 		{
-			bool sonuc = _service.VeriEkle(vm);
+			//bool sonuc = _service.VeriEkle(vm);
 
 			//PageToastr(sonuc);
-			return RedirectToAction("Index");
+			//return RedirectToAction("Index");
 			//if (sonuc)
 			//{
 			//	return Ok("Kayıt işlemi başarılı");
@@ -153,6 +189,32 @@ namespace Ekomers.Web.Controllers
 			//{
 			//	return BadRequest("Kaydetme başarısız!");
 			//}
+
+			bool sonuc = await _service.VeriEkleAsync(vm);
+			//if (sonuc)
+			//{
+			//	if (modelv.ID==0)
+			//	{
+			//		return RedirectToAction("Index", new { page = modelv.PageIndex, pageSize = modelv.PageSize });
+			//	}
+
+			//	return Ok("Kayıt işlemi başarılı");
+			//}
+			//else
+			//{
+			//	return BadRequest("Kaydetme başarısız!");
+			//}
+			var paged = await _service.VeriListeleAsync(vm.PageIndex, vm.PageSize, default);
+
+			var modelc = new EnvanterVM
+			{
+				EnvanterVMListe = paged.Items.ToList(),
+				PageIndex = paged.PageIndex,
+				PageSize = paged.PageSize,
+				TotalCount = paged.TotalCount
+			};
+
+			return RedirectToAction("Index", new { page = vm.PageIndex, pageSize = vm.PageSize });
 		}
 
 		[HttpPost]
