@@ -236,6 +236,7 @@ namespace Ekomers.Web.Controllers
 		{ 
 			model.TarihSaat = DateTime.Now;
 			model.FirmaID = model.MusteriID;
+			model.OdemeTarihi= DateTime.Now + TimeSpan.FromDays(model.Vade);
 
 			var sonuc = await _service.VeriEkleAsync(model);
 			 
