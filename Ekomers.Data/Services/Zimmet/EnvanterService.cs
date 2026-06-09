@@ -87,8 +87,22 @@ namespace Ekomers.Data.Services
 
 		public IQueryable<EnvanterVM> GenelListe()
 		{
-			 
-			var result = from kayit in _EnvanterRepo.GetAll2()
+			Expression<Func<Envanter, bool>> filter;
+			if (_user.IsInRole("Admin"))
+			{
+				filter = a => a.IsActive == true;
+			}
+			else
+			{
+				filter = a => a.IsActive == true && a.IsDelete == false;
+			}
+
+			var result = from kayit in _EnvanterRepo.GetAll2(filter)
+
+						 join zimmet in _ZimmetRepo.GetAll2() on kayit.ID equals zimmet.EnvanterID
+						 into zimmetGroup
+						 from zimmet in zimmetGroup.DefaultIfEmpty()
+
 
 						 join departman in _EnvanterDepartmanRepo.GetAll2() on kayit.EnvanterDepartmanID equals departman.ID
 						 into departmanGroup
@@ -125,7 +139,7 @@ namespace Ekomers.Data.Services
 							 Model = kayit.Model,
 							 Marka = kayit.Marka,
 							 SeriNo = kayit.SeriNo,
-							 YerKodu = kayit.YerKodu,
+							 YerKodu = departman.Kod + "_" + bolum.Kod + "_" + demirbastur.Kod + "_" + kayit.Numara,
 							 AlimTarihi = kayit.AlimTarihi,
 							 GarantiBas = kayit.GarantiBas,
 							 GarantiBit = kayit.GarantiBit,
@@ -149,6 +163,7 @@ namespace Ekomers.Data.Services
 							 SirketID = kayit.SirketID,
 							 Sirket = sirket != null ? sirket.SirketAdi : "",
 
+							 Zimmet = zimmet ?? new Zimmet(),
 
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,
@@ -221,7 +236,7 @@ namespace Ekomers.Data.Services
 							 Model = kayit.Model,
 							 Marka = kayit.Marka,
 							 SeriNo = kayit.SeriNo,
-							 YerKodu = kayit.YerKodu,
+							 YerKodu = departman.Kod + "_" + bolum.Kod + "_" + demirbastur.Kod + "_" + kayit.Numara,
 							 AlimTarihi = kayit.AlimTarihi,
 							 GarantiBas = kayit.GarantiBas,
 							 GarantiBit = kayit.GarantiBit,

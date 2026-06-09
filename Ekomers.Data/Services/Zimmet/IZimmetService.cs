@@ -8,6 +8,6 @@ namespace Ekomers.Data.Services
 {
 	public interface IZimmetService : IGenelService<ZimmetVM,Zimmet>, IPaggingService<ZimmetVM>
 	{
-		 
+		Task<ZimmetVM> ZimmetGetir(int envanterID); 
 	}
 }

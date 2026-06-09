@@ -1,5 +1,6 @@
 ﻿using Ekomers.Models.Ekomers;
 using Ekomers.Models.ViewModels;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -29,6 +30,7 @@ namespace Ekomers.Models.Entity
 		public int GorevID { get; set; }
 		public int DurumID { get; set; }
 		public int Cinsiyet { get; set; }
+		public string? Fotograf { get; set; }
 
 	}
 
@@ -67,6 +69,8 @@ namespace Ekomers.Models.Entity
 		public PersonelDurum PersonelDurum { get; set; }
 		public int GorevID { get; set; }
 		public int DurumID { get; set; }
+		public IFormFile? Dosya { get; set; }
+		public string? Fotograf { get; set; }
 	}
 
 	public class PersonelGorev : BaseEntity

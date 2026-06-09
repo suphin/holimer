@@ -7,7 +7,11 @@
     var tablaAdi = "Zimmet Listesi";
 }
 
-
+<style>
+	th {
+		cursor: pointer;
+	}
+</style>
 
 <!--begin::Card-->
 <div class="card card-custom">
@@ -21,14 +25,6 @@
 
 			@{
 				await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_CreateButton.cshtml");
-			}
-			@{
-				await Html.RenderPartialAsync("_PartialHaritaGenel", new AuthorizeCrudVM
-				{
-					ModulID = (int)ModulEnum.Zimmet,
-					HaritaEkle = false
-				});
-
 			}
 		</div>
 	</div>
@@ -55,6 +51,26 @@
 		});
 	}
 
+	<script type="text/javascript">
+		document.querySelectorAll("th").forEach((header, index) => {
+			header.addEventListener("click", () => {
+				const table = header.closest("table");
+				const rows = Array.from(table.querySelectorAll("tbody tr"));
+
+				rows.sort((a, b) => {
+					const aText = a.cells[index].innerText.trim();
+					const bText = b.cells[index].innerText.trim();
+
+					return aText.localeCompare(bText, 'tr');
+				});
+
+				const tbody = table.querySelector("tbody");
+				tbody.innerHTML = "";
+
+				rows.forEach(row => tbody.appendChild(row));
+			});
+		});
+	</script>
 	 
 }
 @section ModalSection {

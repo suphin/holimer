@@ -1,0 +1,402 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<Kullanici> UserManager
+@model ZimmetVM
+@{
+    Layout = null; 
+}
+
+
+@{
+    var user = await UserManager.GetUserAsync(User);
+  
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Zimmet Yazdır - @Model.EnvanterID </title>
+    <link href="~/css/_printoffer.css" rel="stylesheet" />
+    <link href="~/bootstrap.min.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" />
+    <!--end::Fonts-->
+    <!-- BEGIN PAGE FIRST SCRIPTS -->
+ 
+    <!--begin::Global Theme Styles(used by all pages)-->
+   @*  <link href="~/assets1/plugins/global/plugins.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+    <link href="~/assets1/plugins/custom/prismjs/prismjs.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+    <link href="~/assets1/css/style.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" /> *@
+    <!--end::Global Theme Styles-->
+ 
+    <!--begin::Layout Themes(used by all pages)-->
+    <link href="~/assets1/css/themes/layout/header/base/light.css?v=7.0.5" rel="stylesheet" type="text/css" />
+    <link href="~/assets1/css/themes/layout/header/menu/light.css?v=7.0.5" rel="stylesheet" type="text/css" />
+    <link href="~/assets1/css/themes/layout/brand/dark.css?v=7.0.5" rel="stylesheet" type="text/css" />
+    <link href="~/assets1/css/themes/layout/aside/dark.css?v=7.0.5" rel="stylesheet" type="text/css" />
+    <style>
+            .zimmet-form {
+                border: 2px solid #000;
+                font-size: 14px;
+                background: #fff;
+            }
+
+                .zimmet-form table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+
+                .zimmet-form td,
+                .zimmet-form th {
+                    border: 1px solid #000;
+                    padding: 8px;
+                    vertical-align: top;
+                }
+
+            .baslik {
+                text-align: center;
+                font-size: 28px;
+                font-weight: bold;
+                padding: 10px;
+            }
+
+            .alt-baslik {
+                text-align: center;
+                font-size: 22px;
+                font-weight: bold;
+                padding: 10px;
+            }
+
+            .imza-alani {
+                height: 80px;
+            }
+
+            .bosluk {
+                height: 120px;
+            }
+
+           
+    </style>
+
+</head>
+<body>
+
+    <div class="container" style="display:none" id="container">
+        <!-- ANTET -->
+        <div class="header center">
+            @if (Model.Sirket.ID == 1)
+            {
+                <img src="/img/holimer2025.png" style="height:68px;" />
+            }
+            else if (Model.Sirket.ID == 2)
+            {
+                <img src="/img/fw.png" style="height:68px;" />
+            }
+            else if (Model.Sirket.ID == 3)
+            {
+                <img src="/img/anfora.png" style="height:68px;" />
+            }
+            else if (Model.Sirket.ID == 4)
+            {
+                <img src="/img/ebvital.png" style="height:68px;" />
+            }
+            <div class="title">@Model.Sirket.SirketAdi</div>
+         
+            <div>
+                @Model.Sirket.SirketAdres <br />
+
+                Web Sitesi:@Model.Sirket.SirketWebSitesi
+
+                Vergi Dairesi: @Model.Sirket.SirketVergiDairesi 
+
+                VKN: @Model.Sirket.SirketVergiNo   <br /> <br />
+                <h3>PERSONEL ZİMMET FORMU</h3>
+            </div>
+        </div>
+        
+
+      
+            
+       
+
+        <br />
+
+        
+
+        <br /><br />
+
+        <!-- İMZA -->
+        
+
+        <div class="row mt-5">
+            <div class="col-lg-12 text-right">
+                <button class="btn btn-danger no-print" onclick="kapat()">Kapat</button>
+                <input type="button" value="Yazdır" class="btn btn-primary print  no-print" onclick="Yazdir2('#container')" />
+            </div>
+          
+        </div>
+    </div>
+    <div class="container mt-5" id="contanier2">
+
+        <div class="text-right mb-3 no-print">
+            <input type="button" value="Yazdır" class="btn btn-primary print  no-print" onclick="Yazdir2('#contanier2')" />
+        </div>
+
+        <div class="zimmet-form">
+
+            <table>
+                <tr>
+                    
+                    <td colspan="2" class="baslik p-0">
+                        <div style="display:flex;align-items:center;position:relative;height:80px;">
+
+                            <div style="position:absolute;left:10px;">
+                                @if (Model.Sirket.ID == 1)
+                                {
+                                    <img src="/img/holimer2025.png" style="height:68px;" />
+                                }
+                                else if (Model.Sirket.ID == 2)
+                                {
+                                    <img src="/img/fw.png" style="height:68px;" />
+                                }
+                                else if (Model.Sirket.ID == 3)
+                                {
+                                    <img src="/img/anfora.png" style="height:68px;" />
+                                }
+                                else if (Model.Sirket.ID == 4)
+                                {
+                                    <img src="/img/ebvital.png" style="height:68px;" />
+                                }
+                            </div>
+
+                            <div style="width:100%;text-align:center;font-size:28px;font-weight:bold;">
+                                PERSONEL ZİMMET FORMU
+                            </div>
+
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td width="60%">
+                        <strong>Personelin Adı Soyadı:</strong><br />
+                        @Model.Personel.AdSoyad
+                    </td>
+
+                    <td>
+                        <strong>Zimmet Tarihi:</strong>
+                        @Model.ZimmetTarihi.ToString("dd/MM/yyyy")
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <strong>Firma Ünvanı:</strong>
+                        @Model.Sirket.SirketAdi
+                    </td>
+
+                    <td>
+                        <strong>Departman / Görev:</strong>
+                        @Model.PersonelVM.DepartmanAd /  @Model.PersonelVM.PersonelGorev.Ad
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="2" class="alt-baslik">
+                        ZİMMETLENEN DEMİRBAŞ, ARAÇ VE MALZEMELER
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="2" class="bosluk">
+
+                        <strong>Cihaz Adı :</strong>
+                        @Model.Envanter.Departman
+                        <br />
+
+                        <strong>Marka :</strong>
+                        @Model.Envanter.Marka
+                        <br />
+
+                        <strong>Model :</strong>
+                        @Model.Envanter.Model
+                        <br />
+
+                        <strong>Seri No :</strong>
+                        @Model.Envanter.SeriNo
+                        <br />
+
+                        @if (!string.IsNullOrEmpty(Model.AciklamaIlk))
+                        {
+                            <br />
+                            <strong>Açıklama :</strong>
+                            @Model.AciklamaIlk
+                        }
+
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="2">
+
+                        <strong>ÖNEMLİ NOT:</strong>
+
+                        <br /><br />
+
+                        <strong>Ev Adresi :</strong>
+                        @Model.Personel.Adres
+
+                        <br /><br />
+
+                        <strong>Özel GSM :</strong>
+                        @Model.Personel.Telefon
+
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="2">
+
+                        Yukarıda yazılı malzemeyi çalışır vaziyette
+                        <strong>@Model.ZimmetTarihi.ToString("dd/MM/yyyy")</strong>
+                        tarihinde teslim ettim.
+
+                        <br /><br />
+
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Teslim Alan Personel</strong><br />
+                                Adı Soyadı :
+                                @Model.Personel.AdSoyad
+                            </div>
+
+                            <div class="col-6">
+                                <strong>Teslim Eden</strong><br />
+                               @user.Unvan : @user.AdSoyad
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col text-left">
+                                İmza :
+                            </div>
+
+                            <div class="col text-center">
+                                İnsan Kaynakları
+                            </div>
+
+                            <div class="col text-center">
+                                İdari İşler
+                            </div>
+
+                            <div class="col text-center">
+                                Depo
+                            </div>
+                        </div>
+
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="2" class="alt-baslik">
+                        TESLİM BEYANI
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="2">
+
+                        Aşağıda yazılı olan tarihte işten ayrıldığımı ve işe giriş
+                        tarihinde şahsıma zimmetlenmiş yukarıda işaretli
+                        malzemeleri eksiksiz teslim ettiğimi beyan ederim.
+
+                        <br /><br />
+
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Adı Soyadı :</strong>
+                            </div>
+
+                            <div class="col-6">
+                                <strong>Tarih :</strong>
+                            </div>
+                        </div>
+
+                        <br />
+
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>İmza :</strong>
+                            </div>
+
+                            <div class="col-6"></div>
+                        </div>
+
+                        <br />
+
+                        <strong>Teslim Edilmeyen Malzemeler (Varsa):</strong>
+
+                        <div style="height:80px;"></div>
+
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="2" class="alt-baslik">
+                        ONAY
+                    </td>
+                </tr>
+
+                <tr style="height:100px;">
+                    <td colspan="2">
+
+                        <div class="row text-center">
+                            <div class="col">
+                                İnsan Kaynakları
+                            </div>
+
+                            <div class="col">
+                                İdari İşler
+                            </div>
+
+                            <div class="col">
+                                Depo
+                            </div>
+                        </div>
+
+                    </td>
+                </tr>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <script>var KTAppSettings = { "breakpoints": { "sm": 576, "md": 768, "lg": 992, "xl": 1200, "xxl": 1400 }, "colors": { "theme": { "base": { "white": "#ffffff", "primary": "#3699FF", "secondary": "#E5EAEE", "success": "#1BC5BD", "info": "#8950FC", "warning": "#FFA800", "danger": "#F64E60", "light": "#E4E6EF", "dark": "#181C32" }, "light": { "white": "#ffffff", "primary": "#E1F0FF", "secondary": "#EBEDF3", "success": "#C9F7F5", "info": "#EEE5FF", "warning": "#FFF4DE", "danger": "#FFE2E5", "light": "#F3F6F9", "dark": "#D6D6E0" }, "inverse": { "white": "#ffffff", "primary": "#ffffff", "secondary": "#3F4254", "success": "#ffffff", "info": "#ffffff", "warning": "#ffffff", "danger": "#ffffff", "light": "#464E5F", "dark": "#ffffff" } }, "gray": { "gray-100": "#F3F6F9", "gray-200": "#EBEDF3", "gray-300": "#E4E6EF", "gray-400": "#D1D3E0", "gray-500": "#B5B5C3", "gray-600": "#7E8299", "gray-700": "#5E6278", "gray-800": "#3F4254", "gray-900": "#181C32" } }, "font-family": "Poppins" };</script>
+	
+    <script src="~/assets1/plugins/global/plugins.bundle.js?v=7.0.5"></script>
+    <script src="~/assets1/plugins/custom/prismjs/prismjs.bundle.js?v=7.0.5"></script>
+    <script src="~/assets1/js/scripts.bundle.js?v=7.0.5"></script>
+   
+    
+   
+    <script src="~/js/printthis.js"></script>
+    <script>
+                    function Yazdir2(tableid) {
+        
+                $(tableid).printThis();
+ 
+            }
+                       
+            function kapat() {
+                if (confirm("Pencereyi kapatmak istediğinize emin misiniz?")) {
+                    window.open('', '_self');
+                    window.close();
+                }
+            }
+           
+    </script>
+   
+
+</body>
+</html>

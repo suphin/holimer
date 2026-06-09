@@ -132,6 +132,8 @@ namespace Ekomers.Data.Services
 							 PersonelGorev = gorev != null ? new PersonelGorev { ID = gorev.ID, Ad = gorev.Ad } : null,
 							 DurumID=kayit.DurumID,
 							 GorevID = kayit.GorevID,
+							 Fotograf=kayit.Fotograf,
+							 Cinsiyet=kayit.Cinsiyet,
 
 							 IsActive = (bool)kayit.IsActive,
 							 IsDelete = (bool)kayit.IsDelete,
@@ -319,7 +321,7 @@ namespace Ekomers.Data.Services
 			return true;
 		}
 
-		public async Task<PagedResult<PersonelVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default)
+		public async Task<PagedResult<PersonelVM>> VeriListeleAsync(PersonelVM model, int page, int pageSize, CancellationToken ct = default)
 		{
 			try
 			{
@@ -327,7 +329,7 @@ namespace Ekomers.Data.Services
 				// mantıklı bir üst sınır koy
 				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
 
-				var query = GenelListe(); // IQueryable<PersonelVM>
+				var query = GenelListe().Where(p => p.DurumID == model.DurumID); // IQueryable<PersonelVM>
 
 				var total = await query.CountAsync(ct);
 
@@ -390,48 +392,75 @@ namespace Ekomers.Data.Services
 
 		public async Task<bool> BordroPersonelAktar()
 		{
-			var bordroPersoneller = await _bordro.Personel.ToListAsync();
-
-			var mevcutPersoneller = await _PersonelRepo
-				.GetAll2()
-				.ToListAsync();
-
-			// Mevcut personel kodlarını HashSet'e al (hızlı arama için)
-			var mevcutKodlar = mevcutPersoneller
-				.Where(x => !string.IsNullOrEmpty(x.PersonelKod))
-				.Select(x => x.PersonelKod!)
-				.ToHashSet();
-
-			var yeniPersoneller = bordroPersoneller
-				.Where(x => !string.IsNullOrEmpty(x.CODE)
-						 && !mevcutKodlar.Contains(x.CODE))
-				.Select(x => new Personel
-				{
-					PersonelKod = x.CODE,
-					AdSoyad = $"{x.NAME} {x.SURNAME}".Trim(),
-
-					DogumTarihi = x.BIRTHDATE ?? DateTime.MinValue,
-					IseBaslamaTarihi = x.INDATE ?? DateTime.MinValue,
-					AyrilisTarihi = x.OUTDATE ?? DateTime.MinValue,
-
-					Cinsiyet = x.SEX ?? 0,
-
-					// Varsayılan değerler
-					DepartmanID = 0,
-					SirketID = x.FIRMNR ?? 0,
-					BolumID = 0,
-					GorevID = 0,
-					DurumID = (x.STATUS ?? 0) == 0 ? 1 : x.STATUS.Value
-				})
-				.ToList();
-
-			if (yeniPersoneller.Any())
+			try
 			{
-				await _context.Personel.AddRangeAsync(yeniPersoneller);
-				await _context.SaveChangesAsync();
-			}
+				var bordroPersoneller = await _bordro.Personel.ToListAsync();
 
-			return true;
+				var mevcutPersoneller = await _PersonelRepo
+					.GetAll2()
+					.ToListAsync();
+
+				// Mevcut personel kodlarını HashSet'e al (hızlı arama için)
+				var mevcutKodlar = mevcutPersoneller
+					.Where(x => !string.IsNullOrEmpty(x.PersonelKod))
+					.Select(x => x.PersonelKod!)
+					.ToHashSet();
+
+				var yeniPersoneller = bordroPersoneller
+					.Where(x => !string.IsNullOrEmpty(x.CODE)
+							 && !mevcutKodlar.Contains(x.CODE))
+					.Select(x => new Personel
+					{
+						PersonelKod = x.CODE,
+						AdSoyad = $"{x.NAME} {x.SURNAME}".Trim(),
+
+						DogumTarihi = x.BIRTHDATE ?? DateTime.MinValue,
+						IseBaslamaTarihi = x.INDATE ?? DateTime.MinValue,
+						AyrilisTarihi = x.OUTDATE ?? DateTime.MinValue,
+						IsActive=true,
+						IsDelete=false,
+						Cinsiyet = x.SEX ?? 0,
+
+						// Varsayılan değerler
+						DepartmanID = 0,
+						SirketID = x.FIRMNR ?? 0,
+						BolumID = 0,
+						GorevID = 0,
+						
+						DurumID = x.TYP ?? 0,
+					})
+					.ToList();
+
+				if (yeniPersoneller.Any())
+				{
+					await _context.Personel.AddRangeAsync(yeniPersoneller);
+					await _context.SaveChangesAsync();
+				}
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+
+				return false;
+			}
+			
+		}
+
+		public Task<PagedResult<PersonelVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default)
+		{
+			throw new NotImplementedException();
+		}
+
+		public void FotoYukle(PersonelVM model)
+		{
+			var personel = _PersonelRepo.GetById(model.ID);
+			if (personel != null)
+			{
+				personel.Fotograf = model.Fotograf;
+				_PersonelRepo.Update(personel);
+				_context.SaveChanges();
+			}
 		}
 	}
 }

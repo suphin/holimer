@@ -11,6 +11,7 @@ namespace Ekomers.Models.Enums
 		TeklifAsamasinda = 1,
 		TeklifOnayBekliyor = 2,
 		TeklifOnaylandi = 3, 
+		TeklifIptal = 4,
 	}
 
 	public enum EnumOrderDurum

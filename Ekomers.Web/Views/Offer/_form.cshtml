@@ -164,10 +164,21 @@
                     <th>Miktar</th>
                     <td> @Model.MiktarSon @Model.BirimAd</td>
                 </tr>
-                <tr>
-                    <th>Açıklama</th>
-                    <td> @Model.Aciklama</td>
-                </tr>
+                @if (Model.OfferDurumID == (int)EnumOfferDurum.TeklifOnaylandi)
+                {
+                    <tr>
+                        <th>Açıklama</th>
+                        <td> @Model.Aciklama</td>
+                    </tr>
+                }
+                else
+                {
+                    <tr>
+                        <th>Açıklama</th>
+                        <td>  <textarea asp-for="Aciklama" type="text" class="form-control form-control-sm" rows="2"></textarea></td>
+                    </tr>
+                   
+                } 
                 <tr>
                     <th>Kabul Notu</th>
                     <td> @Model.KabulNot</td>

@@ -316,6 +316,21 @@ namespace Ekomers.Data.Services
 			}
 		}
 
-		 
+		public async Task<ZimmetVM> ZimmetGetir(int envanterID)
+		{
+			if (envanterID <= 0)
+			{
+				return new ZimmetVM();
+			}
+
+			ZimmetVM kayit = GenelListe().Where(p => p.EnvanterID == envanterID).FirstOrDefault();
+
+			if (kayit == null)
+			{
+				return new ZimmetVM();
+			}
+
+			return kayit;
+		}
 	}
 }

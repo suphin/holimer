@@ -1,0 +1,155 @@
+﻿@model ZimmetVM
+<form asp-controller="@Model.ControllerName" asp-action="ZimmetEkle" method="post" name="_VeriEkle" id="_VeriEkle">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">@Model.ModalTitle</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body">
+            <div class="row">
+                <div class="col-lg-8">
+            <div class="form-group row">
+                <div class="col-lg-8">
+                    <label class="control-label">Envanter Adı</label>
+                    <input class="form-control form-control-sm" value="@Model.Envanter.Ad" />
+                </div>
+                <div class="col-lg-4">
+                    <label class="control-label">Yer Kodu</label>
+                            <input class="form-control form-control-sm" value="@Model.Envanter.YerKodu" />
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-8">
+                    <label class="control-label">Marka / Model</label>
+                    <input class="form-control form-control-sm" value="@Model.Envanter.Marka / @Model.Envanter.Model" />
+                </div>
+                <div class="col-lg-4">
+                    <label class="control-label">Seri No</label>
+                    <input class="form-control form-control-sm" value="@Model.Envanter.SeriNo" />
+                </div>
+                    </div>
+                    <div class="form-group row">
+
+                        <div class="col-lg-8">
+                            <label asp-for="Personel.AdSoyad" class="control-label"></label>
+                            <select asp-for="PersonelID" class="kt_select2" data-live-search="true"
+                                    onchange="PersonelSecildi(this.value)"
+                                    data-size="5" asp-items="@(new SelectList(ViewBag.PersonellerListe, "ID", "AdSoyad").OrderBy(p => p.Text))">
+                                <option value="0">Seçiniz</option>
+                            </select>
+                            <span asp-validation-for="Personel.AdSoyad" class="text-danger"></span>
+                        </div>
+
+                 
+
+                        <div class="col-lg-4">
+                            <label asp-for="ZimmetTarihi" class="control-label"></label>
+                            <input asp-for="ZimmetTarihi" class="form-control form-control-sm" required type="date" />
+                            <span asp-validation-for="ZimmetTarihi" class="text-danger"></span>
+                        </div>
+
+                    </div>
+                   
+
+
+                </div>
+                    <div class="col-lg-4">
+                        <img src="/Envanter/img/@Model.Envanter.Fotograf" style="height:200px" />
+                    </div>
+                </div>
+
+            <div class="form-group row">
+                <div class="col-lg-12">
+                    <label asp-for="AciklamaIlk" class="control-label"></label>
+
+                    <textarea name="AciklamaIlk" class="form-control form-control-sm" rows="13" required>
+ZİMMET TESLİM TUTANAĞI
+
+Aşağıda bilgileri yer alan envanter, @DateTime.Now.ToString("dd.MM.yyyy") tarihinde kullanım amacıyla zimmetlenmiştir.
+
+ENVANTER BİLGİLERİ
+Envanter Adı : @Model.Envanter.Ad
+Yer Kodu     : @Model.Envanter.YerKodu
+Marka / Model: @Model.Envanter.Marka @Model.Envanter.Model
+Seri No      : @Model.Envanter.SeriNo
+
+Yukarıda bilgileri bulunan envanteri eksiksiz ve çalışır durumda teslim aldığımı, kullanım süresince korunmasından ve şirket prosedürlerine uygun kullanılmasından sorumlu olduğumu kabul ederim.
+</textarea>
+                    <span asp-validation-for="AciklamaIlk" class="text-danger"></span>
+                </div>
+            </div>
+           
+            
+        </div>
+        <div class="modal-footer">
+            <input type="hidden" asp-for="ID" />
+            <input type="hidden" asp-for="EnvanterID" />
+            <input type="hidden" asp-for="PageIndex" />
+            <input type="hidden" asp-for="PageSize" />
+            <input type="hidden" asp-for="CreateDate" />
+            <input type="hidden" asp-for="UpdateDate" value="@DateTime.Now" />
+            <input type="hidden" asp-for="IsActive" value="true" />
+            <input type="hidden" asp-for="IsDelete" value="false" />
+            <input type="hidden" asp-for="CreateUserID" value="@Model.CreateUserID" />
+            <input type="hidden" asp-for="UpdateUserID" value="@Model.UserID" />
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+        </div>
+    </div>
+</form>
+
+ 
+<script src="js/select2.js?v=7.0.5"></script>
+
+
+<script>
+
+    var secilenPersonelId = 0;
+
+    function PersonelSecildi(id) {
+    secilenPersonelId = id;
+    } 
+
+    
+
+</script>
+
+ 
+<script type="text/javascript">
+    $(document).ready(function () {
+    
+        $('#_VeriEkle').on('submit', function (e) {
+           
+        if (secilenPersonelId==0)
+        {
+            toastr.error("Bir personel seçiniz!");
+            return false;
+        }     
+
+            e.preventDefault();
+            var form = $(this);
+            var actionUrl = form.attr('action');
+            var formData = form.serialize(); 
+            $.ajax({
+                type: 'POST',
+                url: actionUrl,
+                data: formData,
+                success: function (response) {
+                    
+                    toastr.success('Kaydetme İşlemi Başarılı', 'Başarılı');
+                        setTimeout(function () {
+                        location.reload();
+                        }, 1000); // 1 saniye bekle
+
+                    },
+                    error: function (xhr, status, error) {
+
+                    toastr.error('Açıklama:' + xhr.responseText, 'Hata!');
+                    }
+            });
+        });
+    
+        
+    });
+
+</script>

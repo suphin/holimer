@@ -16,7 +16,7 @@ namespace Ekomers.Data.Services.IServices
 		Task<PagedResult<T>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default);
 		Task<PagedResult<T>> VeriListeleOnayAsync(int page, int pageSize, CancellationToken ct = default) => (Task<PagedResult<T>>)Task.CompletedTask;
 		Task<PagedResult<T>> VeriListeleAsync(int page, int pageSize, MalzemelerFilterVM f, CancellationToken ct = default)=>(Task<PagedResult<T>>)Task.CompletedTask;
-		Task<PagedResult<T>> VeriListeleAsync(T model);
+		Task<PagedResult<T>> VeriListeleAsync(T model, int page, int pageSize, CancellationToken ct = default) => (Task<PagedResult<T>>)Task.CompletedTask;
 
 	}
 }

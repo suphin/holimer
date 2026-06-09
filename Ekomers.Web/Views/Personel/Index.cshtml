@@ -6,7 +6,11 @@
 	var controllerName = "Personel";
     var tablaAdi = "Personel Listesi";
 }
-
+<style>
+	th {
+		cursor: pointer;
+	}
+</style>
 
 
 <!--begin::Card-->
@@ -20,7 +24,7 @@
 		<div class="card-toolbar">
 			@if (User.HasClaim("Authorize", "PersonelAdd") || User.IsInRole("Admin"))
 			{
-				<buton onclick="BordroPersonelAktar()" class="btn btn-info  btn-sm ml-2">Bordrodan Personel Aktar</buton>
+				<buton onclick="BordroPersonelAktar()" class="btn btn-info  btn-sm mr-2">Bordrodan Personel Aktar</buton>
 			}
 			 
 			@{
@@ -37,11 +41,13 @@
 		</div>
 	</div>
 	<div class="card-body " id="cardBody">
+		<div class="table-responsive"
 		<!--begin: Datatable-->
 		@{
 			await Html.RenderPartialAsync("_Table", Model);
 		}
 		<!--end: Datatable-->
+		</div>
 	</div>
 </div>
 <!--end::Card-->
@@ -55,6 +61,30 @@
 	await Html.RenderPartialAsync("_PartialModalDosya",
 	new AuthorizeCrudVM { Controller = controllerName, HaritaEkle = false });
 }
+
+<div id="ModalFotoEkle" class="modal fade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+	<div class="modal-dialog modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Foto Ekle</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Kapat">
+					<span aria-hidden="true">&times;</span>
+					<i aria-hidden="true" class="ki ki-close"></i>
+				</button>
+			</div>
+
+			<div class="modal-body" id="DetaylarFoto">
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
+			</div>
+
+		</div>
+
+	</div>
+</div>
+
+
 
 @section JSSection {
 
@@ -87,8 +117,32 @@
 					}
 				});
 		}
+				document.querySelectorAll("th").forEach((header, index) => {
+			header.addEventListener("click", () => {
+				const table = header.closest("table");
+				const rows = Array.from(table.querySelectorAll("tbody tr"));
+
+				rows.sort((a, b) => {
+					const aText = a.cells[index].innerText.trim();
+					const bText = b.cells[index].innerText.trim();
+
+					return aText.localeCompare(bText, 'tr');
+				});
+
+				const tbody = table.querySelector("tbody");
+				tbody.innerHTML = "";
+
+				rows.forEach(row => tbody.appendChild(row));
+			});
+		});
 	</script>
-	 
+	<script>
+
+		  
+		   function FotoGetir(id) {
+		GetAjax('Personel/_FotoGetir?PersonelID=' + id, 'DetaylarFoto');
+		}
+	</script>
 }
 
 

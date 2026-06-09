@@ -20,6 +20,11 @@
             <th>Foto Ekle</th>
             <th class="no-print">Dosya</th>
             <th class="no-print crudBtnRow">Düzenle</th>
+            @if (User.HasClaim("Authorize", "Zimmet") || User.IsInRole("Admin"))
+            {
+                <th class="no-print">Zimmet Ekle</th>
+            }
+           
 
         </tr>
     </thead>
@@ -55,6 +60,19 @@
                     await Html.RenderPartialAsync("_PartialAuthorizeScript",
                     new AuthorizeCrudVM { ID = item.ID, DosyaEkle = true, HaritaEkle = false, ModulID = (int)ModulEnum.Envanter });
                 }
+                @if (User.HasClaim("Authorize", "Zimmet") || User.IsInRole("Admin"))
+                {
+                    if (item.Zimmet.ID>0)
+                    {
+                        <td class="no-print"><a href="#" onclick="ZimmetGoster('@item.ID')" data-toggle="modal" data-target="#ModalVeri">Zimmet Göster</a></td>
+                    }
+                    if (item.Zimmet.ID==0)
+                    {
+                        <td class="no-print"><a href="#" onclick="ZimmetEkle('@item.ID')" data-toggle="modal" data-target="#ModalVeri">Zimmet Ekle</a></td>
+                        
+                    }
+                    
+                }
             </tr>
         }
       
@@ -71,4 +89,13 @@
     new PagerModel { PageIndex = Model.PageIndex, PageSize = Model.PageSize, TotalCount = Model.TotalCount });
 }
 
- 
+<script type="text/javascript">
+    function ZimmetEkle(envanterID) {
+    
+        GetAjax('Zimmet/ZimmetEkle?envanterID=' + envanterID, 'VeriAlan');
+    }
+      function ZimmetGoster(envanterID) {
+
+        GetAjax('Zimmet/ZimmetGoster?envanterID=' + envanterID, 'VeriAlan');
+    }
+</script>

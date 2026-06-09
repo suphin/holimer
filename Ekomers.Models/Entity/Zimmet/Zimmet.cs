@@ -25,7 +25,9 @@ namespace Ekomers.Models.Entity
 		public EnvanterVM Envanter { get; set; } = new EnvanterVM();
 		public int  PersonelID { get; set; }  
 		public Personel Personel { get; set; } = new Personel();
+		public PersonelVM PersonelVM { get; set; } = new PersonelVM(); 
 		public Sirketler Sirket { get; set; } = new Sirketler();
+		[Display(Name = "Zimmet Tarihi")]
 		public DateTime ZimmetTarihi { get; set; } = DateTime.Now;
 		public DateTime TeslimTarihi { get; set; } = DateTime.Now;
 		[Display(Name ="Zimmet Açıklama")]
@@ -34,6 +36,7 @@ namespace Ekomers.Models.Entity
 		public string? AciklamaSon { get; set; } = string.Empty;
 		public int DurumID { get; set; } = 0;
 		public List<ZimmetVM> ZimmetVMListe { get; set; }
+		 
 		public List<EnvanterVM> EnvanterVMListe { get; set; }
 	}
 }

@@ -5,6 +5,7 @@
 <table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
     <thead>
         <tr> 
+            <th>Fotograf</th>
             <th>Personel No</th>
             <th>Şirket</th> 
             <th>Departman</th> 
@@ -13,8 +14,10 @@
             <th>Şirket Telefonu</th>
             <th>Eposta</th>          
             <th>Doğum Tarihi</th>     
+            <th>Foto Ekle</th>
             <th>Dosya</th>  
-            <th class="no-print crudBtnRow">Düzenle</th>
+            <th class="no-print ">Düzenle</th>
+            <th class="no-print ">Görüntüle</th>
 
         </tr>
     </thead>
@@ -22,6 +25,16 @@
         @foreach (PersonelVM item in Model.PersonelVMListe)
         {
             <tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")"> 
+                <td>
+                    @if (!String.IsNullOrEmpty(@item.Fotograf))
+                    {
+                        <img src="/ENVANTER/Personel/img/@item.Fotograf"
+                             style="height:35px; cursor:pointer"
+                             class="resimOnizleme"
+                             data-resim="/ENVANTER/Personel/img/@item.Fotograf" />
+                    }
+
+                </td>
                 <td>@item.PersonelKod</td>
                 <td>@item.SirketAd</td>
                 <td>@item.DepartmanAd</td>
@@ -30,12 +43,12 @@
                 <td>@item.TelefonSirket</td>
                 <td>@item.Email</td>
                 <td>@item.DogumTarihi.ToString("dd.MM.yyyy")</td> 
-  
+                <td class="no-print"><a href="#" onclick="FotoGetir('@item.ID')" data-toggle="modal" data-target="#ModalFotoEkle"><i class="icon-x   flaticon-attachment"></i>&nbsp; Foto</a></td>
 					@{
-						await Html.RenderPartialAsync("_PartialAuthorizeScript",
-						new AuthorizeCrudVM { ID = item.ID, DosyaEkle = true, HaritaEkle = false, ModulID = (int)ModulEnum.Personel });
+                    await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_ButtonGroupTable2.cshtml",
+						new AuthorizeCrudVM { ID = item.ID, DosyaEkle = true, HaritaEkle = false, ModulID = (int)ModulEnum.Personel , View = false, Edit = true, Delete = false, Copy = false});
 					}
-				 
+                
             </tr>
         }
 

@@ -30,6 +30,7 @@ namespace Ekomers.Web.Controllers
 	{
 		private readonly IZimmetService _service;
 		private readonly IEnvanterService _envanterService;
+		private readonly IPersonelService _personelService;
 		private string _userId;
 		private readonly ApplicationDbContext _context;
 		private readonly IHttpClientFactory _httpClientFactory;
@@ -55,6 +56,7 @@ namespace Ekomers.Web.Controllers
 		 , ICacheService<Sirketler> sirketCache
 		 ,IEnvanterService envanterService
 		, ICacheService<Personel> personelCache
+			, IPersonelService personelService
 			) : base(userManager, roleManager)
 		{
 			_service = service;
@@ -66,6 +68,8 @@ namespace Ekomers.Web.Controllers
 			_departmanCache = departmanCache;
 			_bolumCache = bolumCache;
 			_personelCache = personelCache;
+			_personelService = personelService;
+			 
 		}
 
 		public override void OnActionExecuting(ActionExecutingContext context)
@@ -79,15 +83,17 @@ namespace Ekomers.Web.Controllers
 			ViewBag.EnvanterTurListe = await _turCache.GetListeAsync(CacheKeys.EnvanterTurAll);
 			ViewBag.DepartmanlarListe = await _departmanCache.GetListeAsync(CacheKeys.EnvanterDepartmanAll);
 			ViewBag.BolumlerListe = await _bolumCache.GetListeAsync(CacheKeys.EnvanterBolumAll);
-			ViewBag.PersonellerListe = await _personelCache.GetListeAsync(CacheKeys.PersonelAll);
+			Expression<Func<Personel, bool>> filter = a => a.DurumID == 1;
+			ViewBag.PersonellerListe = await _personelCache.GetListeAsync(CacheKeys.PersonelAll,filter);
 		}
 		private async Task ViewBagListeDoldur()
 		{
 			ViewBag.SirketlerListe = await _sirketCache.GetListeAsync(CacheKeys.SirketAll);
 			ViewBag.EnvanterTurListe = await _turCache.GetListeAsync(CacheKeys.EnvanterTurAll);
 			ViewBag.DepartmanlarListe = await _departmanCache.GetListeAsync(CacheKeys.EnvanterDepartmanAll);
-			ViewBag.BolumlerListe = await _bolumCache.GetListeAsync(CacheKeys.EnvanterBolumAll);	
-			ViewBag.PersonellerListe = await _personelCache.GetListeAsync(CacheKeys.PersonelAll);
+			ViewBag.BolumlerListe = await _bolumCache.GetListeAsync(CacheKeys.EnvanterBolumAll);
+			Expression<Func<Personel, bool>> filter = a => a.DurumID == 1;
+			ViewBag.PersonellerListe = await _personelCache.GetListeAsync(CacheKeys.PersonelAll, filter);
 		}  
 
 		[Authorize(Policy = "View")]
@@ -123,13 +129,9 @@ namespace Ekomers.Web.Controllers
 		}
 		
 		[Authorize(Policy = "View")]
-		public async Task<PartialViewResult> VeriGoruntule(int VeriID = 0, string view = "", int pageIndex = 0, int pageSize = 0)
+		public async Task<IActionResult> VeriGoruntule(int VeriID = 0, string view = "", int pageIndex = 0, int pageSize = 0)
 		{
-			if (view== "_VeriKopyalanacak")
-			{
-				HttpContext.Session.Remove("ZimmetListe");
-			}
-
+			 
 			var modelc = await _service.VeriGetir(VeriID);
 			 
 				await ViewBagPartialListeDoldur();
@@ -213,6 +215,70 @@ namespace Ekomers.Web.Controllers
 
 			return PartialView("_ZimmetEkliListe", liste);
 		}
+
+
+
+		public async Task<PartialViewResult> ZimmetEkle(int envanterID)
+		{
+			var model = new ZimmetVM
+			{
+				Envanter = await _envanterService.VeriGetir(envanterID),
+				ControllerName = "Zimmet",
+				ModalTitle = "Zimmet Bilgileri",
+				UserID = _userId
+			};
+			 
+
+			await ViewBagPartialListeDoldur();
+
+			
+			return PartialView("_zimmetEkle", model);
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> ZimmetEkle(ZimmetVM vM)
+		{
+			var sonuc = await _service.VeriEkleAsync(vM);
+			if (sonuc)
+			{
+				return Ok("Kaydetmet Başarılı");
+			}
+			else
+			{
+				return BadRequest("Kaydetme başarısız oldu.");
+			}			
+		}
+
+		public async Task<IActionResult> Print(int envanterID)
+		{
+			var Zimmet = await _service.ZimmetGetir(envanterID);
+
+			Zimmet.Envanter = await _envanterService.VeriGetir(envanterID);
+			Zimmet.ControllerName = "Zimmet";
+			Zimmet.ModalTitle = "Zimmet Bilgileri";
+			Zimmet.UserID = _userId;
+			Zimmet.PersonelVM = await _personelService.VeriGetir(Zimmet.PersonelID);
+			 
+			return PartialView("Print", Zimmet);
+		}
+
+		public async Task<PartialViewResult> ZimmetGoster(int envanterID)
+		{
+			var Zimmet = await _service.ZimmetGetir(envanterID);
+
+			Zimmet.Envanter = await _envanterService.VeriGetir(envanterID);
+				Zimmet.ControllerName = "Zimmet";
+				Zimmet.ModalTitle = "Zimmet Bilgileri";
+				Zimmet.UserID = _userId;
+			 
+
+
+			await ViewBagPartialListeDoldur();
+
+
+			return PartialView("_zimmetGoster", Zimmet);
+		}
+
 	}
 
 	public class GeciciZimmetItem

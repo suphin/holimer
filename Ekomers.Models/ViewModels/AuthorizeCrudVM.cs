@@ -21,6 +21,10 @@ namespace Ekomers.Models.ViewModels
 		public bool HaritaEkle { get; set; }
 		public bool AramaYap { get; set; }
 		public bool IsMap { get; set; }
+		public bool View { get; set; }
+		public bool Edit { get; set; }
+		public bool Delete { get; set; }
+		public bool Copy { get; set; }
 
 	}
 }

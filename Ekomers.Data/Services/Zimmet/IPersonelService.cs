@@ -11,6 +11,7 @@ namespace Ekomers.Data.Services.IServices
  
 	public interface IPersonelService : IGenelService<PersonelVM, Personel>, IPaggingService<PersonelVM>
 	{
+		void FotoYukle(PersonelVM model);
 		Task<bool> BordroPersonelAktar();
 	}
 }

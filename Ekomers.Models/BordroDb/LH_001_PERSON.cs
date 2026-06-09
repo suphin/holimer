@@ -8,13 +8,13 @@ namespace Ekomers.Models.BordroDb
 	public class LH_001_PERSON
 	{
 		[Key]
-		public int LOGICALREF { get; set; }
+		public int LREF { get; set; }
 		public string? SPECODE { get; set; }
 
-		public int? FIRMNR { get; set; }
-		public int? DEPTNR { get; set; }
-		public int? LOCNR { get; set; }
-		public int? TYP { get; set; }
+		public short? FIRMNR { get; set; }
+		public short? DEPTNR { get; set; }
+		public short? LOCNR { get; set; }
+		public short? TYP { get; set; }
 
 		public string? CODE { get; set; }
 		public string? NAME { get; set; }
@@ -28,7 +28,7 @@ namespace Ekomers.Models.BordroDb
 
 		public DateTime? BIRTHDATE { get; set; }
 
-		public string? EDUCATION { get; set; }
+		public short? EDUCATION { get; set; }
 
 		public DateTime? APPDATE { get; set; }
 		public DateTime? INDATE { get; set; }

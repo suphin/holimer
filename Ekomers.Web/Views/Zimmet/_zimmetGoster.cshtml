@@ -1,5 +1,5 @@
 ﻿@model ZimmetVM
-<form method="post" name="_VeriEkle" id="_VeriEkle">
+<form   method="post" name="_VeriEkle" id="_VeriEkle">
     <div class="modal-content">
         <div class="modal-header">
             <h5 class="modal-title">@Model.ModalTitle</h5>
@@ -8,25 +8,25 @@
         <div class="modal-body">
             <div class="row">
                 <div class="col-lg-8">
-                    <div class="form-group row">
-                        <div class="col-lg-8">
-                            <label class="control-label">Envanter Adı</label>
-                            <input class="form-control form-control-sm" value="@Model.Envanter.Ad" />
-                        </div>
-                        <div class="col-lg-4">
-                            <label class="control-label">Yer Kodu</label>
+            <div class="form-group row">
+                <div class="col-lg-8">
+                    <label class="control-label">Envanter Adı</label>
+                    <input class="form-control form-control-sm" value="@Model.Envanter.Ad" />
+                </div>
+                <div class="col-lg-4">
+                    <label class="control-label">Yer Kodu</label>
                             <input class="form-control form-control-sm" value="@Model.Envanter.YerKodu" />
-                        </div>
-                    </div>
-                    <div class="form-group row">
-                        <div class="col-lg-8">
-                            <label class="control-label">Marka / Model</label>
-                            <input class="form-control form-control-sm" value="@Model.Envanter.Marka / @Model.Envanter.Model" />
-                        </div>
-                        <div class="col-lg-4">
-                            <label class="control-label">Seri No</label>
-                            <input class="form-control form-control-sm" value="@Model.Envanter.SeriNo" />
-                        </div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-8">
+                    <label class="control-label">Marka / Model</label>
+                    <input class="form-control form-control-sm" value="@Model.Envanter.Marka / @Model.Envanter.Model" />
+                </div>
+                <div class="col-lg-4">
+                    <label class="control-label">Seri No</label>
+                    <input class="form-control form-control-sm" value="@Model.Envanter.SeriNo" />
+                </div>
                     </div>
                     <div class="form-group row">
 
@@ -45,31 +45,31 @@
                  
 
                         <div class="col-lg-4">
-                            <label asp-for="ZimmetTarihi" class="control-label"></label>
-                            <input asp-for="ZimmetTarihi" class="form-control form-control-sm" type="date" />
+                            <label asp-for="ZimmetTarihi" class="control-label"></label> 
+                            <input asp-for="ZimmetTarihi" class="form-control form-control-sm"   type="date" />
                         </div>
 
                     </div>
-
                    
 
+
                 </div>
-                <div class="col-lg-4">
-                    <img src="/Envanter/img/@Model.Envanter.Fotograf" style="height:200px" />
+                    <div class="col-lg-4">
+                        <img src="/Envanter/img/@Model.Envanter.Fotograf" style="height:200px" />
+                    </div>
                 </div>
-            </div>
 
             <div class="form-group row">
                 <div class="col-lg-12">
                     <label asp-for="AciklamaIlk" class="control-label"></label>
 
-                    <textarea asp-for="AciklamaIlk" class="form-control form-control-sm" rows="9"> 
+                    <textarea asp-for="AciklamaIlk" class="form-control form-control-sm" rows="13" > 
                     </textarea>
                     <span asp-validation-for="AciklamaIlk" class="text-danger"></span>
                 </div>
             </div>
-
            
+            
         </div>
         <div class="modal-footer">
             <input type="hidden" asp-for="ID" />
@@ -83,7 +83,7 @@
             <input type="hidden" asp-for="CreateUserID" value="@Model.CreateUserID" />
             <input type="hidden" asp-for="UpdateUserID" value="@Model.UserID" />
             <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
-
+            
         </div>
     </div>
 </form>

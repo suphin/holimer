@@ -22,7 +22,7 @@ namespace Ekomers.Data
 				.ToTable("LH_001_PERSON", "dbo", t => t.ExcludeFromMigrations());
 
 			modelBuilder.Entity<LH_001_PERSON>()
-				.HasKey(x => x.LOGICALREF);
+				.HasKey(x => x.LREF);
 
 			//modelBuilder.Entity<PORTAL_ITEMS_LIST>()
 			//	.ToTable("PORTAL_ITEMS_LIST", "dbo", t => t.ExcludeFromMigrations());

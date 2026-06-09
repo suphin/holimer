@@ -89,11 +89,11 @@ namespace Ekomers.Web.Controllers
 	 
 		 
 
-		public async Task<IActionResult> Index(int page = 1, int pageSize = 10, CancellationToken ct = default)
+		public async Task<IActionResult> Index(int page = 1, int pageSize = 100, CancellationToken ct = default)
 		{
 			ViewBag.Modul = ModulAd;
 			await ViewBagListeDoldur();
-			var paged = await _service.VeriListeleAsync(page, pageSize, ct);
+			var paged = await _service.VeriListeleAsync(new PersonelVM { DurumID = 1 }, page, pageSize, ct);
 
 			var model = new PersonelVM
 			{
@@ -106,7 +106,27 @@ namespace Ekomers.Web.Controllers
 			ViewBag.PageSize = pageSize;
 			return View(model);
 		}
+		public async Task<IActionResult> Pasif(int page = 1, int pageSize = 100, CancellationToken ct = default)
+		{
+			ViewBag.Modul = ModulAd;
+			await ViewBagListeDoldur();
 
+
+			var paged = await _service.VeriListeleAsync(new PersonelVM { DurumID = 2 }, page, pageSize, ct);
+
+
+
+			var model = new PersonelVM
+			{
+				PersonelVMListe = paged.Items.ToList(),
+				PageIndex = paged.PageIndex,
+				PageSize = paged.PageSize,
+				TotalCount = paged.TotalCount
+			};
+			ViewBag.PageIndex = page;
+			ViewBag.PageSize = pageSize;
+			return View("Index",model);
+		}
 
 		[HttpPost]
 		public async Task<IActionResult> Index(PersonelVM modelv)
@@ -155,7 +175,7 @@ namespace Ekomers.Web.Controllers
 			//{
 			//	return BadRequest("Kaydetme başarısız!");
 			//}
-			 var paged = await _service.VeriListeleAsync(modelv.PageIndex, modelv.PageSize, default);
+			 var paged = await _service.VeriListeleAsync(new PersonelVM { DurumID = 1 },modelv.PageIndex, modelv.PageSize, default);
 
 			 	var modelc = new PersonelVM
 				{
@@ -198,6 +218,52 @@ namespace Ekomers.Web.Controllers
 			{
 				return BadRequest("Veri aktarılamadı.");
 			}
+		}
+
+
+		public async Task<PartialViewResult> _FotoGetir(int PersonelID = 0)
+		{
+			
+			var modelc = await _service.VeriGetir(PersonelID);
+			return PartialView(modelc);
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> FotoYukle(PersonelVM vm)
+		{
+			if (vm.Dosya != null && vm.Dosya.Length > 0)
+			{
+				var dosya_id = Guid.NewGuid().ToString();
+				var fileExtension = Path.GetExtension(vm.Dosya.FileName);
+				var fileName = Path.GetFileName(vm.Dosya.FileName);
+				var dosyaAdi = dosya_id + fileExtension;
+				var filePath = Path.Combine(_uploadFotoPath, dosyaAdi);
+				// var fileInfo = new FileInfo(fileName);
+
+				if (!Directory.Exists(_uploadFotoPath))
+				{
+					Directory.CreateDirectory(_uploadFotoPath);
+				}
+				if (fileExtension == ".jpg" || fileExtension == ".jpeg" || fileExtension == ".png")
+				{
+					using (var stream = new FileStream(filePath, FileMode.Create))
+					{
+						await vm.Dosya.CopyToAsync(stream);
+					}
+
+
+				}
+
+
+
+				vm.Fotograf = dosyaAdi;
+				_service.FotoYukle(vm);
+
+				//  return Json(modelc);
+				return Ok("Kayıt işlemi başarılı");
+			}
+			return BadRequest("Veri aktarılamadı.");
+			//  return BadRequest("Dosya yüklenemedi.");
 		}
 
 	}
