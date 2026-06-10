@@ -261,6 +261,7 @@ namespace Ekomers.Data.Services
 		{
 			model.Not = model.Not.Replace("\r\n", "");
 			Offer? existingEntry = _OfferRepo.GetById(model.ID);
+
 			var newEntry = new Offer();
 			if (existingEntry == null)
 			{
