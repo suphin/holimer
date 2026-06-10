@@ -238,6 +238,7 @@ namespace Ekomers.Web.Controllers
 		[HttpPost]
 		public async Task<IActionResult> ZimmetEkle(ZimmetVM vM)
 		{
+			vM.DurumID = 1;
 			var sonuc = await _service.VeriEkleAsync(vM);
 			
 
