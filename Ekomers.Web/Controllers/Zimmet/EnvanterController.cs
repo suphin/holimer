@@ -35,6 +35,7 @@ namespace Ekomers.Web.Controllers
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly ICacheService<Sirketler> _sirketCache;
 		private readonly ICacheService<EnvanterTur> _turCache;
+		private readonly ICacheService<EnvanterTip> _tipCache;
 		private readonly ICacheService<EnvanterDepartman> _departmanCache;
 		private readonly ICacheService<EnvanterBolum> _bolumCache;
 
@@ -50,6 +51,7 @@ namespace Ekomers.Web.Controllers
 			, ApplicationDbContext context
 			, IHttpClientFactory httpClientFactory 
 				, ICacheService<EnvanterTur> turCache
+			, ICacheService<EnvanterTip> tipCache
 			, ICacheService<EnvanterDepartman> departmanCache
 			, ICacheService<EnvanterBolum> bolumCache
 		 , ICacheService<Sirketler> sirketCache
@@ -62,6 +64,7 @@ namespace Ekomers.Web.Controllers
 			_httpClientFactory = httpClientFactory;
 			_sirketCache = sirketCache;
 			_turCache = turCache;
+			_tipCache = tipCache;
 			_sehirlerService = sehirlerService;
 			_departmanCache = departmanCache;
 			_bolumCache = bolumCache;
@@ -76,15 +79,20 @@ namespace Ekomers.Web.Controllers
 		{
 			ViewBag.SirketlerListe = await _sirketCache.GetListeAsync(CacheKeys.SirketAll);
 			ViewBag.EnvanterTurListe = await _turCache.GetListeAsync(CacheKeys.EnvanterTurAll);
+			ViewBag.EnvanterTipListe = await _tipCache.GetListeAsync(CacheKeys.EnvanterTipAll);
 			ViewBag.DepartmanlarListe = await _departmanCache.GetListeAsync(CacheKeys.EnvanterDepartmanAll);
 			ViewBag.BolumlerListe = await _bolumCache.GetListeAsync(CacheKeys.EnvanterBolumAll);
+			ViewBag.Odalar = await _service.VeriListele(new EnvanterVM { TurID = 2 });
 		}
 		private async Task ViewBagListeDoldur()
 		{
 			ViewBag.SirketlerListe = await _sirketCache.GetListeAsync(CacheKeys.SirketAll);
 			ViewBag.EnvanterTurListe = await _turCache.GetListeAsync(CacheKeys.EnvanterTurAll);
+			ViewBag.EnvanterTipListe = await _tipCache.GetListeAsync(CacheKeys.EnvanterTipAll);
 			ViewBag.DepartmanlarListe = await _departmanCache.GetListeAsync(CacheKeys.EnvanterDepartmanAll);
-			ViewBag.BolumlerListe = await _bolumCache.GetListeAsync(CacheKeys.EnvanterBolumAll);	
+			ViewBag.BolumlerListe = await _bolumCache.GetListeAsync(CacheKeys.EnvanterBolumAll);
+			 
+			
 		}  
 
 		[Authorize(Policy = "View")]
@@ -168,6 +176,7 @@ namespace Ekomers.Web.Controllers
 
 			modelc.ControllerName = "Envanter";
 			modelc.ModalTitle = "Envanter Bilgileri";
+
 
 			modelc.UserID = _userId;
 			return PartialView(view, modelc);

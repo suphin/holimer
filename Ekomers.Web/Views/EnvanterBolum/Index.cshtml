@@ -1,0 +1,73 @@
+@model IEnumerable<EnvanterBolum>
+
+@{
+    ViewData["Title"] = "Liste Sayfası";
+}
+
+
+    <!-- Page Heading -->
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="text-left">
+                <h1 class="h4 mb-0 text-gray-800">TANIMLAMALAR</h1>
+                <h5 class="mb-0 text-gray-800">Bölüm kayıtları.</h5>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="card shadow">
+        <div class="card-header py-2">
+            <div class="row">
+                <div class="col-md-3"><span class="font-weight-bold"> LİSTE </span></div>
+                <div class="col-md-9 text-right"> 
+                    <a asp-action="Create" class="btn btn-success btn-sm">Yeni Kayıt</a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>
+                                @Html.DisplayNameFor(model => model.Ad)
+                            </th>
+                        <th>
+                            @Html.DisplayNameFor(model => model.Kod)
+                        </th>
+                            <th>
+                                @Html.DisplayNameFor(model => model.EnvanterDepartman)
+                            </th>
+                            <th>
+                                @Html.DisplayNameFor(model => model.Aciklama)
+                            </th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.Ad)
+                                </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Kod)
+                            </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.EnvanterDepartman.Ad)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.Aciklama)
+                                </td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@item.ID">Düzenle</a> |
+                                    <a asp-action="Delete" asp-route-id="@item.ID">Sil</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>

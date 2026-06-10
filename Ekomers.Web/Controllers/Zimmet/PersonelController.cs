@@ -147,6 +147,15 @@ namespace Ekomers.Web.Controllers
 			 
 				await ViewBagPartialListeDoldur();
 
+			if (string.IsNullOrEmpty(modelc.Adres))
+			{
+				modelc.Adres = "Adres";
+			}
+			if (string.IsNullOrEmpty(modelc.Not))
+			{
+				modelc.Not = "Not";
+			}
+
 			modelc.PageIndex = pageIndex;
 			modelc.PageSize = pageSize;
 

@@ -132,6 +132,7 @@ namespace Ekomers.Data.Services
 							 PersonelGorev = gorev != null ? new PersonelGorev { ID = gorev.ID, Ad = gorev.Ad } : null,
 							 DurumID=kayit.DurumID,
 							 GorevID = kayit.GorevID,
+							 Gorev = gorev != null ? gorev.Ad : "",
 							 Fotograf=kayit.Fotograf,
 							 Cinsiyet=kayit.Cinsiyet,
 

@@ -8,7 +8,7 @@
             <th>Fotograf</th>
             <th>Personel No</th>
             <th>Şirket</th> 
-            <th>Departman</th> 
+            <th>Departman / Görev</th> 
             <th>Ad Soyad</th> 
             <th>Telefon</th> 
             <th>Şirket Telefonu</th>
@@ -17,7 +17,7 @@
             <th>Foto Ekle</th>
             <th>Dosya</th>  
             <th class="no-print ">Düzenle</th>
-            <th class="no-print ">Görüntüle</th>
+           @*  <th class="no-print ">Görüntüle</th> *@
 
         </tr>
     </thead>
@@ -37,7 +37,7 @@
                 </td>
                 <td>@item.PersonelKod</td>
                 <td>@item.SirketAd</td>
-                <td>@item.DepartmanAd</td>
+                <td>@item.DepartmanAd / @item.Gorev</td>
                 <td>@item.AdSoyad</td>
                 <td>@item.Telefon</td>
                 <td>@item.TelefonSirket</td>
@@ -46,7 +46,7 @@
                 <td class="no-print"><a href="#" onclick="FotoGetir('@item.ID')" data-toggle="modal" data-target="#ModalFotoEkle"><i class="icon-x   flaticon-attachment"></i>&nbsp; Foto</a></td>
 					@{
                     await Html.RenderPartialAsync("~/Views/Shared/SitePartial/_ButtonGroupTable2.cshtml",
-						new AuthorizeCrudVM { ID = item.ID, DosyaEkle = true, HaritaEkle = false, ModulID = (int)ModulEnum.Personel , View = false, Edit = true, Delete = false, Copy = false});
+						new AuthorizeCrudVM { ID = item.ID, DosyaEkle = true, HaritaEkle = false, ModulID = (int)ModulEnum.Personel , View = true, Edit = true, Delete = false, Copy = false});
 					}
                 
             </tr>

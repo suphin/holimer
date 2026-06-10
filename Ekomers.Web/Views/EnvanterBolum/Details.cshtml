@@ -1,0 +1,36 @@
+@model EnvanterBolum
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+    <!-- Page Heading -->
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="form-group text-left">
+                <h1 class="h4 mb-0 text-gray-800">TANIMLAMALAR</h1>
+                <h5 class="mb-0 text-gray-800">Kayıtlarının giriş safyası.</h5>
+            </div>
+        </div>
+    </div>
+    <br />
+    <div class="card shadow">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-2">Departman</dt>
+                <dd class="col-sm-10">@Model.EnvanterDepartman?.Ad</dd>
+
+                <dt class="col-sm-2">Ad</dt>
+                <dd class="col-sm-10">@Model.Ad</dd>
+
+            <dt class="col-sm-2">Kod</dt>
+            <dd class="col-sm-10">@Model.Kod</dd>
+
+                <dt class="col-sm-2">Açıklama</dt>
+                <dd class="col-sm-10">@Model.Aciklama</dd>
+            </dl>
+            <div class="form-group text-right">
+                <a asp-action="Index" class="btn btn-secondary">Geri</a>
+            </div>
+        </div>
+    </div>

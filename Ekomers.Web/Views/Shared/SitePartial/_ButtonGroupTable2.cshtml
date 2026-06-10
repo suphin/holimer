@@ -44,7 +44,7 @@
 </td>
 }
 
-@if (Model.View != false && Model.Edit != false && Model.Delete != false && Model.Copy != false)
+@if (!(Model.View == false && Model.Edit == false && Model.Delete == false && Model.Copy == false))
 {
     <td class="no-print">
 

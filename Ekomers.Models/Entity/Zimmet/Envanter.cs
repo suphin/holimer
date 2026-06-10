@@ -16,6 +16,7 @@ namespace Ekomers.Models.Entity
 		public int SirketID {  get; set; }
 		public int TurID { get; set; } = 0;
 		public int TipID { get; set; } = 0;
+		public int OdaID { get; set; } = 0;
 		public string Numara { get; set; }
 		public string? Marka { get; set; } = string.Empty; 
 		public string? Model { get; set; } = string.Empty;
@@ -32,6 +33,7 @@ namespace Ekomers.Models.Entity
 		public string? Fotograf { get; set; }
 		public bool Zimmetli { get; set; } = false;
 
+		
 	}
 
 	public class EnvanterVM : BaseVM
@@ -60,6 +62,10 @@ namespace Ekomers.Models.Entity
 		public string Tip { get; set; } = string.Empty;
 		public string TipKod { get; set; } = string.Empty;
 
+		public int OdaID { get; set; } = 0;
+		[Display(Name = "Bulunduğu Oda")]
+		public string Oda { get; set; } = string.Empty;
+		public string OdaKod { get; set; } = string.Empty;
 
 		public string Numara { get; set; }
 		[Display(Name = "Marka")]
@@ -89,6 +95,7 @@ namespace Ekomers.Models.Entity
 		public string? Fotograf { get; set; }
 		public IFormFile? Dosya { get; set; }
 		public Zimmet Zimmet { get; set; }
+		public bool Zimmetli { get; set; } = false;
 		public int PersonelID { get; set; }
 
 	}
@@ -112,10 +119,13 @@ namespace Ekomers.Models.Entity
 		public string? Ad { get; set; }
 		public string? Kod { get; set; }
 		public string? Aciklama { get; set; }
+		
+
 	}
 
 	public class EnvanterBolum : BaseEntity
 	{
+		public virtual EnvanterDepartman EnvanterDepartman { get; set; }
 		public int EnvanterDepartmanID { get; set; }
 		public string? Ad { get; set; }
 		public string? Kod { get; set; }

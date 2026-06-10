@@ -84,7 +84,7 @@ namespace Ekomers.Web.Controllers
 			ViewBag.DepartmanlarListe = await _departmanCache.GetListeAsync(CacheKeys.EnvanterDepartmanAll);
 			ViewBag.BolumlerListe = await _bolumCache.GetListeAsync(CacheKeys.EnvanterBolumAll);
 			Expression<Func<Personel, bool>> filter = a => a.DurumID == 1;
-			ViewBag.PersonellerListe = await _personelCache.GetListeAsync(CacheKeys.PersonelAll,filter);
+			ViewBag.PersonellerListe = await _personelCache.GetListeAsync(CacheKeys.PersonelAll, filter, x => x.AdSoyad, orderByDesc: false);
 		}
 		private async Task ViewBagListeDoldur()
 		{
@@ -93,11 +93,11 @@ namespace Ekomers.Web.Controllers
 			ViewBag.DepartmanlarListe = await _departmanCache.GetListeAsync(CacheKeys.EnvanterDepartmanAll);
 			ViewBag.BolumlerListe = await _bolumCache.GetListeAsync(CacheKeys.EnvanterBolumAll);
 			Expression<Func<Personel, bool>> filter = a => a.DurumID == 1;
-			ViewBag.PersonellerListe = await _personelCache.GetListeAsync(CacheKeys.PersonelAll, filter);
+			ViewBag.PersonellerListe = await _personelCache.GetListeAsync(CacheKeys.PersonelAll, filter, x => x.AdSoyad, orderByDesc: false);
 		}  
 
 		[Authorize(Policy = "View")]
-		public async Task<IActionResult> Index(int page = 1, int pageSize = 10, CancellationToken ct = default)
+		public async Task<IActionResult> Index(int page = 1, int pageSize = 25, CancellationToken ct = default)
 		{
 			ViewBag.Modul = ModulAd;
 			await ViewBagListeDoldur(); 
@@ -239,8 +239,14 @@ namespace Ekomers.Web.Controllers
 		public async Task<IActionResult> ZimmetEkle(ZimmetVM vM)
 		{
 			var sonuc = await _service.VeriEkleAsync(vM);
+			
+
 			if (sonuc)
 			{
+				var envanter = await _envanterService.VeriGetir(vM.EnvanterID);
+				envanter.Zimmetli = true;
+				await _envanterService.VeriEkleAsync(envanter);
+
 				return Ok("Kaydetmet Başarılı");
 			}
 			else

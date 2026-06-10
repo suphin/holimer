@@ -68,6 +68,8 @@ namespace Ekomers.Models.Entity
 		public PersonelGorev PersonelGorev { get; set; }
 		public PersonelDurum PersonelDurum { get; set; }
 		public int GorevID { get; set; }
+		[Display(Name = "Görev")]
+		public string? Gorev { get; set; } = string.Empty;
 		public int DurumID { get; set; }
 		public IFormFile? Dosya { get; set; }
 		public string? Fotograf { get; set; }

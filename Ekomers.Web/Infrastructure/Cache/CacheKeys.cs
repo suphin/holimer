@@ -38,6 +38,7 @@
 		public const string RequestTurAll = "RequestTur:All";
 		public const string SirketAll = "Sirket:All";
 		public const string EnvanterTurAll = "EnvanterTur:All";
+		public const string EnvanterTipAll = "EnvanterTip:All";
 		public const string EnvanterDepartmanAll = "EnvanterDepartman:All";
 		public const string EnvanterBolumAll = "EnvanterBolum:All";
 		public const string OfferDurumAll = "OfferDurum:All";

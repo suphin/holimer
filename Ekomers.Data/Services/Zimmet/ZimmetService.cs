@@ -87,7 +87,13 @@ namespace Ekomers.Data.Services
 							 ID = kayit.ID,
 							 EnvanterID = kayit.EnvanterID,
 							 Envanter = _mapper.Map<EnvanterVM>(e)??new EnvanterVM(),
+							 EnvanterAd=e.Ad,
+							 EnvanterModel=e.Model,
+							 EnvanterMarka=e.Marka,
+							 EnvanterSerino=e.SeriNo,
+
 							 Sirket = s??new Sirketler(),
+							 SirketID=s.ID,
 							 PersonelID = kayit.PersonelID,
 							 Personel = p??new Personel(),
 							 ZimmetTarihi = kayit.ZimmetTarihi,
@@ -186,13 +192,21 @@ namespace Ekomers.Data.Services
 			//if (model.Aciklama != null)
 			if (!string.IsNullOrWhiteSpace(model.AciklamaIlk))
 			{
-				liste = liste.Where(p => p.AciklamaIlk.Contains(model.AciklamaIlk)  
+				liste = liste.Where(p => p.AciklamaIlk.Contains(model.AciklamaIlk) 
+			 ||	p.EnvanterAd.Contains(model.AciklamaIlk)
+			 ||	p.EnvanterMarka.Contains(model.AciklamaIlk)
+			 ||	p.EnvanterModel.Contains(model.AciklamaIlk)
+			 ||	p.EnvanterSerino.Contains(model.AciklamaIlk)
 				);
 			}
-			//if (model.GrupID != 0)
-			//{
-			//	liste = liste.Where(p =>p.AltGrupID==model.GrupID);
-			//}
+			if (model.SirketID != 0)
+			{
+				liste = liste.Where(p => p.SirketID == model.SirketID);
+			}
+			if (model.PersonelID != 0)
+			{
+				liste = liste.Where(p => p.PersonelID == model.PersonelID);
+			}
 
 
 			var donus = liste.OrderByDescending(a => a.ID).Take(1000).ToList();

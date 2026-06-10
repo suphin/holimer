@@ -83,7 +83,7 @@
             <input type="hidden" asp-for="CreateUserID" value="@Model.CreateUserID" />
             <input type="hidden" asp-for="UpdateUserID" value="@Model.UserID" />
             <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
-            
+            <a href="/zimmet/print?envanterID=@Model.EnvanterID" target="_blank" class="btn btn-success">Yazdır</a>
         </div>
     </div>
 </form>

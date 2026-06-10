@@ -23,6 +23,14 @@ namespace Ekomers.Models.Entity
 	{
 		public int EnvanterID { get; set; } 
 		public EnvanterVM Envanter { get; set; } = new EnvanterVM();
+
+		public string? EnvanterAd { get; set; } = string.Empty;
+		public string? EnvanterMarka { get; set; } = string.Empty;
+		public string? EnvanterModel { get; set; } = string.Empty;
+		public string? EnvanterSerino { get; set; } = string.Empty;
+
+
+		public int  SirketID { get; set; }  
 		public int  PersonelID { get; set; }  
 		public Personel Personel { get; set; } = new Personel();
 		public PersonelVM PersonelVM { get; set; } = new PersonelVM(); 

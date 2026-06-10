@@ -46,6 +46,7 @@ namespace Ekomers.Data.Services
 		 
 		private readonly IRepository<Geojson> _mapRespository;
 		private readonly IRepository<EnvanterTur> _envanterTurRepo;
+		private readonly IRepository<EnvanterTip> _envanterTipRepo;
 		private readonly IFileService _fileService;
 		 
 		 
@@ -55,6 +56,7 @@ namespace Ekomers.Data.Services
 			, IMapper mapper, IRepository<Kullanici> userRepo 
 			,IRepository<Envanter> EnvanterRepo
 			, IRepository<EnvanterTur> envanterTurRepo
+			, IRepository<EnvanterTip> envanterTipRepo
 			, IRepository<EnvanterDepartman> EnvanterDepartmanRepo
 			, IRepository<EnvanterBolum> EnvanterBolumRepo
 			, IRepository<Sirketler> SirketlerRepo
@@ -73,8 +75,9 @@ namespace Ekomers.Data.Services
 			_EnvanterDepartmanRepo = EnvanterDepartmanRepo;
 			_EnvanterBolumRepo = EnvanterBolumRepo;
 			_ZimmetRepo = ZimmetRepo;
-			_userRepo = userRepo; 
-		 
+			_userRepo = userRepo;
+			_envanterTipRepo = envanterTipRepo;
+
 			// Get the current user's claims principal and user ID
 			_user = _httpContextAccessor.HttpContext?.User;
 			_userId = _user?.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -102,8 +105,7 @@ namespace Ekomers.Data.Services
 						 join zimmet in _ZimmetRepo.GetAll2() on kayit.ID equals zimmet.EnvanterID
 						 into zimmetGroup
 						 from zimmet in zimmetGroup.DefaultIfEmpty()
-
-
+						  
 						 join departman in _EnvanterDepartmanRepo.GetAll2() on kayit.EnvanterDepartmanID equals departman.ID
 						 into departmanGroup
 						 from departman in departmanGroup.DefaultIfEmpty()
@@ -112,6 +114,9 @@ namespace Ekomers.Data.Services
 						 into bolumGroup
 						 from bolum in bolumGroup.DefaultIfEmpty()
 
+						 join demirbasTip in _envanterTipRepo.GetAll2() on kayit.TipID equals demirbasTip.ID
+						 into demirbasTipGroup
+						 from demirbasTip in demirbasTipGroup.DefaultIfEmpty()
 
 						 join demirbastur in _envanterTurRepo.GetAll2() on kayit.TurID equals demirbastur.ID
 						 into demirbasturGroup
@@ -160,6 +165,11 @@ namespace Ekomers.Data.Services
 							 TurID = kayit.TurID,
 							 Tur = demirbastur != null ? demirbastur.Ad : "",
 							 TurKod = demirbastur != null ? demirbastur.Kod : "",
+
+							 TipID = kayit.TipID,
+							 Tip = demirbasTip != null ? demirbasTip.Ad : "",
+							 OdaID = kayit.OdaID, 
+
 							 SirketID = kayit.SirketID,
 							 Sirket = sirket != null ? sirket.SirketAdi : "",
 
@@ -190,15 +200,14 @@ namespace Ekomers.Data.Services
 
 			var result = from kayit in _EnvanterRepo.GetAll2()
 
-						 join zimmet in _ZimmetRepo.GetAll2(z => z.PersonelID == personelID) on kayit.ID equals zimmet.EnvanterID	
-						 
+						 join zimmet in _ZimmetRepo.GetAll2(z => z.PersonelID == personelID) on kayit.ID equals zimmet.EnvanterID							 
 						 into zimmetGroup 						 
 						 from zimmet in zimmetGroup.DefaultIfEmpty()
-						 
 
-						 //join personel in _PersonelRepo.GetAll2() on zimmet.PersonelID equals personel.ID
-						 //into personelGroup
-						 //from personel in personelGroup.DefaultIfEmpty()
+						 
+							 //join personel in _PersonelRepo.GetAll2() on zimmet.PersonelID equals personel.ID
+							 //into personelGroup
+							 //from personel in personelGroup.DefaultIfEmpty()
 
 
 						 join departman in _EnvanterDepartmanRepo.GetAll2() on kayit.EnvanterDepartmanID equals departman.ID
@@ -209,6 +218,9 @@ namespace Ekomers.Data.Services
 						 into bolumGroup
 						 from bolum in bolumGroup.DefaultIfEmpty()
 
+						 join demirbasTip in _envanterTipRepo.GetAll2() on kayit.TipID equals demirbasTip.ID
+						into demirbasTipGroup
+						 from demirbasTip in demirbasTipGroup.DefaultIfEmpty()
 
 						 join demirbastur in _envanterTurRepo.GetAll2() on kayit.TurID equals demirbastur.ID
 						 into demirbasturGroup
@@ -257,6 +269,12 @@ namespace Ekomers.Data.Services
 							 TurID = kayit.TurID,
 							 Tur = demirbastur != null ? demirbastur.Ad : "",
 							 TurKod = demirbastur != null ? demirbastur.Kod : "",
+
+							 TipID = kayit.TipID,
+							 Tip = demirbasTip != null ? demirbasTip.Ad : "",
+							 OdaID = kayit.OdaID,
+							 
+
 							 SirketID = kayit.SirketID,
 							 Sirket = sirket != null ? sirket.SirketAdi : "",
 							 //Zimmet= zimmet,

@@ -8,12 +8,16 @@
     </div>  
     <div class="col-lg-3">
         <label asp-for="DepartmanAd" class="control-label"></label>
-        <select asp-for="DepartmanID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.DepartmanListe, "ID", "Ad").OrderBy(p => p.Text))"></select>
+        <select asp-for="DepartmanID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.DepartmanListe, "ID", "Ad").OrderBy(p => p.Text))">
+            <option value="0">Seçiniz</option>
+        </select>
         <span asp-validation-for="DepartmanAd" class="text-danger"></span>
     </div>
     <div class="col-lg-3">
         <label asp-for="PersonelGorev.Ad" class="control-label"></label>
-        <select asp-for="GorevID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.PersonelGorevListe, "ID", "Ad").OrderBy(p => p.Text))"></select>
+        <select asp-for="GorevID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.PersonelGorevListe, "ID", "Ad").OrderBy(p => p.Text))">
+            <option value="0">Seçiniz</option>
+        </select>
         <span asp-validation-for="PersonelGorev.Ad" class="text-danger"></span>
     </div>
 </div>

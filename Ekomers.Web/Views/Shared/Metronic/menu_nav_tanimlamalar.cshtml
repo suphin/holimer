@@ -223,6 +223,7 @@
 						</div>
 					</li>
 				}
+			
 				@if (User.HasClaim("Tanim", "Dokuman") || User.IsInRole("Admin"))
 				{
 					<li class="menu-item menu-item-submenu  @((controllerName == "SozlesmelerKonu") ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
@@ -242,6 +243,75 @@
 											<span></span>
 										</i>
 										<span class="menu-text">Sözleşmele Konusu</span>
+									</a>
+								</li>
+							 
+							</ul>
+						</div>
+					</li>
+				}
+
+
+				@if (User.HasClaim("Tanim", "Envanter") || User.IsInRole("Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "EnvanterTip" || controllerName == "EnvanterDepartman" || controllerName == "EnvanterBolum") ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Envanter Ayarları</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "EnvanterTip" && actionName == "Index" ? "menu-item-active" : "")" aria-haspopup="true">
+									<a href="EnvanterTip/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Envanter Tipi</span>
+									</a>
+								</li> 
+								<li class="menu-item @(controllerName == "EnvanterDepartman" && actionName == "Index" ? "menu-item-active" : "")" aria-haspopup="true">
+									<a href="EnvanterDepartman/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Envanter Departman</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "EnvanterBolum" && actionName == "Index" ? "menu-item-active" : "")" aria-haspopup="true">
+									<a href="EnvanterBolum/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Envanter Bölüm</span>
+									</a>
+								</li> 
+							</ul>
+						</div>
+					</li>
+				}
+				@if (User.HasClaim("Tanim", "Personel") || User.IsInRole("Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @((controllerName == "PersonelGorev") ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Personel Görevleri</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @(controllerName == "PersonelGorev" && actionName == "Index" ? "menu-item-active" : "")" aria-haspopup="true">
+									<a href="PersonelGorev/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Personel Görevi</span>
 									</a>
 								</li>
 							 
