@@ -50,7 +50,12 @@
 							<option value="0">Tümü</option>
 						</select>
 					</div>
-				
+				<div class="form-group col-lg-2  col-md-4">
+					<label asp-for="Tip" class="control-label"></label>
+					<select asp-for="TipID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.EnvanterTipListe, "ID", "Ad"))" id="EnvanterTipListe">
+						<option value="0">Tümü</option>
+					</select>
+				</div>
 				<div class="form-group col-lg-2  col-md-4">
 						<label asp-for="Sirket" class="control-label"></label>
 						<select asp-for="SirketID" class="kt_select2" data-live-search="true" data-size="5" asp-items="@(new SelectList(ViewBag.SirketlerListe, "ID", "SirketAdi"))" id="SirketlerListe">
@@ -171,7 +176,9 @@
 	//await Html.RenderPartialAsync("_PartialModalVeri");
 	await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
 }
-
+@{ 
+	await Html.RenderPartialAsync("_PartialModal", new ModalSettings { ModalID = "ModalVeriEk", BodyID = "VeriAlanEk", Genislik = "lg" });
+}
 @{
 	await Html.RenderPartialAsync("_PartialModalDosya",
 	new AuthorizeCrudVM { Controller = "Envanter", HaritaEkle = false });

@@ -55,6 +55,12 @@
 
   <ItemGroup>
     <Content Remove="Views\Shared\Partial\_LayoutMetronic111.cshtml" />
+    <Content Remove="Views\Zimmet\_EnvanterListesi.cshtml" />
+    <Content Remove="Views\Zimmet\_EnvanterListeTable.cshtml" />
+    <Content Remove="Views\Zimmet\_VeriGoruntule.cshtml" />
+    <Content Remove="Views\Zimmet\_VeriKopyalanacak.cshtml" />
+    <Content Remove="Views\Zimmet\_VeriSilinecek.cshtml" />
+    <Content Remove="Views\Zimmet\_ZimmetEkliListe.cshtml" />
     <Content Remove="wwwroot\css\custom-metronic7.css" />
     <Content Remove="wwwroot\css\sb-admin-2 41.css" />
     <Content Remove="wwwroot\css\sb-admin-2.css" />

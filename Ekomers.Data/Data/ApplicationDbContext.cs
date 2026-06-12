@@ -209,6 +209,9 @@ namespace Ekomers.Data
 		public DbSet<Envanter> Envanter { get; set; }
 		public DbSet<EnvanterTur> EnvanterTur { get; set; }
 		public DbSet<EnvanterTip> EnvanterTip { get; set; }
+		public DbSet<EnvanterTipOzellik> EnvanterTipOzellik { get; set; }
+		public DbSet<EnvanterOzellik> EnvanterOzellik { get; set; }
+
 
 		public DbSet<EnvanterDepartman> EnvanterDepartman { get; set; }
 		public DbSet<EnvanterBolum> EnvanterBolum { get; set; }

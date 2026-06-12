@@ -25,7 +25,7 @@
             </div>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
+            <div class="table-responsive table-hover table-bordered">
                 <table class="table">
                     <thead>
                         <tr>
@@ -75,7 +75,8 @@
                                 <td>
                                     <a asp-action="Edit" asp-route-id="@item.ID">Düzenle</a> |
                                     @* <a asp-action="Details" asp-route-id="@item.ID">Details</a> | *@
-                                    <a asp-action="Delete" asp-route-id="@item.ID">Sil</a>
+                                <a asp-action="Delete" asp-route-id="@item.ID">Sil</a> |
+                                    <a asp-action="OzellikEkle" asp-route-id="@item.ID">Özellik Ekle</a>
                                 </td>
                             </tr>
                         }

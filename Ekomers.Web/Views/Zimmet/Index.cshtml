@@ -119,11 +119,7 @@
 		await Html.RenderPartialAsync("~/Views/Shared/_PartialModal.cshtml",
 		new ModalSettings { ModalID = "ModalVeri", BodyID = "VeriAlan", Genislik = "xl" });
 	}
-	@{
-		//await Html.RenderPartialAsync("_PartialModalVeri");
-		await Html.RenderPartialAsync("~/Views/Shared/_PartialModal.cshtml",
-		new ModalSettings { ModalID = "ModalEnvanterListe", BodyID = "EnvanterListeVeriAlan", Genislik = "xl" });
-	}
+ 
 	@{
 		await Html.RenderPartialAsync("_PartialModalDosya",
 		new AuthorizeCrudVM { Controller = controllerName, HaritaEkle = false });

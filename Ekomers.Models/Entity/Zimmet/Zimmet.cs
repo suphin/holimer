@@ -16,6 +16,7 @@ namespace Ekomers.Models.Entity
 		public string? AciklamaIlk { get; set; } = string.Empty;
 		public string? AciklamaSon { get; set; } = string.Empty;
 		public int DurumID { get; set; } = 0;
+		public DateTime AyrilisTarihi { get; set; }
 
 	}
 
@@ -37,7 +38,10 @@ namespace Ekomers.Models.Entity
 		public Sirketler Sirket { get; set; } = new Sirketler();
 		[Display(Name = "Zimmet Tarihi")]
 		public DateTime ZimmetTarihi { get; set; } = DateTime.Now;
+		[Display(Name = "Teslim Tarihi")]
 		public DateTime TeslimTarihi { get; set; } = DateTime.Now;
+		[Display(Name = "İşten Ayrılış Tarihi")]
+		public DateTime AyrilisTarihi { get; set; } = DateTime.Now;
 		[Display(Name ="Zimmet Açıklama")]
 		public string? AciklamaIlk { get; set; } = string.Empty;
 		[Display(Name = "Zimmet Açıklama")]

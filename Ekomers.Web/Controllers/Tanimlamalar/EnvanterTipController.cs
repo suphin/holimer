@@ -170,5 +170,29 @@ namespace Ekomers.Web.Controllers
 		{
 			return _context.EnvanterTip.Any(e => e.ID == id);
 		}
+
+		public IActionResult OzellikEkle(int id)
+		{
+			ViewBag.Modul = modul;
+			ViewBag.EnvanterTipID = id;
+			var ozellikler = _context.EnvanterTipOzellik.Where(x => x.EnvanterTipID == id && x.IsDelete == false).ToList();
+
+
+			return View(ozellikler);
+		}
+		[HttpPost]
+		public IActionResult OzellikEkle(EnvanterTipOzellik ozellik)
+		{
+			 var newozellik= new EnvanterTipOzellik();
+			newozellik.Ad = ozellik.Ad;
+			newozellik.Aciklama = ozellik.Ad;
+			newozellik.IsDelete = false;
+			newozellik.IsActive = true;
+			newozellik.CreateDate = DateTime.Now;
+			newozellik.EnvanterTipID = ozellik.EnvanterTipID;
+			_context.EnvanterTipOzellik.Add(newozellik);
+			_context.SaveChanges();
+			 return RedirectToAction("OzellikEkle", new { id = ozellik.EnvanterTipID });
+		}
 	}
 }

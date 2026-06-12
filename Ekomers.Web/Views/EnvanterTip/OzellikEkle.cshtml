@@ -1,0 +1,66 @@
+﻿@model List<EnvanterTipOzellik>
+
+@{
+    ViewData["Title"] = "Liste Sayfası";
+}
+
+
+<!-- Page Heading -->
+<div class="card shadow">
+    <div class="card-body">
+        <div class="text-left">
+            <h1 class="h4 mb-0 text-gray-800">Envanter Tip - Özellik Ekle</h1>
+            <h5 class="mb-0 text-gray-800">Kayıtlarının giriş safyası.</h5>
+        </div>
+    </div>
+</div>
+<br />
+<div class="card shadow">
+    <div class="card-header py-2">
+        <div class="card-title">
+            <h3 class="card-label">
+               Özellik Ekle
+            </h3>
+        </div>
+    </div>
+    <div class="card-body"> 
+            <form asp-controller="EnvanterTip" asp-action="OzellikEkle" method="post" name="_VeriEkle" id="_VeriEkle">
+                <div class="form-group row">
+                    <div class="col-lg-6">
+                        <input type="text" class="form-control form-control-sm mb-2" name="Ad" placeholder="Özellik Adı" />
+                    </div>
+                    <div class="col-lg-2">
+                    <input type="hidden" name="EnvanterTipID" value="@(ViewBag.EnvanterTipID)" />
+                        <input type="submit" value="Ekle" class="btn btn-primary btn-sm" />
+                    </div>
+                </div>
+               
+            </form>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>
+                            Ad
+                        </th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                           <td>@item.Ad</td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@item.ID">Düzenle</a> |
+                                @* <a asp-action="Details" asp-route-id="@item.ID">Details</a> | *@
+                                <a asp-action="Delete" asp-route-id="@item.ID">Sil</a> 
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+       
+    </div>
+</div>
+
+

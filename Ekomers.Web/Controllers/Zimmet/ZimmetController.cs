@@ -101,7 +101,7 @@ namespace Ekomers.Web.Controllers
 		{
 			ViewBag.Modul = ModulAd;
 			await ViewBagListeDoldur(); 
-			var paged = await _service.VeriListeleAsync(page, pageSize, ct);
+			var paged = await _service.VeriListeleAsync(new ZimmetVM { DurumID=1},page, pageSize, ct);
 
 			var model = new ZimmetVM
 			{
@@ -114,7 +114,24 @@ namespace Ekomers.Web.Controllers
 			ViewBag.PageSize = pageSize;
 			return View(model); 
 		}
-	
+		[Authorize(Policy = "View")]
+		public async Task<IActionResult> Pasif(int page = 1, int pageSize = 25, CancellationToken ct = default)
+		{
+			ViewBag.Modul = ModulAd;
+			await ViewBagListeDoldur();
+			var paged = await _service.VeriListeleAsync(new ZimmetVM { DurumID = 2 }, page, pageSize, ct);
+
+			var model = new ZimmetVM
+			{
+				ZimmetVMListe = paged.Items.ToList(),
+				PageIndex = paged.PageIndex,
+				PageSize = paged.PageSize,
+				TotalCount = paged.TotalCount
+			};
+			ViewBag.PageIndex = page;
+			ViewBag.PageSize = pageSize;
+			return View("Index",model);
+		}
 
 		[HttpPost]
 		[Authorize(Policy = "View")]
@@ -286,6 +303,35 @@ namespace Ekomers.Web.Controllers
 			return PartialView("_zimmetGoster", Zimmet);
 		}
 
+		public async Task<IActionResult> ZimmetGeriAl(int envanterID) {
+			var Zimmet = await _service.ZimmetGetir(envanterID);
+
+			Zimmet.Envanter = await _envanterService.VeriGetir(envanterID);
+			Zimmet.ControllerName = "Zimmet";
+			Zimmet.ModalTitle = "Zimmet Bilgileri";
+			Zimmet.UserID = _userId;
+
+			await ViewBagPartialListeDoldur();
+			return PartialView("_zimmetGerial", Zimmet); 		
+		}
+		[HttpPost]
+		public async Task<IActionResult> ZimmetGeriAl(ZimmetVM vM)
+		{
+			var Zimmet = await _service.ZimmetGetir(vM.EnvanterID);
+			Zimmet.AciklamaSon = vM.AciklamaSon;
+			Zimmet.TeslimTarihi = vM.TeslimTarihi;
+			Zimmet.AyrilisTarihi = vM.AyrilisTarihi;
+			Zimmet.DurumID = 2;
+			Zimmet.DeleteDate = DateTime.Now;
+			Zimmet.DeleteUserID = _userId;
+			await _service.VeriEkleAsync(Zimmet);
+
+			var Envanter = await _envanterService.VeriGetir(vM.EnvanterID);
+			Envanter.Zimmetli = false;
+			await _envanterService.VeriEkleAsync(Envanter);
+
+			return RedirectToAction("Index");
+		}
 	}
 
 	public class GeciciZimmetItem

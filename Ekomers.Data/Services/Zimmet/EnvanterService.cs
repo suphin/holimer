@@ -304,6 +304,37 @@ namespace Ekomers.Data.Services
 		{
 			throw new NotImplementedException();
 		}
+		public async Task<int> VeriEkleReturnIDAsync(EnvanterVM model)
+		{
+			model.Aciklama = (model.Aciklama ?? string.Empty).Replace("\r\n", "");
+
+			Envanter entity;
+
+			// Güncelleme mi, ekleme mi?
+			if (model.ID > 0)
+			{
+				// Tercihen async repo kullan
+				entity = await _EnvanterRepo.GetByIdAsync(model.ID);
+				if (entity == null)
+					throw new KeyNotFoundException($"Envanter {model.ID} bulunamadı.");
+
+				_mapper.Map(model, entity);
+				await _EnvanterRepo.UpdateAsync(entity);
+			}
+			else
+			{
+				entity = _mapper.Map<Envanter>(model);
+
+				// Tercihen async ekleme
+				await _EnvanterRepo.AddAsync(entity);
+				// Eğer Add async değilse: _TeklifRepo.Add(entity);
+			}
+
+			await _context.SaveChangesAsync();
+
+			// EF Core SaveChanges sonrası ID atanır
+			return entity.ID;
+		}
 
 		public bool VeriEkle(EnvanterVM model)
 		{
@@ -374,6 +405,10 @@ namespace Ekomers.Data.Services
 			if (model.TurID != 0)
 			{
 				liste = liste.Where(p => p.TurID == model.TurID);
+			}
+			if (model.TipID != 0)
+			{
+				liste = liste.Where(p => p.TipID == model.TipID);
 			}
 			if (model.EnvanterBolumID != 0)
 			{

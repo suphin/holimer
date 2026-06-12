@@ -8,6 +8,7 @@ using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
+using Ekomers.Models.ViewModels;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -186,44 +187,47 @@ namespace Ekomers.Web.Controllers
 		[HttpPost]
 		public async Task<IActionResult> VeriEkle(EnvanterVM vm)
 		{
-			//bool sonuc = _service.VeriEkle(vm);
 
-			//PageToastr(sonuc);
-			//return RedirectToAction("Index");
-			//if (sonuc)
-			//{
-			//	return Ok("Kayıt işlemi başarılı");
-			//}
-			//else
-			//{
-			//	return BadRequest("Kaydetme başarısız!");
-			//}
-
-			bool sonuc = await _service.VeriEkleAsync(vm);
-			//if (sonuc)
-			//{
-			//	if (modelv.ID==0)
-			//	{
-			//		return RedirectToAction("Index", new { page = modelv.PageIndex, pageSize = modelv.PageSize });
-			//	}
-
-			//	return Ok("Kayıt işlemi başarılı");
-			//}
-			//else
-			//{
-			//	return BadRequest("Kaydetme başarısız!");
-			//}
-			var paged = await _service.VeriListeleAsync(vm.PageIndex, vm.PageSize, default);
-
-			var modelc = new EnvanterVM
+			if (vm.ID == 0) // yeni kayıt
 			{
-				EnvanterVMListe = paged.Items.ToList(),
-				PageIndex = paged.PageIndex,
-				PageSize = paged.PageSize,
-				TotalCount = paged.TotalCount
-			};
+				var sonkayit = await _service.VeriEkleReturnIDAsync(vm);
+				if (sonkayit>0) // başarılı kayıt
+				{
 
-			return RedirectToAction("Index", new { page = vm.PageIndex, pageSize = vm.PageSize });
+					  var kayitGetir= await _service.VeriGetir(sonkayit);
+					await ViewBagPartialListeDoldur();
+
+					 
+					kayitGetir.ControllerName = "Envanter";
+					kayitGetir.ModalTitle = "Envanter Bilgileri";
+					kayitGetir.UserID = _userId;
+
+					return PartialView("_VeriGetir", kayitGetir);
+				}
+				else
+				{
+					return BadRequest("Kaydetme başarısız!");
+				}
+			}
+			else
+			{
+				var paged = await _service.VeriListeleAsync(vm.PageIndex, vm.PageSize, default);
+
+				var modelc = new EnvanterVM
+				{
+					EnvanterVMListe = paged.Items.ToList(),
+					PageIndex = paged.PageIndex,
+					PageSize = paged.PageSize,
+					TotalCount = paged.TotalCount
+				};
+
+				return RedirectToAction("Index", new { page = vm.PageIndex, pageSize = vm.PageSize });
+			}
+
+				 
+			 
+
+			
 		}
 
 		[HttpPost]
@@ -240,8 +244,9 @@ namespace Ekomers.Web.Controllers
 				return BadRequest("Veri silinemedi.");
 			}
 		}
+		
 
-		  
+
 		public async Task<PartialViewResult> _FotoGetir(int DemirbasID = 0)
 		{
 			// ToplantiVM model = new ToplantiVM();
@@ -295,6 +300,107 @@ namespace Ekomers.Web.Controllers
 		{
 			ViewBag.BolumlerListe = await _service.GetBolumler(ParametreID);
 			return PartialView("_Bolumler");
+		}
+
+		public async Task<PartialViewResult> _ekOzellikGetir2(int envanterTipID = 0)
+		{
+			var model=await _context.EnvanterTipOzellik.Where(x => x.EnvanterTipID == envanterTipID).ToListAsync();
+
+			return PartialView(model);
+		}
+		//public async Task<IActionResult> _ekOzellikGetir(int envanterID, int envanterTipID)
+		//{ 
+		//	try 
+		//		{
+		//		var tipOzellikleri = await _context.EnvanterTipOzellik
+		//				.Where(x => x.EnvanterTipID == envanterTipID)
+		//				.ToListAsync();
+
+		//		var model = new EnvanterOzellikViewModel
+		//		{
+		//			EnvanterID = envanterID,
+		//			Ozellikler = tipOzellikleri.Select(x => new EnvanterOzellikItemViewModel
+		//			{
+		//				EnvanterTipOzellikID = x.ID,
+		//				EnvanterTipID = x.EnvanterTipID,
+		//				Ad = x.Ad
+		//			}).ToList()
+		//		};
+
+		//		return PartialView("_ekOzellikGetir", model);
+		//	}
+		//	catch (global::System.Exception ex)
+		//	{
+
+		//		return PartialView("_ekOzellikGetir", new EnvanterOzellikViewModel());
+		//	}			
+		//}
+		public async Task<IActionResult> _ekOzellikGetir(int envanterID, int envanterTipID)
+		{
+			var tipOzellikleri = await _context.EnvanterTipOzellik
+				.Where(x => x.EnvanterTipID == envanterTipID)
+				.ToListAsync();
+
+			var mevcutDegerler = await _context.EnvanterOzellik
+				.Where(x => x.EnvanterID == envanterID)
+				.ToListAsync();
+
+			var model = new EnvanterOzellikViewModel
+			{
+				EnvanterID = envanterID,
+				Ozellikler = tipOzellikleri.Select(x => new EnvanterOzellikItemViewModel
+				{
+					EnvanterTipOzellikID = x.ID,
+					EnvanterTipID = x.EnvanterTipID,
+					Ad = x.Ad,
+
+					Deger = mevcutDegerler
+						.FirstOrDefault(y => y.EnvanterTipOzellikID == x.ID)
+						?.Deger
+				}).ToList()
+			};
+
+			return PartialView("_ekOzellikGetir", model);
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> EkOzellikEkle(EnvanterOzellikViewModel model)
+		{
+			try
+			{
+				foreach (var item in model.Ozellikler)
+				{
+					var mevcutKayit = await _context.EnvanterOzellik
+						.FirstOrDefaultAsync(x =>
+							x.EnvanterID == model.EnvanterID &&
+							x.EnvanterTipOzellikID == item.EnvanterTipOzellikID);
+
+					if (mevcutKayit == null)
+					{
+						_context.EnvanterOzellik.Add(new EnvanterOzellik
+						{
+							EnvanterID = model.EnvanterID,
+							EnvanterTipID = item.EnvanterTipID,
+							EnvanterTipOzellikID = item.EnvanterTipOzellikID,
+							Deger = item.Deger
+						});
+					}
+					else
+					{
+						mevcutKayit.Deger = item.Deger;
+					}
+				}
+
+				await _context.SaveChangesAsync();
+				return Ok("Veriler Kaydedildi");
+			}
+			catch (Exception)
+			{
+				return BadRequest("Veriler Kaydedilmedi"); 
+			}
+			
+
+			 
 		}
 	}
 }

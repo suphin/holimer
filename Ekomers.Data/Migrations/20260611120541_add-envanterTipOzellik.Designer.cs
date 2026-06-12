@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611120541_add-envanterTipOzellik")]
+    partial class addenvanterTipOzellik
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2178,58 +2181,6 @@ namespace Ekomers.Data.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("EnvanterDepartman");
-                });
-
-            modelBuilder.Entity("Ekomers.Models.Entity.EnvanterOzellik", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<DateTime?>("CreateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreateUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Deger")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DeleteDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeleteUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DosyaID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("EnvanterID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EnvanterTipID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EnvanterTipOzellikID")
-                        .HasColumnType("int");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("IsDelete")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("UpdateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdateUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ID");
-
-                    b.ToTable("EnvanterOzellik");
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.EnvanterTip", b =>

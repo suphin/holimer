@@ -1,5 +1,5 @@
 ﻿@model ZimmetVM
-<form   method="post" name="_VeriEkle" id="_VeriEkle">
+<form asp-controller="Zimmet" asp-action="ZimmetGeriAl" method="post" name="_VeriEkle" id="_VeriEkle">
     <div class="modal-content">
         <div class="modal-header">
             <h5 class="modal-title">@Model.ModalTitle</h5>
@@ -8,20 +8,20 @@
         <div class="modal-body">
             <div class="row">
                 <div class="col-lg-8">
-                     <div class="form-group row">
-                        <div class="col-lg-8">
+            <div class="form-group row">
+                <div class="col-lg-8">
                             <b>ENVANTER BİLGİLERİ</b>
                             <hr />
 
                             <b>Envanter Adı :</b> @Model.Envanter.Ad <br />
                             <b>Yer Kodu :</b> @Model.Envanter.YerKodu <br />
                             <b>Marka / Model :</b> @Model.Envanter.Marka / @Model.Envanter.Model <br />
-                            <b>Seri No :</b> @Model.Envanter.SeriNo <br />
-                        </div>
-                    </div>
+                            <b>Seri No :</b> @Model.Envanter.SeriNo <br /> 
+                </div> 
+            </div> 
                     <div class="form-group row">
 
-                        <div class="col-lg-12">
+                        <div class="col-lg-8">
                             <b>PERSONEL BİLGİLERİ</b>
                             <hr />
 
@@ -35,21 +35,7 @@
 
                  
 
-                        <div class="col-lg-4">
-                            <label asp-for="ZimmetTarihi" class="control-label bold"></label>
-                            <input asp-for="ZimmetTarihi" class="form-control form-control-sm"   type="date" />
-                        </div>
-                        @if (Model.DurumID == 2)
-                        {
-                            <div class="col-lg-4">
-                                <label asp-for="TeslimTarihi" class="control-label bold"></label>
-                                <input asp-for="TeslimTarihi" class="form-control form-control-sm" type="date" />
-                            </div>
-                            <div class="col-lg-4">
-                                <label asp-for="AyrilisTarihi" class="control-label bold"></label>
-                                <input asp-for="AyrilisTarihi" class="form-control form-control-sm" type="date" />
-                            </div>
-                        }
+                       
                     </div>
                    
 
@@ -62,25 +48,31 @@
 
             <div class="form-group row">
                 <div class="col-lg-12">
-                    <label asp-for="AciklamaIlk" class="control-label bold"></label>
-
-                    <textarea asp-for="AciklamaIlk" class="form-control form-control-sm" rows="13" > 
-                    </textarea>
-                    <span asp-validation-for="AciklamaIlk" class="text-danger"></span>
+                    <label asp-for="AciklamaIlk" class="control-label bold"></label> : @Model.AciklamaIlk
                 </div>
             </div>
-            @if (Model.DurumID == 2)
-            {
-                <div class="form-group row">
-                    <div class="col-lg-12">
-                        <label asp-for="AciklamaSon" class="control-label bold"></label>
-
-                        <textarea asp-for="AciklamaSon" class="form-control form-control-sm" rows="9"> 
-                    </textarea>
-                        <span asp-validation-for="AciklamaSon" class="text-danger"></span>
-                    </div>
+            <div class="form-group row">
+                <div class="col-lg-4">
+                    <label asp-for="ZimmetTarihi" class="control-label bold"></label>
+                    <input asp-for="ZimmetTarihi" class="form-control form-control-sm" type="date" readonly />
                 </div>
-            }
+            <div class="col-lg-4">
+                    <label asp-for="TeslimTarihi" class="control-label bold"></label>
+                <input asp-for="TeslimTarihi" class="form-control form-control-sm" type="date" required />
+                </div> 
+                <div class="col-lg-4">
+                    <label asp-for="AyrilisTarihi" class="control-label bold"></label>
+                    <input asp-for="AyrilisTarihi" class="form-control form-control-sm" type="date" required />
+            </div>
+        </div>
+            <div class="form-group row">
+                <div class="col-lg-12">
+                    <label asp-for="AciklamaSon" class="control-label bold"></label>
+
+                    <textarea name="AciklamaSon" class="form-control form-control-sm" rows="5" required>Yukarıda yazılı olan tarihte işten ayrıldığımı ve işe giriş tarihinde şahsıma zimmetlenmiş yukarıdaki malzemeyi eksiksiz teslim ettiğimi beyan ederim.</textarea>
+                    <span asp-validation-for="AciklamaSon" class="text-danger"></span>
+                </div>
+            </div>
             
         </div>
         <div class="modal-footer">
@@ -89,13 +81,15 @@
             <input type="hidden" asp-for="PageIndex" />
             <input type="hidden" asp-for="PageSize" />
             <input type="hidden" asp-for="CreateDate" />
+            <input type="hidden" asp-for="DeleteDate" value="@DateTime.Now" />
             <input type="hidden" asp-for="UpdateDate" value="@DateTime.Now" />
             <input type="hidden" asp-for="IsActive" value="true" />
             <input type="hidden" asp-for="IsDelete" value="false" />
             <input type="hidden" asp-for="CreateUserID" value="@Model.CreateUserID" />
             <input type="hidden" asp-for="UpdateUserID" value="@Model.UserID" />
+            <input type="hidden" asp-for="DeleteUserID" value="@Model.UserID" />
             <button type="button" class="btn btn-danger" data-dismiss="modal">Kapat</button>
-            <a href="/zimmet/print?envanterID=@Model.EnvanterID" target="_blank" class="btn btn-success">Yazdır</a>
+            <button type="submit" class="btn btn-success">Geri Al ve Kaydet</button>
         </div>
     </div>
 </form>

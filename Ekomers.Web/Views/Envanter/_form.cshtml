@@ -83,7 +83,7 @@
                                                                                     }), "ID", "Text"))" required></select>
         <span asp-validation-for="TurID" class="text-danger"></span>
     </div>
-    <div class="col-lg-4">
+    <div class="col-lg-2">
         <label asp-for="Numara" class="control-label"></label>
         <input asp-for="Numara" class="form-control form-control-sm" required />
         <span asp-validation-for="Numara" class="text-danger"></span>
@@ -95,6 +95,13 @@
         </select>
         <span asp-validation-for="TipID" class="text-danger"></span>
     </div>
+    @if (Model.TipID != 0)
+    {
+        <div class="col-lg-2">
+            <label class="control-label">&nbsp;</label>
+            <input type="button" class="form-control form-control-sm btn btn-primary" onclick="EkOzellikGetir('@Model.TipID')" value="Ek Özellikler" data-toggle="modal" data-target="#ModalVeriEk" />
+        </div>
+    } 
 </div>
 <div class="form-group row">
 
@@ -168,6 +175,8 @@
     </div>
 </div>
 <script src="js/select2.js?v=7.0.5"></script>
+
+ 
 <script>
 
     $('#EnvanterDepartmanID').change(function () {
@@ -175,5 +184,13 @@
     GetAjax('Envanter/GetBolumler?ParametreID=' + selectedDepartmentId, 'EnvanterBolumID'); 
     });
     
+    function EkOzellikGetir(envanterTipID) {
+    
+    if (envanterTipID) { 
+    GetAjax('/Envanter/_ekOzellikGetir?envanterID=@Model.ID&envanterTipID=' + envanterTipID, 'VeriAlanEk');
+        } else {
+        alert('Lütfen önce envanteri kaydedin.');
+        }
+    }
 
 </script>

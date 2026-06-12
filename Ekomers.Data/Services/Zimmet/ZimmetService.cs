@@ -292,7 +292,7 @@ namespace Ekomers.Data.Services
 			return true;
 		}
 
-		public async Task<PagedResult<ZimmetVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default)
+		public async Task<PagedResult<ZimmetVM>> VeriListeleAsync(ZimmetVM vm, int page, int pageSize, CancellationToken ct = default)
 		{
 			try
 			{
@@ -300,7 +300,10 @@ namespace Ekomers.Data.Services
 				// mantıklı bir üst sınır koy
 				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
 
-				var query = GenelListe(); // IQueryable<ZimmetVM>
+				var query = GenelListe().Where(p=>p.DurumID==vm.DurumID); // IQueryable<ZimmetVM>
+
+
+
 
 				var total = await query.CountAsync(ct);
 
@@ -329,7 +332,46 @@ namespace Ekomers.Data.Services
 				};
 			}
 		}
+		public async Task<PagedResult<ZimmetVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default)
+		{
+			try
+			{
+				if (page < 1) page = 1;
+				// mantıklı bir üst sınır koy
+				if (pageSize <= 0 || pageSize > 1000) pageSize = 50;
 
+				var query = GenelListe(); // IQueryable<ZimmetVM>
+
+
+
+
+				var total = await query.CountAsync(ct);
+
+				var items = await query
+					.OrderBy(a => a.ID)
+					.Skip((page - 1) * pageSize)
+					.Take(pageSize)
+					.ToListAsync(ct);
+
+				return new PagedResult<ZimmetVM>
+				{
+					Items = items,
+					PageIndex = page,
+					PageSize = pageSize,
+					TotalCount = total
+				};
+			}
+			catch
+			{
+				return new PagedResult<ZimmetVM>
+				{
+					Items = new List<ZimmetVM>(),
+					PageIndex = page,
+					PageSize = pageSize,
+					TotalCount = 0
+				};
+			}
+		}
 		public async Task<ZimmetVM> ZimmetGetir(int envanterID)
 		{
 			if (envanterID <= 0)

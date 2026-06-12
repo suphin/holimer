@@ -114,6 +114,24 @@ namespace Ekomers.Models.Entity
 		public string? Aciklama { get; set; }
 	}
 
+	public class EnvanterTipOzellik : BaseEntity
+	{
+		public virtual EnvanterTip EnvanterTip { get; set; }
+		public int EnvanterTipID { get; set; }
+		public string? Ad { get; set; }
+		public string? Kod { get; set; }
+		public string? Aciklama { get; set; }
+	}
+
+	public class EnvanterOzellik : BaseEntity
+	{
+		 
+		public int EnvanterTipID { get; set; }
+		public int EnvanterTipOzellikID { get; set; }
+		public int EnvanterID { get; set; }
+		public string? Deger { get; set; } 
+	}
+
 	public class EnvanterDepartman: BaseEntity
 	{
 		public string? Ad { get; set; }
