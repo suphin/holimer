@@ -146,7 +146,7 @@
             }
           
             <!--begin::Button-->
-            @if (User.HasClaim(a => a.Type == ClaimTypes.Role && (a.Value == "Add") || a.Value == "Admin"))
+            @if (User.HasClaim("Authorize", "Create") || User.IsInRole("Admin"))
             {
                  
                 <div class="dropdown dropdown-inline">
@@ -187,7 +187,7 @@
                         <th>Malzeme Kod</th>
                         <th>Malzeme Ad</th>
                         <th>Malzeme Birim</th>
-                        <th>Miktar</th>
+                        <th>Miktar</th> 
                         <th>Malzeme Açıklama</th>
                         <th>Açıklama</th> 
                         

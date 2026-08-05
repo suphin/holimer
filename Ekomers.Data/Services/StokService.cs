@@ -143,7 +143,8 @@ namespace Ekomers.Data.Services
                              GirisCikisDurum = hareketTur.GirisCikisDurum,
 							 Tarih=stok.Tarih,
 							 Miktar=stok.Miktar,
-							 Aciklama=stok.Aciklama,
+							 Maliyet = stok.Maliyet,
+							 Aciklama =stok.Aciklama,
 							 DepartmanID=depo.DepartmanID,
 							 DepartmanAd=departman.Ad,
 							 HareketTurGirisCikis=hareketTur.GirisCikisDurum
@@ -167,6 +168,7 @@ namespace Ekomers.Data.Services
 			{
 				hareket.MalzemeID = modelv.MalzemeID;
 				hareket.Miktar = modelv.Miktar;
+				hareket.Maliyet = modelv.Maliyet;
 				hareket.Aciklama = modelv.Aciklama;
 				hareket.MalzemeAciklama = modelv.MalzemeAciklama;
 				hareket.HareketTurID = modelv.HareketTurID;
@@ -185,6 +187,7 @@ namespace Ekomers.Data.Services
 				{
 					MalzemeID = modelv.MalzemeID,
 					Miktar = modelv.Miktar,
+					Maliyet = modelv.Maliyet,
 					Aciklama = modelv.Aciklama,
 					MalzemeAciklama = modelv.MalzemeAciklama,
 					HareketTurID = modelv.HareketTurID,
@@ -214,6 +217,7 @@ namespace Ekomers.Data.Services
 				{
 					MalzemeID = item.MalzemeID,
 					Miktar = item.Miktar,
+					Maliyet = item.Maliyet,
 					Aciklama = modelv.Aciklama,
 					MalzemeAciklama=item.MalzemeAciklama,
 					HareketTurID=modelv.HareketTurID,
@@ -243,6 +247,7 @@ namespace Ekomers.Data.Services
 				{
 					MalzemeID = item.MalzemeID,
 					Miktar = item.Miktar,
+					Maliyet = item.Maliyet,
 					Aciklama = modelv.Aciklama,
 					MalzemeAciklama = item.MalzemeAciklama,
 					HareketTurID = modelv.HareketTurID,
@@ -261,6 +266,7 @@ namespace Ekomers.Data.Services
 				{
 					MalzemeID = item.MalzemeID,
 					Miktar = item.Miktar,
+					Maliyet = item.Maliyet,
 					Aciklama = modelv.Aciklama,
 					MalzemeAciklama = item.MalzemeAciklama,
 					HareketTurID = modelv.HareketTurID,
@@ -806,6 +812,7 @@ namespace Ekomers.Data.Services
 							 DepoAd = grouped.Key.DepoAd, // Depo adı eklendi
 							 DepartmanID = grouped.Key.DepartmanID,
 							 KritikMiktar = grouped.Key.KritikMiktar,
+							 //ToplamMaliyet = grouped.Where(y => y != null && y.GirisCikis == true).Sum(y => y.Maliyet*y.Miktar),
 							 GirenMiktar = grouped.Where(y => y != null && y.GirisCikis == true).Sum(y => y.Miktar),
 							 CikanMiktar = grouped.Where(y => y != null && y.GirisCikis == false).Sum(y => y.Miktar),
 							 KalanMiktar = (grouped.Where(y => y != null && y.GirisCikis == true).Sum(y => y.Miktar)) -

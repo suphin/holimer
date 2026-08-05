@@ -1,0 +1,127 @@
+﻿@model List<BankaHesapEkstreVM>
+
+@{
+    ViewData["Title"] = "Banka Hesap Ekstresi";
+}
+
+ 
+
+        <table class="table table-bordered table-hover table-striped align-middle" id="tblEkstre">
+
+            <thead class="table-dark">
+                <tr>
+                    <th class="text-center">Yıl</th>
+                    <th>Ay</th>
+                    <th class="text-end">Borç</th>
+                    <th class="text-end">Alacak</th>
+                    <th class="text-end">Net Hareket</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @foreach (var item in Model)
+                {
+                    var net = item.Borc - item.Alacak;
+
+                    <tr>
+
+                        <td class="text-center">
+                            @item.Yil
+                        </td>
+
+                        <td>
+                            @item.Ay
+                        </td>
+
+                        <td class="text-right">
+                            @item.Borc.ToString("N2")
+                        </td>
+
+                <td class="text-right">
+                            @item.Alacak.ToString("N2")
+                        </td>
+
+                <td class="text-right fw-bold">
+
+                            @if (net >= 0)
+                            {
+                                <span class="text-success">
+                                    @net.ToString("N2") (B)
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">
+                                    @Math.Abs(net).ToString("N2") (A)
+                                </span>
+                            }
+
+                        </td>
+
+                    </tr>
+                }
+
+            </tbody>
+
+            <tfoot class="table-light">
+
+                @{
+                    var toplamBorc = Model.Sum(x => x.Borc);
+                    var toplamAlacak = Model.Sum(x => x.Alacak);
+                    var toplamNet = toplamBorc - toplamAlacak;
+                }
+
+                <tr>
+
+            <th colspan="2" class="text-right">
+                        TOPLAM
+                    </th>
+
+            <th class="text-right">
+                        @toplamBorc.ToString("N2")
+                    </th>
+
+            <th class="text-right">
+                        @toplamAlacak.ToString("N2")
+                    </th>
+
+            <th class="text-right">
+
+                        @if (toplamNet >= 0)
+                        {
+                            <span class="text-success fw-bold">
+                                @toplamNet.ToString("N2") (B)
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-danger fw-bold">
+                                @Math.Abs(toplamNet).ToString("N2") (A)
+                            </span>
+                        }
+
+                    </th>
+
+                </tr>
+       
+            </tfoot>
+
+        </table>
+
+ 
+
+@section Scripts
+{
+    <script>
+        $(function() {
+            $('#tblEkstre').DataTable({
+                order: [[0, 'asc'], [1, 'asc']],
+                pageLength: 25,
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json'
+                }
+            });
+        });
+    </script>
+}

@@ -49,6 +49,7 @@ namespace Ekomers.Models.ViewModels
 		public int? DovizTur { get; set; }
 		public string? DovizTurAd { get; set; }
 		public double? Miktar { get; set; }
+		public double? ToplamMaliyet { get; set; }
 		public double? GirenMiktar { get; set; }
 		public double? CikanMiktar { get; set; }
 		public double? KalanMiktar { get; set; }

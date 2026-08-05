@@ -1,0 +1,115 @@
+﻿@model List<BorcAlacakVM>
+
+@{
+    ViewData["Title"] = "Borç / Alacak Durum Raporu";
+}
+
+<div class="card shadow-sm">
+
+    <div class="card-header">
+        <h5 class="mb-0">
+            Borç / Alacak Durum Raporu
+        </h5>
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-striped table-hover table-bordered" id="tblCari">
+
+            <thead class="table-dark">
+                <tr>
+                    <th>Cari Kod</th>
+                    <th>Cari Ünvan</th>
+                    <th class="text-end">Borçlu</th>
+                    <th class="text-end">Alacaklı</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @foreach (var item in Model)
+                {
+                    <tr>
+
+                        <td>@item.CHKOD</td>
+
+                        <td>@item.CHUNVAN</td>
+
+                        <td class="text-right text-success fw-bold">
+                            @item.BorcToplami.ToString("N2")
+                        </td>
+
+                        <td class="text-right text-danger fw-bold">
+                            @item.AlacakToplami.ToString("N2")
+                        </td>
+
+                    </tr>
+                }
+
+            </tbody>
+
+            <tfoot class="table-light">
+
+                <tr>
+
+                    <th colspan="2" class="text-right">
+                        TOPLAM
+                    </th>
+
+                    <th class="text-right text-success">
+                        @Model.Sum(x => x.BorcToplami).ToString("N2")
+                    </th>
+
+                    <th class="text-right text-danger">
+                        @Model.Sum(x => x.AlacakToplami).ToString("N2")
+                    </th>
+
+                </tr>
+                <tr>
+
+                    <th colspan="2" class="text-right">
+                        FARK
+                    </th>
+                    @if (Model.Sum(x => x.AlacakToplami - x.BorcToplami)<0)
+                    {
+                        <th class="text-right text-success">
+                            @Model.Sum(x => x.AlacakToplami - x.BorcToplami).ToString("N2")
+                        </th>
+                    }
+                    else
+                    {
+                        <th class="text-right text-danger">
+                            @Model.Sum(x => x.AlacakToplami - x.BorcToplami).ToString("N2")
+                        </th>
+                    }
+                  
+
+                </tr>
+            </tfoot>
+
+        </table>
+
+    </div>
+
+</div>
+
+@section JSSection
+{
+    <script>
+        $(function() {
+
+            $('#tblCari').DataTable({
+
+                pageLength: 25,
+
+                order: [[0, 'asc']],
+
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json'
+                }
+
+            });
+
+        });
+    </script>
+}

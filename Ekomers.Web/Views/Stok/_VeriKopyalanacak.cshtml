@@ -51,11 +51,11 @@
             <div class="form-group row">
                 <div class="col-lg-2">
                     <label asp-for="SktTarih" class="control-label"></label>
-                    <input asp-for="SktTarih" class="form-control form-control-sm" type="date" required />
+                    <input asp-for="SktTarih" class="form-control form-control-sm" type="date"  />
                 </div>
                 <div class="col-lg-2">
                     <label asp-for="LotNumara" class="control-label"></label>
-                    <input asp-for="LotNumara" class="form-control form-control-sm" required />
+                    <input asp-for="LotNumara" class="form-control form-control-sm"  />
                 </div>
                 <div class="col-lg-8">
                     <label asp-for="Aciklama" class="control-label"></label>
@@ -72,6 +72,10 @@
                 <div class="col-lg-2">
                     <label asp-for="Miktar" class="control-label"></label>
                     <input asp-for="Miktar" class="form-control form-control-sm" />
+                </div>
+                <div class="col-lg-2">
+                    <label asp-for="Maliyet" class="control-label"></label>
+                    <input asp-for="Maliyet" class="form-control form-control-sm" />
                 </div>
                 <div class="col-lg-2">
                     <label asp-for="BirimAd" class="control-label"></label>
@@ -143,6 +147,7 @@
     function MalzemeEkle() {
         var MalzemeID = $('#MalzemeID').val();
         var Miktar = $('#Miktar').val();
+        var Maliyet = $('#Maliyet').val();
         var MalzemeAciklama = $('#MalzemeAciklama').val();
 
         $.ajax({
@@ -152,12 +157,14 @@
             data: {
                 MalzemeID: MalzemeID,
                 Miktar: Miktar,
+                Maliyet: Maliyet,
                 MalzemeAciklama: MalzemeAciklama
             },
             success: function(response) {
                 $('#MalzemeEklenenListe').html(response);
                 $('#MalzemeID').val('');
                 $('#Miktar').val('');
+                $('#Maliyet').val('');
                 $('#BirimAd').val('');
                 $('#BirimID').val('');
                 $('#MalzemeAciklama').val('');

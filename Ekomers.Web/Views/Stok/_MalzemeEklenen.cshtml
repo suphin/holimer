@@ -33,6 +33,7 @@
             <th>Malzeme Ad</th>
             <th>Malzeme Birim</th>
             <th>Miktar</th>
+            <th>Maliyet</th>
             <th>Açıklama</th>
             <th>Çıkar</th>
 
@@ -53,6 +54,7 @@
                 <td>@item.MalzemeAd</td>
                 <td>@item.BirimAd</td>
                 <td class="text-right">@String.Format("{0:n2}", item.Miktar)</td>
+                <td class="text-right">@String.Format("{0:n2}", item.Maliyet)</td>
                 <td>@item.MalzemeAciklama</td>
                 <td><a href="javascript:void(0);" class="remove-item" data-id="@item.MalzemeID">Çıkar</a></td>
             </tr>

@@ -1,0 +1,66 @@
+﻿@model  BankalarVM 
+
+@{
+    ViewData["Title"] = "Liste Sayfası";
+}
+
+
+<!-- Page Heading -->
+<div class="card shadow">
+    <div class="card-body">
+        <div class="text-left">
+            <h1 class="h4 mb-0 text-gray-800">TANIMLAMALAR</h1>
+            <h5 class="mb-0 text-gray-800">Kayıtlarının giriş safyası.</h5>
+        </div>
+    </div>
+</div>
+<br />
+<div class="card shadow">
+    <div class="card-header py-2">
+        <div class="row">
+            <div class="col-md-3"><span class="font-weight-bold"> LİSTE </span></div>
+            
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Ref No</th>
+                        <th>Kod</th>
+                        <th>Banka Adı</th>
+                        <th>Şube</th>
+                        <th>Durum</th>
+                        <th>Hesaplar</th> 
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var item in Model.Bankalar)
+                    {
+                        <tr>
+                            <td>@item.LOGICALREF</td>
+                            <td>@item.CODE</td>
+                            <td>@item.DEFINITION_</td>
+                            <td>@item.BRANCH</td>
+                            <td>
+                                @if (item.ACTIVE == 0)
+                                {
+                                    <span class="badge bg-success">Aktif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Pasif</span>
+                                }
+                            </td>
+                            <td><a href="@Url.Action("Hesaplar", new { bankRef = item.LOGICALREF })" class="btn btn-primary btn-sm">Hesaplar</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+

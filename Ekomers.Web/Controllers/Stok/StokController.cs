@@ -293,6 +293,7 @@ namespace Ekomers.Web.Controllers
 				MalzemeAd = malzeme.Ad,
 				MalzemeID = models.MalzemeID,
 				Miktar = models.Miktar,
+				Maliyet = models.Maliyet,
 				MalzemeKod=malzeme.Kod,
 				BirimID = malzeme.BirimID,
 				BirimAd=malzeme.BirimAd,
@@ -329,9 +330,10 @@ namespace Ekomers.Web.Controllers
             using (var stream = new MemoryStream())
             {
                 await file.CopyToAsync(stream);
-                ExcelPackage.LicenseContext = LicenseContext.NonCommercial; // Lisans bağlamını burada ayarlayın
+               // ExcelPackage.LicenseContext = LicenseContext.NonCommercial; // Lisans bağlamını burada ayarlayın
+				ExcelPackage.License.SetNonCommercialOrganization("Holimer");
 
-                using (var package = new ExcelPackage(stream))
+				using (var package = new ExcelPackage(stream))
                 {
                     ExcelWorksheet worksheet = package.Workbook.Worksheets[0]; // İlk sayfayı alıyoruz
                     int rowCount = worksheet.Dimension.Rows; // Satır sayısı
@@ -665,8 +667,9 @@ namespace Ekomers.Web.Controllers
 		{
 			// Veritabanından malzeme verilerini alıyoruz
 			List<MalzemelerVM> malzemeListesi = await _stokService.MalzemeListele();
-			ExcelPackage.LicenseContext = LicenseContext.NonCommercial; // Lisans bağlamını burada ayarlayın
-			 // Yeni bir Excel dosyası oluşturuyoruz (EPPlus kullanarak)
+			//ExcelPackage.LicenseContext = LicenseContext.NonCommercial; // Lisans bağlamını burada ayarlayın
+			ExcelPackage.License.SetNonCommercialOrganization("Holimer");
+			// Yeni bir Excel dosyası oluşturuyoruz (EPPlus kullanarak)
 			using (var package = new ExcelPackage())
 			{
 				// Çalışma sayfası ekle

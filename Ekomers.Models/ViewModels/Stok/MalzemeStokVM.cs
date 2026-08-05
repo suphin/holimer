@@ -49,6 +49,7 @@ namespace Ekomers.Models.ViewModels
 		[Display(Name = "Departman Ad")]
 		public string? DepartmanAd { get; set; }
 		public double Miktar { get; set; }
+		public double Maliyet { get; set; }
 		[Display(Name = "Açıklama")]
 		public string? Aciklama { get; set; }
 		public DateTime Tarih { get; set; }

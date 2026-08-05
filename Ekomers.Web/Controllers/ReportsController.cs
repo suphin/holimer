@@ -4,6 +4,8 @@ using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
 using Ekomers.Models;
 using Ekomers.Models.Ekomers;
+using Ekomers.Models.Entity;
+using Ekomers.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -45,6 +47,47 @@ namespace Ekomers.Web.Controllers
 			ViewBag.Modul = "Rapor";
 			return View(); // filtre formu
 		}
+		[HttpGet]
+		public async Task<IActionResult> Bankalar()
+		{
+			ViewBag.Modul = "Rapor";
+
+			var vm = await _service.Bankalar();
+			
+
+
+			return View(vm); // filtre formu
+		}
+
+		public async Task<IActionResult> Hesaplar(int bankRef)
+		{
+			ViewBag.Modul = "Rapor";
+			var model = await _service.BankaHesaplari(bankRef);
+
+			return View(model);
+		}
+
+		public async Task<PartialViewResult> HesaplarEkstre(int cardRef)
+		{
+			var model = await _service.BankaHesapEkstresi(cardRef);
+			return PartialView("HesaplarEkstre", model);
+		}
+		public async Task<IActionResult> BorcAlacak()
+		{
+			ViewBag.Modul = "Rapor";
+			var model = await _service.BorcAlacakRaporu();
+
+			return View(model);
+		}
+
+		public async Task<IActionResult> BankaKredileri()
+		{
+			ViewBag.Modul = "Rapor";
+			var model = await _service.BankaKredileri();
+
+			return View(model);
+		}
+
 
 		[HttpPost]
 		public async Task<IActionResult> Run(ReportRequest request, CancellationToken ct)

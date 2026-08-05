@@ -1,0 +1,125 @@
+﻿@model List<BankaKrediVM>
+
+@{
+    ViewData["Title"] = "Banka Kredileri";
+}
+
+<div class="card shadow-sm">
+
+    <div class="card-header">
+        <h5 class="mb-0">
+            Banka Kredileri
+        </h5>
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-striped table-hover table-bordered" id="tblKredi">
+
+            <thead class="table-dark">
+                <tr>
+                    <th>Kredi Kodu</th>
+                    <th>Kredi Adı</th>
+                    <th>Banka</th>
+                    <th>Hesap</th>
+                    <th>Başlangıç</th>
+                    <th>Bitiş</th>
+                    <th class="text-end">Kredi Tutarı</th>
+                    <th class="text-end">Faiz</th>
+                    <th class="text-end">KKDF</th>
+                    <th class="text-end">BSMV</th>
+                    <th>Taksitler</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @foreach (var item in Model)
+                {
+                    <tr>
+
+                        <td>@item.CODE</td>
+
+                        <td>@item.NAME_</td>
+
+                        <td>@item.BankaAdi</td>
+
+                        <td>@item.BankaHesabi</td>
+
+                        <td>@item.BEGDATE?.ToString("dd.MM.yyyy")</td>
+
+                        <td>@item.ENDDATE?.ToString("dd.MM.yyyy")</td>
+
+                        <td class="text-right">
+                            @item.TRTOTAL.ToString("N2")
+                        </td>
+
+                        <td class="text-right">
+                            @item.INTTOTAL.ToString("N2")
+                        </td>
+
+                        <td class="text-right">
+                            @item.KKDFTOTAL.ToString("N2")
+                        </td>
+
+                        <td class="text-right">
+                            @item.BSMVTOTAL.ToString("N2")
+                        </td>
+
+                        <td>
+                            <a onclick="KrediTaksitleri('@item.LOGICALREF')" data-toggle="modal" data-target="#ModalGoruntule" href="#">Ekstre</a>
+                        </td>
+
+                    </tr>
+                }
+
+            </tbody>
+
+            <tfoot class="table-light">
+                <tr>
+                    <th colspan="6" class="text-right">
+                        TOPLAM
+                    </th>
+
+                    <th class="text-right">
+                        @Model.Sum(x => x.TRTOTAL).ToString("N2")
+                    </th>
+
+                    <th class="text-right">
+                        @Model.Sum(x => x.INTTOTAL).ToString("N2")
+                    </th>
+
+                    <th class="text-right">
+                        @Model.Sum(x => x.KKDFTOTAL).ToString("N2")
+                    </th>
+
+                    <th class="text-right">
+                        @Model.Sum(x => x.BSMVTOTAL).ToString("N2")
+                    </th>
+
+                    <th></th>
+                </tr>
+            </tfoot>
+
+        </table>
+
+    </div>
+
+</div>
+
+@section JSSection
+{
+    <script>
+        $(function() {
+
+            $('#tblKredi').DataTable({
+                pageLength: 25,
+                order: [[0, 'asc']],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json'
+                }
+            });
+
+        });
+    </script>
+}

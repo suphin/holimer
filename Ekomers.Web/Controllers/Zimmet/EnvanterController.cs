@@ -211,6 +211,8 @@ namespace Ekomers.Web.Controllers
 			}
 			else
 			{
+				var sonuc = await _service.VeriEkleAsync(vm);
+
 				var paged = await _service.VeriListeleAsync(vm.PageIndex, vm.PageSize, default);
 
 				var modelc = new EnvanterVM

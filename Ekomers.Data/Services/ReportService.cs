@@ -1,32 +1,168 @@
-﻿using Ekomers.Data.Services.IServices;
+﻿using Dapper; 
+using Ekomers.Data.Services.IServices;
 using Ekomers.Models;
+using Ekomers.Models.ViewModels;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Dapper;
-using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
-
 namespace Ekomers.Data.Services
 {
+	public static class CryptoHelper2
+	{
+		private static readonly string key = "12345678901234567890123456789012";
+		private static readonly string iv = "1234567890123456";
+
+		public static string Encrypt(string plainText)
+		{
+			using Aes aes = Aes.Create();
+
+			aes.Key = Encoding.UTF8.GetBytes(key);
+			aes.IV = Encoding.UTF8.GetBytes(iv);
+
+			ICryptoTransform encryptor = aes.CreateEncryptor();
+
+			byte[] inputBuffer = Encoding.UTF8.GetBytes(plainText);
+
+			byte[] encrypted = encryptor.TransformFinalBlock(inputBuffer, 0, inputBuffer.Length);
+
+			return Convert.ToBase64String(encrypted);
+		}
+
+		public static string Decrypt(string cipherText)
+		{
+			using Aes aes = Aes.Create();
+
+			aes.Key = Encoding.UTF8.GetBytes(key);
+			aes.IV = Encoding.UTF8.GetBytes(iv);
+
+			ICryptoTransform decryptor = aes.CreateDecryptor();
+
+			byte[] cipherBuffer = Convert.FromBase64String(cipherText);
+
+			byte[] decrypted = decryptor.TransformFinalBlock(cipherBuffer, 0, cipherBuffer.Length);
+
+			return Encoding.UTF8.GetString(decrypted);
+		}
+	}
 	public sealed class ReportService(IConfiguration config) : IReportService
 	{
 		private readonly string _connStr = config.GetConnectionString("DefaultConnection")!;
+		private readonly string connstr = CryptoHelper2.Decrypt(config.GetConnectionString("DefaultConnection")!);
 		private readonly IDictionary<string, string> _allowed =
 			config.GetSection("AllowedReports").Get<Dictionary<string, string>>()
 			?? new Dictionary<string, string>();
+
+
+		public async Task<BankalarVM> Bankalar()
+		{
+			using var conn = new SqlConnection(connstr);
+			await conn.OpenAsync();
+			var query = "SELECT TOP 150 \r\nLGMAIN.LOGICALREF, LGMAIN.CODE, LGMAIN.DEFINITION_, LGMAIN.BRANCH, LGMAIN.ACTIVE, LGMAIN.SPECODE, LGMAIN.ORGLOGICREF\r\n FROM \r\nTIGER3ENT..LG_100_BNCARD LGMAIN WITH(NOLOCK) \r\n WHERE \r\n(LGMAIN.ACTIVE = 0)";
+			var bankalar = await conn.QueryAsync<BankalarVM>(query);
+			return new BankalarVM
+			{
+				Bankalar = bankalar.ToList()
+			};
+		}
+		public async Task<BankaHesapVM> BankaHesaplari(int bankRef)
+		{
+			using var conn = new SqlConnection(connstr);
+			await conn.OpenAsync();
+
+ 
+			var query = @"
+   SELECT
+    LGMAIN.LOGICALREF,
+    LGMAIN.CODE,
+    LGMAIN.DEFINITION_,
+    LGMAIN.ACCOUNTNO,
+    ISNULL(SUM(BNTOT.DEBIT),0) AS DEBIT,
+    ISNULL(SUM(BNTOT.CREDIT),0) AS CREDIT,
+   ROUND(ABS(SUM(BNTOT.DEBIT)-SUM(BNTOT.CREDIT)),2) AS BAKIYE
+FROM TIGER3ENT..LG_100_BANKACC LGMAIN
+LEFT JOIN TIGER3ENT..LG_100_01_BNTOTFIL BNTOT
+       ON LGMAIN.LOGICALREF = BNTOT.CARDREF
+      AND BNTOT.TOTTYP = 1
+WHERE LGMAIN.ACTIVE = 0
+  AND LGMAIN.BANKREF = @BankRef
+GROUP BY
+    LGMAIN.LOGICALREF,
+    LGMAIN.CODE,
+    LGMAIN.DEFINITION_,
+    LGMAIN.ACCOUNTNO
+ORDER BY LGMAIN.CODE;";
+
+			var hesaplar = await conn.QueryAsync<BankaHesapVM>(query, new
+			{
+				BankRef = bankRef
+			});
+
+			return new BankaHesapVM
+			{
+				Hesaplar = hesaplar.ToList()
+			};
+		}
+
+
+		 
+		public async Task<List<BankaHesapEkstreVM>> BankaHesapEkstresi(int cardRef)
+		{
+			using var conn = new SqlConnection(connstr);
+			await conn.OpenAsync();
+
+			var sql = @"SELECT
+    BNTOT.YEAR_ AS Yil,
+    BNTOT.MONTH_ AS AyNo,
+    CASE BNTOT.MONTH_
+        WHEN 0 THEN 'Devir'
+        WHEN 1 THEN 'Ocak'
+        WHEN 2 THEN 'Şubat'
+        WHEN 3 THEN 'Mart'
+        WHEN 4 THEN 'Nisan'
+        WHEN 5 THEN 'Mayıs'
+        WHEN 6 THEN 'Haziran'
+        WHEN 7 THEN 'Temmuz'
+        WHEN 8 THEN 'Ağustos'
+        WHEN 9 THEN 'Eylül'
+        WHEN 10 THEN 'Ekim'
+        WHEN 11 THEN 'Kasım'
+        WHEN 12 THEN 'Aralık'
+    END AS Ay,
+
+    ROUND(BNTOT.DEBIT,2) AS Borc,
+    ROUND(BNTOT.CREDIT,2) AS Alacak,
+    ROUND(BNTOT.DEBIT - BNTOT.CREDIT,2) AS Bakiye
+
+FROM TIGER3ENT..LG_100_01_BNTOTFIL BNTOT WITH(NOLOCK)
+WHERE
+    BNTOT.CARDREF = @CardRef
+    AND BNTOT.TOTTYP = 1
+ORDER BY
+    BNTOT.YEAR_,
+    BNTOT.MONTH_;";
+
+			var sonuc = await conn.QueryAsync<BankaHesapEkstreVM>(
+				sql,
+				new { CardRef = cardRef });
+
+			return sonuc.ToList();
+		}
 
 		public async Task<ReportVM> RunAsync(ReportRequest request, CancellationToken ct)
 		{
 			if (!_allowed.TryGetValue(request.ReportKey, out var target))
 				throw new InvalidOperationException("İzinli rapor listesinde yok.");
 
-			using var conn = new SqlConnection(_connStr);
+			using var conn = new SqlConnection(connstr);
 			await conn.OpenAsync(ct);
 
 			// Parametre bağlama
@@ -104,5 +240,71 @@ namespace Ekomers.Data.Services
 				Parameters = request.Parameters
 			};
 		}
+
+		public async Task<List<BorcAlacakVM>> BorcAlacakRaporu()
+		{
+			using var conn = new SqlConnection(connstr);
+			await conn.OpenAsync();
+
+			var query = @"
+					SELECT
+						CHKOD,
+						CHUNVAN,
+						[Borç Toplamı] AS BorcToplami,
+						[Alacak Toplamı] AS AlacakToplami
+					FROM TIGER3ENT..VW_100_BorcAlacak
+					ORDER BY CHKOD";
+
+			var sonuc = await conn.QueryAsync<BorcAlacakVM>(query);
+
+			return sonuc.ToList();
+		}
+
+
+		public async Task<List<BankaKrediVM>> BankaKredileri()
+		{
+			using var conn = new SqlConnection(connstr);
+			await conn.OpenAsync();
+
+			var query = @"
+SELECT
+    LGMAIN.LOGICALREF,
+    LGMAIN.CODE,
+    LGMAIN.NAME_,
+    LGMAIN.BEGDATE,
+    LGMAIN.ENDDATE,
+    LGMAIN.CRCARDTYPE,
+    LGMAIN.TRTOTAL,
+    LGMAIN.INTTOTAL,
+    LGMAIN.KKDFTOTAL,
+    LGMAIN.BSMVTOTAL,
+    LGMAIN.SPECODE,
+    LGMAIN.TRCURR,
+    LGMAIN.BRANCH,
+    LGMAIN.PROJECTREF,
+    LGMAIN.CRCALCTYPE,
+    LGMAIN.STRUCTDATE,
+    LGMAIN.PERIODENDPAY,
+    BNACC.CODE AS BankaHesabi,
+    BANKC.DEFINITION_ AS BankaAdi,
+    PROJECT.CODE AS ProjeKodu
+FROM TIGER3ENT..LG_100_BNCREDITCARD LGMAIN WITH(NOLOCK)
+LEFT JOIN TIGER3ENT..LG_100_BANKACC BNACC WITH(NOLOCK)
+    ON LGMAIN.BNCRACCREF = BNACC.LOGICALREF
+LEFT JOIN TIGER3ENT..LG_100_BNCARD BANKC WITH(NOLOCK)
+    ON BNACC.BANKREF = BANKC.LOGICALREF
+LEFT JOIN TIGER3ENT..LG_100_PROJECT PROJECT WITH(NOLOCK)
+    ON LGMAIN.PROJECTREF = PROJECT.LOGICALREF
+WHERE LGMAIN.PARENTREF = 0
+ORDER BY
+    LGMAIN.CRCARDTYPE,
+    LGMAIN.CODE";
+
+			var sonuc = await conn.QueryAsync<BankaKrediVM>(query);
+
+			return sonuc.ToList();
+		}
+
+
 	}
 }

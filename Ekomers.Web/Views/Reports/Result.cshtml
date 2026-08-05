@@ -95,7 +95,11 @@ else
                             }
                             else if (val is decimal dec)
                             {
-                                <td>@dec.ToString("N2")</td>
+                                <td class="text-right">@dec.ToString("N2")</td>
+                            }
+                            else if (val is double dob)
+                            {
+                                <td class="text-right">@dob.ToString("N2")</td>
                             }
                             else
                             {

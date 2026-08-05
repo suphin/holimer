@@ -48,6 +48,7 @@ namespace Ekomers.Models.Ekomers
 		public int DepoID { get; set; }
 		public int HareketTurID { get; set; }
 		public double Miktar { get; set; }
+		public double Maliyet { get; set; } = 0;
 		public DateTime Tarih { get; set; }
         public DateTime SktTarih { get; set; }
         public bool GirisCikis { get; set; }

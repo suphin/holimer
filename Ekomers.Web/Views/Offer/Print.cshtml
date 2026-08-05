@@ -137,28 +137,30 @@
                     <td>@Model.UrunAd <br /> (Talep Not:@Model.TalepNot) <br /> (Teklif Not:@Model.Not)</td>
                     <td class="right">@Model.Miktar</td>
                     <td class="right">@Model.UrunKdv</td>
-                    <td class="right">@tutar.ToString("N2") @doviz</td>
+                    <td class="right">@tutar.ToString("N2") TL</td>
                 </tr>
 
                 <tr>
                     <td colspan="4" class="right">KDV</td>
-                    <td class="right">@kdv.ToString("N2") @doviz</td>
+                    <td class="right">@kdv.ToString("N2") TL</td>
                 </tr>
 
                 <tr class="bold">
                     <td colspan="4" class="right">Toplam</td>
-                    <td class="right"> @toplam.ToString("N2") @doviz</td>
+                    <td class="right"> @toplam.ToString("N2") TL</td>
                 </tr>
             </tbody>
         </table>
 
+        <br />
+        <button class="btn btn-info no-print" data-toggle="modal" data-target="#ModalVeri" onclick="FirmaDuzenle('@Model.Firma.ID')">Diğer Ürünleri Ekle</button>
         <br />
 
         <!-- ALT BİLGİ -->
         <table class="no-border" style="width:50%">
             <tr>
                 <td><b>Ödenecek Tutar :</b></td>
-                <td class="text-right"> @toplam.ToString("N2") @doviz</td>
+                <td class="text-right"> @toplam.ToString("N2") TL</td>
             </tr>
             <tr>
                 <td><b>Vade :</b></td>
