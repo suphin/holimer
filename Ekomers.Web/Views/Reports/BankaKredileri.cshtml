@@ -6,29 +6,43 @@
 
 <div class="card shadow-sm">
 
-    <div class="card-header">
-        <h5 class="mb-0">
-            Banka Kredileri
-        </h5>
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Finans / Banka Kredileri
+                <span class="d-block text-muted pt-2 font-size-sm">Banka Kredileri</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+
+            <a href="/Reports/KrediOdemePlani" class="btn btn-primary">Kredi Ödeme Planı</a>
+        </div>
     </div>
 
     <div class="card-body">
 
-        <table class="table table-striped table-hover table-bordered" id="tblKredi">
+        <table class="table table-bordered table-hover table-striped" id="tblKredi">
 
             <thead class="table-dark">
                 <tr>
                     <th>Kredi Kodu</th>
                     <th>Kredi Adı</th>
-                    <th>Banka</th>
-                    <th>Hesap</th>
                     <th>Başlangıç</th>
                     <th>Bitiş</th>
-                    <th class="text-end">Kredi Tutarı</th>
-                    <th class="text-end">Faiz</th>
-                    <th class="text-end">KKDF</th>
-                    <th class="text-end">BSMV</th>
-                    <th>Taksitler</th>
+
+                    <th class="text-right">Anapara</th>
+                    <th class="text-right">Ödenen</th>
+                    <th class="text-right">Kalan</th>
+
+                    <th class="text-right">Faiz</th>
+                    <th class="text-right">Ödenen</th>
+                    <th class="text-right">Kalan</th>
+
+                    <th class="text-right">BSMV</th>
+                    <th class="text-right">Ödenen</th>
+                    <th class="text-right">Kalan</th>
+
+                   
                 </tr>
             </thead>
 
@@ -39,36 +53,22 @@
                     <tr>
 
                         <td>@item.CODE</td>
-
                         <td>@item.NAME_</td>
-
-                        <td>@item.BankaAdi</td>
-
-                        <td>@item.BankaHesabi</td>
-
                         <td>@item.BEGDATE?.ToString("dd.MM.yyyy")</td>
-
                         <td>@item.ENDDATE?.ToString("dd.MM.yyyy")</td>
 
-                        <td class="text-right">
-                            @item.TRTOTAL.ToString("N2")
-                        </td>
+                        <td class="text-right">@item.TRTOTAL.ToString("N2")</td>
+                        <td class="text-right">@item.ANAPARA_ODENEN.ToString("N2")</td>
+                        <td class="text-right fw-bold">@item.KALAN_ANAPARA.ToString("N2")</td>
 
-                        <td class="text-right">
-                            @item.INTTOTAL.ToString("N2")
-                        </td>
+                        <td class="text-right">@item.INTTOTAL.ToString("N2")</td>
+                        <td class="text-right">@item.FAIZ_ODENEN.ToString("N2")</td>
+                        <td class="text-right fw-bold">@item.KALAN_FAIZ.ToString("N2")</td>
 
-                        <td class="text-right">
-                            @item.KKDFTOTAL.ToString("N2")
-                        </td>
-
-                        <td class="text-right">
-                            @item.BSMVTOTAL.ToString("N2")
-                        </td>
-
-                        <td>
-                            <a onclick="KrediTaksitleri('@item.LOGICALREF')" data-toggle="modal" data-target="#ModalGoruntule" href="#">Ekstre</a>
-                        </td>
+                        <td class="text-right">@item.BSMVTOTAL.ToString("N2")</td>
+                        <td class="text-right">@item.BSMV_ODENEN.ToString("N2")</td>
+                        <td class="text-right fw-bold">@item.KALAN_BSMV.ToString("N2")</td>
+ 
 
                     </tr>
                 }
@@ -77,27 +77,23 @@
 
             <tfoot class="table-light">
                 <tr>
-                    <th colspan="6" class="text-right">
-                        TOPLAM
-                    </th>
 
-                    <th class="text-right">
-                        @Model.Sum(x => x.TRTOTAL).ToString("N2")
-                    </th>
+                    <th colspan="4" class="text-right">TOPLAM</th>
 
-                    <th class="text-right">
-                        @Model.Sum(x => x.INTTOTAL).ToString("N2")
-                    </th>
+                    <th class="text-right">@Model.Sum(x => x.TRTOTAL).ToString("N2")</th>
+                    <th class="text-right">@Model.Sum(x => x.ANAPARA_ODENEN).ToString("N2")</th>
+                    <th class="text-right">@Model.Sum(x => x.KALAN_ANAPARA).ToString("N2")</th>
 
-                    <th class="text-right">
-                        @Model.Sum(x => x.KKDFTOTAL).ToString("N2")
-                    </th>
+                    <th class="text-right">@Model.Sum(x => x.INTTOTAL).ToString("N2")</th>
+                    <th class="text-right">@Model.Sum(x => x.FAIZ_ODENEN).ToString("N2")</th>
+                    <th class="text-right">@Model.Sum(x => x.KALAN_FAIZ).ToString("N2")</th>
 
-                    <th class="text-right">
-                        @Model.Sum(x => x.BSMVTOTAL).ToString("N2")
-                    </th>
+                    <th class="text-right">@Model.Sum(x => x.BSMVTOTAL).ToString("N2")</th>
+                    <th class="text-right">@Model.Sum(x => x.BSMV_ODENEN).ToString("N2")</th>
+                    <th class="text-right">@Model.Sum(x => x.KALAN_BSMV).ToString("N2")</th>
 
-                    <th></th>
+                    
+
                 </tr>
             </tfoot>
 
@@ -106,20 +102,3 @@
     </div>
 
 </div>
-
-@section JSSection
-{
-    <script>
-        $(function() {
-
-            $('#tblKredi').DataTable({
-                pageLength: 25,
-                order: [[0, 'asc']],
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json'
-                }
-            });
-
-        });
-    </script>
-}

@@ -125,7 +125,8 @@ namespace Ekomers.Web.Controllers
 				MalzemeStokVMListe=await _stokService.VeriListele((int)user.DepartmanID) 
 				
 			};
-			var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _stokService.DepoListele();
 			DepoListe?.Insert(0, new MalzemeDepoVM { ID = 0, Ad = "Tümü" });
 			ViewBag.DepoListe = new SelectList(DepoListe, "ID", "Ad");
 
@@ -146,7 +147,9 @@ namespace Ekomers.Web.Controllers
 				MalzemeStokVMListe = await _stokService.VeriListele(models, (int)user.DepartmanID),
 
 			};
-			var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+		 
+				//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _stokService.DepoListele();
 			DepoListe?.Insert(0, new MalzemeDepoVM { ID = 0, Ad = "Tümü" });
 			ViewBag.DepoListe = new SelectList(DepoListe, "ID", "Ad");
 
@@ -216,7 +219,8 @@ namespace Ekomers.Web.Controllers
 
 			ViewBag.HareketTurListe = new SelectList(HareketTur, "ID", "Ad");
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
-			var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _stokService.DepoListele();
 			var depoViewList = DepoListe.Select(d => new
 			{
 				d.ID,
@@ -251,7 +255,8 @@ namespace Ekomers.Web.Controllers
 
 			ViewBag.HareketTurListe = new SelectList(HareketTur, "ID", "Ad");
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
-			var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _stokService.DepoListele();
+			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
 			var depoViewList = DepoListe.Select(d => new
 			{
 				d.ID,
@@ -544,7 +549,8 @@ namespace Ekomers.Web.Controllers
 
 			ViewBag.HareketTurListe = new SelectList(HareketTur, "ID", "Ad");
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
-			var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+		//	var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _stokService.DepoListele();
 			var depoViewList = DepoListe.Select(d => new
 			{
 				d.ID,
@@ -567,7 +573,8 @@ namespace Ekomers.Web.Controllers
 
 			ViewBag.HareketTurListe = new SelectList(HareketTur, "ID", "Ad");
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
-			var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _stokService.DepoListele();
 			var depoViewList = DepoListe.Select(d => new
 			{
 				d.ID,
@@ -590,7 +597,8 @@ namespace Ekomers.Web.Controllers
 
 			ViewBag.HareketTurListe = new SelectList(HareketTur, "ID", "Ad");
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
-			var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _stokService.DepoListele();
 			var depoViewList = DepoListe.Select(d => new
 			{
 				d.ID,
@@ -613,7 +621,8 @@ namespace Ekomers.Web.Controllers
 
 			ViewBag.HareketTurListe = new SelectList(HareketTur, "ID", "Ad");
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
-			var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _stokService.DepoListele();
 			var depoViewList = DepoListe.Select(d => new
 			{
 				d.ID,
@@ -718,7 +727,8 @@ namespace Ekomers.Web.Controllers
 			{ 
 				MalzemelerVMListe = await _stokService.DepoDurumu((int)user.DepartmanID) 
 			};
-			var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _stokService.DepoListele();
 			DepoListe?.Insert(0, new MalzemeDepoVM { ID = 0, Ad = "Tümü" });
 			ViewBag.DepoListe = new SelectList(DepoListe, "ID", "Ad");
 
@@ -734,7 +744,8 @@ namespace Ekomers.Web.Controllers
 			{ 
 				MalzemelerVMListe = await _stokService.DepoDurumu(modelv, (int)user.DepartmanID)
 			};
-			var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
+			var DepoListe = await _stokService.DepoListele();
 			DepoListe?.Insert(0, new MalzemeDepoVM { ID = 0, Ad = "Tümü" });
 			ViewBag.DepoListe = new SelectList(DepoListe, "ID", "Ad");
 			//await SelectListFill(modelvm);
@@ -971,7 +982,8 @@ namespace Ekomers.Web.Controllers
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
 			var modelvm = new MalzemeDepoVM()
 			{ 
-				MalzemeDepoVMListe = await _stokService.DepoListele((int)user.DepartmanID)
+				//MalzemeDepoVMListe = await _stokService.DepoListele((int)user.DepartmanID)
+				MalzemeDepoVMListe = await _stokService.DepoListele()
 			};
 			var DepartmanListe = await _stokService.DepartmanListele();
 			DepartmanListe?.Insert(0, new Departman { ID = 0, Ad = "Tümü" });

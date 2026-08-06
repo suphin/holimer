@@ -88,6 +88,12 @@ namespace Ekomers.Web.Controllers
 			return View(model);
 		}
 
+		public async Task<IActionResult> KrediOdemePlani()
+		{
+			var model = await _service.KrediOdemePlani();
+
+			return View(model);
+		}
 
 		[HttpPost]
 		public async Task<IActionResult> Run(ReportRequest request, CancellationToken ct)

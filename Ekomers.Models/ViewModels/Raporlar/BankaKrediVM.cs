@@ -6,44 +6,34 @@ namespace Ekomers.Models.ViewModels
 {
 	public class BankaKrediVM
 	{
-		public int LOGICALREF { get; set; }
+		public string NAME_ { get; set; } = string.Empty;
 
 		public string CODE { get; set; } = string.Empty;
-
-		public string NAME_ { get; set; } = string.Empty;
 
 		public DateTime? BEGDATE { get; set; }
 
 		public DateTime? ENDDATE { get; set; }
 
-		public short CRCARDTYPE { get; set; }
-
 		public decimal TRTOTAL { get; set; }
 
 		public decimal INTTOTAL { get; set; }
 
-		public decimal KKDFTOTAL { get; set; }
-
 		public decimal BSMVTOTAL { get; set; }
 
-		public string SPECODE { get; set; } = string.Empty;
+		public decimal ANAPARA_ODENEN { get; set; }
 
-		public short TRCURR { get; set; }
+		public decimal FAIZ_ODENEN { get; set; }
 
-		public short BRANCH { get; set; }
+		public decimal BSMV_ODENEN { get; set; }
 
-		public int PROJECTREF { get; set; }
+		public decimal KKDF_ODENEN { get; set; }
 
-		public short CRCALCTYPE { get; set; }
+		public decimal KALAN_ANAPARA { get; set; }
 
-		public DateTime? STRUCTDATE { get; set; }
+		public decimal KALAN_FAIZ { get; set; }
 
-		public short PERIODENDPAY { get; set; }
+		public decimal KALAN_BSMV { get; set; }
 
-		public string BankaHesabi { get; set; } = string.Empty;
-
-		public string BankaAdi { get; set; } = string.Empty;
-
-		public string ProjeKodu { get; set; } = string.Empty;
+		public decimal KALAN_KKDF { get; set; }
 	}
 }

@@ -1,0 +1,89 @@
+﻿@model List<KrediOdemePlaniVM>
+
+@{
+    ViewData["Title"] = "Kredi Ödeme Planı";
+}
+
+<div class="card shadow-sm">
+
+
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Finans / Banka Kredi Taksitleri
+                <span class="d-block text-muted pt-2 font-size-sm">Ödenmemiş Kredi Taksitleri</span>
+            </h3>
+        </div>
+      
+    </div> 
+
+    <div class="card-body">
+
+        <table class="table table-bordered table-hover mb-0">
+
+            <thead class="table-dark">
+                <tr>
+                    <th width="150">Dönem</th>
+                    <th>Kredi</th>
+                    <th width="180" class="text-right">Tutar</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @foreach (var ay in Model.OrderBy(a=>a.DUEDATE).GroupBy(x => new { x.YIL, x.AY, x.AYADI }))
+                {
+                    <tr class="table-primary fw-bold">
+
+                        <td colspan="2">
+                            @ay.Key.AYADI @ay.Key.YIL
+                        </td>
+
+                        <td class="text-right">
+                            @ay.Sum(x => x.TUTAR).ToString("N2")
+                        </td>
+
+                    </tr>
+
+                    @foreach (var kredi in ay)
+                    {
+                        <tr>
+
+                            <td>@kredi.DUEDATE.ToString("dd.MM.yyyy")</td>
+
+                            <td>
+                                @kredi.KREDIADI
+                            </td>
+
+                            <td class="text-right">
+                                @kredi.TUTAR.ToString("N2")
+                            </td>
+
+                        </tr>
+                    }
+
+                }
+
+            </tbody>
+
+            <tfoot class="table-light">
+
+                <tr>
+
+                    <th colspan="2" class="text-right">
+                        GENEL TOPLAM
+                    </th>
+
+                    <th class="text-right">
+                        @Model.Sum(x => x.TUTAR).ToString("N2")
+                    </th>
+
+                </tr>
+
+            </tfoot>
+
+        </table>
+
+    </div>
+
+</div>

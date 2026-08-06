@@ -390,7 +390,6 @@ namespace Ekomers.Data.Services
 				return list;
 			});
 		}
-
 		public async Task<bool> BordroPersonelAktar()
 		{
 			try
@@ -401,52 +400,147 @@ namespace Ekomers.Data.Services
 					.GetAll2()
 					.ToListAsync();
 
-				// Mevcut personel kodlarını HashSet'e al (hızlı arama için)
-				var mevcutKodlar = mevcutPersoneller
-					.Where(x => !string.IsNullOrEmpty(x.PersonelKod))
-					.Select(x => x.PersonelKod!)
-					.ToHashSet();
+				// Kod üzerinden hızlı erişim
+				var mevcutPersonelSozluk = mevcutPersoneller
+					.Where(x => !string.IsNullOrWhiteSpace(x.PersonelKod))
+					.ToDictionary(x => x.PersonelKod!, x => x);
 
-				var yeniPersoneller = bordroPersoneller
-					.Where(x => !string.IsNullOrEmpty(x.CODE)
-							 && !mevcutKodlar.Contains(x.CODE))
-					.Select(x => new Personel
+				var yeniPersoneller = new List<Personel>();
+
+				foreach (var bordroPersonel in bordroPersoneller)
+				{
+					if (string.IsNullOrWhiteSpace(bordroPersonel.CODE))
+						continue;
+
+					// Personel mevcut mu?
+					if (mevcutPersonelSozluk.TryGetValue(bordroPersonel.CODE, out var mevcutPersonel))
 					{
-						PersonelKod = x.CODE,
-						AdSoyad = $"{x.NAME} {x.SURNAME}".Trim(),
+						bool guncellendi = false;
 
-						DogumTarihi = x.BIRTHDATE ?? DateTime.MinValue,
-						IseBaslamaTarihi = x.INDATE ?? DateTime.MinValue,
-						AyrilisTarihi = x.OUTDATE ?? DateTime.MinValue,
-						IsActive=true,
-						IsDelete=false,
-						Cinsiyet = x.SEX ?? 0,
+						// TCKN güncelle
+						if (mevcutPersonel.Tckn != bordroPersonel.TTFNO)
+						{
+							mevcutPersonel.Tckn = bordroPersonel.TTFNO;
+							guncellendi = true;
+						}
 
-						// Varsayılan değerler
-						DepartmanID = 0,
-						SirketID = x.FIRMNR ?? 0,
-						BolumID = 0,
-						GorevID = 0,
-						
-						DurumID = x.TYP ?? 0,
-					})
-					.ToList();
+						// Durum güncelle
+						if (mevcutPersonel.DurumID != (bordroPersonel.TYP ?? 0))
+						{
+							mevcutPersonel.DurumID = bordroPersonel.TYP ?? 0;
+							guncellendi = true;
+						}
+
+						// Ayrılış tarihi güncelle
+						DateTime ayrilisTarihi = bordroPersonel.OUTDATE ?? DateTime.MinValue;
+
+						if (mevcutPersonel.AyrilisTarihi != ayrilisTarihi)
+						{
+							mevcutPersonel.AyrilisTarihi = ayrilisTarihi;
+							guncellendi = true;
+						}
+
+						if (guncellendi)
+						{
+							mevcutPersonel.UpdateDate = DateTime.Now;
+						}
+					}
+					else
+					{
+						// Yeni personel
+						yeniPersoneller.Add(new Personel
+						{
+							PersonelKod = bordroPersonel.CODE,
+							AdSoyad = $"{bordroPersonel.NAME} {bordroPersonel.SURNAME}".Trim(),
+							Tckn = bordroPersonel.TTFNO,
+							DogumTarihi = bordroPersonel.BIRTHDATE ?? DateTime.MinValue,
+							IseBaslamaTarihi = bordroPersonel.INDATE ?? DateTime.MinValue,
+							AyrilisTarihi = bordroPersonel.OUTDATE ?? DateTime.MinValue,
+							Cinsiyet = bordroPersonel.SEX ?? 0,
+
+							IsActive = true,
+							IsDelete = false,
+
+							DepartmanID = 0,
+							SirketID = bordroPersonel.FIRMNR ?? 0,
+							BolumID = 0,
+							GorevID = 0,
+
+							DurumID = bordroPersonel.TYP ?? 0
+						});
+					}
+				}
 
 				if (yeniPersoneller.Any())
 				{
 					await _context.Personel.AddRangeAsync(yeniPersoneller);
-					await _context.SaveChangesAsync();
 				}
+
+				await _context.SaveChangesAsync();
 
 				return true;
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-
 				return false;
 			}
-			
 		}
+		//public async Task<bool> BordroPersonelAktar()
+		//{
+		//	try
+		//	{
+		//		var bordroPersoneller = await _bordro.Personel.ToListAsync();
+
+		//		var mevcutPersoneller = await _PersonelRepo
+		//			.GetAll2()
+		//			.ToListAsync();
+
+		//		// Mevcut personel kodlarını HashSet'e al (hızlı arama için)
+		//		var mevcutKodlar = mevcutPersoneller
+		//			.Where(x => !string.IsNullOrEmpty(x.PersonelKod))
+		//			.Select(x => x.PersonelKod!)
+		//			.ToHashSet();
+
+		//		var yeniPersoneller = bordroPersoneller
+		//			.Where(x => !string.IsNullOrEmpty(x.CODE)
+		//					 && !mevcutKodlar.Contains(x.CODE))
+		//			.Select(x => new Personel
+		//			{
+		//				PersonelKod = x.CODE,
+		//				AdSoyad = $"{x.NAME} {x.SURNAME}".Trim(),
+		//				Tckn=x.TTFNO,
+		//				DogumTarihi = x.BIRTHDATE ?? DateTime.MinValue,
+		//				IseBaslamaTarihi = x.INDATE ?? DateTime.MinValue,
+		//				AyrilisTarihi = x.OUTDATE ?? DateTime.MinValue,
+		//				IsActive=true,
+		//				IsDelete=false,
+		//				Cinsiyet = x.SEX ?? 0,
+
+		//				// Varsayılan değerler
+		//				DepartmanID = 0,
+		//				SirketID = x.FIRMNR ?? 0,
+		//				BolumID = 0,
+		//				GorevID = 0,
+
+		//				DurumID = x.TYP ?? 0,
+		//			})
+		//			.ToList();
+
+		//		if (yeniPersoneller.Any())
+		//		{
+		//			await _context.Personel.AddRangeAsync(yeniPersoneller);
+		//			await _context.SaveChangesAsync();
+		//		}
+
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+
+		//		return false;
+		//	}
+
+		//}
 
 		public Task<PagedResult<PersonelVM>> VeriListeleAsync(int page, int pageSize, CancellationToken ct = default)
 		{

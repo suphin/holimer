@@ -5,11 +5,13 @@
 <table class="table table-bordered table-hover table-checkable" id="kt_datatable1">
     <thead>
         <tr> 
+            <th>Sıra No</th>
             <th>Fotograf</th>
             <th>Personel No</th>
             <th>Şirket</th> 
             <th>Departman / Görev</th> 
             <th>Ad Soyad</th> 
+            <th>TCKN</th>
             <th>Telefon</th> 
             <th>Şirket Telefonu</th>
             <th>Eposta</th>          
@@ -22,9 +24,13 @@
         </tr>
     </thead>
     <tbody>
+        @{
+            var sirano = 1;
+        }
         @foreach (PersonelVM item in Model.PersonelVMListe)
         {
             <tr data-id="@item.ID" class="@(item.IsDelete ? "deleted" : "")"> 
+                <td>@sirano</td>
                 <td>
                     @if (!String.IsNullOrEmpty(@item.Fotograf))
                     {
@@ -39,6 +45,7 @@
                 <td>@item.SirketAd</td>
                 <td>@item.DepartmanAd / @item.Gorev</td>
                 <td>@item.AdSoyad</td>
+                <td>@item.Tckn</td>
                 <td>@item.Telefon</td>
                 <td>@item.TelefonSirket</td>
                 <td>@item.Email</td>
@@ -50,6 +57,7 @@
 					}
                 
             </tr>
+            sirano = sirano + 1;
         }
 
 
