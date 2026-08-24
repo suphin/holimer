@@ -90,6 +90,7 @@ namespace Ekomers.Web.Controllers
 
 		public async Task<IActionResult> KrediOdemePlani()
 		{
+			ViewBag.Modul = "Rapor";
 			var model = await _service.KrediOdemePlani();
 
 			return View(model);

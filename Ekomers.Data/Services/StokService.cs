@@ -305,9 +305,14 @@ namespace Ekomers.Data.Services
 
 			return hareket;
 		}
-		public Task<List<MalzemeStokVM>> VeriListele()
+		public async Task<List<MalzemeStokVM>> VeriListele()
 		{
-			throw new NotImplementedException();
+			 
+				var List = GenelListe().OrderByDescending(a => a.ID)
+									   .Take(1000)
+									   .ToList();
+				return List;
+			 
 		}
 		public async Task<List<MalzemeStokVM>> VeriListele(MalzemeStokVM model,int departmanID)
 		{
@@ -380,9 +385,44 @@ namespace Ekomers.Data.Services
 			}
 		
 		}
-		public Task<List<MalzemeStokVM>> VeriListele(MalzemeStokVM model)
+		public async Task<List<MalzemeStokVM>> VeriListele(MalzemeStokVM model)
 		{
-			throw new NotImplementedException();
+			var liste = GenelListe();
+
+
+
+
+			if (model.MalzemeAd != null)
+			{
+				liste = liste.Where(p => p.MalzemeAd.Contains(model.MalzemeAd));
+			}
+			if (model.MalzemeKod != null)
+			{
+				liste = liste.Where(p => p.MalzemeKod.Contains(model.MalzemeKod));
+			}
+			if (model.DepoID != 0)
+			{
+				liste = liste.Where(p => p.DepoID == model.DepoID);
+			}
+			if (model.BirimID != 0)
+			{
+				liste = liste.Where(p => p.BirimID == model.BirimID);
+			}
+			if (model.TipID != 0)
+			{
+				liste = liste.Where(p => p.TipID == model.TipID);
+			}
+			if (model.HareketTurID != 0)
+			{
+				liste = liste.Where(p => p.HareketTurID == model.HareketTurID);
+			}
+
+			 
+				var List = liste.OrderByDescending(a => a.ID)
+										 .Take(1000)
+										 .ToList();
+				return List;
+		 
 		}
 
 		public async Task<bool> VeriSil(int HareketID)
@@ -832,6 +872,49 @@ namespace Ekomers.Data.Services
 
 			 
 		}
+
+		public async Task<List<MalzemelerVM>> DepoDurumu()
+		{
+			
+
+			var stokHareketListesi = _stokRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false);
+			var malzemeListesi = MalzemeGenelListe();
+			var depoListesi = _depoRepo.GetAll2(d => d.IsActive == true && d.IsDelete == false);
+
+			var sonuc = (from malz in malzemeListesi
+						 join stok in stokHareketListesi on malz.ID equals stok.MalzemeID into gj
+						 from subYg in gj.DefaultIfEmpty()
+
+						 join depo in depoListesi on subYg.DepoID equals depo.ID into depoJoin
+						 from depoSub in depoJoin.DefaultIfEmpty()
+
+						 group subYg by new { malz.ID, malz.Ad, malz.Kod,malz.BirimAd, malz.KritikMiktar, DepoAd = depoSub.Ad, depoSub.DepartmanID } into grouped
+
+
+
+						 select new MalzemelerVM
+						 {
+							 Ad = grouped.Key.Ad,
+							 ID = grouped.Key.ID,
+							 Kod = grouped.Key.Kod,
+							 BirimAd = grouped.Key.BirimAd,
+							 DepoAd = grouped.Key.DepoAd, // Depo adı eklendi
+							 DepartmanID = grouped.Key.DepartmanID,
+							 KritikMiktar = grouped.Key.KritikMiktar,
+							 ToplamMaliyet = grouped.Where(y => y != null && y.GirisCikis == true).Sum(y => y.Maliyet*y.Miktar),
+							 GirenMiktar = grouped.Where(y => y != null && y.GirisCikis == true).Sum(y => y.Miktar),
+							 CikanMiktar = grouped.Where(y => y != null && y.GirisCikis == false).Sum(y => y.Miktar),
+							 KalanMiktar = (grouped.Where(y => y != null && y.GirisCikis == true).Sum(y => y.Miktar)) -
+										   (grouped.Where(y => y != null && y.GirisCikis == false).Sum(y => y.Miktar))
+						 });
+
+			 
+				var list = sonuc.Where(p => p.GirenMiktar > 0 || p.CikanMiktar > 0).ToList();
+				return list;
+			 
+
+
+		}
 		public async Task<List<MalzemelerVM>> DepoDurumu(MalzemelerVM modelv,int departmanID)
 		{
 			 
@@ -895,6 +978,64 @@ namespace Ekomers.Data.Services
 				return list;
 			}
 			 
+		}
+
+		public async Task<List<MalzemelerVM>> DepoDurumu(MalzemelerVM modelv)
+		{
+
+
+			var stokHareketListesi = _stokRepo.GetAll2(a => a.IsActive == true && a.IsDelete == false);
+			var malzemeListesi = MalzemeGenelListe();
+			var depoListesi = _depoRepo.GetAll2(d => d.IsActive == true && d.IsDelete == false); // Depo bilgileri
+
+
+
+			var sonuc = (from malz in malzemeListesi
+						 join stok in stokHareketListesi on malz.ID equals stok.MalzemeID into gj
+						 from subYg in gj.DefaultIfEmpty()
+
+						 join depo in depoListesi on subYg.DepoID equals depo.ID into depoJoin
+						 from depoSub in depoJoin.DefaultIfEmpty()
+
+						 group subYg by new { malz.ID, malz.Ad, malz.Kod, malz.BirimAd, malz.KritikMiktar, DepoAd = depoSub.Ad, DepoID = depoSub.ID, depoSub.DepartmanID } into grouped
+
+
+
+						 select new MalzemelerVM
+						 {
+							 Ad = grouped.Key.Ad,
+							 ID = grouped.Key.ID,
+							 Kod = grouped.Key.Kod,
+							 BirimAd = grouped.Key.BirimAd,
+							 DepoAd = grouped.Key.DepoAd, // Depo adı eklendi
+							 DepoID = grouped.Key.DepoID, // Depo adı eklendi
+							 DepartmanID = grouped.Key.DepartmanID,
+							 KritikMiktar = grouped.Key.KritikMiktar,
+							 ToplamMaliyet = grouped.Where(y => y != null && y.GirisCikis == true).Sum(y => y.Maliyet * y.Miktar),
+							 GirenMiktar = grouped.Where(y => y != null && y.GirisCikis == true).Sum(y => y.Miktar),
+							 CikanMiktar = grouped.Where(y => y != null && y.GirisCikis == false).Sum(y => y.Miktar),
+							 KalanMiktar = (grouped.Where(y => y != null && y.GirisCikis == true).Sum(y => y.Miktar)) -
+										   (grouped.Where(y => y != null && y.GirisCikis == false).Sum(y => y.Miktar))
+						 });
+
+			if (modelv.Ad != null)
+			{
+				sonuc = sonuc.Where(p => p.Ad.Contains(modelv.Ad));
+			}
+			if (modelv.Kod != null)
+			{
+				sonuc = sonuc.Where(p => p.Kod.Contains(modelv.Kod));
+			}
+			if (modelv.DepoID != 0)
+			{
+				sonuc = sonuc.Where(p => p.DepoID == modelv.DepoID);
+			}
+
+
+				var list = sonuc.Where(p => p.GirenMiktar > 0 || p.CikanMiktar > 0).ToList();
+				return list;
+		
+
 		}
 		public void FotoYukle(MalzemelerVM model)
 		{

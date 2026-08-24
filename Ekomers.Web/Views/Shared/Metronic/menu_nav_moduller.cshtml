@@ -607,7 +607,7 @@
 
 <!--end::Destek Hizmetleri-->
 <!--begin::stok sayım-->
-@if (  User.IsInRole("Admin"))
+@if (User.HasClaim("Modul", "Stok") || User.IsInRole("Admin"))
 {
 	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "Stok" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 		<a href="javascript:;" class="menu-link menu-toggle">
@@ -633,9 +633,39 @@
 					</span>
 				</li>
 
-				@if (User.HasClaim("Stok", "Sayim") || User.IsInRole("Admin"))
+				@if (User.HasClaim("Stok", "MalzemeGirisCikis") || User.IsInRole("Admin"))
 				{
-					<li class="menu-item menu-item-submenu  @((controllerName == "WarehouseInventory" ||
+					<li class="menu-item menu-item-submenu  @((controllerName == "Stok") && (actionName == "Index" || actionName == "MalzemeDepoDurum") ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Hareketler</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @((controllerName == "Stok" && actionName == "Index") ? "menu-item-active" : "")" aria-haspopup="true">
+									<a href="Stok/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Malzeme Hareketleri</span>
+									</a>
+								</li>
+								<li class="menu-item @((controllerName == "Stok" && actionName == "MalzemeDepoDurum") ? "menu-item-active" : "")" aria-haspopup="true">
+									<a href="Stok/MalzemeDepoDurum" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Malzeme Stok Durumu</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+					@* <li class="menu-item menu-item-submenu  @((controllerName == "WarehouseInventory" ||
 																controllerName == "StockCount"  ) ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 						<a href="javascript:;" class="menu-link menu-toggle">
 							<i class="menu-bullet menu-bullet-line">
@@ -668,9 +698,69 @@
 								</li>
 							</ul>
 						</div>
-					</li>
+					</li> *@
 				}
 
+				@if (User.HasClaim("Stok", "MalzemeTanimlari") || User.IsInRole("Admin"))
+				{
+					<li class="menu-item menu-item-submenu  @(((controllerName == "Stok" || controllerName == "Malzeme") && (controllerName == "Malzeme" ||
+																										actionName == "KategoriMalzeme" || actionName == "Kategoriler" || actionName == "Malzemeler" || actionName == "Depolar"
+
+																														)) ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+						<a href="javascript:;" class="menu-link menu-toggle">
+							<i class="menu-bullet menu-bullet-line">
+								<span></span>
+							</i>
+							<span class="menu-text">Tanımlamalar</span>
+							<i class="menu-arrow"></i>
+						</a>
+						<div class="menu-submenu">
+							<i class="menu-arrow"></i>
+							<ul class="menu-subnav">
+								<li class="menu-item @( (controllerName == "Stok" && actionName == "KategoriMalzeme") ? "menu-item-active" : "" )" aria-haspopup="true">
+									<a href="Stok/KategoriMalzeme" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Ürün / Hizmet Tanımları</span>
+									</a>
+								</li>
+								<li class="menu-item @((controllerName == "Stok" && actionName == "Kategoriler") ? "menu-item-active" : "")" aria-haspopup="true">
+									<a href="Stok/Kategoriler" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Kategoriler</span>
+									</a>
+								</li>
+								<li class="menu-item @((controllerName == "Stok" && actionName == "Malzemeler") ? "menu-item-active" : "")" aria-haspopup="true">
+									<a href="Stok/Malzemeler" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Malzemeler</span>
+									</a>
+								</li>
+								<li class="menu-item @((controllerName == "Malzeme" && actionName == "Index") ? "menu-item-active" : "")" aria-haspopup="true">
+									<a href="Malzeme/Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Malzemeler Yeni</span>
+									</a>
+								</li>
+								<li class="menu-item @((controllerName == "Stok" && actionName == "Depolar") ? "menu-item-active" : "")" aria-haspopup="true">
+									<a href="Stok/Depolar" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot">
+											<span></span>
+										</i>
+										<span class="menu-text">Depolar</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+					</li>
+				}
 
 			 
 

@@ -1,7 +1,5 @@
 ﻿@model MalzemelerVM
-@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+ 
 @{
     ViewData["Title"] = "Malzeme Stok Durumu";
 }
@@ -38,11 +36,98 @@
         max-width: 1340px !important;
     }
 </style>
-<div class="card shadow">
+<div class="card shadow mb-4">
     <div class="card-body">
-        <div class="text-left">
-            <h1 class="h4 mb-0 text-gray-800">Malzemeler</h1>
-            <h5 class="mb-0 text-gray-800">Malzemelerin giriş safyası.</h5>
+
+        <div class="row g-3">
+
+            <div class="col-xl-2 col-lg-4 col-md-6">
+                <div class="border rounded p-3 h-100 bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Malzeme Çeşidi</div>
+                            <h3 class="mb-0 fw-bold text-primary">
+                                @Model.ToplamMalzemeSayisi
+                            </h3>
+                        </div>
+                        <i class="bi bi-box-seam fs-1 text-primary opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-2 col-lg-4 col-md-6">
+                <div class="border rounded p-3 h-100 bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Stok Maliyeti</div>
+                            <h3 class="mb-0 fw-bold text-success">
+                                @Model.ToplamStokMaliyeti?.ToString("N2")
+                            </h3>
+                        </div>
+                        <i class="bi bi-cash-stack fs-1 text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-2 col-lg-4 col-md-6">
+                <div class="border rounded p-3 h-100 bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Toplam Giriş</div>
+                            <h3 class="mb-0 fw-bold text-info">
+                                @Model.ToplamGirisMiktari?.ToString("N2")
+                            </h3>
+                        </div>
+                        <i class="bi bi-arrow-down-circle fs-1 text-info opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-2 col-lg-4 col-md-6">
+                <div class="border rounded p-3 h-100 bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Toplam Çıkış</div>
+                            <h3 class="mb-0 fw-bold text-warning">
+                                @Model.ToplamCikisMiktari?.ToString("N2")
+                            </h3>
+                        </div>
+                        <i class="bi bi-arrow-up-circle fs-1 text-warning opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+         
+
+       
+
+            <div class="col-xl-2 col-lg-4 col-md-6">
+                <div class="border rounded p-3 h-100 bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Kritik Stok Ürüm Sayısı</div>
+                            <h3 class="mb-0 fw-bold @(Model.KritikStokSayisi > 0 ? "text-danger" : "text-success")">
+                                @Model.KritikStokSayisi
+                            </h3>
+                        </div>
+                        <i class="bi bi-exclamation-triangle fs-1 @(Model.KritikStokSayisi > 0 ? "text-danger" : "text-success") opacity-50"></i>
+                    </div>
+                </div>
+            </div> 
+           
+
+        </div>
+
+        <div class="row g-3 mt-3">
+            @foreach (var item in Model.BirimOzetleri)
+            {
+                <div class="col-xl-2 col-lg-3 col-md-4">
+                    <div class="border rounded p-3 text-center">
+                        <div class="text-muted">@item.Birim</div>
+                        <h3>@item.Miktar?.ToString("N2")</h3>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -120,6 +205,7 @@
                         <th>Giren Miktar</th>
                         <th>Çıkan Miktar</th>
                         <th>Kalan Miktar</th>
+                        <th>Toplam Maliyet</th>
                         <th class="no-print">Kritik Miktar</th>
                     </tr>
                 </thead>
@@ -138,6 +224,7 @@
                             <td class="text-right">@String.Format("{0:n2}", item.GirenMiktar)</td>
                             <td class="text-right">@String.Format("{0:n2}", item.CikanMiktar)</td>
                             <td class="text-right"><b>@String.Format("{0:n2}", item.KalanMiktar)</b></td>
+                            <td class="text-right">@String.Format("{0:n2}", item.ToplamMaliyet)</td>
                             <td class="text-right no-print">@String.Format("{0:n2}", item.KritikMiktar)</td>
                         </tr>
                         sayac = sayac + 1;

@@ -112,7 +112,7 @@ namespace Ekomers.Web.Controllers
 
 		public async Task<IActionResult> Index(int page = 1, int pageSize = 10, CancellationToken ct = default)
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			//await ViewBagListeDoldur();
 			var paged = await _service.VeriListeleAsync(page, pageSize, ct);
 
@@ -131,7 +131,7 @@ namespace Ekomers.Web.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Arama()
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 
 			var model = new MalzemelerVM
 			{
@@ -148,7 +148,7 @@ namespace Ekomers.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Arama(MalzemelerVM modelv)
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			//await ViewBagListeDoldur();
 
 
@@ -198,7 +198,7 @@ namespace Ekomers.Web.Controllers
 		}
 		public async Task<IActionResult> VeriGoruntule2(int VeriID = 0, string view = "", int pageIndex = 0, int pageSize = 0)
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			var modelc = await _service.VeriGetir(VeriID);
 
 			await ViewBagPartialListeDoldur();

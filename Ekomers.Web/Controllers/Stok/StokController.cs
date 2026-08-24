@@ -4,24 +4,25 @@ using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.ViewModels;
+using Humanizer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using Microsoft.AspNetCore.Http;
  
  
 using OfficeOpenXml;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
 using System.Net;
-using static Ekomers.Data.Services.StokService;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Humanizer;
 using System.Security.AccessControl;
+using System.Threading.Tasks;
+using static Ekomers.Data.Services.StokService;
+using static Ekomers.Models.ViewModels.MalzemelerVM;
 
 namespace Ekomers.Web.Controllers
 {
@@ -117,12 +118,13 @@ namespace Ekomers.Web.Controllers
 		}
 		public async Task<IActionResult> Index()
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
 			var modelvm = new MalzemeStokVM()
 			{
 				//MalzemeGrupListe = await _stokService.GrupListeleHepsi() ,
-				MalzemeStokVMListe=await _stokService.VeriListele((int)user.DepartmanID) 
+				MalzemeStokVMListe=await _stokService.VeriListele() 
+				//MalzemeStokVMListe=await _stokService.VeriListele((int)user.DepartmanID) 
 				
 			};
 			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
@@ -139,12 +141,13 @@ namespace Ekomers.Web.Controllers
 		[HttpPost]
 		public async Task<IActionResult> Index(MalzemeStokVM models)
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
 			var modelvm = new MalzemeStokVM()
 			{
 				//MalzemeGrupListe = await _stokService.GrupListeleHepsi(),
-				MalzemeStokVMListe = await _stokService.VeriListele(models, (int)user.DepartmanID),
+				MalzemeStokVMListe = await _stokService.VeriListele(models),
+				//MalzemeStokVMListe = await _stokService.VeriListele(models, (int)user.DepartmanID),
 
 			};
 		 
@@ -721,28 +724,46 @@ namespace Ekomers.Web.Controllers
 		#region "Stok Durumu"
 		public async Task<IActionResult> MalzemeDepoDurum()
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
-			var modelvm = new MalzemelerVM()
-			{ 
-				MalzemelerVMListe = await _stokService.DepoDurumu((int)user.DepartmanID) 
+			var liste = await _stokService.DepoDurumu();
+
+			var model = new MalzemelerVM
+			{
+				MalzemelerVMListe = liste,
+				ToplamMalzemeSayisi = liste.Count,
+				ToplamStokMaliyeti = liste.Sum(x => x.ToplamMaliyet),
+				ToplamGirisMiktari = liste.Sum(x => x.GirenMiktar),
+				ToplamCikisMiktari = liste.Sum(x => x.CikanMiktar),
+				ToplamKalanMiktari = liste.Sum(x => x.KalanMiktar),
+				KritikStokSayisi = liste.Count(x => x.KalanMiktar <= x.KritikMiktar)
+
 			};
+
+			model.BirimOzetleri = liste
+					.GroupBy(x => x.BirimAd)
+					.Select(g => new BirimOzetVM
+					{
+						Birim = g.Key,
+						Miktar = g.Sum(x => x.KalanMiktar)
+					})
+				.ToList();
 			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
 			var DepoListe = await _stokService.DepoListele();
 			DepoListe?.Insert(0, new MalzemeDepoVM { ID = 0, Ad = "Tümü" });
 			ViewBag.DepoListe = new SelectList(DepoListe, "ID", "Ad");
 
 			//await SelectListFill(modelvm);
-			return View(modelvm);
+			return View(model);
 		}
 		[HttpPost]
 		public async Task<IActionResult> MalzemeDepoDurum(MalzemelerVM modelv)
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
 			var modelvm = new MalzemelerVM()
 			{ 
-				MalzemelerVMListe = await _stokService.DepoDurumu(modelv, (int)user.DepartmanID)
+				MalzemelerVMListe = await _stokService.DepoDurumu(modelv)
 			};
 			//var DepoListe = await _stokService.DepoListele((int)user.DepartmanID);
 			var DepoListe = await _stokService.DepoListele();
@@ -756,7 +777,7 @@ namespace Ekomers.Web.Controllers
 		#region "Gruplar ve Alt Gruplar"
 		public async Task<IActionResult> Gruplar()
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			var modelvm = new GruplarVM()
 			{
 				MalzemeGrupListe = await _stokService.GrupListele()
@@ -792,7 +813,7 @@ namespace Ekomers.Web.Controllers
 		}
 		public async Task<IActionResult> AltGruplar(int GrupID=0)
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			var modelvm = new GruplarVM()
 			{
 				ParentGrup= await _stokService.GrupGetir(GrupID),
@@ -832,7 +853,7 @@ namespace Ekomers.Web.Controllers
 		#region "Malzemeler"
 		public async Task<IActionResult> Malzemeler()
 		{
-			ViewBag.Modul = "CRM"; 
+			ViewBag.Modul = "Stok"; 
 			var modelvm = new MalzemelerVM()
 			{
 				MalzemeGrupListe = await _stokService.GrupListeleHepsi(),
@@ -845,7 +866,7 @@ namespace Ekomers.Web.Controllers
 		[HttpPost]
 		public async Task<IActionResult> Malzemeler(MalzemelerVM modelv)
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			//MalzemelerVM model = await VMModel(); 
 			var modelvm = new MalzemelerVM()
 			{
@@ -978,7 +999,7 @@ namespace Ekomers.Web.Controllers
 		#region "Depolar"
 		public async Task<IActionResult> Depolar()
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			var user = await _userManager.FindByNameAsync(User.Identity!.Name);
 			var modelvm = new MalzemeDepoVM()
 			{ 
@@ -994,7 +1015,7 @@ namespace Ekomers.Web.Controllers
 		[HttpPost]
 		public async Task<IActionResult> Depolar(MalzemeDepoVM modelc)
 		{
-			ViewBag.Modul = "CRM";
+			ViewBag.Modul = "Stok";
 			var modelvm = new MalzemeDepoVM()
 			{
 				MalzemeDepoVMListe = await _stokService.DepoListele(modelc)
@@ -1062,7 +1083,7 @@ namespace Ekomers.Web.Controllers
 		#region "Kategoriler"
 		public async Task<IActionResult> Kategoriler()
         {
-            ViewBag.Modul = "CRM";
+            ViewBag.Modul = "Stok";
 			// Kategori ağacını alıyoruz
             var kategoriTree = _stokService.GetKategoriTree();
 			var gruplarvm=new GruplarVM();
@@ -1130,7 +1151,7 @@ namespace Ekomers.Web.Controllers
         }
 		public async Task<IActionResult> KategoriMalzeme()
 		{
-            ViewBag.Modul = "CRM";
+            ViewBag.Modul = "Stok";
             // Kategori ağacını alıyoruz
             //var kategoriTree = _stokService.GetKategoriTree();
             var gruplarvm = new MalzemelerVM

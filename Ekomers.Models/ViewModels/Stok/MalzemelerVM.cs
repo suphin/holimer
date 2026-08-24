@@ -72,6 +72,25 @@ namespace Ekomers.Models.ViewModels
 		public DateTime? SonMaliyetGuncellemeTarih { get; set; }
 		public double? MaliyetSatis { get; set; }
 		public double? FiyatSatis { get; set; }
+
+
+
+
+		public int ToplamMalzemeSayisi { get; set; }
+		public double? ToplamStokMaliyeti { get; set; }
+		public double? ToplamGirisMiktari { get; set; }
+		public double? ToplamCikisMiktari { get; set; }
+		public double? ToplamKalanMiktari { get; set; }
+		public int KritikStokSayisi { get; set; }
+
+		public class BirimOzetVM
+		{
+			public string Birim { get; set; }
+			public double? Miktar { get; set; }
+		}
+
+		public List<BirimOzetVM> BirimOzetleri { get; set; } = new();
+
 	}
 
 	public class TagifyDto

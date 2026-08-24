@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Kredi Ödeme Planı";
 }
-
+  
 <div class="card shadow-sm">
 
 
@@ -14,76 +14,165 @@
                 <span class="d-block text-muted pt-2 font-size-sm">Ödenmemiş Kredi Taksitleri</span>
             </h3>
         </div>
-      
-    </div> 
+        <a asp-action="BankaKredileri" class="btn btn-primary">
+            <i class="bi bi-arrow-left"></i> Kredilere Dön
+        </a>
+    </div>
 
     <div class="card-body">
 
-        <table class="table table-bordered table-hover mb-0">
+        <div class="accordion" id="accordionKredi">
 
-            <thead class="table-dark">
-                <tr>
-                    <th width="150">Dönem</th>
-                    <th>Kredi</th>
-                    <th width="180" class="text-right">Tutar</th>
-                </tr>
-            </thead>
+            @{
+                int i = 0;
+            }
 
-            <tbody>
+            @foreach (var ay in Model.OrderBy(a=>a.DUEDATE).GroupBy(x => new { x.YIL, x.AY, x.AYADI }))
+            {
+                var toplam = ay.Sum(x => x.TUTAR);
 
-                @foreach (var ay in Model.OrderBy(a=>a.DUEDATE).GroupBy(x => new { x.YIL, x.AY, x.AYADI }))
-                {
-                    <tr class="table-primary fw-bold">
+                <div class="accordion-item mb-2 w-100">
 
-                        <td colspan="2">
-                            @ay.Key.AYADI @ay.Key.YIL
-                        </td>
+                    <h2 class="accordion-header" id="heading_@i">
 
-                        <td class="text-right">
-                            @ay.Sum(x => x.TUTAR).ToString("N2")
-                        </td>
+                    @*     <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#collapse_@i">
 
-                    </tr>
+                            <div class="d-flex justify-content-between w-100 me-3">
 
-                    @foreach (var kredi in ay)
-                    {
-                        <tr>
+                                <strong>
+                                    @ay.Key.AYADI @ay.Key.YIL
+                                </strong>
 
-                            <td>@kredi.DUEDATE.ToString("dd.MM.yyyy")</td>
+                                <strong class="text-danger">
+                                    @toplam.ToString("N2") TL
+                                </strong>
 
-                            <td>
-                                @kredi.KREDIADI
-                            </td>
+                            </div>
 
-                            <td class="text-right">
-                                @kredi.TUTAR.ToString("N2")
-                            </td>
+                        </button> *@
+                        <button class="accordion-button collapsed w-100"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#collapse_@i"
+                                aria-expanded="false"
+                                aria-controls="collapse_@i">
 
-                        </tr>
-                    }
+                            <div class="container-fluid px-0">
 
-                }
+                                <div class="row w-100">
 
-            </tbody>
+                                    <div class="col-md-8 text-left">
+                                        <strong class="fs-5">
+                                            @ay.Key.AYADI @ay.Key.YIL
+                                        </strong>
+                                    </div>
 
-            <tfoot class="table-light">
+                                    <div class="col-md-4 text-right">
+                                        <strong class="text-danger fs-5">
+                                            @toplam.ToString("N2") TL
+                                        </strong>
+                                    </div>
 
-                <tr>
+                                </div>
 
-                    <th colspan="2" class="text-right">
-                        GENEL TOPLAM
-                    </th>
+                            </div>
 
-                    <th class="text-right">
-                        @Model.Sum(x => x.TUTAR).ToString("N2")
-                    </th>
+                        </button>
+                    </h2>
 
-                </tr>
+                    <div id="collapse_@i"
+                         class="accordion-collapse collapse"
+                         data-bs-parent="#accordionKredi">
 
-            </tfoot>
+                        <div class="accordion-body p-0">
 
-        </table>
+                            <table class="table table-bordered table-hover mb-0">
+
+                                <thead class="table-light">
+
+                                    <tr>
+
+                                        <th>Kredi</th>
+                                        <th>Vade</th>
+
+                                        <th width="170" class="text-right">
+                                            Tutar
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                    @foreach (var kredi in ay)
+                                    {
+                                        <tr>
+
+                                            <td>
+
+                                                @kredi.KREDIADI
+
+                                            </td>
+                                            <td>
+
+                                                @kredi.DUEDATE.ToString("dd.MM.yyyy")
+
+                                            </td>
+                                            <td class="text-right fw-bold">
+
+                                                @kredi.TUTAR.ToString("N2")
+
+                                            </td>
+
+                                        </tr>
+                                    }
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                i++;
+            }
+
+        </div>
+
+    </div>
+
+    <div class="card-footer">
+
+        <div class="row">
+
+            <div class="col-md-8 text-right">
+
+                <h2>GENEL TOPLAM</h2>
+
+            </div>
+
+            <div class="col-md-4 text-right">
+
+                <h2 class="text-danger">
+
+                    @Model.Sum(x => x.TUTAR).ToString("N2") TL
+
+                </h2>
+
+            </div>
+
+        </div>
 
     </div>
 
 </div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>

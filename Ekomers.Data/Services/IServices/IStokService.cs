@@ -34,8 +34,10 @@ namespace Ekomers.Data.Services.IServices
 		Task<bool> MalzemeSil(int MalzemeID);
 		void FotoYukle(MalzemelerVM model);
 		Task<MalzemelerVM> VeriDoldur(params string[] listTypes);
+		Task<List<MalzemelerVM>> DepoDurumu();
 		Task<List<MalzemelerVM>> DepoDurumu(int departmanID);
 		Task<List<MalzemelerVM>> DepoDurumu(MalzemelerVM modelv,int departmanID);
+		Task<List<MalzemelerVM>> DepoDurumu(MalzemelerVM modelv);
 
 
 
