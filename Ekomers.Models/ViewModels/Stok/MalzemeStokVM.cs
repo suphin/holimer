@@ -53,7 +53,7 @@ namespace Ekomers.Models.ViewModels
 		[Display(Name = "Açıklama")]
 		public string? Aciklama { get; set; }
 		public DateTime Tarih { get; set; }
-		public DateTime SktTarih { get; set; }
+		public DateTime? SktTarih { get; set; }
 		public bool GirisCikis { get; set; }
         public bool? GirisCikisDurum { get; set; }
         public IFormFile? Dosya { get; set; }

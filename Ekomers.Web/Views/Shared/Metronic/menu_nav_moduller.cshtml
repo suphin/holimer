@@ -771,7 +771,7 @@
 
 <!--end::stok sayım-->
 <!--begin::Uretim-->
-@if (User.HasClaim("Modul", "Uretim") || User.IsInRole("Admin"))
+@if (false && (User.HasClaim("Modul", "Uretim") || User.IsInRole("Admin")))
 {
 	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "Uretim" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 		<a href="javascript:;" class="menu-link menu-toggle">
@@ -804,7 +804,7 @@
 					<i class="menu-bullet menu-bullet-line">
 						<span></span>
 					</i>
-					<span class="menu-text">Üretim Planlama</span>
+					<span class="menu-text">Üretim Yönetimi</span>
 					<i class="menu-arrow"></i>
 				</a>
 				<div class="menu-submenu">
@@ -825,7 +825,7 @@
 										<!--end::Svg Icon-->
 									</span>
 								</span>
-								<span class="menu-text">Reçete Listesi</span>
+								<span class="menu-text">Reçeteler</span>
 							</a>
 						</li>
 						<li class="menu-item @( (controllerName == "Uretim" && actionName == "Index") ? "menu-item-active" : "" )" aria-haspopup="true">
@@ -843,7 +843,7 @@
 										<!--end::Svg Icon-->
 									</span>
 								</span>
-								<span class="menu-text">Planlama Listesi</span>
+								<span class="menu-text">Üretim Emirleri</span>
 							</a>
 						</li>
 						<li class="menu-item @( (controllerName == "Uretim" && actionName == "Takvim") ? "menu-item-active" : "" )" aria-haspopup="true">
@@ -861,7 +861,7 @@
 										<!--end::Svg Icon-->
 									</span>
 								</span>
-								<span class="menu-text">Planlama Takvimi</span>
+								<span class="menu-text">Üretim Takvimi</span>
 							</a>
 						</li>
 								<li class="menu-item @( (controllerName == "Uretim" && actionName == "Rapor") ? "menu-item-active" : "" )" aria-haspopup="true">
@@ -879,7 +879,7 @@
 												<!--end::Svg Icon-->
 											</span>
 										</span>
-										<span class="menu-text">Planlama Rapor</span>
+										<span class="menu-text">Üretim Raporları</span>
 									</a>
 								</li>
 								<li class="menu-item @( (controllerName == "Uretim" && actionName == "Dashboard") ? "menu-item-active" : "" )" aria-haspopup="true">
@@ -897,7 +897,7 @@
 												<!--end::Svg Icon-->
 											</span>
 										</span>
-										<span class="menu-text">Dashboard</span>
+										<span class="menu-text">Üretim Paneli</span>
 									</a>
 								</li>
 							</ul>
@@ -914,6 +914,31 @@
 }
 
 <!--end::Uretim-->
+<!--begin::Yeni Uretim Yonetimi-->
+@if (User.HasClaim("Modul", "Uretim") || User.IsInRole("Admin"))
+{
+	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "YeniUretim" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+		<a href="javascript:;" class="menu-link menu-toggle">
+			<span class="svg-icon menu-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h6v6H4V4m10 0h6v6h-6V4M4 14h6v6H4v-6m10 0h6v6h-6v-6Z" /></svg>
+			</span>
+			<span class="menu-text">Üretim Yönetimi</span><i class="menu-arrow"></i>
+		</a>
+		<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
+			<li class="menu-item menu-item-parent"><span class="menu-link"><span class="menu-text">Üretim Yönetimi</span></span></li>
+			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Dashboard" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Dashboard" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Paneli</span></a></li>
+			<li class="menu-item @(controllerName == "ProductionCatalog" ? "menu-item-active" : "")"><a asp-controller="ProductionCatalog" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Malzeme Kataloğu</span></a></li>
+			<li class="menu-item @(controllerName == "ProductionRecipe" ? "menu-item-active" : "")"><a asp-controller="ProductionRecipe" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Reçeteler</span></a></li>
+			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Planlama" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Planlama" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Planlama</span></a></li>
+			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Emirler" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Emirler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Emirleri</span></a></li>
+			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "DepoHazirlama" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="DepoHazirlama" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Depo Hazırlama Emirleri</span></a></li>
+			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Gerceklesen" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Gerceklesen" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Gerçekleşen Üretim</span></a></li>
+			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Izlenebilirlik" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Izlenebilirlik" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Lot / Parti İzlenebilirliği</span></a></li>
+			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Raporlar" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Raporlar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Raporları</span></a></li>
+		</ul></div>
+	</li>
+}
+<!--end::Yeni Uretim Yonetimi-->
 <!--begin::PURCHASING-->
 
 @await Component.InvokeAsync("PurchasingMenu")

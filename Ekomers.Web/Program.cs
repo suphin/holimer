@@ -283,6 +283,7 @@ builder.Services.AddScoped<IAktiviteService, AktiviteService>();
 builder.Services.AddScoped<IFirsatService, FirsatService>();
 builder.Services.AddScoped<ITeklifService, TeklifService>();
 builder.Services.AddScoped<IMalzemeService, MalzemeService>();
+builder.Services.AddScoped<ProductionCatalogSyncService>();
 builder.Services.AddScoped<IMalzemeFiyatService, MalzemeFiyatService>();
 builder.Services.AddScoped<ISiparisService, SiparisService>();
 builder.Services.AddScoped<ISiparisIadeService, SiparisIadeService>();

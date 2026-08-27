@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Ekomers.Models.Enums;
 
 namespace Ekomers.Models.Entity
 {
@@ -14,6 +15,14 @@ namespace Ekomers.Models.Entity
 		public int UrunID { get; set; } 
 		public string? Not { get; set; }
 		public string? Aciklama { get; set; }
+		public string? Kod { get; set; }
+		public int VersiyonNo { get; set; } = 1;
+		public ReceteDurumu Durum { get; set; } = ReceteDurumu.Taslak;
+		public decimal BazMiktar { get; set; } = 1;
+		public int? BirimID { get; set; }
+		public int? OncekiVersiyonID { get; set; }
+		public DateTime? GecerlilikBaslangic { get; set; }
+		public DateTime? GecerlilikBitis { get; set; }
  
 	 
 	}

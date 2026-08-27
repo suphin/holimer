@@ -20,6 +20,10 @@ namespace Ekomers.Models.Entity
 		public string? DovizTurAd { get; set; }
 		public double? Kdv { get; set; }
 		public double? Iskonto { get; set; }
+		public int? BirimID { get; set; }
+		public int SiraNo { get; set; }
+		public bool Zorunlu { get; set; } = true;
+		public string? AlternatifGrupKodu { get; set; }
 	}
 
 	public class ReceteUrunlerVM : BaseVM

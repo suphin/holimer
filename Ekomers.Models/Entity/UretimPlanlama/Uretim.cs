@@ -7,6 +7,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Ekomers.Models.Enums;
 
 namespace Ekomers.Models.Entity
 {
@@ -31,6 +32,14 @@ namespace Ekomers.Models.Entity
 		public double? KayipFireOran { get; set; }
 		public double? ParasalDeger { get; set; }
 		public string? Not { get; set; }
+		public string? UretimEmriNo { get; set; }
+		public UretimEmriDurumu Durum { get; set; } = UretimEmriDurumu.Taslak;
+		public DateTime? PlanlananUretimTarihi { get; set; }
+		public DateTime? BaslamaTarihi { get; set; }
+		public DateTime? BitisTarihi { get; set; }
+		public int? KaynakDepoID { get; set; }
+		public int? UretimDepoID { get; set; }
+		public int ReceteVersiyonNo { get; set; } = 1;
 	}
 	public class UretimVM : BaseVM
 	{

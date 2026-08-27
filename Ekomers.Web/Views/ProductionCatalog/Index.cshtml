@@ -1,0 +1,8 @@
+@model IReadOnlyList<Ekomers.Models.ViewModels.Production.ProductionCatalogItemVM>
+@{ ViewData["Title"] = "Üretim Malzeme Kataloğu"; }
+<div class="card card-custom"><div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Üretim Malzeme Kataloğu<span class="d-block text-muted pt-2 font-size-sm">Logo kartları ve portal hızlı kodları</span></h3></div>
+<div class="card-toolbar"><form asp-action="Sync" method="post"><button type="submit" class="btn btn-primary">Logo ve Portal Kartlarını Güncelle</button></form></div></div>
+<div class="card-body">@if (Model.Count == 0) { <div class="alert alert-light-primary">Katalog boş. Güncelle düğmesiyle ilk aktarımı başlatabilirsiniz.</div> }
+else { <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Kod</th><th>Malzeme</th><th>Kaynak</th><th>Tür</th><th>Birim</th><th>Logo</th><th>Son Güncelleme</th></tr></thead><tbody>
+@foreach (var item in Model) { <tr><td><strong>@item.Code</strong></td><td>@item.Name</td><td>@item.Source</td><td>@item.Type</td><td>@item.Unit</td><td>@(item.Source == PrdMaterialSource.Logo ? (item.LogoActive ? "Aktif" : "Pasif") : "-")</td><td>@item.LogoLastSyncDate?.ToString("dd.MM.yyyy HH:mm")</td></tr> }
+</tbody></table></div> }</div></div>

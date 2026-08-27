@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Ekomers.Models.Enums;
 
 namespace Ekomers.Models.Ekomers
 {
@@ -50,11 +51,16 @@ namespace Ekomers.Models.Ekomers
 		public double Miktar { get; set; }
 		public double Maliyet { get; set; } = 0;
 		public DateTime Tarih { get; set; }
-        public DateTime SktTarih { get; set; }
+		public DateTime? SktTarih { get; set; }
         public bool GirisCikis { get; set; }
 		public string? Aciklama { get; set; }
 		public string? LotNumara { get; set; }
 		public string? MalzemeAciklama { get; set; }
+		public StokBelgeTuru BelgeTuru { get; set; } = StokBelgeTuru.SerbestHareket;
+		public int? BelgeID { get; set; }
+		public string? TransferNo { get; set; }
+		public int? UretimID { get; set; }
+		public int? StokRezervasyonID { get; set; }
 
 	}
 	public class Malzeme:BaseEntity
@@ -79,6 +85,10 @@ namespace Ekomers.Models.Ekomers
 		public DateTime? SonMaliyetGuncellemeTarih { get; set; }
 		public double? MaliyetSatis { get; set; }
 		public double? FiyatSatis { get; set; }
+		public MalzemeKaynakTuru KaynakTuru { get; set; } = MalzemeKaynakTuru.Belirsiz;
+		public string? LogoKod { get; set; }
+		public bool? LogoAktif { get; set; }
+		public DateTime? LogoSonSenkronTarihi { get; set; }
 	}
 	public class MalzemeGrup: BaseEntity
 	{
@@ -107,6 +117,7 @@ namespace Ekomers.Models.Ekomers
 		public string? Adres { get; set; }
 		public string? Ozellik { get; set; }
 		public int DepartmanID { get; set; } 
+		public DepoTuru DepoTuru { get; set; } = DepoTuru.Genel;
 	}
 	public class MalzemeHareketTur : BaseEntity
 	{
