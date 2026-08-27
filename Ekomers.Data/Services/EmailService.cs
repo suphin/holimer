@@ -1,61 +1,42 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Mail;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using Ekomers.Data.Services.IServices;
- 
-namespace Ekomers.Data.Services
+using Ekomers.Models.Configuration;
+using Microsoft.Extensions.Options;
+using System.Net;
+using System.Net.Mail;
+
+namespace Ekomers.Data.Services;
+
+public class EmailService : IEmailService
 {
- 
+    private readonly EmailSettings _settings;
 
-    public class EmailService : IEmailService
+    public EmailService(IOptions<EmailSettings> settings) => _settings = settings.Value;
+
+    public void SendEmail(string toEmail, string subject, string body)
     {
-        private readonly string _fromEmail;
-        private readonly string _fromPassword;
-        private readonly string _smtpServer;
-        private readonly int _smtpPort;
-
-        public EmailService(string fromEmail, string fromPassword, string smtpServer, int smtpPort)
+        using var smtpClient = new SmtpClient(_settings.Host)
         {
-            _fromEmail = fromEmail;
-            _fromPassword = fromPassword;
-            _smtpServer = smtpServer;
-            _smtpPort = smtpPort;
+            Port = _settings.Port,
+            Credentials = new NetworkCredential(_settings.UserName, _settings.Password),
+            EnableSsl = _settings.EnableSsl
+        };
+        using var mailMessage = new MailMessage
+        {
+            From = new MailAddress(_settings.FromEmail, _settings.FromName),
+            Subject = subject,
+            Body = body,
+            IsBodyHtml = true
+        };
+        mailMessage.To.Add(toEmail);
+
+        try
+        {
+            smtpClient.Send(mailMessage);
+            Console.WriteLine("E-posta başarıyla gönderildi.");
         }
-
-        public void SendEmail(string toEmail, string subject, string body)
+        catch (Exception ex)
         {
-            using (var smtpClient = new SmtpClient(_smtpServer))
-            {
-                smtpClient.Port = _smtpPort;
-                smtpClient.Credentials = new NetworkCredential(_fromEmail, _fromPassword);
-                smtpClient.EnableSsl = true;
-
-                var mailMessage = new MailMessage
-                {
-                    From = new MailAddress(_fromEmail),
-                    Subject = subject,
-                    Body = body,
-                    IsBodyHtml = true,
-                };
-
-                mailMessage.To.Add(toEmail);
-
-                try
-                {
-                    smtpClient.Send(mailMessage);
-                    Console.WriteLine("E-posta başarıyla gönderildi.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("E-posta gönderilemedi: " + ex.Message);
-                }
-            }
+            Console.WriteLine("E-posta gönderilemedi: " + ex.Message);
         }
     }
-
-
 }

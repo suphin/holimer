@@ -2,12 +2,14 @@
 using Ekomers.Data.Services;
 using Ekomers.Models.Entity;
 using Ekomers.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
 namespace Ekomers.Web.Controllers
 {
+	[Authorize(Policy = "AdminOrPurchasing")]
 	public class PurchaseRequestController : Controller
 	{
 		private readonly IPurchaseRequestService _service;
@@ -32,6 +34,7 @@ namespace Ekomers.Web.Controllers
 			return View(list);
 		}
 		[HttpPost]
+		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Create(CreatePurchaseRequestVM model, string actionType)
 		{
 			try
@@ -108,6 +111,7 @@ namespace Ekomers.Web.Controllers
 			return View("Edit", vm);
 		}
 		[HttpPost]
+		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Edit(int id, CreatePurchaseRequestVM model)
 		{
 			var request = await _context.PurchaseRequests

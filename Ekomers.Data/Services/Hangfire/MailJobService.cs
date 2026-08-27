@@ -1,40 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
+using Ekomers.Models.Configuration;
+using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
-using System.Text;
 
-namespace Ekomers.Data.Services
+namespace Ekomers.Data.Services;
+
+public class MailJobService : IMailJobService
 {
-	public class MailJobService : IMailJobService
-	{
-		public async Task SendMailAsync(string to, string subject, string body)
-		{
-			using var smtp = new SmtpClient("mail.holimer.com.tr")
-			{
-				Port = 587,
-				Credentials = new NetworkCredential("portal@holimer.com.tr", "Hol*2022"),
-				EnableSsl = false,
-			};
+    private readonly EmailSettings _settings;
 
-			var mail = new MailMessage
-			{
-				From = new MailAddress("portal@holimer.com.tr"),
-				Subject = subject,
-				Body = body,
-				IsBodyHtml = true
-			};
+    public MailJobService(IOptions<EmailSettings> settings) => _settings = settings.Value;
 
-			mail.To.Add(to); 
-			try
-			{
-				await smtp.SendMailAsync(mail);
-				Console.WriteLine("E-posta başarıyla gönderildi.");
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine("E-posta gönderilemedi: " + ex.Message);
-			}
-		}
-	}
+    public async Task SendMailAsync(string to, string subject, string body)
+    {
+        using var smtp = new SmtpClient(_settings.Host)
+        {
+            Port = _settings.Port,
+            Credentials = new NetworkCredential(_settings.UserName, _settings.Password),
+            EnableSsl = _settings.EnableSsl
+        };
+        using var mail = new MailMessage
+        {
+            From = new MailAddress(_settings.FromEmail, _settings.FromName),
+            Subject = subject,
+            Body = body,
+            IsBodyHtml = true
+        };
+        mail.To.Add(to);
+
+        try
+        {
+            await smtp.SendMailAsync(mail);
+            Console.WriteLine("E-posta başarıyla gönderildi.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("E-posta gönderilemedi: " + ex.Message);
+        }
+    }
 }

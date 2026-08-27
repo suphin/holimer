@@ -6,7 +6,9 @@
 	using System.Linq;
 	using System.Collections.Generic;
 	using Ekomers.Models.ViewModels;
+	using Microsoft.AspNetCore.Authorization;
 
+	[Authorize(Policy = "AdminOrStok")]
 	public class WarehouseInventoryController : Controller
 	{
 		private readonly ApplicationDbContext _context;
@@ -52,6 +54,7 @@
 
 		// 💾 Toplu kayıt kaydetme
 		[HttpPost]
+		[ValidateAntiForgeryToken]
 		public IActionResult EditAll(List<WarehouseInventoryEditViewModel> model)
 		{
 			if (model == null || !model.Any())

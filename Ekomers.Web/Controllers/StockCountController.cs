@@ -1,11 +1,13 @@
 ﻿using Ekomers.Data;
 using Ekomers.Models.Entity;
 using Ekomers.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ekomers.Web.Controllers
 {
+	[Authorize(Policy = "AdminOrStok")]
 	public class StockCountController : Controller
 	{
 		private readonly ApplicationDbContext _context;
@@ -47,6 +49,7 @@ namespace Ekomers.Web.Controllers
 		}
 
 		[HttpPost]
+		[ValidateAntiForgeryToken]
 		public IActionResult Save(StockCountViewModel model)
 		{
 			foreach (var product in model.Products)

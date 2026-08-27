@@ -6,8 +6,10 @@ using Ekomers.Data.Repository.IRepository;
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Models.Ekomers;
+using Ekomers.Models.Configuration;
 using Ekomers.Models.ViewModels;
 using Ekomers.Web.Controllers;
+using Ekomers.Web.Infrastructure.Auth;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
@@ -43,6 +45,7 @@ var Bordroconn = CryptoHelper.Decrypt(encryptedBordroConn);
  
 
 builder.Services.Configure<SmsSettings>(builder.Configuration.GetSection("SmsSettings"));
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.Configure<FileSettings>(builder.Configuration.GetSection("FileSettings")); 
 builder.Services.Configure<PageSettings>(builder.Configuration.GetSection("PageSettings"));
  
@@ -304,13 +307,7 @@ builder.Services.AddScoped<IZimmetService, ZimmetService>();
 
 builder.Services.AddScoped<ITcmbService, TcmbService>();
 builder.Services.AddScoped<IMapService, MapService>();
-//builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IEmailService>(provider =>
-   new EmailService(
-       "suphinohutlu@afyon.bel.tr",
-       "CnmDrk2012",
-       "mail.afyon.bel.tr",
-       587));
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<TtnService>();
@@ -341,7 +338,10 @@ var app = builder.Build();
 #endregion
 
 //arka plan işlemleri için hangfire kurulumu
-app.UseHangfireDashboard("/hangfire"); // panel
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+	Authorization = [new HangfireAuthorizationFilter()]
+});
 
 
 app.UseRequestLocalization(new RequestLocalizationOptions
