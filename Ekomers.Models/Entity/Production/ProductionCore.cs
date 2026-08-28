@@ -22,6 +22,7 @@ public class PrdMaterial : BaseEntity
     public bool RequiresLotTracking { get; set; } = true;
     public bool RequiresExpirationDate { get; set; }
     public PrdQualityControlRequirement QualityControlRequirement { get; set; } = PrdQualityControlRequirement.NotRequired;
+    public decimal? CriticalQuantity { get; set; }
     public string? Description { get; set; }
 }
 

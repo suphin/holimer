@@ -4,6 +4,7 @@ using Ekomers.Models.ViewModels.Production;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Ekomers.Web.Controllers;
 
@@ -44,11 +45,9 @@ public sealed class ProductionCatalogController : Controller
     public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken)
     {
         ViewBag.Modul = "YeniUretim";
-        var model = await _context.PrdMaterials.AsNoTracking()
-            .Where(x => x.ID == id && x.IsDelete != true)
-            .Select(x => new ProductionCatalogEditVM { Id=x.ID, Code=x.Code, Name=x.Name, Source=x.Source, Type=x.Type, UnitId=x.UnitId, Description=x.Description, RequiresLotTracking=x.RequiresLotTracking, RequiresExpirationDate=x.RequiresExpirationDate, QualityControlRequirement=x.QualityControlRequirement, IsActive=x.IsActive != false })
-            .FirstOrDefaultAsync(cancellationToken);
-        if (model == null) return NotFound();
+        var material = await _context.PrdMaterials.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true,cancellationToken);
+        if (material == null) return NotFound();
+        var model = new ProductionCatalogEditVM { Id=material.ID, Code=material.Code, Name=material.Name, Source=material.Source, Type=material.Type, UnitId=material.UnitId, Description=material.Description, RequiresLotTracking=material.RequiresLotTracking, RequiresExpirationDate=material.RequiresExpirationDate, QualityControlRequirement=material.QualityControlRequirement, CriticalQuantity=material.CriticalQuantity?.ToString("0.######",CultureInfo.GetCultureInfo("tr-TR")), IsActive=material.IsActive != false };
         await FillUnits(model, cancellationToken);
         return View(model);
     }
@@ -61,8 +60,14 @@ public sealed class ProductionCatalogController : Controller
         if (material == null) return NotFound();
         if (!await _context.PrdUnits.AnyAsync(x => x.ID == model.UnitId && x.IsDelete != true && x.IsActive != false, cancellationToken))
             ModelState.AddModelError(nameof(model.UnitId), "Seçilen birim bulunamadı.");
+        decimal? criticalQuantity=null;
+        if(!string.IsNullOrWhiteSpace(model.CriticalQuantity))
+        {
+            if(!TryParseDecimal(model.CriticalQuantity,out var parsed)||parsed<0)ModelState.AddModelError(nameof(model.CriticalQuantity),"Kritik stok miktarı sıfır veya daha büyük geçerli bir sayı olmalıdır.");
+            else criticalQuantity=parsed;
+        }
         if (!ModelState.IsValid) { model.Code=material.Code; model.Source=material.Source; model.IsActive=material.IsActive != false; await FillUnits(model,cancellationToken); return View(model); }
-        material.Name=model.Name.Trim(); material.Type=model.Type; material.UnitId=model.UnitId; material.Description=model.Description?.Trim();material.RequiresLotTracking=model.RequiresLotTracking;material.RequiresExpirationDate=model.RequiresExpirationDate;material.QualityControlRequirement=model.QualityControlRequirement;
+        material.Name=model.Name.Trim(); material.Type=model.Type; material.UnitId=model.UnitId; material.Description=model.Description?.Trim();material.RequiresLotTracking=model.RequiresLotTracking;material.RequiresExpirationDate=model.RequiresExpirationDate;material.QualityControlRequirement=model.QualityControlRequirement;material.CriticalQuantity=criticalQuantity;
         material.UpdateDate=DateTime.Now; material.UpdateUserID=User.Identity?.Name;
         await _context.SaveChangesAsync(cancellationToken);
         TempData["success"]="Malzeme kartı güncellendi.";
@@ -82,6 +87,15 @@ public sealed class ProductionCatalogController : Controller
 
     private async Task FillUnits(ProductionCatalogEditVM model,CancellationToken ct) =>
         model.Units=await _context.PrdUnits.AsNoTracking().Where(x=>x.IsDelete!=true&&x.IsActive!=false).OrderBy(x=>x.Name).Select(x=>new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(x.Name,x.ID.ToString())).ToListAsync(ct);
+
+    private static bool TryParseDecimal(string? value,out decimal result)
+    {
+        result=0;if(string.IsNullOrWhiteSpace(value))return false;
+        var normalized=value.Trim().Replace(" ",string.Empty);
+        if(normalized.Contains(',')&&normalized.Contains('.'))normalized=normalized.LastIndexOf(',')>normalized.LastIndexOf('.')?normalized.Replace(".",string.Empty).Replace(',','.'):normalized.Replace(",",string.Empty);
+        else if(normalized.Contains(','))normalized=normalized.Replace(',','.');
+        return decimal.TryParse(normalized,NumberStyles.AllowLeadingSign|NumberStyles.AllowDecimalPoint,CultureInfo.InvariantCulture,out result);
+    }
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Sync(CancellationToken cancellationToken)

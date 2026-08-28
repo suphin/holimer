@@ -1,6 +1,55 @@
-@model IReadOnlyList<Ekomers.Models.ViewModels.Production.ProductionStockBalanceVM>
-@{ ViewData["Title"]="Üretim Stokları"; }
-<div class="card card-custom"><div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Üretim Stokları<span class="d-block text-muted pt-2 font-size-sm">Yeni üretim yapısındaki depo, lot ve SKT bazlı güncel bakiyeler</span></h3></div><div class="card-toolbar">@if(User.IsInRole("Admin")){<button type="button" class="btn btn-light" disabled title="Maliyet altyapısı tamamlandıktan sonra açılacak">Mevcut Stokları Aktar</button>}</div></div><div class="card-body">
-@if(Model.Count==0){<div class="alert alert-light-primary mb-0">Yeni üretim stoklarında henüz bakiye bulunmuyor. Maliyetli başlangıç aktarımı altyapı tamamlandıktan sonra etkinleştirilecek.</div>}
-else{<div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Depo</th><th>Malzeme</th><th>Lot</th><th>Son Kullanma</th><th>Bakiye</th><th>Birim Maliyet</th><th>Stok Değeri</th></tr></thead><tbody>@foreach(var item in Model){var expired=item.ExpirationDate.HasValue&&item.ExpirationDate.Value.Date<DateTime.Today;<tr><td><strong>@item.WarehouseCode</strong><span class="d-block text-muted">@item.WarehouseName</span></td><td><strong>@item.MaterialCode</strong><span class="d-block text-muted">@item.MaterialName</span></td><td>@item.LotNumber</td><td class="@(expired?"text-danger":"")">@item.ExpirationDate?.ToString("dd.MM.yyyy") @if(expired){<span class="label label-light-danger label-inline ml-2">Süresi Geçmiş</span>}</td><td class="@(item.Quantity<0?"text-danger":"")"><strong>@item.Quantity.ToString("0.######")</strong> @item.Unit</td><td>@item.UnitCost.ToString("N6") ₺</td><td><strong>@item.TotalCost.ToString("N2") ₺</strong></td></tr>}</tbody></table></div>}
-</div></div>
+@model Ekomers.Models.ViewModels.Production.ProductionStockReportVM
+@{ ViewData["Title"]="Malzeme Stok Durumu"; }
+
+<div class="row">
+    <div class="col-md mb-4"><div class="card card-custom h-100"><div class="card-body py-5"><span class="text-muted">Malzeme Çeşidi</span><div class="font-size-h3 font-weight-bold text-primary">@Model.MaterialCount</div></div></div></div>
+    <div class="col-md mb-4"><div class="card card-custom h-100"><div class="card-body py-5"><span class="text-muted">Stok Maliyeti</span><div class="font-size-h3 font-weight-bold text-success">@Model.TotalStockValue.ToString("N2") ₺</div></div></div></div>
+    <div class="col-md mb-4"><div class="card card-custom h-100"><div class="card-body py-5"><span class="text-muted">Toplam Giriş</span><div class="font-size-h3 font-weight-bold text-info">@Model.TotalIncoming.ToString("N2")</div></div></div></div>
+    <div class="col-md mb-4"><div class="card card-custom h-100"><div class="card-body py-5"><span class="text-muted">Toplam Çıkış</span><div class="font-size-h3 font-weight-bold text-warning">@Model.TotalOutgoing.ToString("N2")</div></div></div></div>
+    <div class="col-md mb-4"><div class="card card-custom h-100"><div class="card-body py-5"><span class="text-muted">Kritik Stok Malzemesi</span><div class="font-size-h3 font-weight-bold text-danger">@Model.CriticalMaterialCount</div></div></div></div>
+</div>
+
+@if(Model.UnitSummaries.Count>0)
+{
+    <div class="row mb-4">
+    @foreach(var summary in Model.UnitSummaries)
+    {
+        <div class="col-md-3 mb-3"><div class="card card-custom"><div class="card-body py-4 text-center"><span class="text-muted d-block">@summary.Unit</span><strong class="font-size-h4">@summary.Quantity.ToString("N2")</strong></div></div></div>
+    }
+    </div>
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Arama Seçenekleri<span class="d-block text-muted pt-2 font-size-sm">Kod, ad ve depo seçimine göre stokları süzün</span></h3></div></div>
+    <div class="card-body">
+        <form method="get" asp-action="Stoklar"><div class="row">
+            <div class="col-md-3 form-group"><label asp-for="Code">Malzeme Kodu</label><input asp-for="Code" class="form-control"/></div>
+            <div class="col-md-3 form-group"><label asp-for="Name">Malzeme Adı</label><input asp-for="Name" class="form-control"/></div>
+            <div class="col-md-4 form-group"><label asp-for="WarehouseId">Depo</label><select asp-for="WarehouseId" asp-items="Model.Warehouses" class="form-control"><option value="">Tümü</option></select></div>
+            <div class="col-md-2 form-group d-flex align-items-end"><button class="btn btn-primary btn-block">Ara</button></div>
+        </div></form>
+    </div>
+</div>
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Malzeme Stok Durum Raporu<span class="d-block text-muted pt-2 font-size-sm">Depo ve malzeme bazında miktar ile maliyet görünümü</span></h3></div><div class="card-toolbar">@if(User.IsInRole("Admin")){<a asp-action="MevcutStokAktar" class="btn btn-light-primary">Mevcut Stokları Aktar</a>}</div></div>
+    <div class="card-body">
+    @if(Model.Items.Count==0){<div class="alert alert-light-primary mb-0">Seçilen ölçütlere uygun stok bakiyesi bulunmuyor.</div>}
+    else
+    {
+        <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Depo</th><th>Malzeme</th><th>Giren</th><th>Çıkan</th><th>Kalan</th><th>Birim Maliyet</th><th>Toplam Maliyet</th><th>Kritik Miktar</th></tr></thead><tbody>
+        @foreach(var item in Model.Items)
+        {
+            <tr class="@(item.IsCritical?"table-danger":"")"><td><strong>@item.WarehouseCode</strong><span class="d-block text-muted">@item.WarehouseName</span></td><td><strong>@item.MaterialCode</strong><span class="d-block text-muted">@item.MaterialName</span></td><td>@item.IncomingQuantity.ToString("N2") @item.Unit</td><td>@item.OutgoingQuantity.ToString("N2") @item.Unit</td><td><strong>@item.RemainingQuantity.ToString("N2")</strong> @item.Unit</td><td>@item.UnitCost.ToString("N6") ₺</td><td><strong>@item.TotalCost.ToString("N2") ₺</strong></td><td>@if(item.CriticalQuantity.HasValue){<span class="@(item.IsCritical?"text-danger font-weight-bold":"")">@item.CriticalQuantity.Value.ToString("N2") @item.Unit</span>}else{<span class="text-muted">Tanımsız</span>}</td></tr>
+        }
+        </tbody></table></div>
+    }
+    </div>
+</div>
+
+@if(Model.Lots.Count>0)
+{
+<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Lot ve Son Kullanma Tarihi Detayı<span class="d-block text-muted pt-2 font-size-sm">Stok durum raporundaki bakiyelerin lot kırılımı</span></h3></div></div><div class="card-body"><div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Depo</th><th>Malzeme</th><th>Lot</th><th>Son Kullanma</th><th>Bakiye</th><th>Birim Maliyet</th><th>Stok Değeri</th></tr></thead><tbody>
+@foreach(var item in Model.Lots){var expired=item.ExpirationDate.HasValue&&item.ExpirationDate.Value.Date<DateTime.Today;<tr><td><strong>@item.WarehouseCode</strong><span class="d-block text-muted">@item.WarehouseName</span></td><td><strong>@item.MaterialCode</strong><span class="d-block text-muted">@item.MaterialName</span></td><td>@item.LotNumber</td><td class="@(expired?"text-danger":"")">@item.ExpirationDate?.ToString("dd.MM.yyyy") @if(expired){<span class="label label-light-danger label-inline ml-2">Süresi Geçmiş</span>}</td><td><strong>@item.Quantity.ToString("0.######")</strong> @item.Unit</td><td>@item.UnitCost.ToString("N6") ₺</td><td><strong>@item.TotalCost.ToString("N2") ₺</strong></td></tr>}
+</tbody></table></div></div></div>
+}

@@ -39,6 +39,7 @@ public sealed class ProductionCatalogEditVM
     [Display(Name = "Lot Takibi Zorunlu")] public bool RequiresLotTracking { get; set; }
     [Display(Name = "Son Kullanma Tarihi Zorunlu")] public bool RequiresExpirationDate { get; set; }
     [Display(Name = "Kalite Kontrol / Analiz")] public PrdQualityControlRequirement QualityControlRequirement { get; set; }
+    [Display(Name = "Kritik Stok Miktarı")] public string? CriticalQuantity { get; set; }
     public bool IsActive { get; set; }
     public List<SelectListItem> Units { get; set; } = [];
 }

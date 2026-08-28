@@ -25,12 +25,43 @@ public sealed class ProductionInventoryController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Yeni(PrdInventoryDocumentType type=PrdInventoryDocumentType.Opening,int? sourceWarehouseId=null,int? targetWarehouseId=null,CancellationToken ct=default)
+    public async Task<IActionResult> Yeni(PrdInventoryDocumentType type=PrdInventoryDocumentType.Opening,int? sourceWarehouseId=null,int? targetWarehouseId=null,int? materialId=null,string? quantity=null,int? quantityUnitId=null,CancellationToken ct=default)
     {
         ViewBag.Modul="YeniUretim";
         if(type!=PrdInventoryDocumentType.Opening&&type!=PrdInventoryDocumentType.WarehouseTransfer)return BadRequest();
         var model=new InventoryDocumentCreateVM{Type=type,SourceWarehouseId=sourceWarehouseId,TargetWarehouseId=targetWarehouseId,DocumentDate=DateTime.Today,CurrencyCode="TRY",ExchangeRate="1"};
-        await FillCreateModel(model,ct);return View(model);
+        await FillCreateModel(model,ct);
+        if(type==PrdInventoryDocumentType.Opening&&materialId.HasValue)
+        {
+            var material=await(from item in _context.PrdMaterials.AsNoTracking()
+                               join unit in _context.PrdUnits.AsNoTracking() on item.UnitId equals unit.ID
+                               where item.ID==materialId.Value&&item.IsActive!=false&&item.IsDelete!=true
+                               select new{item.ID,item.Code,item.UnitId,UnitCode=unit.Code,UnitName=unit.Name}).FirstOrDefaultAsync(ct);
+            if(material!=null)
+            {
+                model.Lines[0].MaterialId=material.ID;
+                model.Lines[0].Notes="MRP eksik stok tamamlaması";
+                model.Notes=$"MRP eksik stok tamamlaması - {material.Code}";
+                if(TryParseDecimal(quantity,out var requestedQuantity)&&requestedQuantity>0)
+                {
+                    var convertedQuantity=requestedQuantity;
+                    var sourceUnitName=material.UnitName;
+                    if(quantityUnitId.HasValue&&quantityUnitId.Value!=material.UnitId)
+                    {
+                        var sourceUnit=await _context.PrdUnits.AsNoTracking().Where(x=>x.ID==quantityUnitId.Value).Select(x=>new{x.Code,x.Name}).FirstOrDefaultAsync(ct);
+                        sourceUnitName=sourceUnit?.Name??string.Empty;
+                        convertedQuantity=sourceUnit==null?0:ConvertProductionQuantity(requestedQuantity,quantityUnitId.Value,sourceUnit.Code,sourceUnit.Name,material.UnitId,material.UnitCode,material.UnitName);
+                    }
+                    if(convertedQuantity>0)
+                    {
+                        model.Lines[0].Quantity=convertedQuantity.ToString("0.######",CultureInfo.GetCultureInfo("tr-TR"));
+                        ViewBag.PrefillInfo=$"MRP eksik miktarı {requestedQuantity:0.######} {sourceUnitName}; stok kartı biriminde {convertedQuantity:0.######} {material.UnitName} olarak hazırlandı.";
+                    }
+                    else ViewBag.PrefillWarning="Eksik miktarın birimi malzemenin stok birimine çevrilemedi. Miktarı lütfen elle giriniz.";
+                }
+            }
+        }
+        return View(model);
     }
 
     [HttpPost,ValidateAntiForgeryToken]
@@ -141,7 +172,7 @@ public sealed class ProductionInventoryController : Controller
 
     private async Task FillCreateModel(InventoryDocumentCreateVM model,CancellationToken ct)
     {
-        model.Warehouses=await _context.PrdWarehouses.AsNoTracking().Where(x=>x.IsActive!=false&&x.IsDelete!=true).OrderBy(x=>x.Type).ThenBy(x=>x.Code).Select(x=>new SelectListItem(x.Code+" - "+x.Name+" ("+x.Type.ToTurkish()+")",x.ID.ToString())).ToListAsync(ct);model.Materials=await _context.PrdMaterials.AsNoTracking().Where(x=>x.IsActive!=false&&x.IsDelete!=true).OrderBy(x=>x.Code).Select(x=>new SelectListItem(x.Code+" - "+x.Name,x.ID.ToString())).ToListAsync(ct);
+        model.Warehouses=await _context.PrdWarehouses.AsNoTracking().Where(x=>x.IsActive!=false&&x.IsDelete!=true).OrderBy(x=>x.Type).ThenBy(x=>x.Code).Select(x=>new SelectListItem(x.Code+" - "+x.Name+" ("+x.Type.ToTurkish()+")",x.ID.ToString())).ToListAsync(ct);model.Materials=await(from material in _context.PrdMaterials.AsNoTracking() join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID where material.IsActive!=false&&material.IsDelete!=true orderby material.Code select new SelectListItem(material.Code+" - "+material.Name+" ("+unit.Name+")",material.ID.ToString())).ToListAsync(ct);
         if(model.Type==PrdInventoryDocumentType.WarehouseTransfer&&model.SourceWarehouseId.HasValue){var balances=await GetLotBalances(model.SourceWarehouseId.Value,ct);model.SourceLots=balances.Where(x=>x.AvailableQuantity>0).Select(x=>new SelectListItem($"{x.MaterialCode} - {x.MaterialName} | Lot: {x.LotNumber} | Kullanılabilir: {x.AvailableQuantity:0.######} {x.Unit} | Maliyet: {x.UnitCost:N6} ₺"+(x.ExpirationDate.HasValue?$" | SKT: {x.ExpirationDate:dd.MM.yyyy}":string.Empty),x.StockLotId.ToString())).ToList();}
         while(model.Lines.Count<15)model.Lines.Add(new InventoryDocumentCreateLineVM());
     }
@@ -155,5 +186,34 @@ public sealed class ProductionInventoryController : Controller
     private static bool TryParseDecimal(string? value,out decimal result)
     {
         result=0;if(string.IsNullOrWhiteSpace(value))return false;var normalized=value.Trim().Replace(" ",string.Empty);if(normalized.Contains(',')&&normalized.Contains('.'))normalized=normalized.LastIndexOf(',')>normalized.LastIndexOf('.')?normalized.Replace(".",string.Empty).Replace(',','.'):normalized.Replace(",",string.Empty);else if(normalized.Contains(','))normalized=normalized.Replace(',','.');return decimal.TryParse(normalized,NumberStyles.AllowLeadingSign|NumberStyles.AllowDecimalPoint,CultureInfo.InvariantCulture,out result);
+    }
+
+    private static decimal ConvertProductionQuantity(decimal quantity,int sourceUnitId,string? sourceCode,string? sourceName,int targetUnitId,string? targetCode,string? targetName)
+    {
+        if(sourceUnitId==targetUnitId)return quantity;
+        var source=ResolveProductionUnit(sourceCode,sourceName);var target=ResolveProductionUnit(targetCode,targetName);
+        if(source.HasValue&&target.HasValue&&source.Value.Family==target.Value.Family)return quantity*source.Value.Factor/target.Value.Factor;
+        return 0m;
+    }
+
+    private static (string Family,decimal Factor)? ResolveProductionUnit(string? code,string? name)
+    {
+        static string Normalize(string? value)
+        {
+            var text=(value??string.Empty).Trim().ToUpper(new CultureInfo("tr-TR")).Replace('İ','I');
+            return new string(text.Where(char.IsLetterOrDigit).ToArray());
+        }
+        foreach(var value in new[]{Normalize(code),Normalize(name)}.Where(x=>x.Length>0))
+        {
+            if(value is "KG" or "KILOGRAM" or "KILO")return ("MASS",1000m);
+            if(value is "G" or "GR" or "GRAM" or "GRM")return ("MASS",1m);
+            if(value is "MG" or "MILIGRAM" or "MILLIGRAM")return ("MASS",0.001m);
+            if(value is "MCG" or "UG" or "MIKROGRAM")return ("MASS",0.000001m);
+            if(value is "L" or "LT" or "LITRE" or "LITER")return ("VOLUME",1000m);
+            if(value is "ML" or "MILILITRE" or "MILILITER")return ("VOLUME",1m);
+            if(value is "ADET" or "AD" or "PCS" or "PIECE" or "EA")return ("COUNT",1m);
+        }
+        var exact=Normalize(code);if(exact.Length==0)exact=Normalize(name);
+        return exact.Length==0?null:($"EXACT:{exact}",1m);
     }
 }

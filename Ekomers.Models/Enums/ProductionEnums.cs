@@ -56,6 +56,14 @@ public static class ProductionEnumText
         PrdProductionOrderStatus.Cancelled => "İptal", _ => value.ToString()
     };
 
+    public static string ToTurkish(this PrdWarehouseTaskStatus value) => value switch
+    {
+        PrdWarehouseTaskStatus.Waiting => "Bekliyor", PrdWarehouseTaskStatus.Preparing => "Hazırlanıyor",
+        PrdWarehouseTaskStatus.Shortage => "Eksik Malzeme", PrdWarehouseTaskStatus.Ready => "Hazır",
+        PrdWarehouseTaskStatus.Shipped => "Sevk Edildi", PrdWarehouseTaskStatus.Delivered => "Teslim Edildi",
+        PrdWarehouseTaskStatus.Cancelled => "İptal", _ => value.ToString()
+    };
+
     public static string ToTurkish(this PrdWarehouseType value) => value switch
     {
         PrdWarehouseType.Main => "Ana Depo", PrdWarehouseType.Production => "Üretim Deposu",

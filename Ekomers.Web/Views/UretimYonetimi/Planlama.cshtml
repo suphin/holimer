@@ -7,7 +7,7 @@
             <div class="card-body">
                 @if(Model.EditingPlanHeaderId.HasValue){<div class="alert alert-light-warning"><strong>@Model.EditingPlanNumber</strong> numaralı taslak plan düzenleniyor. Yeniden kilitlendiğinde MRP değerleri güncel stokla tekrar hesaplanacaktır.</div>}
                 <form asp-action="PlanlamayaEkle" method="post">
-                    <div class="form-group"><label>Ürün / Aktif Reçete</label><select name="recipeVersionId" asp-items="Model.Recipes" class="form-control"><option value="">Ürün seçiniz</option></select></div>
+                    <div class="form-group"><label>Ürün / Aktif Reçete</label><select name="recipeVersionId" asp-items="Model.Recipes" class="form-control kt_select2" data-live-search="true" data-size="5"><option value="">Ürün seçiniz</option></select></div>
                     <div class="form-group"><label>Üretilecek Miktar</label><input name="quantity" type="number" min="0.000001" step="0.000001" class="form-control"/></div>
                     <button type="submit" class="btn btn-primary btn-block">Listeye Ekle</button>
                 </form>
@@ -43,10 +43,10 @@
                     foreach(var group in Model.Requirements.GroupBy(x=>x.Type))
                     {
                         <h4 class="mt-6">@group.Key.ToTurkish() İhtiyaçları</h4>
-                        <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Malzeme / Stok Kodu</th><th>Teorik</th><th>Fire</th><th>Toplam</th><th>Fiziksel</th><th>Rezervasyon</th><th>Kullanılabilir</th><th>Eksik</th></tr></thead><tbody>
+                        <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Malzeme / Stok Kodu</th><th>Teorik</th><th>Fire</th><th>Toplam</th><th>Fiziksel</th><th>Rezervasyon</th><th>Kullanılabilir</th><th>Eksik</th><th>İşlem</th></tr></thead><tbody>
                         @foreach(var item in group)
                         {
-                            <tr><td><code>@item.Code</code> @item.Name</td><td>@item.TheoreticalQuantity.ToString("0.######") @item.Unit</td><td>@item.PlannedWasteQuantity.ToString("0.######") @item.Unit</td><td><strong>@item.RequiredQuantity.ToString("0.######")</strong> @item.Unit</td><td>@item.PhysicalStockQuantity.ToString("0.######") @item.Unit</td><td>@item.ReservedQuantity.ToString("0.######") @item.Unit</td><td>@item.AvailableStockQuantity.ToString("0.######") @item.Unit</td><td class="@(item.ShortageQuantity>0?"text-danger":"text-success")"><strong>@item.ShortageQuantity.ToString("0.######")</strong> @item.Unit</td></tr>
+                            <tr><td><code>@item.Code</code> @item.Name</td><td>@item.TheoreticalQuantity.ToString("0.######") @item.Unit</td><td>@item.PlannedWasteQuantity.ToString("0.######") @item.Unit</td><td><strong>@item.RequiredQuantity.ToString("0.######")</strong> @item.Unit</td><td>@item.PhysicalStockQuantity.ToString("0.######") @item.Unit</td><td>@item.ReservedQuantity.ToString("0.######") @item.Unit</td><td>@item.AvailableStockQuantity.ToString("0.######") @item.Unit</td><td class="@(item.ShortageQuantity>0?"text-danger":"text-success")"><strong>@item.ShortageQuantity.ToString("0.######")</strong> @item.Unit</td><td>@if(item.ShortageQuantity>0){<a asp-controller="ProductionInventory" asp-action="Yeni" asp-route-type="@((int)PrdInventoryDocumentType.Opening)" asp-route-materialId="@item.MaterialId" asp-route-quantity="@item.ShortageQuantity.ToString("0.######",System.Globalization.CultureInfo.InvariantCulture)" asp-route-quantityUnitId="@item.UnitId" class="btn btn-sm btn-light-danger text-nowrap" target="_blank" rel="noopener">Stok Girişi Aç</a>}</td></tr>
                         }
                         </tbody></table></div>
                     }

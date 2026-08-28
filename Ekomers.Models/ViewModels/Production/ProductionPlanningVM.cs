@@ -42,6 +42,8 @@ public sealed class ProductionPlanDetailVM
     public string? Notes { get; set; }
     public List<ProductionPlanDetailLineVM> Lines { get; set; } = [];
     public List<ProductionRequirementLineVM> Requirements { get; set; } = [];
+    public DateTime CurrentStockCalculationDate { get; set; }
+    public List<ProductionRequirementLineVM> CurrentRequirements { get; set; } = [];
 }
 
 public sealed class ProductionPlanDetailLineVM

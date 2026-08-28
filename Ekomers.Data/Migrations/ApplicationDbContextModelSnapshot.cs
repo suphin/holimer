@@ -3651,6 +3651,10 @@ namespace Ekomers.Data.Migrations
                     b.Property<string>("CreateUserID")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal?>("CriticalQuantity")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
 
