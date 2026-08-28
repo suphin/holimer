@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
  
 using Ekomers.Models.Entity;
 using Ekomers.Models.Entity.Production;
+using Ekomers.Models.Entity.Purchasing;
 
 
 
@@ -204,6 +205,11 @@ namespace Ekomers.Data
 		public DbSet<PrdProductionMaterialActual> PrdProductionMaterialActuals { get; set; }
 		public DbSet<PrdProductionResult> PrdProductionResults { get; set; }
 
+		// Bağımsız satınalma yönetimi (Pur) tabloları
+		public DbSet<PurPurchaseRequest> PurPurchaseRequests { get; set; }
+		public DbSet<PurPurchaseRequestLine> PurPurchaseRequestLines { get; set; }
+		public DbSet<PurRequestApprovalHistory> PurRequestApprovalHistories { get; set; }
+
 
 
 
@@ -346,6 +352,7 @@ namespace Ekomers.Data
 				.HasIndex(x => new { x.MalzemeID, x.DepoID, x.LotNumara, x.SktTarih, x.Durum });
 
 			ConfigureProductionModel(modelBuilder);
+			ConfigurePurchasingModel(modelBuilder);
 		}
 
 		private static void ConfigureProductionModel(ModelBuilder modelBuilder)
@@ -484,6 +491,49 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdProductionResult>().HasOne<PrdWarehouse>().WithMany().HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionResult>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionResult>().HasOne<PrdStockLot>().WithMany().HasForeignKey(x => x.StockLotId).OnDelete(DeleteBehavior.Restrict);
+		}
+
+		private static void ConfigurePurchasingModel(ModelBuilder modelBuilder)
+		{
+			Type[] purchasingTypes =
+			[
+				typeof(PurPurchaseRequest), typeof(PurPurchaseRequestLine),
+				typeof(PurRequestApprovalHistory)
+			];
+
+			foreach (var type in purchasingTypes)
+			{
+				modelBuilder.Entity(type).ToTable(type.Name);
+				foreach (var property in modelBuilder.Entity(type).Metadata.GetProperties()
+					.Where(x => x.ClrType == typeof(decimal) || x.ClrType == typeof(decimal?)))
+				{
+					property.SetPrecision(18);
+					property.SetScale(6);
+				}
+			}
+
+			modelBuilder.Entity<PurPurchaseRequest>().HasIndex(x => x.RequestNumber).IsUnique();
+			modelBuilder.Entity<PurPurchaseRequest>().Property(x => x.RequestNumber).HasMaxLength(50);
+			modelBuilder.Entity<PurPurchaseRequest>().Property(x => x.RequestedUserId).HasMaxLength(450);
+			modelBuilder.Entity<PurPurchaseRequest>().Property(x => x.SubmittedUserId).HasMaxLength(450);
+			modelBuilder.Entity<PurPurchaseRequest>().Property(x => x.Notes).HasMaxLength(1000);
+
+			modelBuilder.Entity<PurPurchaseRequestLine>().HasIndex(x => new { x.PurchaseRequestId, x.Sequence });
+			modelBuilder.Entity<PurPurchaseRequestLine>().HasIndex(x => new { x.PurchaseRequestId, x.Status });
+			modelBuilder.Entity<PurPurchaseRequestLine>().Property(x => x.SourceReferenceType).HasMaxLength(50);
+			modelBuilder.Entity<PurPurchaseRequestLine>().Property(x => x.Reason).HasMaxLength(500);
+			modelBuilder.Entity<PurPurchaseRequestLine>().Property(x => x.ApprovedUserId).HasMaxLength(450);
+			modelBuilder.Entity<PurPurchaseRequestLine>().Property(x => x.ApprovalNote).HasMaxLength(1000);
+
+			modelBuilder.Entity<PurRequestApprovalHistory>().HasIndex(x => new { x.PurchaseRequestId, x.PurchaseRequestLineId, x.ActionDate });
+			modelBuilder.Entity<PurRequestApprovalHistory>().Property(x => x.ActionUserId).HasMaxLength(450);
+			modelBuilder.Entity<PurRequestApprovalHistory>().Property(x => x.Note).HasMaxLength(1000);
+
+			modelBuilder.Entity<PurPurchaseRequestLine>().HasOne<PurPurchaseRequest>().WithMany().HasForeignKey(x => x.PurchaseRequestId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurPurchaseRequestLine>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurPurchaseRequestLine>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurRequestApprovalHistory>().HasOne<PurPurchaseRequest>().WithMany().HasForeignKey(x => x.PurchaseRequestId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurRequestApprovalHistory>().HasOne<PurPurchaseRequestLine>().WithMany().HasForeignKey(x => x.PurchaseRequestLineId).OnDelete(DeleteBehavior.Restrict);
 		}
 
 

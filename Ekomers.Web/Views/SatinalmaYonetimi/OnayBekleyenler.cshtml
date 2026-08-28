@@ -1,0 +1,17 @@
+@model IReadOnlyList<Ekomers.Models.ViewModels.Purchasing.PurchaseRequestListVM>
+@{ ViewData["Title"] = "Satınalma Talep Onayları"; }
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Onay Bekleyen Talepler<span class="d-block text-muted pt-2 font-size-sm">Talep satırları ve miktarları ayrı ayrı değerlendirilebilir</span></h3></div><div class="card-toolbar"><a asp-action="Talepler" class="btn btn-light-primary">Tüm Talepler</a></div></div>
+    <div class="card-body">
+        @if (Model.Count == 0) { <div class="alert alert-light-success mb-0">Onay bekleyen talep bulunmuyor.</div> }
+        else
+        {
+            <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Talep</th><th>Tarih</th><th>Talep Eden</th><th>Öncelik</th><th>Toplam Satır</th><th>Bekleyen</th><th>Onaylanan</th><th></th></tr></thead><tbody>
+            @foreach (var item in Model)
+            {
+                <tr><td><strong>@item.RequestNumber</strong></td><td>@item.RequestDate.ToString("dd.MM.yyyy")</td><td>@item.RequestedUserId</td><td>@item.Priority.ToTurkish()</td><td>@item.LineCount</td><td>@item.PendingLineCount</td><td>@item.ApprovedLineCount</td><td class="text-right"><a asp-action="TalepOnay" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Değerlendir</a></td></tr>
+            }
+            </tbody></table></div>
+        }
+    </div>
+</div>

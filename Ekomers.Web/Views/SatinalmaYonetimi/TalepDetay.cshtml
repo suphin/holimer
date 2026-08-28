@@ -1,0 +1,39 @@
+@model Ekomers.Models.ViewModels.Purchasing.PurchaseRequestDetailVM
+@{ ViewData["Title"] = "Satınalma Talep Detayı"; }
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">@Model.RequestNumber<span class="d-block text-muted pt-2 font-size-sm">Satınalma talebi</span></h3></div>
+        <div class="card-toolbar">
+            <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
+            @if (Model.Status == PurPurchaseRequestStatus.Draft && Model.CanEdit)
+            {
+                <a asp-action="TalepDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-primary mr-2">Düzenle</a>
+                <form asp-action="OnayaGonder" method="post" class="d-inline" onsubmit="return confirm('Talep onaya gönderildikten sonra taslak düzenlenemez. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-primary">Onaya Gönder</button></form>
+            }
+            else if (Model.CanApprove && Model.Lines.Any(x => x.Status == PurPurchaseRequestLineStatus.PendingApproval))
+            {
+                <a asp-action="TalepOnay" asp-route-id="@Model.Id" class="btn btn-sm btn-primary">Satırları Değerlendir</a>
+            }
+            <a asp-action="Talepler" class="btn btn-sm btn-light ml-2">Listeye Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-2 mb-3"><strong>Talep Tarihi</strong><div>@Model.RequestDate.ToString("dd.MM.yyyy")</div></div>
+            <div class="col-md-2 mb-3"><strong>İhtiyaç Tarihi</strong><div>@(Model.NeededDate?.ToString("dd.MM.yyyy") ?? "-")</div></div>
+            <div class="col-md-2 mb-3"><strong>Öncelik</strong><div>@Model.Priority.ToTurkish()</div></div>
+            <div class="col-md-3 mb-3"><strong>Talep Eden</strong><div>@Model.RequestedUserId</div></div>
+            <div class="col-md-3 mb-3"><strong>Onaya Gönderilme</strong><div>@(Model.SubmittedDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div></div>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.Notes)) { <div><strong>Not</strong><div>@Model.Notes</div></div> }
+    </div>
+</div>
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Talep Satırları (@Model.Lines.Count)</h3></div></div>
+    <div class="card-body"><div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>#</th><th>Malzeme</th><th>Talep</th><th>Onaylanan</th><th>İhtiyaç Tarihi</th><th>Kaynak</th><th>Gerekçe</th><th>Durum</th><th>Onay Bilgisi</th></tr></thead><tbody>
+    @foreach (var line in Model.Lines)
+    {
+        <tr><td>@line.Sequence</td><td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span></td><td>@line.RequestedQuantity.ToString("0.######") @line.Unit</td><td>@(line.Status == PurPurchaseRequestLineStatus.Approved ? line.ApprovedQuantity.ToString("0.######") + " " + line.Unit : "-")</td><td>@(line.NeededDate?.ToString("dd.MM.yyyy") ?? "-")</td><td>@line.Source.ToTurkish()</td><td>@(line.Reason ?? "-")</td><td><span class="label label-light-primary label-inline">@line.Status.ToTurkish()</span></td><td>@if (line.ApprovedDate.HasValue) { <span>@line.ApprovedUserId<br /><small>@line.ApprovedDate.Value.ToString("dd.MM.yyyy HH:mm")</small>@if (!string.IsNullOrWhiteSpace(line.ApprovalNote)) { <br /><small>@line.ApprovalNote</small> }</span> } else { <span>-</span> }</td></tr>
+    }
+    </tbody></table></div></div>
+</div>

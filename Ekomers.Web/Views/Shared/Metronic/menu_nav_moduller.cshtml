@@ -943,6 +943,28 @@
 	</li>
 }
 <!--end::Yeni Uretim Yonetimi-->
+<!--begin::Yeni Satinalma Yonetimi-->
+@if (User.HasClaim("Modul", "PURCHASING") || User.IsInRole("Admin"))
+{
+	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "YeniSatinalma" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+		<a href="javascript:;" class="menu-link menu-toggle">
+			<span class="svg-icon menu-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2M1 2v2h2l3.6 7.59-1.35 2.45C5.09 14.32 5 14.65 5 15c0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25 0-.05.01-.09.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L20.88 5H5.21l-.94-2H1m16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2Z" /></svg>
+			</span>
+			<span class="menu-text">Yeni Satınalma</span><i class="menu-arrow"></i>
+		</a>
+		<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
+			<li class="menu-item menu-item-parent" aria-haspopup="true"><span class="menu-link"><span class="menu-text">Yeni Satınalma</span></span></li>
+			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "Talepler" || actionName == "TalepDetay" || actionName == "TalepDuzenle") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="Talepler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Satınalma Talepleri</span></a></li>
+			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "YeniTalep" || actionName == "TalepFormu") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="YeniTalep" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Yeni Talep</span></a></li>
+			@if (User.IsInRole("Admin") || User.HasClaim("Authorize", "TalepKabul"))
+			{
+				<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "OnayBekleyenler" || actionName == "TalepOnay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="OnayBekleyenler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Talep Onayları</span></a></li>
+			}
+		</ul></div>
+	</li>
+}
+<!--end::Yeni Satinalma Yonetimi-->
 <!--begin::PURCHASING-->
 
 @await Component.InvokeAsync("PurchasingMenu")

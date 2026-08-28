@@ -1,0 +1,143 @@
+@model Ekomers.Models.ViewModels.Purchasing.PurchaseRequestFormVM
+@{ var isEdit = Model.Id > 0; ViewData["Title"] = isEdit ? "Satınalma Talebi Düzenle" : "Yeni Satınalma Talebi"; }
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">@(isEdit ? "Satınalma Talebi Düzenle" : "Yeni Satınalma Talebi")<span class="d-block text-muted pt-2 font-size-sm">Bir talebe birden fazla malzeme ekleyebilirsiniz</span></h3></div>
+        <div class="card-toolbar"><a asp-action="Talepler" class="btn btn-sm btn-light">Taleplere Dön</a></div>
+    </div>
+    <form asp-action="@(isEdit ? "TalepDuzenle" : "YeniTalep")" method="post">
+        <input asp-for="Id" type="hidden" />
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="alert alert-light-danger"></div>
+            @if (isEdit)
+            {
+                <div class="alert alert-light-primary"><strong>Talep No:</strong> @Model.RequestNumber</div>
+            }
+            <div class="row">
+                <div class="col-md-3 form-group"><label asp-for="RequestDate"></label><input asp-for="RequestDate" type="date" class="form-control" /><span asp-validation-for="RequestDate" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="NeededDate"></label><input asp-for="NeededDate" type="date" class="form-control" id="general-needed-date" /><span asp-validation-for="NeededDate" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="Priority"></label><select asp-for="Priority" class="form-control" asp-items="Html.GetEnumSelectList<PurPurchaseRequestPriority>()"></select></div>
+                <div class="col-md-3 form-group"><label asp-for="Notes"></label><textarea asp-for="Notes" class="form-control" rows="2" maxlength="1000"></textarea><span asp-validation-for="Notes" class="text-danger"></span></div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div><h4 class="mb-0">Talep Edilen Malzemeler</h4><small class="text-muted">Miktarlar malzeme kartındaki birime göre girilir.</small></div>
+                <button type="button" id="add-line" class="btn btn-light-primary btn-sm">Malzeme Satırı Ekle</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="request-lines">
+                    <thead><tr><th style="min-width:360px">Malzeme</th><th style="min-width:150px">Miktar</th><th style="min-width:110px">Birim</th><th style="min-width:170px">İhtiyaç Tarihi</th><th style="min-width:260px">Gerekçe</th><th style="width:70px"></th></tr></thead>
+                    <tbody>
+                    @for (var i = 0; i < Model.Lines.Count; i++)
+                    {
+                        <tr class="request-line">
+                            <td>
+                                <input asp-for="Lines[i].Id" type="hidden" />
+                                <select asp-for="Lines[i].MaterialId" class="form-control material-select" data-live-search="true" data-size="5">
+                                    <option value="">Malzeme seçiniz</option>
+                                    @foreach (var option in Model.MaterialOptions)
+                                    {
+                                        if (option.Id == Model.Lines[i].MaterialId)
+                                        {
+                                            <option value="@option.Id" data-unit-id="@option.UnitId" data-unit="@option.Unit" selected>@option.Code - @option.Name</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@option.Id" data-unit-id="@option.UnitId" data-unit="@option.Unit">@option.Code - @option.Name</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="Lines[i].MaterialId" class="text-danger"></span>
+                            </td>
+                            <td><input asp-for="Lines[i].RequestedQuantityInput" class="form-control" inputmode="decimal" autocomplete="off" /><span asp-validation-for="Lines[i].RequestedQuantityInput" class="text-danger"></span></td>
+                            <td><span class="unit-label">-</span></td>
+                            <td><input asp-for="Lines[i].NeededDate" type="date" class="form-control line-needed-date" /><span asp-validation-for="Lines[i].NeededDate" class="text-danger"></span></td>
+                            <td><input asp-for="Lines[i].Reason" class="form-control" maxlength="500" /><span asp-validation-for="Lines[i].Reason" class="text-danger"></span></td>
+                            <td><button type="button" class="btn btn-sm btn-light-danger remove-line">Sil</button></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer text-right"><a asp-action="Talepler" class="btn btn-light mr-2">Vazgeç</a><button type="submit" class="btn btn-primary">Taslağı Kaydet</button></div>
+    </form>
+</div>
+
+<template id="request-line-template">
+    <tr class="request-line">
+        <td>
+            <input name="Lines[__index__].Id" value="0" type="hidden" />
+            <select name="Lines[__index__].MaterialId" class="form-control material-select" data-live-search="true" data-size="5">
+                <option value="">Malzeme seçiniz</option>
+                @foreach (var option in Model.MaterialOptions)
+                {
+                    <option value="@option.Id" data-unit-id="@option.UnitId" data-unit="@option.Unit">@option.Code - @option.Name</option>
+                }
+            </select>
+        </td>
+        <td><input name="Lines[__index__].RequestedQuantityInput" class="form-control" inputmode="decimal" autocomplete="off" /></td>
+        <td><span class="unit-label">-</span></td>
+        <td><input name="Lines[__index__].NeededDate" type="date" class="form-control line-needed-date" /></td>
+        <td><input name="Lines[__index__].Reason" class="form-control" maxlength="500" /></td>
+        <td><button type="button" class="btn btn-sm btn-light-danger remove-line">Sil</button></td>
+    </tr>
+</template>
+
+@section JSSection {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            function updateUnit(select) {
+                var option = select.options[select.selectedIndex];
+                select.closest('tr').querySelector('.unit-label').textContent = option ? (option.dataset.unit || '-') : '-';
+            }
+
+            function initializeSelect(select) {
+                var $select = $(select);
+                if (!$select.hasClass('select2-hidden-accessible')) {
+                    $select.select2({ width: '100%', placeholder: 'Malzeme seçiniz', allowClear: true });
+                }
+                $select.off('change.purchase').on('change.purchase', function () { updateUnit(this); });
+                updateUnit(select);
+            }
+
+            function renumberRows() {
+                document.querySelectorAll('#request-lines tbody tr').forEach(function (row, index) {
+                    row.querySelectorAll('[name]').forEach(function (element) {
+                        element.name = element.name.replace(/Lines\[\d+\]/, 'Lines[' + index + ']');
+                    });
+                });
+            }
+
+            document.querySelectorAll('.material-select').forEach(initializeSelect);
+
+            document.getElementById('add-line').addEventListener('click', function () {
+                var index = document.querySelectorAll('#request-lines tbody tr').length;
+                var html = document.getElementById('request-line-template').innerHTML.replaceAll('__index__', index);
+                document.querySelector('#request-lines tbody').insertAdjacentHTML('beforeend', html);
+                var row = document.querySelector('#request-lines tbody tr:last-child');
+                var generalDate = document.getElementById('general-needed-date').value;
+                if (generalDate) row.querySelector('.line-needed-date').value = generalDate;
+                initializeSelect(row.querySelector('.material-select'));
+            });
+
+            document.getElementById('request-lines').addEventListener('click', function (event) {
+                if (!event.target.classList.contains('remove-line')) return;
+                var rows = document.querySelectorAll('#request-lines tbody tr');
+                if (rows.length === 1) {
+                    var row = rows[0];
+                    $(row.querySelector('.material-select')).val(null).trigger('change');
+                    row.querySelectorAll('input:not([type=hidden])').forEach(function (input) { input.value = ''; });
+                    row.querySelector('input[type=hidden]').value = '0';
+                    return;
+                }
+                var rowToRemove = event.target.closest('tr');
+                var select = rowToRemove.querySelector('.material-select');
+                if ($(select).hasClass('select2-hidden-accessible')) $(select).select2('destroy');
+                rowToRemove.remove();
+                renumberRows();
+            });
+        })();
+    </script>
+}

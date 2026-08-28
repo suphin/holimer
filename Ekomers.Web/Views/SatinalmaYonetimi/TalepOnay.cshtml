@@ -1,0 +1,27 @@
+@model Ekomers.Models.ViewModels.Purchasing.PurchaseRequestDetailVM
+@{ ViewData["Title"] = "Talep Satırı Onayı"; }
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">@Model.RequestNumber<span class="d-block text-muted pt-2 font-size-sm">Satır bazında satınalma talep onayı</span></h3></div><div class="card-toolbar"><span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span><a asp-action="TalepDetay" asp-route-id="@Model.Id" class="btn btn-sm btn-light mr-2">Talep Detayı</a><a asp-action="OnayBekleyenler" class="btn btn-sm btn-light">Onay Listesi</a></div></div>
+    <div class="card-body"><div class="row"><div class="col-md-3"><strong>Talep Eden</strong><div>@Model.RequestedUserId</div></div><div class="col-md-3"><strong>Talep Tarihi</strong><div>@Model.RequestDate.ToString("dd.MM.yyyy")</div></div><div class="col-md-3"><strong>İhtiyaç Tarihi</strong><div>@(Model.NeededDate?.ToString("dd.MM.yyyy") ?? "-")</div></div><div class="col-md-3"><strong>Öncelik</strong><div>@Model.Priority.ToTurkish()</div></div></div></div>
+</div>
+
+@foreach (var line in Model.Lines)
+{
+    <div class="card card-custom mb-4">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">@line.MaterialCode<span class="d-block text-muted pt-2 font-size-sm">@line.MaterialName</span></h3></div><div class="card-toolbar"><span class="label label-light-primary label-inline">@line.Status.ToTurkish()</span></div></div>
+        <div class="card-body">
+            <div class="row mb-3"><div class="col-md-3"><strong>Talep Miktarı</strong><div>@line.RequestedQuantity.ToString("0.######") @line.Unit</div></div><div class="col-md-3"><strong>İhtiyaç Tarihi</strong><div>@(line.NeededDate?.ToString("dd.MM.yyyy") ?? "-")</div></div><div class="col-md-6"><strong>Gerekçe</strong><div>@(line.Reason ?? "-")</div></div></div>
+            @if (line.Status == PurPurchaseRequestLineStatus.PendingApproval)
+            {
+                <form asp-action="SatirKarari" method="post">
+                    <input type="hidden" name="RequestId" value="@Model.Id" /><input type="hidden" name="LineId" value="@line.Id" />
+                    <div class="row align-items-end"><div class="col-md-3 form-group mb-md-0"><label>Onaylanan Miktar (@line.Unit)</label><input name="ApprovedQuantityInput" value="@line.RequestedQuantity.ToString("0.######", CultureInfo.InvariantCulture)" class="form-control" inputmode="decimal" /></div><div class="col-md-6 form-group mb-md-0"><label>Onay / Red Açıklaması</label><input name="Note" class="form-control" maxlength="1000" /></div><div class="col-md-3 text-right"><button name="Decision" value="@PurRequestApprovalAction.Rejected" class="btn btn-danger mr-2" onclick="return confirm('Bu talep satırı reddedilsin mi?');">Reddet</button><button name="Decision" value="@PurRequestApprovalAction.Approved" class="btn btn-success">Onayla</button></div></div>
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-light mb-0"><strong>Onaylanan miktar:</strong> @line.ApprovedQuantity.ToString("0.######") @line.Unit &nbsp; <strong>İşlemi yapan:</strong> @(line.ApprovedUserId ?? "-") &nbsp; <strong>Açıklama:</strong> @(line.ApprovalNote ?? "-")</div>
+            }
+        </div>
+    </div>
+}
