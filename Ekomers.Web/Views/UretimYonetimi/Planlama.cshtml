@@ -1,0 +1,60 @@
+@model Ekomers.Models.ViewModels.Production.ProductionPlanningVM
+@{ ViewData["Title"]="Üretim Planlama"; }
+<div class="row">
+    <div class="col-xl-4">
+        <div class="card card-custom h-100">
+            <div class="card-header"><div class="card-title"><h3 class="card-label">Üretim Planlama</h3></div></div>
+            <div class="card-body">
+                <form asp-action="PlanlamayaEkle" method="post">
+                    <div class="form-group"><label>Ürün / Aktif Reçete</label><select name="recipeVersionId" asp-items="Model.Recipes" class="form-control"><option value="">Ürün seçiniz</option></select></div>
+                    <div class="form-group"><label>Üretilecek Miktar</label><input name="quantity" type="number" min="0.000001" step="0.000001" class="form-control"/></div>
+                    <button type="submit" class="btn btn-primary btn-block">Listeye Ekle</button>
+                </form>
+                <h4 class="mt-8 mb-4">Planlanan Üretim Listesi</h4>
+                @if(Model.Plans.Count==0)
+                {
+                    <div class="alert alert-light-primary">Henüz ürün eklenmedi.</div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table"><thead><tr><th>Ürün</th><th>Miktar</th><th></th></tr></thead><tbody>
+                    @foreach(var item in Model.Plans)
+                    {
+                        <tr><td><strong>@item.ProductName</strong><span class="d-block text-muted">@item.ProductCode · v@item.VersionNumber</span></td><td>@item.Quantity.ToString("0.######") @item.Unit</td><td><form asp-action="PlanlamadanCikar" method="post"><input type="hidden" name="recipeVersionId" value="@item.RecipeVersionId"/><button class="btn btn-sm btn-light-danger">Sil</button></form></td></tr>
+                    }
+                    </tbody></table></div>
+                    <form asp-action="PlaniKilitle" method="post" onsubmit="return confirm('İhtiyaç hesabı anlık stok değerleriyle kaydedilip üretim planı kilitlensin mi?');">
+                        <div class="form-group"><label>Hedef Üretim Tarihi</label><input name="targetProductionDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control" required/></div>
+                        <div class="form-group"><label>Plan Notu</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+                        <button class="btn btn-success btn-block">Planı Hesapla ve Kilitle</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-8 mt-5 mt-xl-0">
+        <div class="card card-custom h-100">
+            <div class="card-header"><div class="card-title"><h3 class="card-label">Malzeme İhtiyaç Raporu (MRP)</h3></div></div>
+            <div class="card-body">
+                <div class="alert alert-light-primary"><strong>Stok kapsamı:</strong> Ana depo + üretim deposu; süresi geçmiş lotlar hariç, aktif rezervasyonlar düşülmüş<br/><strong>Durum:</strong> @(Model.Plans.Count==0?"Hesaplama bekleniyor":"Ön hesaplama tamamlandı")</div>
+                @if(Model.Requirements.Count>0)
+                {
+                    foreach(var group in Model.Requirements.GroupBy(x=>x.Type))
+                    {
+                        <h4 class="mt-6">@group.Key.ToTurkish() İhtiyaçları</h4>
+                        <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Malzeme / Stok Kodu</th><th>Teorik</th><th>Fire</th><th>Toplam</th><th>Fiziksel</th><th>Rezervasyon</th><th>Kullanılabilir</th><th>Eksik</th></tr></thead><tbody>
+                        @foreach(var item in group)
+                        {
+                            <tr><td><code>@item.Code</code> @item.Name</td><td>@item.TheoreticalQuantity.ToString("0.######") @item.Unit</td><td>@item.PlannedWasteQuantity.ToString("0.######") @item.Unit</td><td><strong>@item.RequiredQuantity.ToString("0.######")</strong> @item.Unit</td><td>@item.PhysicalStockQuantity.ToString("0.######") @item.Unit</td><td>@item.ReservedQuantity.ToString("0.######") @item.Unit</td><td>@item.AvailableStockQuantity.ToString("0.######") @item.Unit</td><td class="@(item.ShortageQuantity>0?"text-danger":"text-success")"><strong>@item.ShortageQuantity.ToString("0.######")</strong> @item.Unit</td></tr>
+                        }
+                        </tbody></table></div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-muted py-20">Ürün ve miktar eklediğinizde malzeme ihtiyaçları burada görüntülenecek.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

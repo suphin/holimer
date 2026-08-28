@@ -1,0 +1,10 @@
+@model Ekomers.Models.ViewModels.Production.ProductionCatalogEditVM
+@{ ViewData["Title"] = "Malzeme Kartı Düzenle"; }
+<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">@Model.Code<span class="d-block text-muted pt-2 font-size-sm">@Model.Source.ToTurkish() kaynaklı malzeme kartı</span></h3></div></div>
+<form asp-action="Edit" method="post"><input asp-for="Id" type="hidden"/><div class="card-body"><div asp-validation-summary="ModelOnly" class="text-danger"></div><div class="row">
+<div class="col-md-6 form-group"><label asp-for="Name"></label><input asp-for="Name" class="form-control"/><span asp-validation-for="Name" class="text-danger"></span></div>
+<div class="col-md-3 form-group"><label asp-for="Type"></label><select asp-for="Type" asp-items="Html.GetEnumSelectList<PrdMaterialType>()" class="form-control"></select></div>
+<div class="col-md-3 form-group"><label asp-for="UnitId"></label><select asp-for="UnitId" asp-items="Model.Units" class="form-control"></select><span asp-validation-for="UnitId" class="text-danger"></span></div>
+<div class="col-12 form-group"><label asp-for="Description"></label><textarea asp-for="Description" class="form-control" rows="3"></textarea></div>
+</div><div class="alert alert-light-info mb-0">Kod ve kaynak bilgisi değiştirilemez. Logo kartı yeniden eşitlendiğinde Logo'dan yönetilen bilgiler tekrar güncellenebilir.</div></div>
+<div class="card-footer"><button type="submit" class="btn btn-primary">Kaydet</button><a asp-action="Index" class="btn btn-light ml-2">Vazgeç</a></div></form></div>

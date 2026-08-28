@@ -9,6 +9,7 @@ using ClosedXML.Excel;
 using Ekomers.Models.Enums;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
+using System.Globalization;
 
 namespace Ekomers.Web.Controllers;
 
@@ -59,9 +60,11 @@ public sealed class ProductionRecipeController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(ProductionRecipeCreateVM model, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(ProductionRecipeCreateVM model, [FromForm(Name = "BaseQuantity")] string baseQuantityText, CancellationToken cancellationToken)
     {
         ViewBag.Modul = "YeniUretim";
+        if (!TryParseProductionDecimal(baseQuantityText, out var parsedBaseQuantity)) ModelState.AddModelError(nameof(model.BaseQuantity), "Baz miktar geçerli bir sayı olmalıdır.");
+        else model.BaseQuantity = parsedBaseQuantity;
         model.Code = (model.Code ?? string.Empty).Trim();
         model.Name = (model.Name ?? string.Empty).Trim();
 
@@ -149,8 +152,10 @@ public sealed class ProductionRecipeController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateVersion(ProductionRecipeVersionUpdateVM model, CancellationToken ct)
+    public async Task<IActionResult> UpdateVersion(ProductionRecipeVersionUpdateVM model, [FromForm(Name = "BaseQuantity")] string baseQuantityText, CancellationToken ct)
     {
+        if (!TryParseProductionDecimal(baseQuantityText, out var parsedBaseQuantity)) return RecipeEditError(model.RecipeVersionId, "Baz miktar geçerli bir sayı olmalıdır.");
+        model.BaseQuantity=parsedBaseQuantity;
         var version = await _context.PrdRecipeVersions.FirstOrDefaultAsync(x => x.ID == model.RecipeVersionId && x.IsDelete != true, ct);
         if (version == null) return NotFound();
         if (version.Status != PrdRecipeStatus.Draft) return RecipeEditError(model.RecipeVersionId, "Yalnızca taslak reçete versiyonları değiştirilebilir.");
@@ -163,13 +168,20 @@ public sealed class ProductionRecipeController : Controller
         var recipe = await _context.PrdRecipes.FirstAsync(x => x.ID == version.RecipeId, ct);
         recipe.Name = (model.Name ?? string.Empty).Trim(); recipe.Description = model.Description; recipe.UpdateDate = DateTime.Now; recipe.UpdateUserID = User.Identity?.Name;
         version.BaseQuantity=model.BaseQuantity; version.UnitId=model.UnitId; version.Status=model.Status; version.ValidFrom=model.ValidFrom; version.ValidTo=model.ValidTo; version.Notes=model.Notes; version.UpdateDate=DateTime.Now; version.UpdateUserID=User.Identity?.Name;
-        if (model.Status == PrdRecipeStatus.Active) { version.ApprovedDate = DateTime.Now; version.ApprovedUserId = User.Identity?.Name; }
+        if (model.Status == PrdRecipeStatus.Active)
+        {
+            var otherActiveVersions=await _context.PrdRecipeVersions.Where(x=>x.RecipeId==version.RecipeId&&x.ID!=version.ID&&x.Status==PrdRecipeStatus.Active&&x.IsDelete!=true).ToListAsync(ct);
+            foreach(var other in otherActiveVersions){other.Status=PrdRecipeStatus.Passive;other.IsActive=false;other.UpdateDate=DateTime.Now;other.UpdateUserID=User.Identity?.Name;}
+            version.IsActive=true; version.ApprovedDate = DateTime.Now; version.ApprovedUserId = User.Identity?.Name;
+        }
         await _context.SaveChangesAsync(ct); TempData["success"]="Reçete bilgileri güncellendi."; return RedirectToAction(nameof(Details), new { id=model.RecipeVersionId });
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddItem(ProductionRecipeItemEditVM model, CancellationToken ct)
+    public async Task<IActionResult> AddItem(ProductionRecipeItemEditVM model, [FromForm(Name = "Quantity")] string quantityText, [FromForm(Name = "PlannedWasteRate")] string wasteRateText, CancellationToken ct)
     {
+        if(!TryParseProductionDecimal(quantityText,out var quantity)||!TryParseProductionDecimal(wasteRateText,out var wasteRate))return RecipeEditError(model.RecipeVersionId,"Miktar veya fire oranı geçerli bir sayı değildir.");
+        model.Quantity=quantity;model.PlannedWasteRate=wasteRate;
         var version = await DraftVersion(model.RecipeVersionId, ct); if (version == null) return RecipeEditError(model.RecipeVersionId, "Reçete taslak değil veya bulunamadı.");
         if (model.Quantity <= 0 || model.PlannedWasteRate < 0 || model.PlannedWasteRate > 100) return RecipeEditError(model.RecipeVersionId, "Miktar ve fire oranı geçersiz.");
         if (await _context.PrdRecipeItems.AnyAsync(x => x.RecipeVersionId==model.RecipeVersionId && x.MaterialId==model.MaterialId && x.IsDelete!=true, ct)) return RecipeEditError(model.RecipeVersionId, "Bu malzeme reçetede zaten mevcut.");
@@ -180,8 +192,10 @@ public sealed class ProductionRecipeController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateItem(ProductionRecipeItemEditVM model, CancellationToken ct)
+    public async Task<IActionResult> UpdateItem(ProductionRecipeItemEditVM model, [FromForm(Name = "Quantity")] string quantityText, [FromForm(Name = "PlannedWasteRate")] string wasteRateText, CancellationToken ct)
     {
+        if(!TryParseProductionDecimal(quantityText,out var quantity)||!TryParseProductionDecimal(wasteRateText,out var wasteRate))return RecipeEditError(model.RecipeVersionId,"Miktar veya fire oranı geçerli bir sayı değildir.");
+        model.Quantity=quantity;model.PlannedWasteRate=wasteRate;
         if (await DraftVersion(model.RecipeVersionId,ct)==null) return RecipeEditError(model.RecipeVersionId,"Reçete taslak değil.");
         var item=await _context.PrdRecipeItems.FirstOrDefaultAsync(x=>x.ID==model.ItemId && x.RecipeVersionId==model.RecipeVersionId && x.IsDelete!=true,ct); if(item==null)return NotFound();
         if(model.Quantity<=0 || model.PlannedWasteRate<0 || model.PlannedWasteRate>100)return RecipeEditError(model.RecipeVersionId,"Miktar veya fire oranı geçersiz.");
@@ -198,8 +212,70 @@ public sealed class ProductionRecipeController : Controller
         item.IsDelete=true;item.DeleteDate=DateTime.Now;item.DeleteUserID=User.Identity?.Name;await _context.SaveChangesAsync(ct);TempData["success"]="Reçete kalemi silindi.";return RedirectToAction(nameof(Details),new{id=recipeVersionId});
     }
 
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateNewVersion(int sourceVersionId,CancellationToken ct)
+    {
+        var source=await _context.PrdRecipeVersions.AsNoTracking().FirstOrDefaultAsync(x=>x.ID==sourceVersionId&&x.IsDelete!=true,ct);
+        if(source==null)return NotFound();
+        var nextVersion=(await _context.PrdRecipeVersions.Where(x=>x.RecipeId==source.RecipeId&&x.IsDelete!=true).MaxAsync(x=>(int?)x.VersionNumber,ct)??0)+1;
+        var now=DateTime.Now;var user=User.Identity?.Name;
+        await using var transaction=await _context.Database.BeginTransactionAsync(ct);
+        var newVersion=new PrdRecipeVersion{RecipeId=source.RecipeId,VersionNumber=nextVersion,BaseQuantity=source.BaseQuantity,UnitId=source.UnitId,Status=PrdRecipeStatus.Draft,Notes=$"v{source.VersionNumber} versiyonundan oluşturuldu",IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};
+        _context.PrdRecipeVersions.Add(newVersion);await _context.SaveChangesAsync(ct);
+        var sourceItems=await _context.PrdRecipeItems.AsNoTracking().Where(x=>x.RecipeVersionId==sourceVersionId&&x.IsDelete!=true).OrderBy(x=>x.Sequence).ToListAsync(ct);
+        _context.PrdRecipeItems.AddRange(sourceItems.Select(x=>new PrdRecipeItem{RecipeVersionId=newVersion.ID,MaterialId=x.MaterialId,Quantity=x.Quantity,UnitId=x.UnitId,PlannedWasteRate=x.PlannedWasteRate,Sequence=x.Sequence,IsRequired=x.IsRequired,AlternativeGroupCode=x.AlternativeGroupCode,Notes=x.Notes,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user}));
+        await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);
+        TempData["success"]=$"v{nextVersion} taslak versiyonu oluşturuldu.";
+        return RedirectToAction(nameof(Details),new{id=newVersion.ID});
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ReopenAsDraft(int recipeVersionId,CancellationToken ct)
+    {
+        var version=await _context.PrdRecipeVersions.FirstOrDefaultAsync(x=>x.ID==recipeVersionId&&x.IsDelete!=true,ct);
+        if(version==null)return NotFound();
+        if(version.Status==PrdRecipeStatus.Draft)return RedirectToAction(nameof(Details),new{id=recipeVersionId});
+        if(await _context.PrdProductionOrders.AnyAsync(x=>x.RecipeVersionId==recipeVersionId&&x.IsDelete!=true,ct))
+            return RecipeEditError(recipeVersionId,"Bu reçete versiyonuna bağlı üretim emri bulunduğu için taslağa alınamaz. Yeni versiyon oluşturunuz.");
+        version.Status=PrdRecipeStatus.Draft;version.ApprovedDate=null;version.ApprovedUserId=null;version.IsActive=true;
+        version.UpdateDate=DateTime.Now;version.UpdateUserID=User.Identity?.Name;
+        await _context.SaveChangesAsync(ct);
+        TempData["success"]="Reçete versiyonu yönetici yetkisiyle yeniden taslağa alındı.";
+        return RedirectToAction(nameof(Details),new{id=recipeVersionId});
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteVersion(int recipeVersionId,CancellationToken ct)
+    {
+        var version=await _context.PrdRecipeVersions.FirstOrDefaultAsync(x=>x.ID==recipeVersionId&&x.IsDelete!=true,ct);
+        if(version==null)return NotFound();
+        var recipe=await _context.PrdRecipes.FirstOrDefaultAsync(x=>x.ID==version.RecipeId&&x.IsDelete!=true,ct);
+        if(recipe==null)return NotFound();
+        var isUsed=await _context.PrdProductionPlans.AnyAsync(x=>x.RecipeVersionId==recipeVersionId&&x.IsDelete!=true,ct)
+            ||await _context.PrdProductionOrders.AnyAsync(x=>x.RecipeVersionId==recipeVersionId&&x.IsDelete!=true,ct);
+        if(isUsed){TempData["error"]="Bu reçete versiyonu üretim planı veya üretim emrinde kullanıldığı için silinemez. Gerekiyorsa pasife alınız.";return RedirectToAction(nameof(Details),new{id=recipeVersionId});}
+        var now=DateTime.Now;var user=User.Identity?.Name;
+        await using var transaction=await _context.Database.BeginTransactionAsync(ct);
+        var items=await _context.PrdRecipeItems.Where(x=>x.RecipeVersionId==recipeVersionId&&x.IsDelete!=true).ToListAsync(ct);
+        foreach(var item in items){item.IsDelete=true;item.IsActive=false;item.DeleteDate=now;item.DeleteUserID=user;}
+        version.IsDelete=true;version.IsActive=false;version.DeleteDate=now;version.DeleteUserID=user;
+        var hasAnotherVersion=await _context.PrdRecipeVersions.AnyAsync(x=>x.RecipeId==recipe.ID&&x.ID!=recipeVersionId&&x.IsDelete!=true,ct);
+        if(!hasAnotherVersion){recipe.IsDelete=true;recipe.IsActive=false;recipe.DeleteDate=now;recipe.DeleteUserID=user;}
+        await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);
+        TempData["success"]=hasAnotherVersion?"Seçili reçete versiyonu ve kalemleri silindi.":"Reçetenin son versiyonu ve reçete başlığı silindi.";
+        return RedirectToAction(nameof(Index));
+    }
+
     private Task<PrdRecipeVersion?> DraftVersion(int id,CancellationToken ct)=>_context.PrdRecipeVersions.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true&&x.Status==PrdRecipeStatus.Draft,ct);
     private IActionResult RecipeEditError(int id,string message){TempData["error"]=message;return RedirectToAction(nameof(Details),new{id});}
+    private static bool TryParseProductionDecimal(string? value,out decimal result)
+    {
+        result=0;if(string.IsNullOrWhiteSpace(value))return false;
+        var normalized=value.Trim().Replace(" ",string.Empty);
+        if(normalized.Contains(',')&&normalized.Contains('.'))normalized=normalized.LastIndexOf(',')>normalized.LastIndexOf('.')?normalized.Replace(".",string.Empty).Replace(',','.'):normalized.Replace(",",string.Empty);
+        else if(normalized.Contains(','))normalized=normalized.Replace(',','.');
+        return decimal.TryParse(normalized,NumberStyles.AllowLeadingSign|NumberStyles.AllowDecimalPoint,CultureInfo.InvariantCulture,out result);
+    }
 
     [HttpGet]
     public IActionResult Import() { ViewBag.Modul = "YeniUretim"; return View(); }

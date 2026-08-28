@@ -91,8 +91,21 @@ public class PrdRecipeItem : BaseEntity
     public string? Notes { get; set; }
 }
 
+public class PrdProductionPlanHeader : BaseEntity
+{
+    public string PlanNumber { get; set; } = string.Empty;
+    public DateTime PlanDate { get; set; }
+    public DateTime TargetProductionDate { get; set; }
+    public PrdProductionPlanHeaderStatus Status { get; set; } = PrdProductionPlanHeaderStatus.Draft;
+    public DateTime? CalculatedDate { get; set; }
+    public DateTime? LockedDate { get; set; }
+    public string? LockedUserId { get; set; }
+    public string? Notes { get; set; }
+}
+
 public class PrdProductionPlan : BaseEntity
 {
+    public int? ProductionPlanHeaderId { get; set; }
     public string PlanNumber { get; set; } = string.Empty;
     public int RecipeVersionId { get; set; }
     public int ProductMaterialId { get; set; }
@@ -102,7 +115,23 @@ public class PrdProductionPlan : BaseEntity
     public string BatchNumber { get; set; } = string.Empty;
     public DateTime? ExpirationDate { get; set; }
     public PrdProductionPlanStatus Status { get; set; } = PrdProductionPlanStatus.Draft;
+    public bool IsConvertedToOrder { get; set; }
     public string? Notes { get; set; }
+}
+
+public class PrdProductionPlanRequirement : BaseEntity
+{
+    public int ProductionPlanHeaderId { get; set; }
+    public int MaterialId { get; set; }
+    public int UnitId { get; set; }
+    public decimal TheoreticalQuantity { get; set; }
+    public decimal PlannedWasteQuantity { get; set; }
+    public decimal TotalRequiredQuantity { get; set; }
+    public decimal PhysicalStockQuantity { get; set; }
+    public decimal ReservedQuantity { get; set; }
+    public decimal AvailableStockQuantity { get; set; }
+    public decimal ShortageQuantity { get; set; }
+    public DateTime CalculationDate { get; set; }
 }
 
 public class PrdProductionOrder : BaseEntity

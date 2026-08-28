@@ -190,7 +190,9 @@ namespace Ekomers.Data
 		public DbSet<PrdRecipe> PrdRecipes { get; set; }
 		public DbSet<PrdRecipeVersion> PrdRecipeVersions { get; set; }
 		public DbSet<PrdRecipeItem> PrdRecipeItems { get; set; }
+		public DbSet<PrdProductionPlanHeader> PrdProductionPlanHeaders { get; set; }
 		public DbSet<PrdProductionPlan> PrdProductionPlans { get; set; }
+		public DbSet<PrdProductionPlanRequirement> PrdProductionPlanRequirements { get; set; }
 		public DbSet<PrdProductionOrder> PrdProductionOrders { get; set; }
 		public DbSet<PrdMaterialRequirement> PrdMaterialRequirements { get; set; }
 		public DbSet<PrdStockReservation> PrdStockReservations { get; set; }
@@ -350,7 +352,8 @@ namespace Ekomers.Data
 			[
 				typeof(PrdUnit), typeof(PrdMaterial), typeof(PrdWarehouse), typeof(PrdStockLot),
 				typeof(PrdStockMovement), typeof(PrdRecipe), typeof(PrdRecipeVersion), typeof(PrdRecipeItem),
-				typeof(PrdProductionPlan), typeof(PrdProductionOrder), typeof(PrdMaterialRequirement),
+				typeof(PrdProductionPlanHeader), typeof(PrdProductionPlan), typeof(PrdProductionPlanRequirement),
+				typeof(PrdProductionOrder), typeof(PrdMaterialRequirement),
 				typeof(PrdStockReservation), typeof(PrdWarehouseTask), typeof(PrdWarehouseTaskItem),
 				typeof(PrdWarehouseTaskLot), typeof(PrdProductionMaterialActual), typeof(PrdProductionResult)
 			];
@@ -388,6 +391,9 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdRecipeVersion>().HasIndex(x => new { x.RecipeId, x.VersionNumber }).IsUnique();
 			modelBuilder.Entity<PrdRecipeItem>().HasIndex(x => new { x.RecipeVersionId, x.Sequence }).IsUnique();
 			modelBuilder.Entity<PrdRecipeItem>().Property(x => x.AlternativeGroupCode).HasMaxLength(50);
+			modelBuilder.Entity<PrdProductionPlanHeader>().HasIndex(x => x.PlanNumber).IsUnique();
+			modelBuilder.Entity<PrdProductionPlanHeader>().Property(x => x.PlanNumber).HasMaxLength(50);
+			modelBuilder.Entity<PrdProductionPlanHeader>().Property(x => x.LockedUserId).HasMaxLength(450);
 			modelBuilder.Entity<PrdProductionPlan>().HasIndex(x => x.PlanNumber).IsUnique();
 			modelBuilder.Entity<PrdProductionPlan>().Property(x => x.PlanNumber).HasMaxLength(50);
 			modelBuilder.Entity<PrdProductionPlan>().Property(x => x.BatchNumber).HasMaxLength(100);
@@ -412,9 +418,14 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdRecipeItem>().HasOne<PrdRecipeVersion>().WithMany().HasForeignKey(x => x.RecipeVersionId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdRecipeItem>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdRecipeItem>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdProductionPlan>().HasOne<PrdProductionPlanHeader>().WithMany().HasForeignKey(x => x.ProductionPlanHeaderId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionPlan>().HasOne<PrdRecipeVersion>().WithMany().HasForeignKey(x => x.RecipeVersionId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionPlan>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.ProductMaterialId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionPlan>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdProductionPlanRequirement>().HasIndex(x => new { x.ProductionPlanHeaderId, x.MaterialId, x.UnitId }).IsUnique();
+			modelBuilder.Entity<PrdProductionPlanRequirement>().HasOne<PrdProductionPlanHeader>().WithMany().HasForeignKey(x => x.ProductionPlanHeaderId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdProductionPlanRequirement>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdProductionPlanRequirement>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionOrder>().HasOne<PrdProductionPlan>().WithMany().HasForeignKey(x => x.ProductionPlanId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionOrder>().HasOne<PrdRecipeVersion>().WithMany().HasForeignKey(x => x.RecipeVersionId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionOrder>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.ProductMaterialId).OnDelete(DeleteBehavior.Restrict);

@@ -5,7 +5,7 @@
     <div class="card-body">
         @if (Model.Count == 0) { <div class="alert alert-light-primary mb-0">Henüz yeni üretim reçetesi yok. Önce Prd malzeme ve birim kartlarının aktarılması gerekir.</div> }
         else { <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Kod / Ad</th><th>Ürün</th><th>Versiyon</th><th>Baz</th><th>Kalem</th><th>Geçerlilik</th><th>Durum</th></tr></thead><tbody>
-        @foreach (var item in Model) { <tr><td><a asp-action="Details" asp-route-id="@item.RecipeVersionId"><strong>@item.Code</strong></a><span class="d-block text-muted">@item.Name</span></td><td>@item.Product</td><td>v@item.VersionNumber</td><td>@item.BaseQuantity.ToString("0.######") @item.Unit</td><td>@item.ItemCount</td><td>@item.ValidFrom?.ToString("dd.MM.yyyy") - @item.ValidTo?.ToString("dd.MM.yyyy")</td><td>@item.Status</td></tr> }
+        @foreach (var item in Model) { <tr><td><a asp-action="Details" asp-route-id="@item.RecipeVersionId"><strong>@item.Code</strong></a><span class="d-block text-muted">@item.Name</span></td><td>@item.Product</td><td>v@item.VersionNumber</td><td>@item.BaseQuantity.ToString("0.######") @item.Unit</td><td>@item.ItemCount</td><td>@item.ValidFrom?.ToString("dd.MM.yyyy") - @item.ValidTo?.ToString("dd.MM.yyyy")</td><td>@item.Status.ToTurkish()</td></tr> }
         </tbody></table></div> }
     </div>
 </div>
