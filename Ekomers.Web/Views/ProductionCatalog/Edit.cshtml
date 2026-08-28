@@ -6,5 +6,8 @@
 <div class="col-md-3 form-group"><label asp-for="Type"></label><select asp-for="Type" asp-items="Html.GetEnumSelectList<PrdMaterialType>()" class="form-control"></select></div>
 <div class="col-md-3 form-group"><label asp-for="UnitId"></label><select asp-for="UnitId" asp-items="Model.Units" class="form-control"></select><span asp-validation-for="UnitId" class="text-danger"></span></div>
 <div class="col-12 form-group"><label asp-for="Description"></label><textarea asp-for="Description" class="form-control" rows="3"></textarea></div>
+<div class="col-md-4 form-group"><label asp-for="QualityControlRequirement"></label><select asp-for="QualityControlRequirement" asp-items="Html.GetEnumSelectList<PrdQualityControlRequirement>()" class="form-control"></select></div>
+<div class="col-md-4 form-group d-flex align-items-center"><label class="checkbox mt-6"><input asp-for="RequiresLotTracking"/><span></span>Lot takibi zorunlu</label></div>
+<div class="col-md-4 form-group d-flex align-items-center"><label class="checkbox mt-6"><input asp-for="RequiresExpirationDate"/><span></span>Son kullanma tarihi zorunlu</label></div>
 </div><div class="alert alert-light-info mb-0">Kod ve kaynak bilgisi değiştirilemez. Logo kartı yeniden eşitlendiğinde Logo'dan yönetilen bilgiler tekrar güncellenebilir.</div></div>
 <div class="card-footer"><button type="submit" class="btn btn-primary">Kaydet</button><a asp-action="Index" class="btn btn-light ml-2">Vazgeç</a></div></form></div>

@@ -36,6 +36,9 @@ public sealed class ProductionCatalogEditVM
     [Display(Name = "Malzeme Türü")] public PrdMaterialType Type { get; set; }
     [Range(1, int.MaxValue), Display(Name = "Birim")] public int UnitId { get; set; }
     [Display(Name = "Açıklama")] public string? Description { get; set; }
+    [Display(Name = "Lot Takibi Zorunlu")] public bool RequiresLotTracking { get; set; }
+    [Display(Name = "Son Kullanma Tarihi Zorunlu")] public bool RequiresExpirationDate { get; set; }
+    [Display(Name = "Kalite Kontrol / Analiz")] public PrdQualityControlRequirement QualityControlRequirement { get; set; }
     public bool IsActive { get; set; }
     public List<SelectListItem> Units { get; set; } = [];
 }

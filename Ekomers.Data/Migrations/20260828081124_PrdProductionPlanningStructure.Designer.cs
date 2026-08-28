@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260828081124_PrdProductionPlanningStructure")]
+    partial class PrdProductionPlanningStructure
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3420,218 +3423,6 @@ namespace Ekomers.Data.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("Ekomers.Models.Entity.Production.PrdInventoryDocument", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<DateTime?>("CreateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreateUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CurrencyCode")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
-                    b.Property<DateTime?>("DeleteDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeleteUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("DocumentDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DocumentNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("DosyaID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("ExchangeRate")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("IsDelete")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PostedUserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("PostingDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("ReversalDocumentId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("SourceDocumentId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SourceDocumentType")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("SourceWarehouseId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("TargetWarehouseId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("TotalCost")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdateUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("DocumentNumber")
-                        .IsUnique();
-
-                    b.HasIndex("ReversalDocumentId");
-
-                    b.HasIndex("SourceWarehouseId");
-
-                    b.HasIndex("TargetWarehouseId");
-
-                    b.ToTable("PrdInventoryDocument", (string)null);
-                });
-
-            modelBuilder.Entity("Ekomers.Models.Entity.Production.PrdInventoryDocumentLine", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<int>("CostSource")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("CreateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreateUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CurrencyCode")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
-                    b.Property<DateTime?>("DeleteDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeleteUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DosyaID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("ExchangeRate")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<DateTime?>("ExpirationDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("InventoryDocumentId")
-                        .HasColumnType("int");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("IsDelete")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("LotNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("MaterialId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("OriginalUnitCost")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<DateTime?>("ProductionDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<int>("Sequence")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("SourceStockLotId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("TargetStockLotId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("TotalCost")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<decimal>("UnitCost")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<int>("UnitId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdateUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("SourceStockLotId");
-
-                    b.HasIndex("TargetStockLotId");
-
-                    b.HasIndex("UnitId");
-
-                    b.HasIndex("InventoryDocumentId", "Sequence")
-                        .IsUnique();
-
-                    b.HasIndex("MaterialId", "SourceStockLotId");
-
-                    b.ToTable("PrdInventoryDocumentLine", (string)null);
-                });
-
             modelBuilder.Entity("Ekomers.Models.Entity.Production.PrdMaterial", b =>
                 {
                     b.Property<int>("ID")
@@ -3683,15 +3474,6 @@ namespace Ekomers.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
-
-                    b.Property<int>("QualityControlRequirement")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("RequiresExpirationDate")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("RequiresLotTracking")
-                        .HasColumnType("bit");
 
                     b.Property<int>("Source")
                         .HasColumnType("int");
@@ -4613,19 +4395,11 @@ namespace Ekomers.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
-                    b.Property<int>("CostSource")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("CreateDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CreateUserID")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CurrencyCode")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
 
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
@@ -4653,16 +4427,6 @@ namespace Ekomers.Data.Migrations
                     b.Property<string>("DosyaID")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("ExchangeRate")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<int?>("InventoryDocumentId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("InventoryDocumentLineId")
-                        .HasColumnType("int");
-
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
 
@@ -4678,10 +4442,6 @@ namespace Ekomers.Data.Migrations
                     b.Property<int>("MovementType")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("OriginalUnitCost")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
                     b.Property<decimal>("Quantity")
                         .HasPrecision(18, 6)
                         .HasColumnType("decimal(18,6)");
@@ -4689,17 +4449,9 @@ namespace Ekomers.Data.Migrations
                     b.Property<int?>("StockLotId")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("TotalCost")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
-
                     b.Property<string>("TransferNumber")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<decimal>("UnitCost")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("decimal(18,6)");
 
                     b.Property<int>("UnitId")
                         .HasColumnType("int");
@@ -4714,10 +4466,6 @@ namespace Ekomers.Data.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("ID");
-
-                    b.HasIndex("InventoryDocumentId");
-
-                    b.HasIndex("InventoryDocumentLineId");
 
                     b.HasIndex("StockLotId");
 
@@ -8378,55 +8126,6 @@ namespace Ekomers.Data.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Ekomers.Models.Entity.Production.PrdInventoryDocument", b =>
-                {
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdInventoryDocument", null)
-                        .WithMany()
-                        .HasForeignKey("ReversalDocumentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdWarehouse", null)
-                        .WithMany()
-                        .HasForeignKey("SourceWarehouseId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdWarehouse", null)
-                        .WithMany()
-                        .HasForeignKey("TargetWarehouseId")
-                        .OnDelete(DeleteBehavior.Restrict);
-                });
-
-            modelBuilder.Entity("Ekomers.Models.Entity.Production.PrdInventoryDocumentLine", b =>
-                {
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdInventoryDocument", null)
-                        .WithMany()
-                        .HasForeignKey("InventoryDocumentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdMaterial", null)
-                        .WithMany()
-                        .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdStockLot", null)
-                        .WithMany()
-                        .HasForeignKey("SourceStockLotId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdStockLot", null)
-                        .WithMany()
-                        .HasForeignKey("TargetStockLotId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdUnit", null)
-                        .WithMany()
-                        .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Ekomers.Models.Entity.Production.PrdMaterial", b =>
                 {
                     b.HasOne("Ekomers.Models.Entity.Production.PrdUnit", null)
@@ -8676,16 +8375,6 @@ namespace Ekomers.Data.Migrations
 
             modelBuilder.Entity("Ekomers.Models.Entity.Production.PrdStockMovement", b =>
                 {
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdInventoryDocument", null)
-                        .WithMany()
-                        .HasForeignKey("InventoryDocumentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdInventoryDocumentLine", null)
-                        .WithMany()
-                        .HasForeignKey("InventoryDocumentLineId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("Ekomers.Models.Entity.Production.PrdMaterial", null)
                         .WithMany()
                         .HasForeignKey("MaterialId")

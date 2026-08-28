@@ -46,7 +46,7 @@ public sealed class ProductionCatalogController : Controller
         ViewBag.Modul = "YeniUretim";
         var model = await _context.PrdMaterials.AsNoTracking()
             .Where(x => x.ID == id && x.IsDelete != true)
-            .Select(x => new ProductionCatalogEditVM { Id=x.ID, Code=x.Code, Name=x.Name, Source=x.Source, Type=x.Type, UnitId=x.UnitId, Description=x.Description, IsActive=x.IsActive != false })
+            .Select(x => new ProductionCatalogEditVM { Id=x.ID, Code=x.Code, Name=x.Name, Source=x.Source, Type=x.Type, UnitId=x.UnitId, Description=x.Description, RequiresLotTracking=x.RequiresLotTracking, RequiresExpirationDate=x.RequiresExpirationDate, QualityControlRequirement=x.QualityControlRequirement, IsActive=x.IsActive != false })
             .FirstOrDefaultAsync(cancellationToken);
         if (model == null) return NotFound();
         await FillUnits(model, cancellationToken);
@@ -62,7 +62,7 @@ public sealed class ProductionCatalogController : Controller
         if (!await _context.PrdUnits.AnyAsync(x => x.ID == model.UnitId && x.IsDelete != true && x.IsActive != false, cancellationToken))
             ModelState.AddModelError(nameof(model.UnitId), "Seçilen birim bulunamadı.");
         if (!ModelState.IsValid) { model.Code=material.Code; model.Source=material.Source; model.IsActive=material.IsActive != false; await FillUnits(model,cancellationToken); return View(model); }
-        material.Name=model.Name.Trim(); material.Type=model.Type; material.UnitId=model.UnitId; material.Description=model.Description?.Trim();
+        material.Name=model.Name.Trim(); material.Type=model.Type; material.UnitId=model.UnitId; material.Description=model.Description?.Trim();material.RequiresLotTracking=model.RequiresLotTracking;material.RequiresExpirationDate=model.RequiresExpirationDate;material.QualityControlRequirement=model.QualityControlRequirement;
         material.UpdateDate=DateTime.Now; material.UpdateUserID=User.Identity?.Name;
         await _context.SaveChangesAsync(cancellationToken);
         TempData["success"]="Malzeme kartı güncellendi.";

@@ -5,6 +5,8 @@ namespace Ekomers.Models.ViewModels.Production;
 
 public sealed class ProductionPlanningVM
 {
+    public int? EditingPlanHeaderId { get; set; }
+    public string? EditingPlanNumber { get; set; }
     public int RecipeVersionId { get; set; }
     public decimal Quantity { get; set; }
     public DateTime TargetProductionDate { get; set; } = DateTime.Today;
@@ -12,6 +14,47 @@ public sealed class ProductionPlanningVM
     public List<SelectListItem> Recipes { get; set; } = [];
     public List<ProductionPlanningLineVM> Plans { get; set; } = [];
     public List<ProductionRequirementLineVM> Requirements { get; set; } = [];
+}
+
+public sealed class ProductionPlanListVM
+{
+    public int Id { get; set; }
+    public string PlanNumber { get; set; } = string.Empty;
+    public DateTime PlanDate { get; set; }
+    public DateTime TargetProductionDate { get; set; }
+    public PrdProductionPlanHeaderStatus Status { get; set; }
+    public int ProductCount { get; set; }
+    public int RequirementCount { get; set; }
+    public decimal TotalShortageQuantity { get; set; }
+    public string? Notes { get; set; }
+}
+
+public sealed class ProductionPlanDetailVM
+{
+    public int Id { get; set; }
+    public string PlanNumber { get; set; } = string.Empty;
+    public DateTime PlanDate { get; set; }
+    public DateTime TargetProductionDate { get; set; }
+    public PrdProductionPlanHeaderStatus Status { get; set; }
+    public DateTime? CalculatedDate { get; set; }
+    public DateTime? LockedDate { get; set; }
+    public string? LockedUserId { get; set; }
+    public string? Notes { get; set; }
+    public List<ProductionPlanDetailLineVM> Lines { get; set; } = [];
+    public List<ProductionRequirementLineVM> Requirements { get; set; } = [];
+}
+
+public sealed class ProductionPlanDetailLineVM
+{
+    public int Id { get; set; }
+    public string LineNumber { get; set; } = string.Empty;
+    public string ProductCode { get; set; } = string.Empty;
+    public string ProductName { get; set; } = string.Empty;
+    public int RecipeVersionId { get; set; }
+    public int VersionNumber { get; set; }
+    public decimal Quantity { get; set; }
+    public string Unit { get; set; } = string.Empty;
+    public bool IsConvertedToOrder { get; set; }
 }
 
 public sealed class ProductionPlanningLineVM

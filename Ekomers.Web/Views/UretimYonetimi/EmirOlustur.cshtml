@@ -1,0 +1,25 @@
+@model Ekomers.Models.ViewModels.Production.ProductionOrderCreateVM
+@{ ViewData["Title"]="Üretim Emirlerini Oluştur"; var depolarHazir=Model.SourceWarehouses.Count>0&&Model.ProductionWarehouses.Count>0; }
+<form asp-action="EmirOlustur" method="post">
+    <input asp-for="PlanHeaderId" type="hidden" />
+    <div class="card card-custom mb-5">
+        <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Üretim Emirlerini Oluştur<span class="d-block text-muted pt-2 font-size-sm">@Model.PlanNumber · @Model.PlannedProductionDate.ToString("dd.MM.yyyy")</span></h3></div><div class="card-toolbar"><a asp-action="PlanDetay" asp-route-id="@Model.PlanHeaderId" class="btn btn-sm btn-light">Plana Dön</a></div></div>
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+            @if(!depolarHazir){<div class="alert alert-danger">Emir oluşturmak için en az bir aktif ana depo ve bir aktif üretim deposu bulunmalıdır. <a asp-action="DepoYeni" class="alert-link">Yeni depo ekleyin</a>.</div>}
+            @if(Model.TotalShortageQuantity>0)
+            {
+                <div class="alert alert-warning"><strong>Stok uyarısı:</strong> Kilitlenen MRP sonucunda toplam @Model.TotalShortageQuantity.ToString("0.######") eksik miktar bulunuyor. Emirler oluşturulabilir ancak “Malzeme Bekliyor” durumunda başlayacaktır.</div>
+                <div class="form-group"><label class="checkbox"><input asp-for="AllowShortage"/><span></span>Eksik stok uyarısını okudum, üretim emirlerini yine de oluştur.</label><span asp-validation-for="AllowShortage" class="text-danger d-block"></span></div>
+            }
+            <div class="row"><div class="col-md-6 form-group"><label asp-for="SourceWarehouseId">Kaynak Ana Depo</label><select asp-for="SourceWarehouseId" asp-items="Model.SourceWarehouses" class="form-control"><option value="">Depo seçiniz</option></select><span asp-validation-for="SourceWarehouseId" class="text-danger"></span></div><div class="col-md-6 form-group"><label asp-for="ProductionWarehouseId">Üretim Deposu</label><select asp-for="ProductionWarehouseId" asp-items="Model.ProductionWarehouses" class="form-control"><option value="">Depo seçiniz</option></select><span asp-validation-for="ProductionWarehouseId" class="text-danger"></span></div></div>
+        </div>
+    </div>
+    <div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Oluşturulacak Emirler (@Model.Lines.Count)<span class="d-block text-muted pt-2 font-size-sm">Her ürün satırı için ayrı üretim emri oluşturulur.</span></h3></div></div><div class="card-body"><div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Ürün</th><th>Reçete</th><th>Miktar</th><th style="min-width:180px">Parti Numarası</th><th style="min-width:220px">Not</th></tr></thead><tbody>
+    @for(var i=0;i<Model.Lines.Count;i++)
+    {
+        <tr><td><input asp-for="Lines[i].ProductionPlanId" type="hidden"/><strong>@Model.Lines[i].ProductCode</strong><span class="d-block text-muted">@Model.Lines[i].ProductName</span></td><td>v@(Model.Lines[i].RecipeVersionNumber)</td><td>@Model.Lines[i].PlannedQuantity.ToString("0.######") @Model.Lines[i].Unit</td><td><input asp-for="Lines[i].BatchNumber" class="form-control" required maxlength="100"/><span asp-validation-for="Lines[i].BatchNumber" class="text-danger"></span></td><td><input asp-for="Lines[i].Notes" class="form-control" maxlength="500"/></td></tr>
+    }
+    </tbody></table></div></div><div class="card-footer text-right">@if(depolarHazir){<button type="submit" class="btn btn-success">Üretim Emirlerini Oluştur</button>}else{<button type="button" class="btn btn-success" disabled>Üretim Emirlerini Oluştur</button>}</div></div>
+</form>
+@section JSSection { <partial name="_ValidationScriptsPartial" /> }

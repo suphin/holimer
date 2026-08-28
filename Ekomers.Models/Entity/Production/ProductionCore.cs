@@ -19,6 +19,9 @@ public class PrdMaterial : BaseEntity
     public string? LogoCode { get; set; }
     public bool LogoActive { get; set; }
     public DateTime? LogoLastSyncDate { get; set; }
+    public bool RequiresLotTracking { get; set; } = true;
+    public bool RequiresExpirationDate { get; set; }
+    public PrdQualityControlRequirement QualityControlRequirement { get; set; } = PrdQualityControlRequirement.NotRequired;
     public string? Description { get; set; }
 }
 
@@ -41,6 +44,8 @@ public class PrdStockLot : BaseEntity
 
 public class PrdStockMovement : BaseEntity
 {
+    public int? InventoryDocumentId { get; set; }
+    public int? InventoryDocumentLineId { get; set; }
     public int MaterialId { get; set; }
     public int WarehouseId { get; set; }
     public int? StockLotId { get; set; }
@@ -48,12 +53,58 @@ public class PrdStockMovement : BaseEntity
     public PrdStockMovementType MovementType { get; set; }
     public decimal Quantity { get; set; }
     public int UnitId { get; set; }
+    public decimal? OriginalUnitCost { get; set; }
+    public string CurrencyCode { get; set; } = "TRY";
+    public decimal ExchangeRate { get; set; } = 1;
+    public decimal UnitCost { get; set; }
+    public decimal TotalCost { get; set; }
+    public PrdStockCostSource CostSource { get; set; } = PrdStockCostSource.Manual;
     public DateTime MovementDate { get; set; }
     public string DocumentNumber { get; set; } = string.Empty;
     public PrdStockDocumentType DocumentType { get; set; }
     public int? DocumentId { get; set; }
     public string? TransferNumber { get; set; }
     public string? Description { get; set; }
+}
+
+public class PrdInventoryDocument : BaseEntity
+{
+    public string DocumentNumber { get; set; } = string.Empty;
+    public PrdInventoryDocumentType Type { get; set; }
+    public PrdInventoryDocumentStatus Status { get; set; } = PrdInventoryDocumentStatus.Draft;
+    public DateTime DocumentDate { get; set; }
+    public DateTime? PostingDate { get; set; }
+    public string? PostedUserId { get; set; }
+    public int? SourceWarehouseId { get; set; }
+    public int? TargetWarehouseId { get; set; }
+    public string CurrencyCode { get; set; } = "TRY";
+    public decimal ExchangeRate { get; set; } = 1;
+    public decimal TotalCost { get; set; }
+    public string? SourceDocumentType { get; set; }
+    public int? SourceDocumentId { get; set; }
+    public int? ReversalDocumentId { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class PrdInventoryDocumentLine : BaseEntity
+{
+    public int InventoryDocumentId { get; set; }
+    public int Sequence { get; set; }
+    public int MaterialId { get; set; }
+    public int UnitId { get; set; }
+    public int? SourceStockLotId { get; set; }
+    public int? TargetStockLotId { get; set; }
+    public string? LotNumber { get; set; }
+    public DateTime? ProductionDate { get; set; }
+    public DateTime? ExpirationDate { get; set; }
+    public decimal Quantity { get; set; }
+    public decimal? OriginalUnitCost { get; set; }
+    public string CurrencyCode { get; set; } = "TRY";
+    public decimal ExchangeRate { get; set; } = 1;
+    public decimal UnitCost { get; set; }
+    public decimal TotalCost { get; set; }
+    public PrdStockCostSource CostSource { get; set; } = PrdStockCostSource.Manual;
+    public string? Notes { get; set; }
 }
 
 public class PrdRecipe : BaseEntity

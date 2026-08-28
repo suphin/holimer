@@ -1,0 +1,17 @@
+@model IReadOnlyList<Ekomers.Models.ViewModels.Production.ProductionPlanListVM>
+@{ ViewData["Title"]="Üretim Planları"; }
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Üretim Planları<span class="d-block text-muted pt-2 font-size-sm">Taslak, kilitli ve emre dönüştürülen planlar</span></h3></div><div class="card-toolbar"><a asp-action="Planlama" class="btn btn-primary">Yeni Üretim Planı</a></div></div>
+    <div class="card-body">
+        @if(Model.Count==0){<div class="alert alert-light-primary mb-0">Henüz kaydedilmiş üretim planı yok.</div>}
+        else
+        {
+            <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Plan No</th><th>Plan Tarihi</th><th>Hedef Üretim</th><th>Ürün</th><th>İhtiyaç</th><th>Eksik Toplamı</th><th>Durum</th><th></th></tr></thead><tbody>
+            @foreach(var item in Model)
+            {
+                <tr><td><strong>@item.PlanNumber</strong><span class="d-block text-muted">@item.Notes</span></td><td>@item.PlanDate.ToString("dd.MM.yyyy HH:mm")</td><td>@item.TargetProductionDate.ToString("dd.MM.yyyy")</td><td>@item.ProductCount</td><td>@item.RequirementCount</td><td class="@(item.TotalShortageQuantity>0?"text-danger":"text-success")">@item.TotalShortageQuantity.ToString("0.######")</td><td><span class="label label-light-primary label-inline">@item.Status.ToTurkish()</span></td><td><a asp-action="PlanDetay" asp-route-id="@item.Id" class="btn btn-sm btn-light-primary">Detay</a></td></tr>
+            }
+            </tbody></table></div>
+        }
+    </div>
+</div>

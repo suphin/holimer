@@ -1,0 +1,16 @@
+@model Ekomers.Models.ViewModels.Production.WarehouseFormVM
+@{ var isEdit=Model.Id>0; ViewData["Title"]=isEdit?"Depo Düzenle":"Yeni Depo"; }
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">@(isEdit?"Depo Düzenle":"Yeni Depo")<span class="d-block text-muted pt-2 font-size-sm">Üretim ve stok akışında kullanılacak depo kartı</span></h3></div><div class="card-toolbar"><a asp-action="Depolar" class="btn btn-sm btn-light">Depolara Dön</a></div></div>
+    <form asp-action="@(isEdit?"DepoDuzenle":"DepoYeni")" method="post">
+        <input asp-for="Id" type="hidden"/>
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+            <div class="row"><div class="col-md-4 form-group"><label asp-for="Code"></label><input asp-for="Code" class="form-control" maxlength="50" autocomplete="off"/><span asp-validation-for="Code" class="text-danger"></span></div><div class="col-md-8 form-group"><label asp-for="Name"></label><input asp-for="Name" class="form-control" maxlength="150"/><span asp-validation-for="Name" class="text-danger"></span></div></div>
+            <div class="row"><div class="col-md-4 form-group"><label asp-for="Type"></label><select asp-for="Type" asp-items="ViewBag.WarehouseTypes" class="form-control"><option value="0">Depo türü seçiniz</option></select><span asp-validation-for="Type" class="text-danger"></span>@if(isEdit){<small class="form-text text-muted">Hareket görmüş bir deponun türü değiştirilemez.</small>}</div><div class="col-md-8 form-group"><label asp-for="Description"></label><textarea asp-for="Description" class="form-control" rows="3" maxlength="500"></textarea><span asp-validation-for="Description" class="text-danger"></span></div></div>
+            <div class="form-group mb-0"><label class="checkbox"><input asp-for="IsActive"/><span></span>Depo aktif</label><small class="form-text text-muted">Pasif depolar yeni üretim emri seçimlerinde gösterilmez.</small></div>
+        </div>
+        <div class="card-footer text-right"><a asp-action="Depolar" class="btn btn-light mr-2">Vazgeç</a><button type="submit" class="btn btn-primary">@(isEdit?"Değişiklikleri Kaydet":"Depoyu Oluştur")</button></div>
+    </form>
+</div>
+@section JSSection { <partial name="_ValidationScriptsPartial" /> }
