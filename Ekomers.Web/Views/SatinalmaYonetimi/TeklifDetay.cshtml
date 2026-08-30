@@ -1,0 +1,52 @@
+@model Ekomers.Models.ViewModels.Purchasing.SupplierQuotationDetailVM
+@{ ViewData["Title"] = "Teklif Detayı"; }
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">@Model.QuotationNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.SupplierCode - @Model.SupplierName</span></h3></div>
+        <div class="card-toolbar">
+            <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
+            @if (Model.Status == PurSupplierQuotationStatus.Draft && Model.CanEdit)
+            {
+                <a asp-action="TeklifDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-primary mr-2">Düzenle</a>
+                <form asp-action="TeklifiOnayaGonder" method="post" class="d-inline" onsubmit="return confirm('Teklif onaya gönderildikten sonra düzenlenemez. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-primary">Onaya Gönder</button></form>
+            }
+            @if (Model.CanApprove && Model.Lines.Any(x => x.Status == PurSupplierQuotationLineStatus.PendingApproval)) { <a asp-action="TeklifOnay" asp-route-id="@Model.Id" class="btn btn-sm btn-primary ml-2">Satırları Değerlendir</a> }
+            @if (Model.PurchaseOrderId.HasValue) { <a asp-action="SiparisDetay" asp-route-id="@Model.PurchaseOrderId" class="btn btn-sm btn-light-success ml-2">Siparişi Aç</a> }
+            <a asp-action="Teklifler" class="btn btn-sm btn-light ml-2">Listeye Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-2"><strong>Talep</strong><div><a asp-action="TalepDetay" asp-route-id="@Model.RequestId">@Model.RequestNumber</a></div></div>
+            <div class="col-md-2"><strong>Firma Teklif No</strong><div>@(Model.SupplierQuotationNumber ?? "-")</div></div>
+            <div class="col-md-2"><strong>Teklif Tarihi</strong><div>@Model.QuotationDate.ToString("dd.MM.yyyy")</div></div>
+            <div class="col-md-2"><strong>Geçerlilik</strong><div>@(Model.ValidUntil?.ToString("dd.MM.yyyy") ?? "-")</div></div>
+            <div class="col-md-2"><strong>Ödeme</strong><div>@(Model.PaymentTerms ?? "-")</div></div>
+            <div class="col-md-2"><strong>Teslim</strong><div>@(Model.DeliveryTerms ?? "-")</div></div>
+        </div>
+        <div class="row mt-5">
+            <div class="col-md-2"><strong>Para Birimi</strong><div>@Model.CurrencyCode</div></div>
+            <div class="col-md-2"><strong>Kur</strong><div>@Model.ExchangeRate.ToString("N6")</div></div>
+            <div class="col-md-2"><strong>Kur Tarihi</strong><div>@(Model.ExchangeRateDate?.ToString("dd.MM.yyyy") ?? "-")</div></div>
+            <div class="col-md-2"><strong>Kur Kaynağı</strong><div>@Model.ExchangeRateSource</div></div>
+            <div class="col-md-4"><strong>Genel Toplam TRY Karşılığı</strong><div>@Model.GrandTotalTry.ToString("N2") TRY</div></div>
+        </div>
+    </div>
+</div>
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Teklif Satırları (@Model.Lines.Count)</h3></div></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-separate table-head-custom">
+                <thead><tr><th>Malzeme</th><th>Talep / Sipariş / Kalan</th><th>Teklif</th><th>Birim Fiyat</th><th>Net Birim</th><th>KDV</th><th>Toplam</th><th>TRY Karşılığı</th><th>Teslim</th><th>Durum</th></tr></thead>
+                <tbody>
+                @foreach (var line in Model.Lines)
+                {
+                    <tr><td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span></td><td>@line.RequestApprovedQuantity.ToString("0.######") / @line.AlreadyOrderedQuantity.ToString("0.######") / @line.RemainingRequestQuantity.ToString("0.######") @line.Unit</td><td>@line.OfferedQuantity.ToString("0.######") @line.Unit</td><td>@line.UnitPrice.ToString("N6") @Model.CurrencyCode</td><td>@line.NetUnitPrice.ToString("N6") @Model.CurrencyCode</td><td>%@line.VatRate.ToString("0.##")</td><td>@line.GrandTotal.ToString("N2") @Model.CurrencyCode</td><td>@((line.GrandTotal * Model.ExchangeRate).ToString("N2")) TRY</td><td>@(line.DeliveryDate?.ToString("dd.MM.yyyy") ?? "-")</td><td><span class="label label-light-primary label-inline">@line.Status.ToTurkish()</span></td></tr>
+                }
+                </tbody>
+                <tfoot><tr><th colspan="6" class="text-right">Net / KDV / Genel Toplam</th><th colspan="4">@Model.NetTotal.ToString("N2") / @Model.TaxTotal.ToString("N2") / <strong>@Model.GrandTotal.ToString("N2") @Model.CurrencyCode</strong><span class="d-block text-muted">@Model.GrandTotalTry.ToString("N2") TRY</span></th></tr></tfoot>
+            </table>
+        </div>
+    </div>
+</div>

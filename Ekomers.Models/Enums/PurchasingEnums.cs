@@ -45,6 +45,50 @@ public enum PurRequestApprovalAction
     Rejected = 3
 }
 
+public enum PurSupplierQuotationStatus
+{
+    Draft = 0,
+    PendingApproval = 1,
+    PartiallyApproved = 2,
+    Approved = 3,
+    Rejected = 4,
+    ConvertedToOrder = 5,
+    Cancelled = 6
+}
+
+public enum PurSupplierQuotationLineStatus
+{
+    Draft = 0,
+    PendingApproval = 1,
+    Approved = 2,
+    Rejected = 3,
+    Ordered = 4,
+    Cancelled = 5
+}
+
+public enum PurQuotationApprovalAction
+{
+    Submitted = 1,
+    Approved = 2,
+    Rejected = 3
+}
+
+public enum PurPurchaseOrderStatus
+{
+    Open = 1,
+    PartiallyReceived = 2,
+    Received = 3,
+    Cancelled = 4
+}
+
+public enum PurPurchaseOrderLineStatus
+{
+    Open = 1,
+    PartiallyReceived = 2,
+    Received = 3,
+    Cancelled = 4
+}
+
 public static class PurchasingEnumExtensions
 {
     public static string ToTurkish(this PurPurchaseRequestStatus value) => value switch
@@ -86,6 +130,47 @@ public static class PurchasingEnumExtensions
     {
         PurPurchaseRequestSource.Manual => "Manuel",
         PurPurchaseRequestSource.Mrp => "MRP",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PurSupplierQuotationStatus value) => value switch
+    {
+        PurSupplierQuotationStatus.Draft => "Taslak",
+        PurSupplierQuotationStatus.PendingApproval => "Onay Bekliyor",
+        PurSupplierQuotationStatus.PartiallyApproved => "Kısmen Onaylandı",
+        PurSupplierQuotationStatus.Approved => "Onaylandı",
+        PurSupplierQuotationStatus.Rejected => "Reddedildi",
+        PurSupplierQuotationStatus.ConvertedToOrder => "Siparişe Dönüştü",
+        PurSupplierQuotationStatus.Cancelled => "İptal Edildi",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PurSupplierQuotationLineStatus value) => value switch
+    {
+        PurSupplierQuotationLineStatus.Draft => "Taslak",
+        PurSupplierQuotationLineStatus.PendingApproval => "Onay Bekliyor",
+        PurSupplierQuotationLineStatus.Approved => "Onaylandı",
+        PurSupplierQuotationLineStatus.Rejected => "Reddedildi",
+        PurSupplierQuotationLineStatus.Ordered => "Siparişe Dönüştü",
+        PurSupplierQuotationLineStatus.Cancelled => "İptal Edildi",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PurPurchaseOrderStatus value) => value switch
+    {
+        PurPurchaseOrderStatus.Open => "Açık",
+        PurPurchaseOrderStatus.PartiallyReceived => "Kısmen Teslim Alındı",
+        PurPurchaseOrderStatus.Received => "Teslim Alındı",
+        PurPurchaseOrderStatus.Cancelled => "İptal Edildi",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PurPurchaseOrderLineStatus value) => value switch
+    {
+        PurPurchaseOrderLineStatus.Open => "Açık",
+        PurPurchaseOrderLineStatus.PartiallyReceived => "Kısmen Teslim Alındı",
+        PurPurchaseOrderLineStatus.Received => "Teslim Alındı",
+        PurPurchaseOrderLineStatus.Cancelled => "İptal Edildi",
         _ => value.ToString()
     };
 }

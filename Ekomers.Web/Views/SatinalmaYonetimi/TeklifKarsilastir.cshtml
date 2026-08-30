@@ -1,0 +1,90 @@
+@model Ekomers.Models.ViewModels.Purchasing.QuotationComparisonVM
+@{
+    ViewData["Title"] = "Teklif Karşılaştırma";
+    var groups = Model.Lines.GroupBy(x => new { x.PurchaseRequestLineId, x.MaterialCode, x.MaterialName, x.Unit })
+        .OrderBy(x => x.Key.MaterialCode).ToList();
+}
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">Teklif Karşılaştırma<span class="d-block text-muted pt-2 font-size-sm">Talep: @Model.RequestNumber</span></h3></div>
+        <div class="card-toolbar"><a asp-action="YeniTeklif" asp-route-requestId="@Model.RequestId" class="btn btn-primary mr-2">Yeni Teklif Gir</a><a asp-action="TeklifTalepleri" class="btn btn-light">Geri Dön</a></div>
+    </div>
+    <div class="card-body"><div class="alert alert-light-info mb-0">Her malzeme için farklı bir tedarikçi seçebilirsiniz. Farklı para birimleri, teklifte sabitlenen kur üzerinden TRY'ye çevrilir; en düşük net TRY birim fiyatı vurgulanır.</div></div>
+</div>
+
+@if (groups.Count == 0)
+{
+    <div class="card card-custom"><div class="card-body"><div class="alert alert-light-primary mb-0">Bu talep için henüz teklif girilmedi.</div></div></div>
+}
+else
+{
+    @foreach (var group in groups)
+    {
+        var offers = group.OrderBy(x => x.NetUnitPriceTry).ThenBy(x => x.DeliveryDate).ToList();
+        var priceCandidates = offers.Where(x => x.Status != PurSupplierQuotationLineStatus.Rejected && x.Status != PurSupplierQuotationLineStatus.Cancelled).ToList();
+        decimal? bestNetPriceTry = priceCandidates.Count > 0 ? priceCandidates.Min(x => x.NetUnitPriceTry) : null;
+        var first = offers.First();
+        <div class="card card-custom mb-5">
+            <div class="card-header flex-wrap py-3">
+                <div class="card-title"><h3 class="card-label">@group.Key.MaterialCode<span class="d-block text-muted pt-2 font-size-sm">@group.Key.MaterialName</span></h3></div>
+                <div class="card-toolbar">
+                    <div class="text-right mr-5"><small class="text-muted d-block">Onaylanan Talep</small><strong>@first.RequestApprovedQuantity.ToString("0.######") @group.Key.Unit</strong></div>
+                    <div class="text-right"><small class="text-muted d-block">Sipariş / Kalan</small><strong>@first.AlreadyOrderedQuantity.ToString("0.######") / @first.RemainingRequestQuantity.ToString("0.######") @group.Key.Unit</strong></div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-separate table-head-custom mb-0">
+                        <thead><tr><th style="min-width:260px">Tedarikçi / Teklif</th><th>Teklif Miktarı</th><th>Liste Fiyatı</th><th>İskonto</th><th>Net Birim</th><th>Kur</th><th>KDV</th><th>Satır Toplamı</th><th style="min-width:180px">Teslim</th><th style="min-width:220px">Koşullar</th><th style="min-width:220px">Durum / İşlem</th></tr></thead>
+                        <tbody>
+                        @foreach (var offer in offers)
+                        {
+                            var isBest = bestNetPriceTry.HasValue && offer.NetUnitPriceTry == bestNetPriceTry.Value && offer.Status != PurSupplierQuotationLineStatus.Rejected && offer.Status != PurSupplierQuotationLineStatus.Cancelled;
+                            var isExpired = offer.ValidUntil.HasValue && offer.ValidUntil.Value.Date < DateTime.Today;
+                            var selectableQuantity = Math.Min(offer.OfferedQuantity, offer.RemainingRequestQuantity);
+                            <tr class="@(isBest ? "table-success" : "")">
+                                <td>
+                                    <strong>@offer.SupplierCode - @offer.SupplierName</strong>
+                                    <a asp-action="TeklifDetay" asp-route-id="@offer.QuotationId" class="d-block">@offer.QuotationNumber</a>
+                                    @if (!string.IsNullOrWhiteSpace(offer.SupplierQuotationNumber)) { <small class="text-muted">Firma teklif no: @offer.SupplierQuotationNumber</small> }
+                                    @if (isBest) { <span class="label label-success label-inline d-block mt-2" style="width:max-content">En düşük TRY karşılığı</span> }
+                                </td>
+                                <td><strong>@offer.OfferedQuantity.ToString("0.######")</strong> @offer.Unit</td>
+                                <td>@offer.UnitPrice.ToString("N6") @offer.CurrencyCode</td>
+                                <td>%@offer.DiscountRate.ToString("0.##")</td>
+                                <td><strong>@offer.NetUnitPrice.ToString("N6") @offer.CurrencyCode</strong><small class="d-block text-muted">@offer.NetUnitPriceTry.ToString("N6") TRY</small></td>
+                                <td><strong>@offer.ExchangeRate.ToString("N6")</strong><small class="d-block text-muted">@(offer.ExchangeRateDate?.ToString("dd.MM.yyyy") ?? "-") · @offer.ExchangeRateSource</small></td>
+                                <td>%@offer.VatRate.ToString("0.##")</td>
+                                <td><strong>@offer.GrandTotal.ToString("N2") @offer.CurrencyCode</strong><small class="d-block text-muted">@offer.GrandTotalTry.ToString("N2") TRY</small></td>
+                                <td><span>@(offer.DeliveryDate?.ToString("dd.MM.yyyy") ?? "Belirtilmedi")</span><small class="d-block text-muted">Teklif: @offer.QuotationDate.ToString("dd.MM.yyyy")</small><small class="d-block @(isExpired ? "text-danger" : "text-muted")">Geçerlilik: @(offer.ValidUntil?.ToString("dd.MM.yyyy") ?? "Belirtilmedi")</small></td>
+                                <td><strong>Ödeme:</strong> @(offer.PaymentTerms ?? "-")<br /><strong>Teslim:</strong> @(offer.DeliveryTerms ?? "-")</td>
+                                <td>
+                                    <span class="label label-light-primary label-inline mb-2">@offer.Status.ToTurkish()</span>
+                                    @if (isExpired && offer.Status == PurSupplierQuotationLineStatus.PendingApproval)
+                                    {
+                                        <small class="d-block text-danger">Teklif süresi dolmuş</small>
+                                    }
+                                    else if (Model.CanApprove && offer.Status == PurSupplierQuotationLineStatus.PendingApproval && selectableQuantity > 0)
+                                    {
+                                        <form asp-action="TeklifSatirKarari" method="post" class="mt-2" onsubmit="return confirm('Bu teklif seçilip siparişe dönüştürülsün mü?');">
+                                            <input type="hidden" name="QuotationId" value="@offer.QuotationId" />
+                                            <input type="hidden" name="LineId" value="@offer.QuotationLineId" />
+                                            <input type="hidden" name="RequestId" value="@Model.RequestId" />
+                                            <input type="hidden" name="ReturnToComparison" value="true" />
+                                            <input type="hidden" name="Decision" value="@PurQuotationApprovalAction.Approved" />
+                                            <label class="small mb-1">Sipariş miktarı</label>
+                                            <input name="ApprovedQuantityInput" value="@selectableQuantity.ToString("0.######", CultureInfo.InvariantCulture)" class="form-control form-control-sm mb-2" inputmode="decimal" />
+                                            <input name="Note" class="form-control form-control-sm mb-2" placeholder="Onay notu (isteğe bağlı)" />
+                                            <button class="btn btn-sm btn-success btn-block">Seç ve Siparişe Dönüştür</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}

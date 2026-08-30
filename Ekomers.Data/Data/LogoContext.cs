@@ -14,6 +14,7 @@ namespace Ekomers.Data
 
 		public DbSet<LG_100_ITEMS> Items { get; set; }
 		public DbSet<PORTAL_ITEMS_LIST> LogoItems { get; set; }
+		public DbSet<LG_100_CLCARD> ClientCards { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -28,6 +29,12 @@ namespace Ekomers.Data
 
 			modelBuilder.Entity<PORTAL_ITEMS_LIST>()
 				.HasKey(x => x.ProductId);
+
+			modelBuilder.Entity<LG_100_CLCARD>()
+				.ToTable("LG_100_CLCARD", "dbo", t => t.ExcludeFromMigrations());
+
+			modelBuilder.Entity<LG_100_CLCARD>()
+				.HasKey(x => x.LOGICALREF);
 
 			base.OnModelCreating(modelBuilder);
 		}

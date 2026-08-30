@@ -961,6 +961,14 @@
 			{
 				<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "OnayBekleyenler" || actionName == "TalepOnay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="OnayBekleyenler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Talep Onayları</span></a></li>
 			}
+			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "Tedarikciler" || actionName == "TedarikciYeni" || actionName == "TedarikciDuzenle" || actionName == "TedarikciAktar") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="Tedarikciler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Tedarikçiler</span></a></li>
+			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "TeklifTalepleri" || actionName == "YeniTeklif" || actionName == "TeklifDuzenle" || actionName == "TeklifKarsilastir") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="TeklifTalepleri" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Teklif Bekleyen Talepler</span></a></li>
+			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "Teklifler" || actionName == "TeklifDetay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="Teklifler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Tedarikçi Teklifleri</span></a></li>
+			@if (User.IsInRole("Admin") || User.HasClaim("Authorize", "TeklifKabul"))
+			{
+				<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "TeklifOnaylari" || actionName == "TeklifOnay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="TeklifOnaylari" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Teklif Onayları</span></a></li>
+			}
+			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "Siparisler" || actionName == "SiparisDetay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="Siparisler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Satınalma Siparişleri</span></a></li>
 		</ul></div>
 	</li>
 }

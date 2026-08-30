@@ -1,0 +1,49 @@
+@model Ekomers.Models.ViewModels.Purchasing.SupplierImportPreviewVM
+@{ ViewData["Title"] = "Tedarikçi Aktarımı"; }
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Tedarikçi Aktarımı<span class="d-block text-muted pt-2 font-size-sm">Aktarım öncesi kaynak ve mükerrerlik kontrolü</span></h3></div><div class="card-toolbar"><a asp-action="Tedarikciler" class="btn btn-sm btn-light">Tedarikçilere Dön</a></div></div>
+    <div class="card-body">
+        <div class="alert alert-light-primary">
+            <strong>Kapsam:</strong> Portal <code>Musteriler.ID &gt; @Model.PortalMinimumExclusiveId</code> ve Logo <code>LG_100_CLCARD.CODE LIKE '@Model.LogoCodePrefix%'</code>.<br />
+            Logo kodu/LOGICALREF ana eşleşmedir; ardından vergi numarası ve firma adı kontrol edilir. Logo ile eşleşmeyen portal kayıtlarına <code>MUS-xxxxxx</code> kodu verilir.
+        </div>
+        <div class="row">
+            <div class="col-md-2 mb-3"><div class="border rounded p-4"><span class="text-muted">Portal Kaydı</span><h3 class="mb-0">@Model.PortalRecordCount</h3></div></div>
+            <div class="col-md-2 mb-3"><div class="border rounded p-4"><span class="text-muted">Logo 320</span><h3 class="mb-0">@Model.LogoRecordCount</h3></div></div>
+            <div class="col-md-2 mb-3"><div class="border rounded p-4"><span class="text-muted">Tekil Aday</span><h3 class="mb-0">@Model.CandidateCount</h3></div></div>
+            <div class="col-md-2 mb-3"><div class="border rounded p-4"><span class="text-muted">Yeni</span><h3 class="mb-0 text-success">@Model.NewCount</h3></div></div>
+            <div class="col-md-2 mb-3"><div class="border rounded p-4"><span class="text-muted">Eşleşen</span><h3 class="mb-0 text-primary">@Model.ExistingCount</h3></div></div>
+            <div class="col-md-2 mb-3"><div class="border rounded p-4"><span class="text-muted">Aktarılamaz</span><h3 class="mb-0 text-danger">@Model.InvalidCount</h3></div></div>
+        </div>
+        <div class="form-group mb-0"><input id="supplier-import-search" class="form-control" placeholder="Kod, firma, vergi numarası veya kaynak içinde ara..." /></div>
+    </div>
+</div>
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Aktarım Önizlemesi (@Model.Lines.Count)</h3></div></div>
+    <div class="card-body">
+        <div class="table-responsive" style="max-height:580px;overflow:auto"><table class="table table-separate table-head-custom" id="supplier-import-table"><thead class="thead-light"><tr><th>Durum</th><th>Kaynak</th><th>Kod</th><th>Firma</th><th>Vergi No</th><th>Telefon / E-posta</th><th>Eşleşme</th><th>Aktiflik</th></tr></thead><tbody>
+        @foreach (var line in Model.Lines)
+        {
+            var badge = line.Status == "Yeni" ? "label-light-success" : line.Status == "Eşleşti" ? "label-light-primary" : "label-light-danger";
+            <tr><td><span class="label @badge label-inline">@line.Status</span></td><td>@line.Source<small class="d-block text-muted">@line.SourceReference</small></td><td><strong>@line.Code</strong>@if (!string.IsNullOrWhiteSpace(line.LogoCode)) { <small class="d-block text-muted">Logo: @line.LogoCode</small> }</td><td>@line.Name</td><td>@(line.TaxNumber ?? "-")</td><td>@(line.Phone ?? "-")<small class="d-block text-muted">@(line.Email ?? "-")</small></td><td>@(line.MatchReason ?? "-")</td><td>@(line.IsActive ? "Aktif" : "Pasif")</td></tr>
+        }
+        </tbody></table></div>
+        <form asp-action="TedarikciAktar" method="post" class="mt-5" onsubmit="return confirm('Önizlemedeki firmalar tedarikçi kartlarına aktarılsın mı?');">
+            <label class="checkbox mb-4"><input type="checkbox" name="aktarimiOnayliyorum" value="true" required /><span></span> Önizlemeyi ve eşleşme kurallarını kontrol ettim, aktarımı onaylıyorum.</label>
+            <button class="btn btn-success" @(Model.NewCount + Model.ExistingCount == 0 ? "disabled" : null)>Tedarikçileri Aktar</button>
+        </form>
+    </div>
+</div>
+@section JSSection {
+<script>
+    (function () {
+        var input = document.getElementById('supplier-import-search');
+        input.addEventListener('input', function () {
+            var term = this.value.toLocaleLowerCase('tr-TR');
+            document.querySelectorAll('#supplier-import-table tbody tr').forEach(function (row) {
+                row.style.display = row.textContent.toLocaleLowerCase('tr-TR').includes(term) ? '' : 'none';
+            });
+        });
+    })();
+</script>
+}

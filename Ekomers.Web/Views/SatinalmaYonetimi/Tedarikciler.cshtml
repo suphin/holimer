@@ -1,0 +1,11 @@
+@model IReadOnlyList<Ekomers.Models.ViewModels.Purchasing.SupplierListVM>
+@{ ViewData["Title"] = "Tedarikçiler"; }
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Tedarikçiler<span class="d-block text-muted pt-2 font-size-sm">Satınalma tekliflerinde kullanılacak firma kartları</span></h3></div><div class="card-toolbar">@if (User.IsInRole("Admin")) { <a asp-action="TedarikciAktar" class="btn btn-light-primary mr-2">Portal ve Logo'dan Aktar</a> }<a asp-action="TedarikciYeni" class="btn btn-primary">Yeni Tedarikçi</a></div></div>
+    <div class="card-body">
+        @if (Model.Count == 0) { <div class="alert alert-light-primary mb-0">Henüz tedarikçi kartı oluşturulmadı.</div> }
+        else { <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Kod</th><th>Firma</th><th>Vergi No</th><th>Yetkili</th><th>İletişim</th><th>Logo Kodu</th><th>Teklif</th><th>Durum</th><th></th></tr></thead><tbody>
+        @foreach (var item in Model) { <tr><td><strong>@item.Code</strong></td><td>@item.Name</td><td>@(item.TaxNumber ?? "-")</td><td>@(item.ContactName ?? "-")</td><td>@(item.Phone ?? item.Email ?? "-")</td><td>@(item.LogoCode ?? "-")</td><td>@item.QuotationCount</td><td><span class="label @(item.IsActive ? "label-light-success" : "label-light-danger") label-inline">@(item.IsActive ? "Aktif" : "Pasif")</span></td><td class="text-right"><a asp-action="TedarikciDuzenle" asp-route-id="@item.Id" class="btn btn-sm btn-light-primary">Düzenle</a></td></tr> }
+        </tbody></table></div> }
+    </div>
+</div>

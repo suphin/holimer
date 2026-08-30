@@ -1,0 +1,125 @@
+@model Ekomers.Models.ViewModels.Purchasing.SupplierQuotationFormVM
+@{
+    var isEdit = Model.Id > 0;
+    ViewData["Title"] = isEdit ? "Teklif Düzenle" : "Yeni Tedarikçi Teklifi";
+    var currentRatesJson = System.Text.Json.JsonSerializer.Serialize(Model.CurrentRates);
+}
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">@ViewData["Title"]<span class="d-block text-muted pt-2 font-size-sm">Talep: @Model.RequestNumber</span></h3></div>
+        <div class="card-toolbar"><a asp-action="TeklifTalepleri" class="btn btn-sm btn-light">Taleplere Dön</a></div>
+    </div>
+    <form asp-action="@(isEdit ? "TeklifDuzenle" : "YeniTeklif")" method="post">
+        <input asp-for="Id" type="hidden" />
+        <input asp-for="PurchaseRequestId" type="hidden" />
+        <input asp-for="ExchangeRateSource" type="hidden" />
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="alert alert-light-danger"></div>
+            @if (isEdit)
+            {
+                <div class="alert alert-light-primary"><strong>Teklif No:</strong> @Model.QuotationNumber</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.RateLoadWarning))
+            {
+                <div class="alert alert-light-warning">@Model.RateLoadWarning</div>
+            }
+            <div class="row">
+                <div class="col-md-4 form-group"><label asp-for="SupplierId"></label><select asp-for="SupplierId" asp-items="Model.Suppliers" class="form-control kt_select2" data-live-search="true" data-size="5"><option value="">Tedarikçi seçiniz</option></select><span asp-validation-for="SupplierId" class="text-danger"></span></div>
+                <div class="col-md-2 form-group"><label asp-for="SupplierQuotationNumber"></label><input asp-for="SupplierQuotationNumber" class="form-control" /></div>
+                <div class="col-md-2 form-group"><label asp-for="QuotationDate"></label><input asp-for="QuotationDate" type="date" class="form-control" /></div>
+                <div class="col-md-2 form-group"><label asp-for="ValidUntil"></label><input asp-for="ValidUntil" type="date" class="form-control" /></div>
+                <div class="col-md-2 form-group"><label asp-for="CurrencyCode"></label><select asp-for="CurrencyCode" asp-items="Model.Currencies" class="form-control"></select></div>
+            </div>
+            <div class="row">
+                <div class="col-md-2 form-group">
+                    <label asp-for="ExchangeRateInput"></label>
+                    <input asp-for="ExchangeRateInput" class="form-control" inputmode="decimal" />
+                    <span asp-validation-for="ExchangeRateInput" class="text-danger"></span>
+                    <small class="form-text text-muted">Kaynak: <strong id="exchange-rate-source-text">@Model.ExchangeRateSource</strong></small>
+                </div>
+                <div class="col-md-2 form-group"><label asp-for="ExchangeRateDate"></label><input asp-for="ExchangeRateDate" type="date" class="form-control" /><span asp-validation-for="ExchangeRateDate" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="PaymentTerms"></label><input asp-for="PaymentTerms" class="form-control" /></div>
+                <div class="col-md-3 form-group"><label asp-for="DeliveryTerms"></label><input asp-for="DeliveryTerms" class="form-control" /></div>
+                <div class="col-md-2 form-group"><label asp-for="LeadTimeDays"></label><input asp-for="LeadTimeDays" type="number" min="0" class="form-control" /></div>
+            </div>
+            <div class="row"><div class="col-md-12 form-group"><label asp-for="Notes"></label><input asp-for="Notes" class="form-control" /></div></div>
+            <div class="alert alert-light-info">TRY kuru 1 olarak sabitlenir. USD ve EUR için güncel TCMB satış kuru otomatik gelir; gerektiğinde değiştirebilirsiniz. Kaydedilen kur teklifin tarihsel kurudur ve daha sonra güncellenmez.</div>
+            <div class="alert alert-light-info">Teklife dahil edilecek satırları işaretleyin. Miktar, onaylanmış talebin henüz sipariş edilmemiş kalan miktarını aşamaz.</div>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead><tr><th>Dahil</th><th style="min-width:300px">Malzeme</th><th>Onay / Sipariş / Kalan</th><th>Teklif Miktarı</th><th>Birim Fiyat</th><th>İskonto %</th><th>KDV %</th><th>Teslim</th><th>Not</th></tr></thead>
+                    <tbody>
+                    @for (var i = 0; i < Model.Lines.Count; i++)
+                    {
+                        <tr>
+                            <td><input asp-for="Lines[i].Include" /><input asp-for="Lines[i].Id" type="hidden" /><input asp-for="Lines[i].PurchaseRequestLineId" type="hidden" /></td>
+                            <td><strong>@Model.Lines[i].MaterialCode</strong><span class="d-block text-muted">@Model.Lines[i].MaterialName</span><small>@Model.Lines[i].Unit</small></td>
+                            <td>@Model.Lines[i].ApprovedRequestQuantity.ToString("0.######") / @Model.Lines[i].OrderedQuantity.ToString("0.######") / <strong>@Model.Lines[i].RemainingQuantity.ToString("0.######")</strong></td>
+                            <td><input asp-for="Lines[i].OfferedQuantityInput" class="form-control" inputmode="decimal" /><span asp-validation-for="Lines[i].OfferedQuantityInput" class="text-danger"></span></td>
+                            <td><input asp-for="Lines[i].UnitPriceInput" class="form-control" inputmode="decimal" /><span asp-validation-for="Lines[i].UnitPriceInput" class="text-danger"></span></td>
+                            <td><input asp-for="Lines[i].DiscountRateInput" class="form-control" inputmode="decimal" /></td>
+                            <td><input asp-for="Lines[i].VatRateInput" class="form-control" inputmode="decimal" /></td>
+                            <td><input asp-for="Lines[i].DeliveryDate" type="date" class="form-control" /></td>
+                            <td><input asp-for="Lines[i].Notes" class="form-control" /></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer text-right"><a asp-action="TeklifTalepleri" class="btn btn-light mr-2">Vazgeç</a><button class="btn btn-primary">Taslağı Kaydet</button></div>
+    </form>
+</div>
+@section JSSection {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            $('.kt_select2').select2({ width: '100%', placeholder: 'Tedarikçi seçiniz', allowClear: true });
+
+            const currentRates = @Html.Raw(currentRatesJson);
+            const currentRateDate = '@Model.CurrentRateDate.ToString("yyyy-MM-dd")';
+            const currency = $('#CurrencyCode');
+            const rate = $('#ExchangeRateInput');
+            const rateDate = $('#ExchangeRateDate');
+            const rateSource = $('#ExchangeRateSource');
+            const sourceText = $('#exchange-rate-source-text');
+
+            function showSource(value) {
+                rateSource.val(value);
+                sourceText.text(value);
+            }
+
+            function setRateForCurrency() {
+                const code = (currency.val() || '').toUpperCase();
+                if (code === 'TRY') {
+                    rate.val('1').prop('readonly', true);
+                    rateDate.val(currentRateDate);
+                    showSource('Sabit');
+                    return;
+                }
+
+                rate.prop('readonly', false);
+                if (currentRates[code]) {
+                    rate.val(currentRates[code].toString());
+                    rateDate.val(currentRateDate);
+                    showSource('TCMB');
+                } else {
+                    rate.val('');
+                    rateDate.val(currentRateDate);
+                    showSource('Manuel');
+                }
+            }
+
+            currency.on('change', setRateForCurrency);
+            rate.on('input', function () {
+                if ((currency.val() || '').toUpperCase() !== 'TRY') showSource('Manuel');
+            });
+            rateDate.on('change', function () {
+                if ((currency.val() || '').toUpperCase() !== 'TRY' && rateDate.val() !== currentRateDate) showSource('Manuel');
+            });
+
+            rate.prop('readonly', (currency.val() || '').toUpperCase() === 'TRY');
+            showSource(rateSource.val() || ((currency.val() || '').toUpperCase() === 'TRY' ? 'Sabit' : 'Manuel'));
+        });
+    </script>
+}
