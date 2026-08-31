@@ -193,6 +193,7 @@ namespace Ekomers.Data
 		public DbSet<PrdRecipe> PrdRecipes { get; set; }
 		public DbSet<PrdRecipeVersion> PrdRecipeVersions { get; set; }
 		public DbSet<PrdRecipeItem> PrdRecipeItems { get; set; }
+		public DbSet<PrdRecipeHistory> PrdRecipeHistories { get; set; }
 		public DbSet<PrdProductionPlanHeader> PrdProductionPlanHeaders { get; set; }
 		public DbSet<PrdProductionPlan> PrdProductionPlans { get; set; }
 		public DbSet<PrdProductionPlanRequirement> PrdProductionPlanRequirements { get; set; }
@@ -215,6 +216,9 @@ namespace Ekomers.Data
 		public DbSet<PurQuotationApprovalHistory> PurQuotationApprovalHistories { get; set; }
 		public DbSet<PurPurchaseOrder> PurPurchaseOrders { get; set; }
 		public DbSet<PurPurchaseOrderLine> PurPurchaseOrderLines { get; set; }
+		public DbSet<PurGoodsReceipt> PurGoodsReceipts { get; set; }
+		public DbSet<PurGoodsReceiptLine> PurGoodsReceiptLines { get; set; }
+		public DbSet<PurQualityInspection> PurQualityInspections { get; set; }
 
 
 
@@ -367,7 +371,7 @@ namespace Ekomers.Data
 			[
 				typeof(PrdUnit), typeof(PrdMaterial), typeof(PrdWarehouse), typeof(PrdStockLot),
 				typeof(PrdStockMovement), typeof(PrdInventoryDocument), typeof(PrdInventoryDocumentLine),
-				typeof(PrdRecipe), typeof(PrdRecipeVersion), typeof(PrdRecipeItem),
+				typeof(PrdRecipe), typeof(PrdRecipeVersion), typeof(PrdRecipeItem), typeof(PrdRecipeHistory),
 				typeof(PrdProductionPlanHeader), typeof(PrdProductionPlan), typeof(PrdProductionPlanRequirement),
 				typeof(PrdProductionOrder), typeof(PrdMaterialRequirement),
 				typeof(PrdStockReservation), typeof(PrdWarehouseTask), typeof(PrdWarehouseTaskItem),
@@ -418,6 +422,10 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdRecipeVersion>().HasIndex(x => new { x.RecipeId, x.VersionNumber }).IsUnique();
 			modelBuilder.Entity<PrdRecipeItem>().HasIndex(x => new { x.RecipeVersionId, x.Sequence }).IsUnique();
 			modelBuilder.Entity<PrdRecipeItem>().Property(x => x.AlternativeGroupCode).HasMaxLength(50);
+			modelBuilder.Entity<PrdRecipeHistory>().HasIndex(x => new { x.RecipeId, x.RecipeVersionId, x.ActionDate });
+			modelBuilder.Entity<PrdRecipeHistory>().Property(x => x.Action).HasMaxLength(100);
+			modelBuilder.Entity<PrdRecipeHistory>().Property(x => x.Description).HasMaxLength(2000);
+			modelBuilder.Entity<PrdRecipeHistory>().Property(x => x.ActionUserId).HasMaxLength(450);
 			modelBuilder.Entity<PrdProductionPlanHeader>().HasIndex(x => x.PlanNumber).IsUnique();
 			modelBuilder.Entity<PrdProductionPlanHeader>().Property(x => x.PlanNumber).HasMaxLength(50);
 			modelBuilder.Entity<PrdProductionPlanHeader>().Property(x => x.LockedUserId).HasMaxLength(450);
@@ -455,6 +463,9 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdRecipeItem>().HasOne<PrdRecipeVersion>().WithMany().HasForeignKey(x => x.RecipeVersionId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdRecipeItem>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdRecipeItem>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdRecipeHistory>().HasOne<PrdRecipe>().WithMany().HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdRecipeHistory>().HasOne<PrdRecipeVersion>().WithMany().HasForeignKey(x => x.RecipeVersionId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdRecipeHistory>().HasOne<PrdRecipeItem>().WithMany().HasForeignKey(x => x.RecipeItemId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionPlan>().HasOne<PrdProductionPlanHeader>().WithMany().HasForeignKey(x => x.ProductionPlanHeaderId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionPlan>().HasOne<PrdRecipeVersion>().WithMany().HasForeignKey(x => x.RecipeVersionId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionPlan>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.ProductMaterialId).OnDelete(DeleteBehavior.Restrict);
@@ -505,7 +516,8 @@ namespace Ekomers.Data
 			[
 				typeof(PurPurchaseRequest), typeof(PurPurchaseRequestLine), typeof(PurRequestApprovalHistory),
 				typeof(PurSupplier), typeof(PurSupplierQuotation), typeof(PurSupplierQuotationLine),
-				typeof(PurQuotationApprovalHistory), typeof(PurPurchaseOrder), typeof(PurPurchaseOrderLine)
+				typeof(PurQuotationApprovalHistory), typeof(PurPurchaseOrder), typeof(PurPurchaseOrderLine),
+				typeof(PurGoodsReceipt), typeof(PurGoodsReceiptLine), typeof(PurQualityInspection)
 			];
 
 			foreach (var type in purchasingTypes)
@@ -577,12 +589,58 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.ExchangeRateSource).HasMaxLength(20).HasDefaultValue("Sabit");
 			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.PaymentTerms).HasMaxLength(500);
 			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.DeliveryTerms).HasMaxLength(500);
+			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.DeliveryAddress).HasMaxLength(1000);
+			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.CarrierName).HasMaxLength(250);
+			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.EstimatedFreightAmount).HasPrecision(18, 6);
+			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.EstimatedFreightVatRate).HasPrecision(5, 2);
+			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.FreightCurrencyCode).HasMaxLength(3).HasDefaultValue("TRY");
+			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.FreightExchangeRate).HasPrecision(18, 6).HasDefaultValue(1m);
+			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.FreightExchangeRateSource).HasMaxLength(20).HasDefaultValue("Sabit");
+			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.TrackingNumber).HasMaxLength(100);
+			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.TransportationNotes).HasMaxLength(1000);
 			modelBuilder.Entity<PurPurchaseOrder>().Property(x => x.Notes).HasMaxLength(1000);
 
 			modelBuilder.Entity<PurPurchaseOrderLine>().HasIndex(x => new { x.PurchaseOrderId, x.Sequence });
 			modelBuilder.Entity<PurPurchaseOrderLine>().HasIndex(x => x.SupplierQuotationLineId).IsUnique();
 			modelBuilder.Entity<PurPurchaseOrderLine>().HasIndex(x => new { x.PurchaseRequestLineId, x.Status });
 			modelBuilder.Entity<PurPurchaseOrderLine>().Property(x => x.Notes).HasMaxLength(500);
+
+			modelBuilder.Entity<PurGoodsReceipt>().HasIndex(x => x.ReceiptNumber).IsUnique();
+			modelBuilder.Entity<PurGoodsReceipt>().HasIndex(x => new { x.PurchaseOrderId, x.ReceiptDate });
+			modelBuilder.Entity<PurGoodsReceipt>().HasIndex(x => new { x.DispatchNumber, x.PurchaseOrderId });
+			modelBuilder.Entity<PurGoodsReceipt>().HasIndex(x => x.QuarantineInventoryDocumentId).IsUnique();
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.ReceiptNumber).HasMaxLength(50);
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.DispatchNumber).HasMaxLength(100);
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.InvoiceNumber).HasMaxLength(100);
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.CarrierName).HasMaxLength(250);
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.VehiclePlate).HasMaxLength(30);
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.TrackingNumber).HasMaxLength(100);
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.ActualFreightVatRate).HasPrecision(5, 2);
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.FreightCurrencyCode).HasMaxLength(3).HasDefaultValue("TRY");
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.FreightExchangeRate).HasPrecision(18, 6).HasDefaultValue(1m);
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.FreightExchangeRateSource).HasMaxLength(20).HasDefaultValue("Sabit");
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.QuarantineUserId).HasMaxLength(450);
+			modelBuilder.Entity<PurGoodsReceipt>().Property(x => x.Notes).HasMaxLength(1000);
+
+			modelBuilder.Entity<PurGoodsReceiptLine>().HasIndex(x => new { x.GoodsReceiptId, x.Sequence });
+			modelBuilder.Entity<PurGoodsReceiptLine>().HasIndex(x => x.PurchaseOrderLineId);
+			modelBuilder.Entity<PurGoodsReceiptLine>().HasIndex(x => x.QuarantineStockLotId);
+			modelBuilder.Entity<PurGoodsReceiptLine>().Property(x => x.LotNumber).HasMaxLength(100);
+			modelBuilder.Entity<PurGoodsReceiptLine>().Property(x => x.Notes).HasMaxLength(500);
+
+			modelBuilder.Entity<PurQualityInspection>().HasIndex(x => x.InspectionNumber).IsUnique();
+			modelBuilder.Entity<PurQualityInspection>().HasIndex(x => x.GoodsReceiptLineId).IsUnique();
+			modelBuilder.Entity<PurQualityInspection>().HasIndex(x => new { x.Status, x.SampleDate });
+			modelBuilder.Entity<PurQualityInspection>().HasIndex(x => new { x.MaterialId, x.StockLotId });
+			modelBuilder.Entity<PurQualityInspection>().Property(x => x.InspectionNumber).HasMaxLength(50);
+			modelBuilder.Entity<PurQualityInspection>().Property(x => x.SampleNumber).HasMaxLength(100);
+			modelBuilder.Entity<PurQualityInspection>().Property(x => x.SampledUserId).HasMaxLength(450);
+			modelBuilder.Entity<PurQualityInspection>().Property(x => x.LaboratoryName).HasMaxLength(250);
+			modelBuilder.Entity<PurQualityInspection>().Property(x => x.CertificateNumber).HasMaxLength(100);
+			modelBuilder.Entity<PurQualityInspection>().Property(x => x.ResultSummary).HasMaxLength(2000);
+			modelBuilder.Entity<PurQualityInspection>().Property(x => x.SpecificationNotes).HasMaxLength(2000);
+			modelBuilder.Entity<PurQualityInspection>().Property(x => x.DecisionUserId).HasMaxLength(450);
+			modelBuilder.Entity<PurQualityInspection>().Property(x => x.DecisionNote).HasMaxLength(1000);
 
 			modelBuilder.Entity<PurPurchaseRequestLine>().HasOne<PurPurchaseRequest>().WithMany().HasForeignKey(x => x.PurchaseRequestId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurPurchaseRequestLine>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
@@ -599,11 +657,26 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PurQuotationApprovalHistory>().HasOne<PurSupplierQuotationLine>().WithMany().HasForeignKey(x => x.SupplierQuotationLineId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurPurchaseOrder>().HasOne<PurSupplier>().WithMany().HasForeignKey(x => x.SupplierId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurPurchaseOrder>().HasOne<PurSupplierQuotation>().WithMany().HasForeignKey(x => x.SourceQuotationId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurPurchaseOrder>().HasOne<PrdWarehouse>().WithMany().HasForeignKey(x => x.DeliveryWarehouseId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurPurchaseOrderLine>().HasOne<PurPurchaseOrder>().WithMany().HasForeignKey(x => x.PurchaseOrderId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurPurchaseOrderLine>().HasOne<PurSupplierQuotationLine>().WithMany().HasForeignKey(x => x.SupplierQuotationLineId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurPurchaseOrderLine>().HasOne<PurPurchaseRequestLine>().WithMany().HasForeignKey(x => x.PurchaseRequestLineId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurPurchaseOrderLine>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurPurchaseOrderLine>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurGoodsReceipt>().HasOne<PurPurchaseOrder>().WithMany().HasForeignKey(x => x.PurchaseOrderId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurGoodsReceipt>().HasOne<PrdWarehouse>().WithMany().HasForeignKey(x => x.QuarantineWarehouseId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurGoodsReceipt>().HasOne<PrdInventoryDocument>().WithMany().HasForeignKey(x => x.QuarantineInventoryDocumentId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurGoodsReceiptLine>().HasOne<PurGoodsReceipt>().WithMany().HasForeignKey(x => x.GoodsReceiptId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurGoodsReceiptLine>().HasOne<PurPurchaseOrderLine>().WithMany().HasForeignKey(x => x.PurchaseOrderLineId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurGoodsReceiptLine>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurGoodsReceiptLine>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurGoodsReceiptLine>().HasOne<PrdStockLot>().WithMany().HasForeignKey(x => x.QuarantineStockLotId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurGoodsReceiptLine>().HasOne<PrdInventoryDocumentLine>().WithMany().HasForeignKey(x => x.QuarantineInventoryDocumentLineId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurQualityInspection>().HasOne<PurGoodsReceipt>().WithMany().HasForeignKey(x => x.GoodsReceiptId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurQualityInspection>().HasOne<PurGoodsReceiptLine>().WithMany().HasForeignKey(x => x.GoodsReceiptLineId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurQualityInspection>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurQualityInspection>().HasOne<PrdStockLot>().WithMany().HasForeignKey(x => x.StockLotId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurQualityInspection>().HasOne<PrdWarehouse>().WithMany().HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
 		}
 
 

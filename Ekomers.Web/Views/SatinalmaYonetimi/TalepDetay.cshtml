@@ -5,12 +5,16 @@
         <div class="card-title"><h3 class="card-label">@Model.RequestNumber<span class="d-block text-muted pt-2 font-size-sm">Satınalma talebi</span></h3></div>
         <div class="card-toolbar">
             <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
-            @if (Model.Status == PurPurchaseRequestStatus.Draft && Model.CanEdit)
+            @if (Model.CanEdit)
             {
-                <a asp-action="TalepDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-primary mr-2">Düzenle</a>
+                <a asp-action="TalepDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-primary mr-2" onclick="return confirm('İlerlemiş bir talep düzenlenirse bağlı teklifler ve siparişler geri alınarak talep taslağa döndürülür. Devam edilsin mi?');">Admin Düzenle</a>
+                <form asp-action="TalepSil" method="post" class="d-inline" onsubmit="return confirm('Talep ve bağlı tüm teklif/sipariş kayıtları silinecek. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-danger mr-2">Sil</button></form>
+            }
+            @if (Model.Status == PurPurchaseRequestStatus.Draft && Model.CanSubmit)
+            {
                 <form asp-action="OnayaGonder" method="post" class="d-inline" onsubmit="return confirm('Talep onaya gönderildikten sonra taslak düzenlenemez. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-primary">Onaya Gönder</button></form>
             }
-            else if (Model.CanApprove && Model.Lines.Any(x => x.Status == PurPurchaseRequestLineStatus.PendingApproval))
+            @if (Model.CanApprove && Model.Lines.Any(x => x.Status == PurPurchaseRequestLineStatus.PendingApproval))
             {
                 <a asp-action="TalepOnay" asp-route-id="@Model.Id" class="btn btn-sm btn-primary">Satırları Değerlendir</a>
             }

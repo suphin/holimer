@@ -1,0 +1,54 @@
+@model IReadOnlyList<Ekomers.Models.ViewModels.Purchasing.QualityInspectionListVM>
+@{
+    ViewData["Title"] = "Karantina Analizleri";
+    var receiptId = ViewBag.GoodsReceiptId as int?;
+}
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">Karantina Analizleri<span class="d-block text-muted pt-2 font-size-sm">Mal kabul satırı ve lot bazında laboratuvar/kalite kayıtları</span></h3></div>
+        <div class="card-toolbar">
+            @if (receiptId.HasValue) { <a asp-controller="SatinalmaYonetimi" asp-action="MalKabulDetay" asp-route-id="@receiptId" class="btn btn-sm btn-light mr-2">Mal Kabule Dön</a> }
+            <a asp-action="Analizler" class="btn btn-sm btn-light-primary">Tüm Analizler</a>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (Model.Count == 0)
+        {
+            <div class="alert alert-light-primary mb-0">Gösterilecek kalite analiz kaydı bulunamadı.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom">
+                    <thead><tr><th>Analiz No</th><th>Mal Kabul</th><th>Tedarikçi</th><th>Malzeme / Lot</th><th>Miktar</th><th>Karantina Deposu</th><th>Numune</th><th>Sonuç</th><th>Durum</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var labelClass = item.Status switch
+                        {
+                            Ekomers.Models.Enums.PrdQualityControlStatus.Approved => "label-light-success",
+                            Ekomers.Models.Enums.PrdQualityControlStatus.ConditionalApproval => "label-light-warning",
+                            Ekomers.Models.Enums.PrdQualityControlStatus.Rejected => "label-light-danger",
+                            Ekomers.Models.Enums.PrdQualityControlStatus.Sampled => "label-light-info",
+                            _ => "label-light-primary"
+                        };
+                        <tr>
+                            <td><strong>@item.InspectionNumber</strong></td>
+                            <td><a asp-controller="SatinalmaYonetimi" asp-action="MalKabulDetay" asp-route-id="@item.GoodsReceiptId">@item.ReceiptNumber</a></td>
+                            <td>@item.SupplierName</td>
+                            <td><strong>@item.MaterialCode</strong><span class="d-block text-muted">@item.MaterialName</span><span class="label label-light label-inline mt-1">@item.LotNumber</span></td>
+                            <td>@item.Quantity.ToString("0.######") @item.Unit</td>
+                            <td>@item.WarehouseCode - @item.WarehouseName</td>
+                            <td>@(item.SampleDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                            <td>@(item.ResultDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                            <td><span class="label @labelClass label-inline">@item.Status.ToTurkish()</span></td>
+                            <td class="text-right"><a asp-action="AnalizDetay" asp-route-id="@item.Id" class="btn btn-sm btn-light-primary">Detay</a></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

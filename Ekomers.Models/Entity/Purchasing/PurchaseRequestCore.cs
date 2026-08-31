@@ -144,6 +144,21 @@ public class PurPurchaseOrder : BaseEntity
     public decimal GrandTotal { get; set; }
     public string? PaymentTerms { get; set; }
     public string? DeliveryTerms { get; set; }
+    public PurTransportationType? TransportationType { get; set; }
+    public PurFreightPaymentType? FreightPaymentType { get; set; }
+    public int? DeliveryWarehouseId { get; set; }
+    public string? DeliveryAddress { get; set; }
+    public string? CarrierName { get; set; }
+    public decimal? EstimatedFreightAmount { get; set; }
+    public decimal? EstimatedFreightVatRate { get; set; }
+    public string FreightCurrencyCode { get; set; } = "TRY";
+    public decimal FreightExchangeRate { get; set; } = 1m;
+    public DateTime? FreightExchangeRateDate { get; set; }
+    public string FreightExchangeRateSource { get; set; } = "Sabit";
+    public DateTime? PlannedShipmentDate { get; set; }
+    public DateTime? PlannedDeliveryDate { get; set; }
+    public string? TrackingNumber { get; set; }
+    public string? TransportationNotes { get; set; }
     public string? Notes { get; set; }
 }
 
@@ -167,4 +182,69 @@ public class PurPurchaseOrderLine : BaseEntity
     public DateTime? RequestedDeliveryDate { get; set; }
     public PurPurchaseOrderLineStatus Status { get; set; } = PurPurchaseOrderLineStatus.Open;
     public string? Notes { get; set; }
+}
+
+public class PurGoodsReceipt : BaseEntity
+{
+    public string ReceiptNumber { get; set; } = string.Empty;
+    public int PurchaseOrderId { get; set; }
+    public DateTime ReceiptDate { get; set; }
+    public string DispatchNumber { get; set; } = string.Empty;
+    public DateTime? DispatchDate { get; set; }
+    public string? InvoiceNumber { get; set; }
+    public DateTime? InvoiceDate { get; set; }
+    public PurGoodsReceiptStatus Status { get; set; } = PurGoodsReceiptStatus.Recorded;
+    public string? CarrierName { get; set; }
+    public string? VehiclePlate { get; set; }
+    public string? TrackingNumber { get; set; }
+    public decimal? ActualFreightAmount { get; set; }
+    public decimal? ActualFreightVatRate { get; set; }
+    public string FreightCurrencyCode { get; set; } = "TRY";
+    public decimal FreightExchangeRate { get; set; } = 1m;
+    public DateTime? FreightExchangeRateDate { get; set; }
+    public string FreightExchangeRateSource { get; set; } = "Sabit";
+    public int? QuarantineWarehouseId { get; set; }
+    public int? QuarantineInventoryDocumentId { get; set; }
+    public DateTime? QuarantineDate { get; set; }
+    public string? QuarantineUserId { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class PurGoodsReceiptLine : BaseEntity
+{
+    public int GoodsReceiptId { get; set; }
+    public int PurchaseOrderLineId { get; set; }
+    public int Sequence { get; set; }
+    public int MaterialId { get; set; }
+    public int UnitId { get; set; }
+    public decimal ReceivedQuantity { get; set; }
+    public string? LotNumber { get; set; }
+    public DateTime? ProductionDate { get; set; }
+    public DateTime? ExpirationDate { get; set; }
+    public int? QuarantineStockLotId { get; set; }
+    public int? QuarantineInventoryDocumentLineId { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class PurQualityInspection : BaseEntity
+{
+    public string InspectionNumber { get; set; } = string.Empty;
+    public int GoodsReceiptId { get; set; }
+    public int GoodsReceiptLineId { get; set; }
+    public int MaterialId { get; set; }
+    public int StockLotId { get; set; }
+    public int WarehouseId { get; set; }
+    public PrdQualityControlStatus Status { get; set; } = PrdQualityControlStatus.Pending;
+    public string? SampleNumber { get; set; }
+    public DateTime? SampleDate { get; set; }
+    public string? SampledUserId { get; set; }
+    public DateTime? AnalysisDate { get; set; }
+    public DateTime? ResultDate { get; set; }
+    public string? LaboratoryName { get; set; }
+    public string? CertificateNumber { get; set; }
+    public string? ResultSummary { get; set; }
+    public string? SpecificationNotes { get; set; }
+    public DateTime? DecisionDate { get; set; }
+    public string? DecisionUserId { get; set; }
+    public string? DecisionNote { get; set; }
 }

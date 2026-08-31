@@ -1,8 +1,11 @@
 ﻿using Ekomers.Data.Services.IServices;
+using Ekomers.Data;
 using Ekomers.Filters;
 using Ekomers.Models;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Enums;
+using Ekomers.Models.Entity.Production;
+using Microsoft.EntityFrameworkCore;
 using Ekomers.Models.ViewModels; 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -31,12 +34,13 @@ namespace Ekomers.Web.Controllers
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IFileService _fileService;
         private readonly FileSettings _fileSettings;
+		private readonly ApplicationDbContext _context;
 		private readonly List<string> _allowedExtensions;
 		private string _userId;
         public DosyaYonetimiController(UserManager<Kullanici> userManager, RoleManager<Rol> roleManager,
              IMemoryCache cache
             , IWebHostEnvironment hostingEnvironment, IFileService fileService
-            , IOptions<FileSettings> fileSettings
+            , IOptions<FileSettings> fileSettings, ApplicationDbContext context
 			) : base(userManager, roleManager)
         {
            
@@ -45,6 +49,7 @@ namespace Ekomers.Web.Controllers
             _fileService = fileService;
 			_fileSettings = fileSettings.Value;
 			_allowedExtensions = fileSettings.Value.AllowedFileExtensions;
+			_context = context;
 		}
 
 
@@ -197,6 +202,8 @@ namespace Ekomers.Web.Controllers
 				};
 
                 bool sonuc = await _fileService.DosyaKaydet(yenidosya);
+				if(sonuc && model.ModulID==(int)ModulEnum.UretimRecete)
+					await AddRecipeFileHistoryAsync(model.KayitID,"Dosya Eklendi",$"{fileName} adlı dosya reçeteye eklendi.");
 
 
 
@@ -212,13 +219,24 @@ namespace Ekomers.Web.Controllers
 
 		public async Task<PartialViewResult> DosyaSil(int DosyaID=0, int VeriID = 0, int ModulID = 0, string DosyaYolu = "")
 		{
+			var deletedFile=ModulID==(int)ModulEnum.UretimRecete?(await _fileService.DosyaGetir(VeriID,ModulID)).FirstOrDefault(x=>x.ID==DosyaID):null;
 			bool sonuc = await _fileService.DosyaSil(DosyaID);
+            if(sonuc && ModulID==(int)ModulEnum.UretimRecete)
+                await AddRecipeFileHistoryAsync(VeriID,"Dosya Silindi",$"{deletedFile?.FileName??"Dosya"} reçete dosyalarından kaldırıldı.");
             List<DosyaVM> modelc = await _fileService.DosyaGetir((int)VeriID, ModulID);
 
 
             //  return Json(modelc);
-            return PartialView("DosyaYukle", modelc);
+			return PartialView("DosyaYukle", modelc);
         }
+
+		private async Task AddRecipeFileHistoryAsync(int recipeId,string action,string description)
+		{
+			if(!await _context.PrdRecipes.AnyAsync(x=>x.ID==recipeId&&x.IsDelete!=true))return;
+			var now=DateTime.Now;var user=User.Identity?.Name;
+			_context.PrdRecipeHistories.Add(new PrdRecipeHistory{RecipeId=recipeId,Action=action,Description=description,ActionDate=now,ActionUserId=user,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user});
+			await _context.SaveChangesAsync();
+		}
 		public IActionResult GetPDF(string filepath,string fileName)
         {
             var filePath = Path.Combine(_hostingEnvironment.WebRootPath, filepath, fileName);

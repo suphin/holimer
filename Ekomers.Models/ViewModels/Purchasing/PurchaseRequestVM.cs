@@ -21,6 +21,7 @@ public sealed class PurchaseRequestFormVM
 {
     public int Id { get; set; }
     public string RequestNumber { get; set; } = string.Empty;
+    public PurPurchaseRequestStatus Status { get; set; } = PurPurchaseRequestStatus.Draft;
 
     [Display(Name = "Talep Tarihi")]
     [DataType(DataType.Date)]
@@ -72,6 +73,7 @@ public sealed class PurchaseRequestDetailVM
     public string? SubmittedUserId { get; set; }
     public string? Notes { get; set; }
     public bool CanEdit { get; set; }
+    public bool CanSubmit { get; set; }
     public bool CanApprove { get; set; }
     public List<PurchaseRequestDetailLineVM> Lines { get; set; } = [];
 }

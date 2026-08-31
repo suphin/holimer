@@ -969,10 +969,23 @@
 				<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "TeklifOnaylari" || actionName == "TeklifOnay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="TeklifOnaylari" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Teklif Onayları</span></a></li>
 			}
 			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "Siparisler" || actionName == "SiparisDetay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="Siparisler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Satınalma Siparişleri</span></a></li>
+			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "MalKabuller" || actionName == "YeniMalKabul" || actionName == "MalKabulDuzenle" || actionName == "MalKabulDetay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="MalKabuller" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Mal Kabuller</span></a></li>
 		</ul></div>
 	</li>
 }
 <!--end::Yeni Satinalma Yonetimi-->
+<!--begin::Kalite Yonetimi-->
+@if (User.IsInRole("Admin") || User.HasClaim("Modul", "QUALITY") || User.HasClaim("Authorize", "KaliteOnay") || User.HasClaim("Modul", "PURCHASING"))
+{
+	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "KaliteYonetimi" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+		<a href="javascript:;" class="menu-link menu-toggle"><span class="svg-icon menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3v2h1v5.59L4.59 16A2 2 0 0 0 6 19.41h12A2 2 0 0 0 19.41 16L14 10.59V5h1V3H9m3 8.41V5h0v6.41L17.59 17H6.41L12 11.41Z" /></svg></span><span class="menu-text">Kalite Yönetimi</span><i class="menu-arrow"></i></a>
+		<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
+			<li class="menu-item menu-item-parent" aria-haspopup="true"><span class="menu-link"><span class="menu-text">Kalite Yönetimi</span></span></li>
+			<li class="menu-item @(controllerName == "KaliteYonetimi" ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="KaliteYonetimi" asp-action="Analizler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Karantina Analizleri</span></a></li>
+		</ul></div>
+	</li>
+}
+<!--end::Kalite Yonetimi-->
 <!--begin::PURCHASING-->
 
 @await Component.InvokeAsync("PurchasingMenu")

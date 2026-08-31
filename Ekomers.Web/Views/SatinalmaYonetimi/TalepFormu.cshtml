@@ -12,6 +12,10 @@
             @if (isEdit)
             {
                 <div class="alert alert-light-primary"><strong>Talep No:</strong> @Model.RequestNumber</div>
+                @if (Model.Status != PurPurchaseRequestStatus.Draft)
+                {
+                    <div class="alert alert-light-warning"><strong>Admin müdahalesi:</strong> Bu talep kaydedildiğinde bağlı teklifler ve siparişler geri alınacak, talep yeniden taslak durumuna dönecektir.</div>
+                }
             }
             <div class="row">
                 <div class="col-md-3 form-group"><label asp-for="RequestDate"></label><input asp-for="RequestDate" type="date" class="form-control" /><span asp-validation-for="RequestDate" class="text-danger"></span></div>

@@ -15,6 +15,10 @@ public sealed class ProductionExecutionListVM
     public PrdProductionOrderStatus Status { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? CompletionDate { get; set; }
+    public decimal MaterialCost { get; set; }
+    public decimal AdditionalCost { get; set; }
+    public decimal TotalProductionCost { get; set; }
+    public decimal UnitProductionCost { get; set; }
 }
 
 public sealed class ProductionExecutionDetailVM
@@ -34,6 +38,16 @@ public sealed class ProductionExecutionDetailVM
     public DateTime ProductionDate { get; set; } = DateTime.Today;
     public DateTime? ExpirationDate { get; set; }
     public string ActualQuantityInput { get; set; } = string.Empty;
+    public decimal MaterialCost { get; set; }
+    public decimal TransportationCost { get; set; }
+    public decimal LaborCost { get; set; }
+    public decimal OtherCost { get; set; }
+    public decimal TotalProductionCost { get; set; }
+    public decimal UnitProductionCost { get; set; }
+    public string TransportationCostInput { get; set; } = "0";
+    public string LaborCostInput { get; set; } = "0";
+    public string OtherCostInput { get; set; } = "0";
+    public string? OtherCostDescription { get; set; }
     public string? Notes { get; set; }
     public List<ProductionExecutionMaterialVM> Materials { get; set; } = [];
 }

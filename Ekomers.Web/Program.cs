@@ -125,6 +125,19 @@ builder.Services.AddAuthorization(options =>
 	  context.User.IsInRole("Admin") ||
 	  context.User.HasClaim("Modul", "PURCHASING")));
 
+	options.AddPolicy("AdminOrQuality", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Modul", "QUALITY") ||
+		  context.User.HasClaim("Authorize", "KaliteOnay")));
+
+	options.AddPolicy("AdminOrQualityOrPurchasing", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Modul", "QUALITY") ||
+		  context.User.HasClaim("Authorize", "KaliteOnay") ||
+		  context.User.HasClaim("Modul", "PURCHASING")));
+
 	options.AddPolicy("AdminOrUretim", policy =>
 	  policy.RequireAssertion(context =>
 		  context.User.IsInRole("Admin") ||

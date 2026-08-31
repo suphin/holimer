@@ -1,7 +1,83 @@
 @model Ekomers.Models.ViewModels.Production.ProductionExecutionDetailVM
-@{ ViewData["Title"]="Üretim Gerçekleşmesi"; var tamamlandi=Model.Status==PrdProductionOrderStatus.Completed; }
-<div class="card card-custom mb-5"><div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">@Model.OrderNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.ProductCode - @Model.ProductName</span></h3></div><div class="card-toolbar"><span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span><a asp-action="EmirDetay" asp-route-id="@Model.OrderId" class="btn btn-sm btn-light mr-2">Üretim Emri</a><a asp-action="Gerceklesen" class="btn btn-sm btn-light">Listeye Dön</a></div></div><div class="card-body"><div class="row"><div class="col-md-3 mb-3"><strong>Parti Numarası</strong><div>@Model.BatchNumber</div></div><div class="col-md-3 mb-3"><strong>Planlanan Miktar</strong><div>@Model.PlannedQuantity.ToString("0.######") @Model.Unit</div></div><div class="col-md-3 mb-3"><strong>Başlangıç</strong><div>@(Model.StartDate?.ToString("dd.MM.yyyy HH:mm")??"-")</div></div><div class="col-md-3 mb-3"><strong>Tamamlanma</strong><div>@(Model.CompletionDate?.ToString("dd.MM.yyyy HH:mm")??"-")</div></div></div></div></div>
-<form asp-action="GerceklesenTamamla" method="post"><input type="hidden" asp-for="OrderId"/><div asp-validation-summary="All" class="text-danger mb-4"></div>
-<div class="card card-custom mb-5"><div class="card-header"><div class="card-title"><h3 class="card-label">Lot Bazında Malzeme Gerçekleşmeleri<span class="d-block text-muted pt-2 font-size-sm">Her satırda tüketilen + iade + fire, üretime verilen miktara eşit olmalıdır.</span></h3></div></div><div class="card-body"><div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Malzeme / Lot</th><th>Üretime Verilen</th><th style="min-width:130px">Tüketilen</th><th style="min-width:130px">İade</th><th style="min-width:130px">Fire</th><th style="min-width:190px">Fire Nedeni</th><th style="min-width:190px">Not</th></tr></thead><tbody>@for(var i=0;i<Model.Materials.Count;i++){<tr><td><input type="hidden" asp-for="Materials[i].ActualId"/><strong>@Model.Materials[i].MaterialCode</strong><span class="d-block text-muted">@Model.Materials[i].MaterialName</span><code>@Model.Materials[i].LotNumber</code><span class="d-block text-muted">SKT: @(Model.Materials[i].ExpirationDate?.ToString("dd.MM.yyyy")??"-")</span></td><td><strong>@Model.Materials[i].IssuedQuantity.ToString("0.######")</strong> @Model.Materials[i].Unit</td><td><input asp-for="Materials[i].ConsumedQuantityInput" class="form-control" disabled="@tamamlandi"/></td><td><input asp-for="Materials[i].ReturnedQuantityInput" class="form-control" disabled="@tamamlandi"/></td><td><input asp-for="Materials[i].WasteQuantityInput" class="form-control" disabled="@tamamlandi"/></td><td><input asp-for="Materials[i].WasteReason" class="form-control" disabled="@tamamlandi"/></td><td><input asp-for="Materials[i].Notes" class="form-control" disabled="@tamamlandi"/></td></tr>}</tbody></table></div></div></div>
-<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Mamul Sonucu</h3></div></div><div class="card-body"><div class="row"><div class="col-md-3 form-group"><label>Gerçekleşen Miktar (@Model.Unit)</label><input asp-for="ActualQuantityInput" class="form-control" disabled="@tamamlandi"/><span asp-validation-for="ActualQuantityInput" class="text-danger"></span></div><div class="col-md-3 form-group"><label>Üretim Tarihi</label><input asp-for="ProductionDate" type="date" class="form-control" disabled="@tamamlandi"/><span asp-validation-for="ProductionDate" class="text-danger"></span></div><div class="col-md-3 form-group"><label>Son Kullanma Tarihi</label><input asp-for="ExpirationDate" type="date" class="form-control" disabled="@tamamlandi"/><span asp-validation-for="ExpirationDate" class="text-danger"></span></div><div class="col-md-3 form-group"><label>Parti Numarası</label><input value="@Model.BatchNumber" class="form-control" disabled/></div><div class="col-12 form-group"><label>Üretim Notu</label><textarea asp-for="Notes" class="form-control" rows="3" disabled="@tamamlandi"></textarea></div></div></div>@if(!tamamlandi){<div class="card-footer text-right"><button type="submit" class="btn btn-success" onclick="return confirm('Üretim tamamlanacak ve stok hareketleri kesinleşecek. Devam edilsin mi?');">Üretimi Tamamla ve Stoklara İşle</button></div>}</div>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Üretim Gerçekleşmesi";
+    var tamamlandi = Model.Status == PrdProductionOrderStatus.Completed;
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">@Model.OrderNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.ProductCode - @Model.ProductName</span></h3></div>
+        <div class="card-toolbar"><span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span><a asp-action="EmirDetay" asp-route-id="@Model.OrderId" class="btn btn-sm btn-light mr-2">Üretim Emri</a><a asp-action="Gerceklesen" class="btn btn-sm btn-light">Listeye Dön</a></div>
+    </div>
+    <div class="card-body"><div class="row"><div class="col-md-3 mb-3"><strong>Parti Numarası</strong><div>@Model.BatchNumber</div></div><div class="col-md-3 mb-3"><strong>Planlanan Miktar</strong><div>@Model.PlannedQuantity.ToString("0.######") @Model.Unit</div></div><div class="col-md-3 mb-3"><strong>Başlangıç</strong><div>@(Model.StartDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div></div><div class="col-md-3 mb-3"><strong>Tamamlanma</strong><div>@(Model.CompletionDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div></div></div></div>
+</div>
+
+<form asp-action="GerceklesenTamamla" method="post">
+    <input type="hidden" asp-for="OrderId" />
+    <div asp-validation-summary="All" class="text-danger mb-4"></div>
+
+    <div class="card card-custom mb-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Lot Bazında Malzeme Gerçekleşmeleri<span class="d-block text-muted pt-2 font-size-sm">Her satırda tüketilen + iade + fire, üretime verilen miktara eşit olmalıdır.</span></h3></div></div>
+        <div class="card-body"><div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Malzeme / Lot</th><th>Üretime Verilen</th><th style="min-width:130px">Tüketilen</th><th style="min-width:130px">İade</th><th style="min-width:130px">Fire</th><th style="min-width:190px">Fire Nedeni</th><th style="min-width:190px">Not</th></tr></thead><tbody>
+        @for (var i = 0; i < Model.Materials.Count; i++)
+        {
+            <tr><td><input type="hidden" asp-for="Materials[i].ActualId" /><strong>@Model.Materials[i].MaterialCode</strong><span class="d-block text-muted">@Model.Materials[i].MaterialName</span><code>@Model.Materials[i].LotNumber</code><span class="d-block text-muted">SKT: @(Model.Materials[i].ExpirationDate?.ToString("dd.MM.yyyy") ?? "-")</span></td><td><strong>@Model.Materials[i].IssuedQuantity.ToString("0.######")</strong> @Model.Materials[i].Unit</td><td><input asp-for="Materials[i].ConsumedQuantityInput" class="form-control" disabled="@tamamlandi" /></td><td><input asp-for="Materials[i].ReturnedQuantityInput" class="form-control" disabled="@tamamlandi" /></td><td><input asp-for="Materials[i].WasteQuantityInput" class="form-control" disabled="@tamamlandi" /></td><td><input asp-for="Materials[i].WasteReason" class="form-control" disabled="@tamamlandi" /></td><td><input asp-for="Materials[i].Notes" class="form-control" disabled="@tamamlandi" /></td></tr>
+        }
+        </tbody></table></div></div>
+    </div>
+
+    <div class="card card-custom mb-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Üretim Maliyeti<span class="d-block text-muted pt-2 font-size-sm">Tüm tutarlar TRY olarak kaydedilir ve mamul stok maliyetine dahil edilir.</span></h3></div></div>
+        <div class="card-body">
+            @if (!tamamlandi)
+            {
+                <div class="alert alert-light-primary">Gösterilen malzeme maliyeti üretime verilen malzemelerin ön maliyetidir. İade edilen miktar düşüldükten sonra üretim tamamlanırken kesinleşir.</div>
+            }
+            <div class="row">
+                <div class="col-md-3 form-group"><label>Malzeme Maliyeti</label><div class="form-control bg-light" id="material-cost" data-value="@Model.MaterialCost.ToString(CultureInfo.InvariantCulture)">@Model.MaterialCost.ToString("N2") ₺</div></div>
+                <div class="col-md-3 form-group"><label>Nakliye Gideri</label><div class="input-group"><input asp-for="TransportationCostInput" class="form-control production-extra-cost" disabled="@tamamlandi" /><div class="input-group-append"><span class="input-group-text">₺</span></div></div><span asp-validation-for="TransportationCostInput" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label>İşçilik Gideri</label><div class="input-group"><input asp-for="LaborCostInput" class="form-control production-extra-cost" disabled="@tamamlandi" /><div class="input-group-append"><span class="input-group-text">₺</span></div></div><span asp-validation-for="LaborCostInput" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label>Diğer Gider</label><div class="input-group"><input asp-for="OtherCostInput" class="form-control production-extra-cost" disabled="@tamamlandi" /><div class="input-group-append"><span class="input-group-text">₺</span></div></div><span asp-validation-for="OtherCostInput" class="text-danger"></span></div>
+                <div class="col-md-6 form-group"><label>Diğer Gider Açıklaması</label><input asp-for="OtherCostDescription" class="form-control" disabled="@tamamlandi" placeholder="Bakım, fason işlem, enerji vb." /><span asp-validation-for="OtherCostDescription" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label>Toplam Üretim Maliyeti</label><div class="form-control bg-light font-weight-bold" id="total-production-cost">@Model.TotalProductionCost.ToString("N2") ₺</div></div>
+                <div class="col-md-3 form-group"><label>Birim Üretim Maliyeti</label><div class="form-control bg-light font-weight-bold" id="unit-production-cost">@Model.UnitProductionCost.ToString("N6") ₺</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-custom">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Mamul Sonucu</h3></div></div>
+        <div class="card-body"><div class="row"><div class="col-md-3 form-group"><label>Gerçekleşen Miktar (@Model.Unit)</label><input asp-for="ActualQuantityInput" class="form-control" disabled="@tamamlandi" /><span asp-validation-for="ActualQuantityInput" class="text-danger"></span></div><div class="col-md-3 form-group"><label>Üretim Tarihi</label><input asp-for="ProductionDate" type="date" class="form-control" disabled="@tamamlandi" /><span asp-validation-for="ProductionDate" class="text-danger"></span></div><div class="col-md-3 form-group"><label>Son Kullanma Tarihi</label><input asp-for="ExpirationDate" type="date" class="form-control" disabled="@tamamlandi" /><span asp-validation-for="ExpirationDate" class="text-danger"></span></div><div class="col-md-3 form-group"><label>Parti Numarası</label><input value="@Model.BatchNumber" class="form-control" disabled /></div><div class="col-12 form-group"><label>Üretim Notu</label><textarea asp-for="Notes" class="form-control" rows="3" disabled="@tamamlandi"></textarea></div></div></div>
+        @if (!tamamlandi)
+        {
+            <div class="card-footer text-right"><button type="submit" class="btn btn-success" onclick="return confirm('Üretim tamamlanacak, tüm giderler mamul maliyetine eklenecek ve stok hareketleri kesinleşecek. Devam edilsin mi?');">Üretimi Tamamla ve Maliyetle Stoklara İşle</button></div>
+        }
+    </div>
 </form>
+
+@if (!tamamlandi)
+{
+    <script>
+        (function () {
+            function parseNumber(value) {
+                value = (value || '').trim().replace(/\s/g, '');
+                if (value.indexOf(',') >= 0 && value.indexOf('.') >= 0) value = value.lastIndexOf(',') > value.lastIndexOf('.') ? value.replace(/\./g, '').replace(',', '.') : value.replace(/,/g, '');
+                else if (value.indexOf(',') >= 0) value = value.replace(',', '.');
+                var number = Number(value);
+                return Number.isFinite(number) ? number : 0;
+            }
+            function format(value, digits) { return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value) + ' ₺'; }
+            function calculate() {
+                var material = parseNumber(document.getElementById('material-cost').dataset.value);
+                var total = material;
+                document.querySelectorAll('.production-extra-cost').forEach(function (input) { total += parseNumber(input.value); });
+                var quantity = parseNumber(document.getElementById('ActualQuantityInput').value);
+                document.getElementById('total-production-cost').textContent = format(total, 2);
+                document.getElementById('unit-production-cost').textContent = format(quantity > 0 ? total / quantity : 0, 6);
+            }
+            document.querySelectorAll('.production-extra-cost, #ActualQuantityInput').forEach(function (input) { input.addEventListener('input', calculate); });
+            calculate();
+        })();
+    </script>
+}

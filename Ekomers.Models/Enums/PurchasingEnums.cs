@@ -91,6 +91,38 @@ public enum PurPurchaseOrderLineStatus
     Cancelled = 4
 }
 
+public enum PurTransportationType
+{
+    Road = 1,
+    Air = 2,
+    Sea = 3,
+    Cargo = 4,
+    Courier = 5,
+    SupplierVehicle = 6,
+    CompanyVehicle = 7,
+    Other = 8
+}
+
+public enum PurFreightPaymentType
+{
+    Supplier = 1,
+    Buyer = 2,
+    IncludedInPrice = 3
+}
+
+public enum PurGoodsReceiptStatus
+{
+    Recorded = 1,
+    InQuarantine = 2,
+    QualityApproved = 3,
+    QualityRejected = 4,
+    TransferredToStock = 5,
+    Returned = 6,
+    Scrapped = 7,
+    Cancelled = 8,
+    QualityPartiallyDecided = 9
+}
+
 public static class PurchasingEnumExtensions
 {
     public static string ToTurkish(this PurPurchaseRequestStatus value) => value switch
@@ -175,6 +207,41 @@ public static class PurchasingEnumExtensions
         PurPurchaseOrderLineStatus.PartiallyReceived => "Kısmen Teslim Alındı",
         PurPurchaseOrderLineStatus.Received => "Teslim Alındı",
         PurPurchaseOrderLineStatus.Cancelled => "İptal Edildi",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PurTransportationType value) => value switch
+    {
+        PurTransportationType.Road => "Karayolu",
+        PurTransportationType.Air => "Havayolu",
+        PurTransportationType.Sea => "Denizyolu",
+        PurTransportationType.Cargo => "Kargo",
+        PurTransportationType.Courier => "Kurye",
+        PurTransportationType.SupplierVehicle => "Tedarikçi Aracı",
+        PurTransportationType.CompanyVehicle => "Firma Aracı",
+        PurTransportationType.Other => "Diğer",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PurFreightPaymentType value) => value switch
+    {
+        PurFreightPaymentType.Supplier => "Tedarikçi Karşılayacak",
+        PurFreightPaymentType.Buyer => "Biz Karşılayacağız",
+        PurFreightPaymentType.IncludedInPrice => "Sipariş Fiyatına Dahil",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PurGoodsReceiptStatus value) => value switch
+    {
+        PurGoodsReceiptStatus.Recorded => "Teslim Alındı",
+        PurGoodsReceiptStatus.InQuarantine => "Karantinada",
+        PurGoodsReceiptStatus.QualityApproved => "Kalite Onaylı",
+        PurGoodsReceiptStatus.QualityRejected => "Kalite Reddi",
+        PurGoodsReceiptStatus.TransferredToStock => "Kullanılabilir Stokta",
+        PurGoodsReceiptStatus.Returned => "İade Edildi",
+        PurGoodsReceiptStatus.Scrapped => "Hurdaya Ayrıldı",
+        PurGoodsReceiptStatus.Cancelled => "İptal Edildi",
+        PurGoodsReceiptStatus.QualityPartiallyDecided => "Kalite Kararı Kısmen Tamamlandı",
         _ => value.ToString()
     };
 }

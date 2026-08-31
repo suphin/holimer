@@ -1,0 +1,150 @@
+@model Ekomers.Models.ViewModels.Purchasing.GoodsReceiptDetailVM
+@{
+    ViewData["Title"] = "Mal Kabul Detayı";
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">@Model.ReceiptNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.OrderNumber · @Model.SupplierCode - @Model.SupplierName</span></h3></div>
+        <div class="card-toolbar">
+            <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
+            @if (User.IsInRole("Admin") && Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Recorded)
+            {
+                <a asp-action="MalKabulDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-primary mr-2">Düzenle</a>
+                <form asp-action="MalKabulSil" method="post" class="d-inline mr-2" onsubmit="return confirm('Mal kabul silinecek ve sipariş teslim miktarları yeniden hesaplanacak. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-danger">Sil</button></form>
+            }
+            <a asp-action="SiparisDetay" asp-route-id="@Model.PurchaseOrderId" class="btn btn-sm btn-light">Siparişe Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-2"><strong>Mal Kabul Tarihi</strong><div>@Model.ReceiptDate.ToString("dd.MM.yyyy")</div></div>
+            <div class="col-md-2"><strong>İrsaliye</strong><div>@Model.DispatchNumber</div><small class="text-muted">@(Model.DispatchDate?.ToString("dd.MM.yyyy") ?? "Tarih yok")</small></div>
+            <div class="col-md-2"><strong>Fatura</strong><div>@(Model.InvoiceNumber ?? "-")</div><small class="text-muted">@(Model.InvoiceDate?.ToString("dd.MM.yyyy") ?? "-")</small></div>
+            <div class="col-md-2"><strong>Nakliye Firması</strong><div>@(Model.CarrierName ?? "-")</div></div>
+            <div class="col-md-2"><strong>Araç / Takip</strong><div>@(Model.VehiclePlate ?? "-")</div><small class="text-muted">@(Model.TrackingNumber ?? "-")</small></div>
+            <div class="col-md-2"><strong>Not</strong><div>@(Model.Notes ?? "-")</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">Karantina Girişi<span class="d-block text-muted pt-2 font-size-sm">Teslim alınan lotların kalite kontrol öncesi fiziksel depo girişi</span></h3></div>
+        @if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.InQuarantine)
+        {
+            <div class="card-toolbar"><span class="label label-light-warning label-inline">Kalite Sonucu Bekleniyor</span></div>
+        }
+    </div>
+    <div class="card-body">
+        @if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Recorded)
+        {
+            var missingLot = Model.Lines.Where(x => x.LotRequired && string.IsNullOrWhiteSpace(x.LotNumber)).ToList();
+            var missingExpiration = Model.Lines.Where(x => x.ExpirationDateRequired && !x.ExpirationDate.HasValue).ToList();
+            @if (missingLot.Count > 0 || missingExpiration.Count > 0)
+            {
+                <div class="alert alert-light-danger">
+                    Karantina girişi öncesinde eksik izlenebilirlik bilgilerini tamamlayınız.
+                    @if (missingLot.Count > 0) { <span class="d-block">Lot eksik: @string.Join(", ", missingLot.Select(x => x.MaterialCode))</span> }
+                    @if (missingExpiration.Count > 0) { <span class="d-block">SKT eksik: @string.Join(", ", missingExpiration.Select(x => x.MaterialCode))</span> }
+                    @if (User.IsInRole("Admin")) { <a asp-action="MalKabulDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-danger mt-3">Mal Kabulü Düzenle</a> }
+                </div>
+            }
+            else if (Model.QuarantineWarehouses.Count == 0)
+            {
+                <div class="alert alert-light-warning mb-0">Aktif bir karantina deposu bulunmuyor. Önce depo tanımlarından “Karantina Deposu” türünde bir depo oluşturunuz.</div>
+            }
+            else
+            {
+                <form asp-action="KarantinayaAl" method="post" onsubmit="return confirm('Teslim alınan lotlar seçilen karantina deposuna stok girişi olarak işlenecek. Devam edilsin mi?');">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="row align-items-end">
+                        <div class="col-md-6 form-group mb-md-0">
+                            <label>Karantina Deposu</label>
+                            <select name="quarantineWarehouseId" asp-items="Model.QuarantineWarehouses" class="form-control kt_select2" data-live-search="true" data-size="5" required><option value="">Depo seçiniz</option></select>
+                        </div>
+                        <div class="col-md-6 text-md-right"><button class="btn btn-warning">Lotları Karantinaya Al</button></div>
+                    </div>
+                </form>
+            }
+        }
+        else if (Model.QuarantineInventoryDocumentId.HasValue)
+        {
+            <div class="row">
+                <div class="col-md-3"><strong>Karantina Deposu</strong><div>@Model.QuarantineWarehouseCode - @Model.QuarantineWarehouseName</div></div>
+                <div class="col-md-3"><strong>Stok Belgesi</strong><div>@Model.QuarantineDocumentNumber</div></div>
+                <div class="col-md-3"><strong>İşlem Tarihi</strong><div>@(Model.QuarantineDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div></div>
+                <div class="col-md-3"><strong>İşlemi Yapan</strong><div>@(Model.QuarantineUserId ?? "-")</div></div>
+            </div>
+            <div class="alert alert-light-info mt-5 mb-0">Karantina stoğu fiziksel stoktur fakat ana depo veya üretim deposu stoklarına dahil değildir. Sonraki işlem laboratuvar/kalite analizidir.</div>
+            <div class="mt-5">
+                @if (Model.QualityInspectionCount == 0 && Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.InQuarantine)
+                {
+                    <form asp-action="KaliteyeGonder" method="post" class="d-inline"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-primary">Analiz Kayıtlarını Oluştur</button></form>
+                }
+                else if (Model.QualityInspectionCount > 0)
+                {
+                    <a asp-controller="KaliteYonetimi" asp-action="Analizler" asp-route-goodsReceiptId="@Model.Id" class="btn btn-light-primary">Kalite Analizlerini Gör (@Model.QualityInspectionCount)</a>
+                    @if (Model.PendingQualityInspectionCount > 0) { <span class="text-muted ml-3">@Model.PendingQualityInspectionCount analiz sonuç bekliyor.</span> }
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card card-custom mb-5">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Gerçekleşen Nakliye</h3></div></div>
+    <div class="card-body">
+        @if (Model.ActualFreightAmount.HasValue)
+        {
+            <div class="row">
+                <div class="col-md-3"><strong>Net</strong><div>@Model.ActualFreightAmount.Value.ToString("N2") @Model.FreightCurrencyCode</div></div>
+                <div class="col-md-2"><strong>KDV</strong><div>%@(Model.ActualFreightVatRate?.ToString("0.##") ?? "0")</div></div>
+                <div class="col-md-3"><strong>Genel Toplam</strong><div>@Model.FreightGrandTotal.ToString("N2") @Model.FreightCurrencyCode</div></div>
+                <div class="col-md-2"><strong>Kur</strong><div>@Model.FreightExchangeRate.ToString("N6")</div><small class="text-muted">@(Model.FreightExchangeRateDate?.ToString("dd.MM.yyyy") ?? "-") · @Model.FreightExchangeRateSource</small></div>
+                <div class="col-md-2"><strong>TRY Karşılığı</strong><div>@Model.FreightGrandTotalTry.ToString("N2") TRY</div></div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-light-primary mb-0">Bu teslimat için gerçekleşen nakliye gideri girilmedi.</div>
+        }
+    </div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Teslim Alınan Malzemeler (@Model.Lines.Count)</h3></div></div>
+    <div class="card-body">
+        @if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Recorded)
+        {
+            <div class="alert alert-light-warning">Bu miktarlar siparişte teslim alınan olarak görünür; henüz karantina veya kullanılabilir stok değildir.</div>
+        }
+        else
+        {
+            <div class="alert alert-light-warning">Bu lotlar karantina deposundadır; kalite onayı verilene kadar kullanılabilir stok değildir.</div>
+        }
+        <div class="table-responsive">
+            <table class="table table-separate table-head-custom">
+                <thead><tr><th>#</th><th>Malzeme</th><th>Miktar</th><th>Lot</th><th>Üretim Tarihi</th><th>SKT</th><th>Not</th></tr></thead>
+                <tbody>
+                @foreach (var line in Model.Lines)
+                {
+                    <tr>
+                        <td>@line.Sequence</td>
+                        <td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span></td>
+                        <td>@line.ReceivedQuantity.ToString("0.######") @line.Unit</td>
+                        <td>@(line.LotNumber ?? "-")</td>
+                        <td>@(line.ProductionDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                        <td>@(line.ExpirationDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                        <td>@(line.Notes ?? "-")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section JSSection {
+    <script>$(function () { $('.kt_select2').select2({ width: '100%', placeholder: 'Karantina deposu seçiniz', allowClear: true }); });</script>
+}

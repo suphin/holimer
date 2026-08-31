@@ -18,10 +18,28 @@ public sealed class ProductionRecipeDetailVM
     public DateTime? ValidTo { get; set; }
     public string? Description { get; set; }
     public string? Notes { get; set; }
+    public int VersionNumber { get; set; }
+    public DateTime? CreatedDate { get; set; }
+    public string? CreatedUser { get; set; }
+    public DateTime? UpdatedDate { get; set; }
+    public string? UpdatedUser { get; set; }
+    public DateTime? ApprovedDate { get; set; }
+    public string? ApprovedUser { get; set; }
     public bool CanEdit => Status == PrdRecipeStatus.Draft;
     public List<SelectListItem> Units { get; set; } = [];
     public List<SelectListItem> Materials { get; set; } = [];
     public List<ProductionRecipeItemVM> Items { get; set; } = [];
+    public List<ProductionRecipeHistoryVM> History { get; set; } = [];
+}
+
+public sealed class ProductionRecipeHistoryVM
+{
+    public int? RecipeVersionId { get; set; }
+    public string Scope { get; set; } = string.Empty;
+    public DateTime ActionDate { get; set; }
+    public string Action { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string User { get; set; } = string.Empty;
 }
 
 public sealed class ProductionRecipeItemVM

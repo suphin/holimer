@@ -40,13 +40,37 @@ public sealed class ProductionWarehouseTaskItemVM
     public decimal PreparedQuantity { get; set; }
     public decimal ShippedQuantity { get; set; }
     public decimal ShortageQuantity { get; set; }
+    public decimal PreparationShortageQuantity => Math.Max(0, RequestedQuantity - PreparedQuantity);
+    public decimal OverPreparedQuantity => Math.Max(0, PreparedQuantity - RequestedQuantity);
     public List<ProductionWarehouseTaskLotVM> Lots { get; set; } = [];
 }
 
 public sealed class ProductionWarehouseTaskLotVM
 {
+    public int Id { get; set; }
     public string LotNumber { get; set; } = string.Empty;
     public DateTime? ExpirationDate { get; set; }
     public decimal Quantity { get; set; }
+    public decimal PreparedQuantity { get; set; }
+    public decimal ShippedQuantity { get; set; }
     public string Unit { get; set; } = string.Empty;
+    public decimal TaskQuantity { get; set; }
+    public decimal TaskPreparedQuantity { get; set; }
+    public decimal TaskShippedQuantity { get; set; }
+    public decimal TaskUnitConversionFactor { get; set; } = 1;
+    public string TaskUnit { get; set; } = string.Empty;
+    public bool UsesDifferentUnit => !string.Equals(Unit, TaskUnit, StringComparison.OrdinalIgnoreCase);
+}
+
+public sealed class ProductionWarehousePreparationInputVM
+{
+    public int Id { get; set; }
+    public bool CompletePreparation { get; set; }
+    public List<ProductionWarehousePreparationLotInputVM> Lots { get; set; } = [];
+}
+
+public sealed class ProductionWarehousePreparationLotInputVM
+{
+    public int Id { get; set; }
+    public string PreparedQuantityInput { get; set; } = string.Empty;
 }

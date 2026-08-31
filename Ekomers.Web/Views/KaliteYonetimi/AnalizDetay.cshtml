@@ -1,0 +1,79 @@
+@model Ekomers.Models.ViewModels.Purchasing.QualityInspectionDetailVM
+@{
+    ViewData["Title"] = "Kalite Analizi";
+    var canQuality = User.IsInRole("Admin") || User.HasClaim("Modul", "QUALITY") || User.HasClaim("Authorize", "KaliteOnay");
+    var isFinal = Model.Status == Ekomers.Models.Enums.PrdQualityControlStatus.Approved || Model.Status == Ekomers.Models.Enums.PrdQualityControlStatus.ConditionalApproval || Model.Status == Ekomers.Models.Enums.PrdQualityControlStatus.Rejected;
+    var canEdit = canQuality && (!isFinal || User.IsInRole("Admin"));
+    var labelClass = Model.Status switch
+    {
+        Ekomers.Models.Enums.PrdQualityControlStatus.Approved => "label-light-success",
+        Ekomers.Models.Enums.PrdQualityControlStatus.ConditionalApproval => "label-light-warning",
+        Ekomers.Models.Enums.PrdQualityControlStatus.Rejected => "label-light-danger",
+        Ekomers.Models.Enums.PrdQualityControlStatus.Sampled => "label-light-info",
+        _ => "label-light-primary"
+    };
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">@Model.InspectionNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.MaterialCode - @Model.MaterialName</span></h3></div>
+        <div class="card-toolbar"><span class="label @labelClass label-inline mr-2">@Model.Status.ToTurkish()</span><a asp-action="Analizler" asp-route-goodsReceiptId="@Model.GoodsReceiptId" class="btn btn-sm btn-light mr-2">Analizlere Dön</a><a asp-controller="SatinalmaYonetimi" asp-action="MalKabulDetay" asp-route-id="@Model.GoodsReceiptId" class="btn btn-sm btn-light-primary">Mal Kabul</a></div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3"><strong>Tedarikçi</strong><div>@Model.SupplierCode - @Model.SupplierName</div></div>
+            <div class="col-md-2"><strong>Sipariş / Mal Kabul</strong><div>@Model.OrderNumber</div><div>@Model.ReceiptNumber</div></div>
+            <div class="col-md-2"><strong>Lot</strong><div>@Model.LotNumber</div></div>
+            <div class="col-md-2"><strong>Miktar</strong><div>@Model.Quantity.ToString("0.######") @Model.Unit</div></div>
+            <div class="col-md-3"><strong>Karantina Deposu</strong><div>@Model.WarehouseCode - @Model.WarehouseName</div></div>
+        </div>
+        <div class="row mt-5"><div class="col-md-3"><strong>Üretim Tarihi</strong><div>@(Model.ProductionDate?.ToString("dd.MM.yyyy") ?? "-")</div></div><div class="col-md-3"><strong>SKT</strong><div>@(Model.ExpirationDate?.ToString("dd.MM.yyyy") ?? "-")</div></div></div>
+    </div>
+</div>
+
+<form asp-action="AnalizKaydet" method="post">
+    <input asp-for="Form.Id" type="hidden" />
+    <div class="card card-custom mb-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Numune ve Analiz Bilgileri</h3></div></div>
+        <div class="card-body">
+            @if (!canQuality) { <div class="alert alert-light-info">Bu ekran salt okunur. Analiz bilgilerini kalite yetkilisi veya admin güncelleyebilir.</div> }
+            <div class="row">
+                <div class="col-md-3 form-group"><label asp-for="Form.SampleNumber"></label><input asp-for="Form.SampleNumber" class="form-control" readonly="@(!canEdit)" /></div>
+                <div class="col-md-3 form-group"><label asp-for="Form.SampleDate"></label><input asp-for="Form.SampleDate" type="datetime-local" class="form-control" readonly="@(!canEdit)" /></div>
+                <div class="col-md-3 form-group"><label asp-for="Form.AnalysisDate"></label><input asp-for="Form.AnalysisDate" type="datetime-local" class="form-control" readonly="@(!canEdit)" /></div>
+                <div class="col-md-3 form-group"><label asp-for="Form.ResultDate"></label><input asp-for="Form.ResultDate" type="datetime-local" class="form-control" readonly="@(!canEdit)" /></div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 form-group"><label asp-for="Form.LaboratoryName"></label><input asp-for="Form.LaboratoryName" class="form-control" readonly="@(!canEdit)" /></div>
+                <div class="col-md-6 form-group"><label asp-for="Form.CertificateNumber"></label><input asp-for="Form.CertificateNumber" class="form-control" readonly="@(!canEdit)" /></div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 form-group"><label asp-for="Form.ResultSummary"></label><textarea asp-for="Form.ResultSummary" class="form-control" rows="4" readonly="@(!canEdit)"></textarea></div>
+                <div class="col-md-6 form-group"><label asp-for="Form.SpecificationNotes"></label><textarea asp-for="Form.SpecificationNotes" class="form-control" rows="4" readonly="@(!canEdit)"></textarea></div>
+            </div>
+        </div>
+        @if (canEdit) { <div class="card-footer text-right"><button class="btn btn-primary">Analiz Bilgilerini Kaydet</button></div> }
+    </div>
+</form>
+
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Kalite Kararı</h3></div></div>
+    <div class="card-body">
+        @if (isFinal)
+        {
+            <div class="row mb-5"><div class="col-md-4"><strong>Karar</strong><div>@Model.Status.ToTurkish()</div></div><div class="col-md-4"><strong>Karar Tarihi / Yetkili</strong><div>@(Model.DecisionDate?.ToString("dd.MM.yyyy HH:mm") ?? "-") · @(Model.DecisionUserId ?? "-")</div></div><div class="col-md-4"><strong>Karar Notu</strong><div>@(Model.DecisionNote ?? "-")</div></div></div>
+        }
+        @if (canEdit)
+        {
+            <form asp-action="KararVer" method="post" onsubmit="return confirm('Seçilen kalite kararı lotun sonraki stok sürecini belirleyecek. Devam edilsin mi?');">
+                <input type="hidden" name="Id" value="@Model.Id" />
+                <div class="form-group"><label>Karar Notu</label><textarea name="DecisionNote" class="form-control" rows="2" placeholder="Şartlı onay ve red kararlarında zorunludur">@Model.DecisionNote</textarea></div>
+                <div class="text-right"><button name="Decision" value="@((int)Ekomers.Models.Enums.PrdQualityControlStatus.Rejected)" class="btn btn-light-danger mr-2">Reddet</button><button name="Decision" value="@((int)Ekomers.Models.Enums.PrdQualityControlStatus.ConditionalApproval)" class="btn btn-light-warning mr-2">Şartlı Onay</button><button name="Decision" value="@((int)Ekomers.Models.Enums.PrdQualityControlStatus.Approved)" class="btn btn-success">Onayla</button></div>
+            </form>
+        }
+        else if (!canQuality)
+        {
+            <div class="alert alert-light-info mb-0">Kalite kararı verme yetkiniz bulunmuyor.</div>
+        }
+    </div>
+</div>

@@ -91,6 +91,7 @@ public sealed class ProductionRecipeController : Controller
         }
 
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        var now=DateTime.Now;var user=User.Identity?.Name;
         var recipe = existingRecipe;
         if (recipe == null)
         {
@@ -98,19 +99,21 @@ public sealed class ProductionRecipeController : Controller
             {
                 Code = model.Code, Name = model.Name, ProductMaterialId = model.ProductMaterialId,
                 Description = model.Description, IsActive = true, IsDelete = false,
-                CreateDate = DateTime.Now, CreateUserID = User.Identity?.Name
+                CreateDate = now, CreateUserID = user
             };
             _context.PrdRecipes.Add(recipe);
             await _context.SaveChangesAsync(cancellationToken);
         }
 
-        _context.PrdRecipeVersions.Add(new PrdRecipeVersion
+        var recipeVersion=new PrdRecipeVersion
         {
             RecipeId = recipe.ID, VersionNumber = model.VersionNumber, BaseQuantity = model.BaseQuantity,
             UnitId = model.UnitId, Status = model.Status, ValidFrom = model.ValidFrom, ValidTo = model.ValidTo,
             Notes = model.Notes, IsActive = true, IsDelete = false,
-            CreateDate = DateTime.Now, CreateUserID = User.Identity?.Name
-        });
+            CreateDate = now, CreateUserID = user
+        };
+        _context.PrdRecipeVersions.Add(recipeVersion);await _context.SaveChangesAsync(cancellationToken);
+        AddRecipeHistory(recipe.ID,recipeVersion.ID,null,"Versiyon Oluşturuldu",$"Reçete v{recipeVersion.VersionNumber} {recipeVersion.Status.ToTurkish()} durumunda oluşturuldu.",now,user);
         await _context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         TempData["success"] = "Yeni üretim reçetesi oluşturuldu.";
@@ -130,7 +133,11 @@ public sealed class ProductionRecipeController : Controller
                                RecipeId = recipe.ID, RecipeVersionId = version.ID, Code = recipe.Code, Name = recipe.Name,
                                Product = product.Code + " - " + product.Name, BaseQuantity = version.BaseQuantity,
                                UnitId = version.UnitId, Status = version.Status, ValidFrom = version.ValidFrom,
-                               ValidTo = version.ValidTo, Description = recipe.Description, Notes = version.Notes
+                               ValidTo = version.ValidTo, Description = recipe.Description, Notes = version.Notes,
+                               VersionNumber = version.VersionNumber, CreatedDate = version.CreateDate,
+                               CreatedUser = version.CreateUserID, UpdatedDate = version.UpdateDate,
+                               UpdatedUser = version.UpdateUserID, ApprovedDate = version.ApprovedDate,
+                               ApprovedUser = version.ApprovedUserId
                            }).FirstOrDefaultAsync(ct);
         if (model == null) return NotFound();
 
@@ -148,6 +155,25 @@ public sealed class ProductionRecipeController : Controller
                              }).ToListAsync(ct);
         model.Units = await _context.PrdUnits.AsNoTracking().Where(x => x.IsDelete != true && x.IsActive != false).OrderBy(x => x.Name).Select(x => new SelectListItem(x.Name, x.ID.ToString())).ToListAsync(ct);
         model.Materials = await _context.PrdMaterials.AsNoTracking().Where(x => x.IsDelete != true && x.IsActive != false).OrderBy(x => x.Code).Select(x => new SelectListItem(x.Code + " - " + x.Name, x.ID.ToString())).ToListAsync(ct);
+        model.History = await (from history in _context.PrdRecipeHistories.AsNoTracking()
+                               join historyVersion in _context.PrdRecipeVersions.AsNoTracking() on history.RecipeVersionId equals (int?)historyVersion.ID into versionJoin
+                               from historyVersion in versionJoin.DefaultIfEmpty()
+                               where history.RecipeId == model.RecipeId && history.IsDelete != true
+                               orderby history.ActionDate descending
+                               select new ProductionRecipeHistoryVM
+                               {
+                                   RecipeVersionId=history.RecipeVersionId,Scope=historyVersion==null?"Reçete":"v"+historyVersion.VersionNumber,
+                                   ActionDate = history.ActionDate, Action = history.Action, Description = history.Description,
+                                   User = history.ActionUserId ?? "Sistem"
+                               }).ToListAsync(ct);
+        var versionTimeline=await _context.PrdRecipeVersions.AsNoTracking().Where(x=>x.RecipeId==model.RecipeId).Select(x=>new{x.ID,x.VersionNumber,x.CreateDate,x.CreateUserID,x.UpdateDate,x.UpdateUserID,x.ApprovedDate,x.ApprovedUserId}).ToListAsync(ct);
+        foreach(var timeline in versionTimeline)
+        {
+            if(timeline.CreateDate.HasValue&&!model.History.Any(x=>x.RecipeVersionId==timeline.ID&&x.Action.Contains("Oluşturuldu")))model.History.Add(new ProductionRecipeHistoryVM{RecipeVersionId=timeline.ID,Scope=$"v{timeline.VersionNumber}",ActionDate=timeline.CreateDate.Value,Action="Oluşturuldu",Description=$"Reçete v{timeline.VersionNumber} oluşturuldu.",User=timeline.CreateUserID??"Sistem"});
+            if(timeline.ApprovedDate.HasValue&&!model.History.Any(x=>x.RecipeVersionId==timeline.ID&&x.Action=="Onaylandı"))model.History.Add(new ProductionRecipeHistoryVM{RecipeVersionId=timeline.ID,Scope=$"v{timeline.VersionNumber}",ActionDate=timeline.ApprovedDate.Value,Action="Onaylandı",Description="Reçete versiyonu aktifleştirildi.",User=timeline.ApprovedUserId??"Sistem"});
+            if(timeline.UpdateDate.HasValue&&!model.History.Any(x=>x.RecipeVersionId==timeline.ID))model.History.Add(new ProductionRecipeHistoryVM{RecipeVersionId=timeline.ID,Scope=$"v{timeline.VersionNumber}",ActionDate=timeline.UpdateDate.Value,Action="Güncellendi",Description="Kayıtlı son reçete güncellemesi.",User=timeline.UpdateUserID??"Sistem"});
+        }
+        model.History = model.History.OrderByDescending(x => x.ActionDate).ToList();
         return View(model);
     }
 
@@ -166,14 +192,16 @@ public sealed class ProductionRecipeController : Controller
         if (model.Status == PrdRecipeStatus.Active && !await _context.PrdRecipeItems.AnyAsync(x => x.RecipeVersionId == model.RecipeVersionId && x.IsDelete != true, ct))
             return RecipeEditError(model.RecipeVersionId, "Malzeme kalemi bulunmayan reçete aktifleştirilemez.");
         var recipe = await _context.PrdRecipes.FirstAsync(x => x.ID == version.RecipeId, ct);
-        recipe.Name = (model.Name ?? string.Empty).Trim(); recipe.Description = model.Description; recipe.UpdateDate = DateTime.Now; recipe.UpdateUserID = User.Identity?.Name;
-        version.BaseQuantity=model.BaseQuantity; version.UnitId=model.UnitId; version.Status=model.Status; version.ValidFrom=model.ValidFrom; version.ValidTo=model.ValidTo; version.Notes=model.Notes; version.UpdateDate=DateTime.Now; version.UpdateUserID=User.Identity?.Name;
+        var oldStatus=version.Status;var now=DateTime.Now;var user=User.Identity?.Name;
+        recipe.Name = (model.Name ?? string.Empty).Trim(); recipe.Description = model.Description; recipe.UpdateDate = now; recipe.UpdateUserID = user;
+        version.BaseQuantity=model.BaseQuantity; version.UnitId=model.UnitId; version.Status=model.Status; version.ValidFrom=model.ValidFrom; version.ValidTo=model.ValidTo; version.Notes=model.Notes; version.UpdateDate=now; version.UpdateUserID=user;
         if (model.Status == PrdRecipeStatus.Active)
         {
             var otherActiveVersions=await _context.PrdRecipeVersions.Where(x=>x.RecipeId==version.RecipeId&&x.ID!=version.ID&&x.Status==PrdRecipeStatus.Active&&x.IsDelete!=true).ToListAsync(ct);
-            foreach(var other in otherActiveVersions){other.Status=PrdRecipeStatus.Passive;other.IsActive=false;other.UpdateDate=DateTime.Now;other.UpdateUserID=User.Identity?.Name;}
-            version.IsActive=true; version.ApprovedDate = DateTime.Now; version.ApprovedUserId = User.Identity?.Name;
+            foreach(var other in otherActiveVersions){other.Status=PrdRecipeStatus.Passive;other.IsActive=false;other.UpdateDate=now;other.UpdateUserID=user;AddRecipeHistory(other.RecipeId,other.ID,null,"Pasife Alındı",$"Başka bir versiyon aktifleştirildiği için v{other.VersionNumber} pasife alındı.",now,user);}
+            version.IsActive=true; version.ApprovedDate = now; version.ApprovedUserId = user;
         }
+        AddRecipeHistory(recipe.ID,version.ID,null,"Reçete Güncellendi",oldStatus==model.Status?"Reçete başlık ve versiyon bilgileri güncellendi.":$"Reçete güncellendi; durum {oldStatus.ToTurkish()} → {model.Status.ToTurkish()} olarak değiştirildi.",now,user);
         await _context.SaveChangesAsync(ct); TempData["success"]="Reçete bilgileri güncellendi."; return RedirectToAction(nameof(Details), new { id=model.RecipeVersionId });
     }
 
@@ -185,10 +213,12 @@ public sealed class ProductionRecipeController : Controller
         var version = await DraftVersion(model.RecipeVersionId, ct); if (version == null) return RecipeEditError(model.RecipeVersionId, "Reçete taslak değil veya bulunamadı.");
         if (model.Quantity <= 0 || model.PlannedWasteRate < 0 || model.PlannedWasteRate > 100) return RecipeEditError(model.RecipeVersionId, "Miktar ve fire oranı geçersiz.");
         if (await _context.PrdRecipeItems.AnyAsync(x => x.RecipeVersionId==model.RecipeVersionId && x.MaterialId==model.MaterialId && x.IsDelete!=true, ct)) return RecipeEditError(model.RecipeVersionId, "Bu malzeme reçetede zaten mevcut.");
-        if (!await _context.PrdMaterials.AnyAsync(x=>x.ID==model.MaterialId && x.IsDelete!=true,ct) || !await _context.PrdUnits.AnyAsync(x=>x.ID==model.UnitId && x.IsDelete!=true,ct)) return RecipeEditError(model.RecipeVersionId,"Malzeme veya birim bulunamadı.");
+        var material=await _context.PrdMaterials.AsNoTracking().FirstOrDefaultAsync(x=>x.ID==model.MaterialId && x.IsDelete!=true,ct);
+        if (material==null || !await _context.PrdUnits.AnyAsync(x=>x.ID==model.UnitId && x.IsDelete!=true,ct)) return RecipeEditError(model.RecipeVersionId,"Malzeme veya birim bulunamadı.");
         var sequence=(await _context.PrdRecipeItems.Where(x=>x.RecipeVersionId==model.RecipeVersionId && x.IsDelete!=true).MaxAsync(x=>(int?)x.Sequence,ct) ?? 0)+1;
-        _context.PrdRecipeItems.Add(new PrdRecipeItem { RecipeVersionId=model.RecipeVersionId,MaterialId=model.MaterialId,Quantity=model.Quantity,UnitId=model.UnitId,PlannedWasteRate=model.PlannedWasteRate,Sequence=sequence,IsRequired=model.IsRequired,AlternativeGroupCode=model.AlternativeGroupCode,Notes=model.Notes,IsActive=true,IsDelete=false,CreateDate=DateTime.Now,CreateUserID=User.Identity?.Name });
-        await _context.SaveChangesAsync(ct); TempData["success"]="Reçete kalemi eklendi."; return RedirectToAction(nameof(Details),new{id=model.RecipeVersionId});
+        var now=DateTime.Now;var user=User.Identity?.Name;var recipeItem=new PrdRecipeItem { RecipeVersionId=model.RecipeVersionId,MaterialId=model.MaterialId,Quantity=model.Quantity,UnitId=model.UnitId,PlannedWasteRate=model.PlannedWasteRate,Sequence=sequence,IsRequired=model.IsRequired,AlternativeGroupCode=model.AlternativeGroupCode,Notes=model.Notes,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user };
+        await using var transaction=await _context.Database.BeginTransactionAsync(ct);_context.PrdRecipeItems.Add(recipeItem);await _context.SaveChangesAsync(ct);AddRecipeHistory(version.RecipeId,version.ID,recipeItem.ID,"Malzeme Eklendi",$"{material.Code} - {material.Name} reçeteye {model.Quantity:0.######} miktarla eklendi.",now,user);
+        await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct); TempData["success"]="Reçete kalemi eklendi."; return RedirectToAction(nameof(Details),new{id=model.RecipeVersionId});
     }
 
     [HttpPost, ValidateAntiForgeryToken]
@@ -196,20 +226,23 @@ public sealed class ProductionRecipeController : Controller
     {
         if(!TryParseProductionDecimal(quantityText,out var quantity)||!TryParseProductionDecimal(wasteRateText,out var wasteRate))return RecipeEditError(model.RecipeVersionId,"Miktar veya fire oranı geçerli bir sayı değildir.");
         model.Quantity=quantity;model.PlannedWasteRate=wasteRate;
-        if (await DraftVersion(model.RecipeVersionId,ct)==null) return RecipeEditError(model.RecipeVersionId,"Reçete taslak değil.");
+        var version=await DraftVersion(model.RecipeVersionId,ct);if (version==null) return RecipeEditError(model.RecipeVersionId,"Reçete taslak değil.");
         var item=await _context.PrdRecipeItems.FirstOrDefaultAsync(x=>x.ID==model.ItemId && x.RecipeVersionId==model.RecipeVersionId && x.IsDelete!=true,ct); if(item==null)return NotFound();
         if(model.Quantity<=0 || model.PlannedWasteRate<0 || model.PlannedWasteRate>100)return RecipeEditError(model.RecipeVersionId,"Miktar veya fire oranı geçersiz.");
         if (!await _context.PrdUnits.AnyAsync(x => x.ID == model.UnitId && x.IsDelete != true, ct)) return RecipeEditError(model.RecipeVersionId, "Birim bulunamadı.");
-        item.Quantity=model.Quantity;item.UnitId=model.UnitId;item.PlannedWasteRate=model.PlannedWasteRate;item.IsRequired=model.IsRequired;item.AlternativeGroupCode=model.AlternativeGroupCode;item.UpdateDate=DateTime.Now;item.UpdateUserID=User.Identity?.Name;
+        var material=await _context.PrdMaterials.AsNoTracking().Where(x=>x.ID==item.MaterialId).Select(x=>new{x.Code,x.Name}).FirstAsync(ct);var oldQuantity=item.Quantity;var now=DateTime.Now;var user=User.Identity?.Name;
+        item.Quantity=model.Quantity;item.UnitId=model.UnitId;item.PlannedWasteRate=model.PlannedWasteRate;item.IsRequired=model.IsRequired;item.AlternativeGroupCode=model.AlternativeGroupCode;item.UpdateDate=now;item.UpdateUserID=user;
+        AddRecipeHistory(version.RecipeId,version.ID,item.ID,"Malzeme Güncellendi",$"{material.Code} - {material.Name} kalemi güncellendi; miktar {oldQuantity:0.######} → {model.Quantity:0.######}.",now,user);
         await _context.SaveChangesAsync(ct);TempData["success"]="Reçete kalemi güncellendi.";return RedirectToAction(nameof(Details),new{id=model.RecipeVersionId});
     }
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteItem(int itemId,int recipeVersionId,CancellationToken ct)
     {
-        if(await DraftVersion(recipeVersionId,ct)==null)return RecipeEditError(recipeVersionId,"Reçete taslak değil.");
+        var version=await DraftVersion(recipeVersionId,ct);if(version==null)return RecipeEditError(recipeVersionId,"Reçete taslak değil.");
         var item=await _context.PrdRecipeItems.FirstOrDefaultAsync(x=>x.ID==itemId && x.RecipeVersionId==recipeVersionId && x.IsDelete!=true,ct);if(item==null)return NotFound();
-        item.IsDelete=true;item.DeleteDate=DateTime.Now;item.DeleteUserID=User.Identity?.Name;await _context.SaveChangesAsync(ct);TempData["success"]="Reçete kalemi silindi.";return RedirectToAction(nameof(Details),new{id=recipeVersionId});
+        var material=await _context.PrdMaterials.AsNoTracking().Where(x=>x.ID==item.MaterialId).Select(x=>new{x.Code,x.Name}).FirstAsync(ct);var now=DateTime.Now;var user=User.Identity?.Name;
+        item.IsDelete=true;item.DeleteDate=now;item.DeleteUserID=user;AddRecipeHistory(version.RecipeId,version.ID,item.ID,"Malzeme Silindi",$"{material.Code} - {material.Name} reçeteden çıkarıldı.",now,user);await _context.SaveChangesAsync(ct);TempData["success"]="Reçete kalemi silindi.";return RedirectToAction(nameof(Details),new{id=recipeVersionId});
     }
 
     [HttpPost, ValidateAntiForgeryToken]
@@ -224,6 +257,8 @@ public sealed class ProductionRecipeController : Controller
         _context.PrdRecipeVersions.Add(newVersion);await _context.SaveChangesAsync(ct);
         var sourceItems=await _context.PrdRecipeItems.AsNoTracking().Where(x=>x.RecipeVersionId==sourceVersionId&&x.IsDelete!=true).OrderBy(x=>x.Sequence).ToListAsync(ct);
         _context.PrdRecipeItems.AddRange(sourceItems.Select(x=>new PrdRecipeItem{RecipeVersionId=newVersion.ID,MaterialId=x.MaterialId,Quantity=x.Quantity,UnitId=x.UnitId,PlannedWasteRate=x.PlannedWasteRate,Sequence=x.Sequence,IsRequired=x.IsRequired,AlternativeGroupCode=x.AlternativeGroupCode,Notes=x.Notes,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user}));
+        AddRecipeHistory(source.RecipeId,source.ID,null,"Yeni Versiyon Oluşturuldu",$"Bu versiyondan v{nextVersion} taslak versiyonu oluşturuldu.",now,user);
+        AddRecipeHistory(source.RecipeId,newVersion.ID,null,"Versiyon Oluşturuldu",$"v{source.VersionNumber} içeriği kopyalanarak v{nextVersion} taslağı oluşturuldu.",now,user);
         await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);
         TempData["success"]=$"v{nextVersion} taslak versiyonu oluşturuldu.";
         return RedirectToAction(nameof(Details),new{id=newVersion.ID});
@@ -237,8 +272,8 @@ public sealed class ProductionRecipeController : Controller
         if(version.Status==PrdRecipeStatus.Draft)return RedirectToAction(nameof(Details),new{id=recipeVersionId});
         if(await _context.PrdProductionOrders.AnyAsync(x=>x.RecipeVersionId==recipeVersionId&&x.IsDelete!=true,ct))
             return RecipeEditError(recipeVersionId,"Bu reçete versiyonuna bağlı üretim emri bulunduğu için taslağa alınamaz. Yeni versiyon oluşturunuz.");
-        version.Status=PrdRecipeStatus.Draft;version.ApprovedDate=null;version.ApprovedUserId=null;version.IsActive=true;
-        version.UpdateDate=DateTime.Now;version.UpdateUserID=User.Identity?.Name;
+        var now=DateTime.Now;var user=User.Identity?.Name;version.Status=PrdRecipeStatus.Draft;version.ApprovedDate=null;version.ApprovedUserId=null;version.IsActive=true;
+        version.UpdateDate=now;version.UpdateUserID=user;AddRecipeHistory(version.RecipeId,version.ID,null,"Taslağa Alındı","Reçete versiyonu yönetici yetkisiyle yeniden düzenlemeye açıldı.",now,user);
         await _context.SaveChangesAsync(ct);
         TempData["success"]="Reçete versiyonu yönetici yetkisiyle yeniden taslağa alındı.";
         return RedirectToAction(nameof(Details),new{id=recipeVersionId});
@@ -261,10 +296,14 @@ public sealed class ProductionRecipeController : Controller
         version.IsDelete=true;version.IsActive=false;version.DeleteDate=now;version.DeleteUserID=user;
         var hasAnotherVersion=await _context.PrdRecipeVersions.AnyAsync(x=>x.RecipeId==recipe.ID&&x.ID!=recipeVersionId&&x.IsDelete!=true,ct);
         if(!hasAnotherVersion){recipe.IsDelete=true;recipe.IsActive=false;recipe.DeleteDate=now;recipe.DeleteUserID=user;}
+        AddRecipeHistory(recipe.ID,version.ID,null,"Versiyon Silindi",$"Reçete v{version.VersionNumber} ve bağlı malzeme kalemleri silindi.",now,user);
         await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);
         TempData["success"]=hasAnotherVersion?"Seçili reçete versiyonu ve kalemleri silindi.":"Reçetenin son versiyonu ve reçete başlığı silindi.";
         return RedirectToAction(nameof(Index));
     }
+
+    private void AddRecipeHistory(int recipeId,int? recipeVersionId,int? recipeItemId,string action,string description,DateTime actionDate,string? user)
+        => _context.PrdRecipeHistories.Add(new PrdRecipeHistory{RecipeId=recipeId,RecipeVersionId=recipeVersionId,RecipeItemId=recipeItemId,Action=action,Description=description,ActionDate=actionDate,ActionUserId=user,IsActive=true,IsDelete=false,CreateDate=actionDate,CreateUserID=user});
 
     private Task<PrdRecipeVersion?> DraftVersion(int id,CancellationToken ct)=>_context.PrdRecipeVersions.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true&&x.Status==PrdRecipeStatus.Draft,ct);
     private IActionResult RecipeEditError(int id,string message){TempData["error"]=message;return RedirectToAction(nameof(Details),new{id});}

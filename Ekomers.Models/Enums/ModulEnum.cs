@@ -32,5 +32,6 @@ namespace Ekomers.Models.Enums
 		Envanter = 1017,
 		Personel = 1018,
 		Zimmet = 1019,
+		UretimRecete = 1020,
 	}
 }

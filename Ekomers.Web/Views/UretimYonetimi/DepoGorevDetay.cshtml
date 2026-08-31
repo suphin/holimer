@@ -1,10 +1,230 @@
 @model Ekomers.Models.ViewModels.Production.ProductionWarehouseTaskDetailVM
-@{ ViewData["Title"]="Depo Hazırlama Görevi"; var toplanabilir=Model.Items.Any(x=>x.RequestedQuantity>x.PreparedQuantity); var sevkEdilebilir=Model.Items.Any(x=>x.PreparedQuantity>x.ShippedQuantity); }
-<div class="card card-custom mb-5"><div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">@Model.TaskNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.OrderNumber · @Model.ProductCode - @Model.ProductName</span></h3></div><div class="card-toolbar"><span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span><a asp-action="EmirDetay" asp-route-id="@Model.ProductionOrderId" class="btn btn-sm btn-light mr-2">Üretim Emri</a><a asp-action="DepoHazirlama" class="btn btn-sm btn-light">Görevlere Dön</a></div></div><div class="card-body"><div class="row"><div class="col-md-3 mb-4"><strong>Kaynak Depo</strong><div>@Model.SourceWarehouse</div></div><div class="col-md-3 mb-4"><strong>Hedef Depo</strong><div>@Model.TargetWarehouse</div></div><div class="col-md-2 mb-4"><strong>Talep Tarihi</strong><div>@Model.RequestDate.ToString("dd.MM.yyyy HH:mm")</div></div><div class="col-md-2 mb-4"><strong>Atanan</strong><div>@(Model.AssignedUserId??"-")</div></div><div class="col-md-2 mb-4"><strong>Hazırlama Tarihi</strong><div>@(Model.PreparedDate?.ToString("dd.MM.yyyy HH:mm")??"-")</div></div><div class="col-md-2 mb-4"><strong>Sevk Tarihi</strong><div>@(Model.ShippedDate?.ToString("dd.MM.yyyy HH:mm")??"-")</div></div><div class="col-md-2 mb-4"><strong>Teslim Tarihi</strong><div>@(Model.DeliveredDate?.ToString("dd.MM.yyyy HH:mm")??"-")</div></div></div></div><div class="card-footer d-flex flex-wrap">
-@if((Model.Status==PrdWarehouseTaskStatus.Waiting||Model.Status==PrdWarehouseTaskStatus.Shortage)&&toplanabilir){<form asp-action="DepoGoreviHazirlamayaBasla" method="post" class="mr-2"><input type="hidden" name="id" value="@Model.Id"/><button class="btn btn-primary">Hazırlamaya Başla</button></form>}
-@if(Model.Status==PrdWarehouseTaskStatus.Preparing){<form asp-action="DepoGoreviHazirlandi" method="post" class="mr-2" onsubmit="return confirm('Ayrılan lotların tamamı hazırlandı mı?');"><input type="hidden" name="id" value="@Model.Id"/><button class="btn btn-success">Ayrılanlar Hazırlandı</button></form>}
-@if((Model.Status==PrdWarehouseTaskStatus.Ready||Model.Status==PrdWarehouseTaskStatus.Shortage)&&sevkEdilebilir){<form asp-action="DepoGoreviSevkEt" method="post" class="mr-2" onsubmit="return confirm('Hazırlanan malzemeler ana depodan çıkarılıp üretim deposuna sevk edilsin mi?');"><input type="hidden" name="id" value="@Model.Id"/><button class="btn btn-info">Hazırlananları Sevk Et</button></form>}
-@if(Model.Status==PrdWarehouseTaskStatus.Shipped){<form asp-action="DepoGoreviTeslimAl" method="post" class="mr-2" onsubmit="return confirm('Sevk edilen malzemeler üretim deposunda teslim alındı mı?');"><input type="hidden" name="id" value="@Model.Id"/><button class="btn btn-success">Üretim Deposunda Teslim Al</button></form>}
-@if(Model.Items.Any(x=>x.ShortageQuantity>0)){<form asp-action="DepoGoreviOlustur" method="post"><input type="hidden" name="id" value="@Model.ProductionOrderId"/><button class="btn btn-warning">Yeni Stoktan Eksikleri Ayır</button></form>}
-</div></div>
-<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Toplanacak Malzemeler (@Model.Items.Count)<span class="d-block text-muted pt-2 font-size-sm">Ayrılan lotlar FEFO; SKT olmayanlarda FIFO sırasıyla seçilir. Eksikler görev üzerinde açık kalır.</span></h3></div></div><div class="card-body"><div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Malzeme</th><th>Toplanacak</th><th>Hazırlanan</th><th>Sevk Edilen</th><th>Eksik</th><th style="min-width:360px">Ayrılan Lotlar</th></tr></thead><tbody>@foreach(var item in Model.Items){<tr><td><strong>@item.MaterialCode</strong><span class="d-block text-muted">@item.MaterialName</span></td><td>@item.RequestedQuantity.ToString("0.######") @item.Unit</td><td>@item.PreparedQuantity.ToString("0.######") @item.Unit</td><td>@item.ShippedQuantity.ToString("0.######") @item.Unit</td><td class="@(item.ShortageQuantity>0?"text-danger":"text-success")"><strong>@item.ShortageQuantity.ToString("0.######")</strong> @item.Unit</td><td>@if(item.Lots.Count==0){<span class="text-muted">Henüz lot ayrılamadı.</span>}else{@foreach(var lot in item.Lots){<div class="mb-1"><code>@lot.LotNumber</code> · <strong>@lot.Quantity.ToString("0.######") @lot.Unit</strong> · SKT: @(lot.ExpirationDate?.ToString("dd.MM.yyyy")??"-")</div>}}</td></tr>}</tbody></table></div></div></div>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Depo Hazırlama Görevi";
+    var toplanabilir = Model.Items.Any(x => x.RequestedQuantity > x.PreparedQuantity);
+    var sevkEdilebilir = Model.Items.Any(x => x.PreparedQuantity > x.ShippedQuantity);
+    var hazirlikTamamlanabilir = Model.Items.SelectMany(x => x.Lots).Any(x => x.PreparedQuantity > x.ShippedQuantity);
+    var lotIndex = 0;
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">@Model.TaskNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.OrderNumber · @Model.ProductCode - @Model.ProductName</span></h3>
+        </div>
+        <div class="card-toolbar">
+            <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
+            <a asp-action="EmirDetay" asp-route-id="@Model.ProductionOrderId" class="btn btn-sm btn-light mr-2">Üretim Emri</a>
+            <a asp-action="DepoHazirlama" class="btn btn-sm btn-light">Görevlere Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-4"><strong>Kaynak Depo</strong><div>@Model.SourceWarehouse</div></div>
+            <div class="col-md-3 mb-4"><strong>Hedef Depo</strong><div>@Model.TargetWarehouse</div></div>
+            <div class="col-md-2 mb-4"><strong>Talep Tarihi</strong><div>@Model.RequestDate.ToString("dd.MM.yyyy HH:mm")</div></div>
+            <div class="col-md-2 mb-4"><strong>Atanan</strong><div>@(Model.AssignedUserId ?? "-")</div></div>
+            <div class="col-md-2 mb-4"><strong>Hazırlama Tarihi</strong><div>@(Model.PreparedDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div></div>
+            <div class="col-md-2 mb-4"><strong>Sevk Tarihi</strong><div>@(Model.ShippedDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div></div>
+            <div class="col-md-2 mb-4"><strong>Teslim Tarihi</strong><div>@(Model.DeliveredDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div></div>
+        </div>
+    </div>
+    <div class="card-footer d-flex flex-wrap">
+        @if ((Model.Status == PrdWarehouseTaskStatus.Waiting || Model.Status == PrdWarehouseTaskStatus.Shortage) && toplanabilir)
+        {
+            <form asp-action="DepoGoreviHazirlamayaBasla" method="post" class="mr-2">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-primary">Hazırlamaya Başla</button>
+            </form>
+        }
+        @if ((Model.Status == PrdWarehouseTaskStatus.Ready || Model.Status == PrdWarehouseTaskStatus.Shortage) && sevkEdilebilir)
+        {
+            <form asp-action="DepoGoreviSevkEt" method="post" class="mr-2" onsubmit="return confirm('Girilen gerçek hazırlama miktarları ana depodan çıkarılıp üretim deposuna sevk edilsin mi?');">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-info">Hazırlananları Sevk Et</button>
+            </form>
+        }
+        @if (Model.Status == PrdWarehouseTaskStatus.Shipped)
+        {
+            <form asp-action="DepoGoreviTeslimAl" method="post" class="mr-2" onsubmit="return confirm('Sevk edilen malzemeler üretim deposunda teslim alındı mı?');">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-success">Üretim Deposunda Teslim Al</button>
+            </form>
+        }
+        @if (Model.Items.Any(x => x.ShortageQuantity > 0))
+        {
+            <form asp-action="DepoGoreviOlustur" method="post">
+                <input type="hidden" name="id" value="@Model.ProductionOrderId" />
+                <button class="btn btn-warning">Yeni Stoktan Eksikleri Ayır</button>
+            </form>
+        }
+    </div>
+</div>
+
+<form asp-action="DepoGoreviHazirliginiKaydet" method="post">
+    <input type="hidden" name="Id" value="@Model.Id" />
+    <div class="card card-custom">
+        <div class="card-header">
+            <div class="card-title">
+                <h3 class="card-label">Toplanacak Malzemeler (@Model.Items.Count)<span class="d-block text-muted pt-2 font-size-sm">Ayrılan lotlar FEFO; SKT olmayanlarda FIFO sırasıyla seçilir. Hazırlanan gerçek miktar lot bazında girilir; eksik ve fazla miktarlar ayrı izlenir.</span></h3>
+            </div>
+        </div>
+        <div class="card-body">
+            @if (Model.Status == PrdWarehouseTaskStatus.Preparing)
+            {
+                <div class="alert alert-light-primary mb-6">
+                    Her lot için fiilen hazırladığınız miktarı girin. Kapalı kutu nedeniyle istenenden fazla gönderilecekse kutudaki gerçek miktarı yazabilirsiniz; sistem lotun kullanılabilir stokunu kontrol eder.
+                </div>
+            }
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom" style="min-width:1450px">
+                    <thead>
+                        <tr>
+                            <th style="min-width:190px">Malzeme</th>
+                            <th>Toplanacak</th>
+                            <th>Hazırlanan</th>
+                            <th>Henüz Hazırlanmadı</th>
+                            <th>Fazla</th>
+                            <th>Sevk Edilen</th>
+                            <th>Ayrılamayan Stok</th>
+                            <th>Lot / SKT</th>
+                            <th>Lot Planı</th>
+                            <th style="min-width:270px">Hazırlanan Gerçek</th>
+                            <th>Lot Sevki</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            var rowCount = Math.Max(1, item.Lots.Count);
+                            @if (item.Lots.Count == 0)
+                            {
+                                <tr>
+                                    <td><strong>@item.MaterialCode</strong><span class="d-block text-muted">@item.MaterialName</span></td>
+                                    <td>@item.RequestedQuantity.ToString("0.######") @item.Unit</td>
+                                    <td><strong>@item.PreparedQuantity.ToString("0.######")</strong> @item.Unit</td>
+                                    <td class="@(item.PreparationShortageQuantity > 0 ? "text-danger" : "text-success")"><strong>@item.PreparationShortageQuantity.ToString("0.######")</strong> @item.Unit</td>
+                                    <td class="@(item.OverPreparedQuantity > 0 ? "text-warning" : "text-muted")"><strong>@item.OverPreparedQuantity.ToString("0.######")</strong> @item.Unit</td>
+                                    <td>@item.ShippedQuantity.ToString("0.######") @item.Unit</td>
+                                    <td class="@(item.ShortageQuantity > 0 ? "text-danger" : "text-success")"><strong>@item.ShortageQuantity.ToString("0.######")</strong> @item.Unit</td>
+                                    <td colspan="4"><span class="text-muted">Bu malzeme için henüz lot ayrılamadı.</span></td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @for (var lotPosition = 0; lotPosition < item.Lots.Count; lotPosition++)
+                                {
+                                    var lot = item.Lots[lotPosition];
+                                    <tr>
+                                        @if (lotPosition == 0)
+                                        {
+                                            <td rowspan="@rowCount"><strong>@item.MaterialCode</strong><span class="d-block text-muted">@item.MaterialName</span></td>
+                                            <td rowspan="@rowCount">@item.RequestedQuantity.ToString("0.######") @item.Unit</td>
+                                            <td rowspan="@rowCount"><strong>@item.PreparedQuantity.ToString("0.######")</strong> @item.Unit</td>
+                                            <td rowspan="@rowCount" class="@(item.PreparationShortageQuantity > 0 ? "text-danger" : "text-success")"><strong>@item.PreparationShortageQuantity.ToString("0.######")</strong> @item.Unit</td>
+                                            <td rowspan="@rowCount" class="@(item.OverPreparedQuantity > 0 ? "text-warning" : "text-muted")"><strong>@item.OverPreparedQuantity.ToString("0.######")</strong> @item.Unit</td>
+                                            <td rowspan="@rowCount">@item.ShippedQuantity.ToString("0.######") @item.Unit</td>
+                                            <td rowspan="@rowCount" class="@(item.ShortageQuantity > 0 ? "text-danger" : "text-success")"><strong>@item.ShortageQuantity.ToString("0.######")</strong> @item.Unit</td>
+                                        }
+                                        <td><code>@lot.LotNumber</code><span class="d-block text-muted">@(lot.ExpirationDate?.ToString("dd.MM.yyyy") ?? "SKT yok")</span></td>
+                                        <td>
+                                            <strong>@lot.TaskQuantity.ToString("0.######") @lot.TaskUnit</strong>
+                                            @if (lot.UsesDifferentUnit)
+                                            {
+                                                <small class="d-block text-muted">Lot stoğu: @lot.Quantity.ToString("0.######") @lot.Unit</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            <input type="hidden" name="Lots[@lotIndex].Id" value="@lot.Id" />
+                                            @if (Model.Status == PrdWarehouseTaskStatus.Preparing)
+                                            {
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" inputmode="decimal" class="form-control warehouse-prepared-input" name="Lots[@lotIndex].PreparedQuantityInput" value="@lot.PreparedQuantity.ToString("0.######", CultureInfo.InvariantCulture)" data-factor="@lot.TaskUnitConversionFactor.ToString(CultureInfo.InvariantCulture)" data-shipped="@lot.ShippedQuantity.ToString(CultureInfo.InvariantCulture)" autocomplete="off" />
+                                                    <div class="input-group-append"><span class="input-group-text">@lot.Unit</span></div>
+                                                </div>
+                                                @if (lot.UsesDifferentUnit)
+                                                {
+                                                    <small class="d-block text-muted"><span class="warehouse-converted-value">@lot.TaskPreparedQuantity.ToString("0.######")</span> @lot.TaskUnit</small>
+                                                }
+                                                @if (lot.ShippedQuantity > 0)
+                                                {
+                                                    <small class="d-block text-muted">Kümülatif miktar; @lot.ShippedQuantity.ToString("0.######") @lot.Unit altına inemez.</small>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <input type="hidden" name="Lots[@lotIndex].PreparedQuantityInput" value="@lot.PreparedQuantity.ToString("0.######", CultureInfo.InvariantCulture)" />
+                                                <strong>@lot.TaskPreparedQuantity.ToString("0.######") @lot.TaskUnit</strong>
+                                                @if (lot.UsesDifferentUnit)
+                                                {
+                                                    <small class="d-block text-muted">Lot stoğu: @lot.PreparedQuantity.ToString("0.######") @lot.Unit</small>
+                                                }
+                                            }
+                                        </td>
+                                        <td>
+                                            @lot.TaskShippedQuantity.ToString("0.######") @lot.TaskUnit
+                                            @if (lot.UsesDifferentUnit)
+                                            {
+                                                <small class="d-block text-muted">@lot.ShippedQuantity.ToString("0.######") @lot.Unit</small>
+                                            }
+                                        </td>
+                                    </tr>
+                                    lotIndex++;
+                                }
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if (Model.Status == PrdWarehouseTaskStatus.Preparing)
+        {
+            <div class="card-footer d-flex flex-wrap justify-content-end align-items-center">
+                <span id="preparation-complete-hint" class="text-muted mr-4 @(hazirlikTamamlanabilir ? "d-none" : string.Empty)">Tamamlamak için en az bir lotta sevk edilmemiş gerçek miktar girin.</span>
+                <button type="submit" name="CompletePreparation" value="false" class="btn btn-light-primary mr-2">Hazırlamayı Kaydet</button>
+                <button type="submit" id="complete-preparation-button" name="CompletePreparation" value="true" class="btn btn-success" disabled="@(!hazirlikTamamlanabilir)" onclick="return confirm('Girilen gerçek miktarlarla hazırlama tamamlansın mı?');">Hazırlamayı Tamamla</button>
+            </div>
+        }
+    </div>
+</form>
+
+@if (Model.Status == PrdWarehouseTaskStatus.Preparing)
+{
+    <script>
+        (function () {
+            var inputs = Array.prototype.slice.call(document.querySelectorAll('.warehouse-prepared-input'));
+            var completeButton = document.getElementById('complete-preparation-button');
+            var hint = document.getElementById('preparation-complete-hint');
+
+            function parseNumber(value) {
+                value = (value || '').trim().replace(/\s/g, '');
+                if (value.indexOf(',') >= 0 && value.indexOf('.') >= 0) value = value.lastIndexOf(',') > value.lastIndexOf('.') ? value.replace(/\./g, '').replace(',', '.') : value.replace(/,/g, '');
+                else if (value.indexOf(',') >= 0) value = value.replace(',', '.');
+                var number = Number(value);
+                return Number.isFinite(number) ? number : 0;
+            }
+
+            function formatQuantity(value) {
+                return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 6 }).format(value);
+            }
+
+            function refreshPreparationState() {
+                var hasUnshippedPreparation = false;
+                inputs.forEach(function (input) {
+                    var quantity = parseNumber(input.value);
+                    var shipped = parseNumber(input.dataset.shipped);
+                    var factor = parseNumber(input.dataset.factor) || 1;
+                    var converted = input.closest('td').querySelector('.warehouse-converted-value');
+                    if (converted) converted.textContent = formatQuantity(quantity * factor);
+                    if (quantity > shipped + 0.000001) hasUnshippedPreparation = true;
+                });
+                completeButton.disabled = !hasUnshippedPreparation;
+                hint.classList.toggle('d-none', hasUnshippedPreparation);
+            }
+
+            inputs.forEach(function (input) { input.addEventListener('input', refreshPreparationState); });
+            refreshPreparationState();
+        })();
+    </script>
+}

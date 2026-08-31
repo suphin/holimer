@@ -20,7 +20,7 @@
         } */
 </style>
 
-@if (User.HasClaim("Authorize", "FileAdd"))
+@if (User.HasClaim("Authorize", "FileAdd") || User.IsInRole("Admin"))
 {
     @*  <div class="row">
         <div class="col-md-12">
@@ -60,7 +60,7 @@
             <th>Oluşturulma Tarihi</th> 
             <th>Görüntüle</th>
 
-            @if (User.HasClaim("Authorize", "FileDelete"))
+            @if (User.HasClaim("Authorize", "FileDelete") || User.IsInRole("Admin"))
             {
                 <th>Sil</th>
             }

@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260831113214_AddPartialGoodsReceipts")]
+    partial class AddPartialGoodsReceipts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -5392,19 +5395,6 @@ namespace Ekomers.Data.Migrations
                     b.Property<int>("PurchaseOrderId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("QuarantineDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("QuarantineInventoryDocumentId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("QuarantineUserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("QuarantineWarehouseId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("ReceiptDate")
                         .HasColumnType("datetime2");
 
@@ -5431,12 +5421,6 @@ namespace Ekomers.Data.Migrations
                         .HasColumnType("nvarchar(30)");
 
                     b.HasKey("ID");
-
-                    b.HasIndex("QuarantineInventoryDocumentId")
-                        .IsUnique()
-                        .HasFilter("[QuarantineInventoryDocumentId] IS NOT NULL");
-
-                    b.HasIndex("QuarantineWarehouseId");
 
                     b.HasIndex("ReceiptNumber")
                         .IsUnique();
@@ -5500,12 +5484,6 @@ namespace Ekomers.Data.Migrations
                     b.Property<int>("PurchaseOrderLineId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("QuarantineInventoryDocumentLineId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("QuarantineStockLotId")
-                        .HasColumnType("int");
-
                     b.Property<decimal>("ReceivedQuantity")
                         .HasPrecision(18, 6)
                         .HasColumnType("decimal(18,6)");
@@ -5527,10 +5505,6 @@ namespace Ekomers.Data.Migrations
                     b.HasIndex("MaterialId");
 
                     b.HasIndex("PurchaseOrderLineId");
-
-                    b.HasIndex("QuarantineInventoryDocumentLineId");
-
-                    b.HasIndex("QuarantineStockLotId");
 
                     b.HasIndex("UnitId");
 
@@ -6001,129 +5975,6 @@ namespace Ekomers.Data.Migrations
                     b.HasIndex("PurchaseRequestId", "Status");
 
                     b.ToTable("PurPurchaseRequestLine", (string)null);
-                });
-
-            modelBuilder.Entity("Ekomers.Models.Entity.Purchasing.PurQualityInspection", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<DateTime?>("AnalysisDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CertificateNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("CreateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreateUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DecisionDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DecisionNote")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("DecisionUserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("DeleteDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeleteUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DosyaID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("GoodsReceiptId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("GoodsReceiptLineId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("InspectionNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("IsDelete")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("LaboratoryName")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<int>("MaterialId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ResultDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ResultSummary")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<DateTime?>("SampleDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("SampleNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("SampledUserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("SpecificationNotes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StockLotId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdateUserID")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("WarehouseId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("GoodsReceiptId");
-
-                    b.HasIndex("GoodsReceiptLineId")
-                        .IsUnique();
-
-                    b.HasIndex("InspectionNumber")
-                        .IsUnique();
-
-                    b.HasIndex("StockLotId");
-
-                    b.HasIndex("WarehouseId");
-
-                    b.HasIndex("MaterialId", "StockLotId");
-
-                    b.HasIndex("Status", "SampleDate");
-
-                    b.ToTable("PurQualityInspection", (string)null);
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Purchasing.PurQuotationApprovalHistory", b =>
@@ -10273,16 +10124,6 @@ namespace Ekomers.Data.Migrations
                         .HasForeignKey("PurchaseOrderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdInventoryDocument", null)
-                        .WithMany()
-                        .HasForeignKey("QuarantineInventoryDocumentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdWarehouse", null)
-                        .WithMany()
-                        .HasForeignKey("QuarantineWarehouseId")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.Purchasing.PurGoodsReceiptLine", b =>
@@ -10304,16 +10145,6 @@ namespace Ekomers.Data.Migrations
                         .HasForeignKey("PurchaseOrderLineId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdInventoryDocumentLine", null)
-                        .WithMany()
-                        .HasForeignKey("QuarantineInventoryDocumentLineId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdStockLot", null)
-                        .WithMany()
-                        .HasForeignKey("QuarantineStockLotId")
-                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Ekomers.Models.Entity.Production.PrdUnit", null)
                         .WithMany()
@@ -10392,39 +10223,6 @@ namespace Ekomers.Data.Migrations
                     b.HasOne("Ekomers.Models.Entity.Production.PrdUnit", null)
                         .WithMany()
                         .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Ekomers.Models.Entity.Purchasing.PurQualityInspection", b =>
-                {
-                    b.HasOne("Ekomers.Models.Entity.Purchasing.PurGoodsReceipt", null)
-                        .WithMany()
-                        .HasForeignKey("GoodsReceiptId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Ekomers.Models.Entity.Purchasing.PurGoodsReceiptLine", null)
-                        .WithMany()
-                        .HasForeignKey("GoodsReceiptLineId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdMaterial", null)
-                        .WithMany()
-                        .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdStockLot", null)
-                        .WithMany()
-                        .HasForeignKey("StockLotId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Ekomers.Models.Entity.Production.PrdWarehouse", null)
-                        .WithMany()
-                        .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

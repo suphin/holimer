@@ -1,6 +1,8 @@
 using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services;
+using Ekomers.Models.Ekomers;
+using Ekomers.Models.Entity.Production;
 using Ekomers.Models.Entity.Purchasing;
 using Ekomers.Models.Enums;
 using Ekomers.Models.ViewModels.Purchasing;
@@ -107,23 +109,19 @@ public sealed class SatinalmaYonetimiController : Controller
         return RedirectToAction(nameof(TalepDetay), new { id = request.ID });
     }
 
-    [HttpGet]
+    [HttpGet, Authorize(Roles = "Admin")]
     public async Task<IActionResult> TalepDuzenle(int id, CancellationToken ct)
     {
         ViewBag.Modul = "YeniSatinalma";
         var request = await _context.PurPurchaseRequests.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
         if (request == null) return NotFound();
         if (!CanEditRequest(request)) return Forbid();
-        if (request.Status != PurPurchaseRequestStatus.Draft)
-        {
-            TempData["error"] = "Yalnızca taslak talepler düzenlenebilir.";
-            return RedirectToAction(nameof(TalepDetay), new { id });
-        }
 
         var model = new PurchaseRequestFormVM
         {
             Id = request.ID,
             RequestNumber = request.RequestNumber,
+            Status = request.Status,
             RequestDate = request.RequestDate,
             NeededDate = request.NeededDate,
             Priority = request.Priority,
@@ -144,17 +142,18 @@ public sealed class SatinalmaYonetimiController : Controller
         return View("TalepFormu", model);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
     public async Task<IActionResult> TalepDuzenle(PurchaseRequestFormVM model, CancellationToken ct)
     {
         ViewBag.Modul = "YeniSatinalma";
         var request = await _context.PurPurchaseRequests.FirstOrDefaultAsync(x => x.ID == model.Id && x.IsDelete != true, ct);
         if (request == null) return NotFound();
         if (!CanEditRequest(request)) return Forbid();
-        if (request.Status != PurPurchaseRequestStatus.Draft)
+        model.Status = request.Status;
+        if (await HasPostedGoodsReceiptForRequestAsync(request.ID, ct))
         {
-            TempData["error"] = "Yalnızca taslak talepler düzenlenebilir.";
-            return RedirectToAction(nameof(TalepDetay), new { id = model.Id });
+            TempData["error"] = "Bu talebe bağlı mal kabul karantina stoğuna işlendiği için talep geriye alınamaz.";
+            return RedirectToAction(nameof(TalepDetay), new { id = request.ID });
         }
 
         var validLines = await ValidateFormAsync(model, ct);
@@ -167,6 +166,10 @@ public sealed class SatinalmaYonetimiController : Controller
 
         var now = DateTime.Now;
         var user = CurrentUser;
+        var workflowWasReset = request.Status != PurPurchaseRequestStatus.Draft;
+        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        if (workflowWasReset)
+            await RollbackRequestToDraftAsync(request, now, user, ct);
         request.RequestDate = model.RequestDate.Date;
         request.NeededDate = model.NeededDate?.Date;
         request.Priority = model.Priority;
@@ -207,7 +210,10 @@ public sealed class SatinalmaYonetimiController : Controller
         }
 
         await _context.SaveChangesAsync(ct);
-        TempData["success"] = $"{request.RequestNumber} numaralı taslak güncellendi.";
+        await transaction.CommitAsync(ct);
+        TempData["success"] = workflowWasReset
+            ? $"{request.RequestNumber} güncellendi; bağlı teklifler ve siparişler geri alınarak talep taslağa döndürüldü."
+            : $"{request.RequestNumber} numaralı taslak güncellendi.";
         return RedirectToAction(nameof(TalepDetay), new { id = request.ID });
     }
 
@@ -220,12 +226,31 @@ public sealed class SatinalmaYonetimiController : Controller
         return View(model);
     }
 
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
+    public async Task<IActionResult> TalepSil(int id, CancellationToken ct)
+    {
+        var request = await _context.PurPurchaseRequests.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (request == null) return NotFound();
+        if (await HasPostedGoodsReceiptForRequestAsync(request.ID, ct))
+        {
+            TempData["error"] = "Bu talebe bağlı mal kabul karantina stoğuna işlendiği için talep silinemez.";
+            return RedirectToAction(nameof(TalepDetay), new { id });
+        }
+        var now = DateTime.Now;
+        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        await DeleteRequestWorkflowAsync(request, now, CurrentUser, ct);
+        await _context.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        TempData["success"] = $"{request.RequestNumber} ve bağlı satınalma kayıtları silindi.";
+        return RedirectToAction(nameof(Talepler));
+    }
+
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> OnayaGonder(int id, CancellationToken ct)
     {
         var request = await _context.PurPurchaseRequests.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
         if (request == null) return NotFound();
-        if (!CanEditRequest(request)) return Forbid();
+        if (!CanSubmitRequest(request)) return Forbid();
         if (request.Status != PurPurchaseRequestStatus.Draft)
         {
             TempData["error"] = "Yalnızca taslak talep onaya gönderilebilir.";
@@ -414,7 +439,7 @@ public sealed class SatinalmaYonetimiController : Controller
         return RedirectToAction(nameof(Tedarikciler));
     }
 
-    [HttpGet]
+    [HttpGet, Authorize(Roles = "Admin")]
     public async Task<IActionResult> TedarikciDuzenle(int id, CancellationToken ct)
     {
         ViewBag.Modul = "YeniSatinalma";
@@ -428,7 +453,7 @@ public sealed class SatinalmaYonetimiController : Controller
         });
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
     public async Task<IActionResult> TedarikciDuzenle(SupplierFormVM model, CancellationToken ct)
     {
         ViewBag.Modul = "YeniSatinalma";
@@ -442,6 +467,17 @@ public sealed class SatinalmaYonetimiController : Controller
         entity.Notes = Clean(model.Notes); entity.IsActive = model.IsActive; entity.UpdateDate = DateTime.Now; entity.UpdateUserID = CurrentUser;
         await _context.SaveChangesAsync(ct);
         TempData["success"] = $"{entity.Code} kodlu tedarikçi güncellendi.";
+        return RedirectToAction(nameof(Tedarikciler));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
+    public async Task<IActionResult> TedarikciSil(int id, CancellationToken ct)
+    {
+        var supplier = await _context.PurSuppliers.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (supplier == null) return NotFound();
+        SoftDelete(supplier, DateTime.Now, CurrentUser);
+        await _context.SaveChangesAsync(ct);
+        TempData["success"] = $"{supplier.Code} kodlu tedarikçi silindi. Geçmiş teklif ve sipariş kayıtları korunmuştur.";
         return RedirectToAction(nameof(Tedarikciler));
     }
 
@@ -557,35 +593,31 @@ public sealed class SatinalmaYonetimiController : Controller
         return RedirectToAction(nameof(TeklifDetay), new { id = quotation.ID });
     }
 
-    [HttpGet]
+    [HttpGet, Authorize(Roles = "Admin")]
     public async Task<IActionResult> TeklifDuzenle(int id, CancellationToken ct)
     {
         ViewBag.Modul = "YeniSatinalma";
         var quotation = await _context.PurSupplierQuotations.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
         if (quotation == null) return NotFound();
         if (!CanEditQuotation(quotation)) return Forbid();
-        if (quotation.Status != PurSupplierQuotationStatus.Draft)
-        {
-            TempData["error"] = "Yalnızca taslak teklifler düzenlenebilir.";
-            return RedirectToAction(nameof(TeklifDetay), new { id });
-        }
         var model = await BuildQuotationFormAsync(quotation.PurchaseRequestId, quotation, ct);
         return View("TeklifFormu", model!);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
     public async Task<IActionResult> TeklifDuzenle(SupplierQuotationFormVM model, CancellationToken ct)
     {
         ViewBag.Modul = "YeniSatinalma";
         var quotation = await _context.PurSupplierQuotations.FirstOrDefaultAsync(x => x.ID == model.Id && x.IsDelete != true, ct);
         if (quotation == null) return NotFound();
         if (!CanEditQuotation(quotation)) return Forbid();
-        if (quotation.Status != PurSupplierQuotationStatus.Draft)
-        {
-            TempData["error"] = "Yalnızca taslak teklifler düzenlenebilir.";
-            return RedirectToAction(nameof(TeklifDetay), new { id = model.Id });
-        }
+        model.Status = quotation.Status;
         model.PurchaseRequestId = quotation.PurchaseRequestId;
+        if (await HasPostedGoodsReceiptForQuotationAsync(quotation.ID, ct))
+        {
+            TempData["error"] = "Bu teklife bağlı mal kabul karantina stoğuna işlendiği için teklif geriye alınamaz.";
+            return RedirectToAction(nameof(TeklifDetay), new { id = quotation.ID });
+        }
         var validLines = await ValidateQuotationFormAsync(model, ct);
         if (!ModelState.IsValid)
         {
@@ -594,6 +626,10 @@ public sealed class SatinalmaYonetimiController : Controller
             return View("TeklifFormu", model);
         }
         var now = DateTime.Now;
+        var workflowWasReset = quotation.Status != PurSupplierQuotationStatus.Draft;
+        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        if (workflowWasReset)
+            await RollbackQuotationToDraftAsync(quotation, now, CurrentUser, ct);
         _ = TryParseDecimal(model.ExchangeRateInput, out var exchangeRate);
         quotation.SupplierId = model.SupplierId; quotation.SupplierQuotationNumber = Clean(model.SupplierQuotationNumber);
         quotation.QuotationDate = model.QuotationDate.Date; quotation.ValidUntil = model.ValidUntil?.Date;
@@ -612,7 +648,15 @@ public sealed class SatinalmaYonetimiController : Controller
             _context.PurSupplierQuotationLines.Add(CreateQuotationLine(quotation.ID, ++sequence, item, now, CurrentUser));
         await _context.SaveChangesAsync(ct);
         await RecalculateQuotationTotalsAsync(quotation.ID, now, CurrentUser, ct);
-        TempData["success"] = $"{quotation.QuotationNumber} güncellendi.";
+        if (workflowWasReset)
+        {
+            await ReconcileQuotationAlternativesAsync(quotation.PurchaseRequestId, now, CurrentUser, ct);
+            await RecalculateRequestAfterOrdersAsync(quotation.PurchaseRequestId, now, CurrentUser, ct);
+        }
+        await transaction.CommitAsync(ct);
+        TempData["success"] = workflowWasReset
+            ? $"{quotation.QuotationNumber} güncellendi; bağlı sipariş geri alınarak teklif taslağa döndürüldü."
+            : $"{quotation.QuotationNumber} güncellendi.";
         return RedirectToAction(nameof(TeklifDetay), new { id = quotation.ID });
     }
 
@@ -624,12 +668,34 @@ public sealed class SatinalmaYonetimiController : Controller
         return model == null ? NotFound() : View(model);
     }
 
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
+    public async Task<IActionResult> TeklifSil(int id, CancellationToken ct)
+    {
+        var quotation = await _context.PurSupplierQuotations.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (quotation == null) return NotFound();
+        if (await HasPostedGoodsReceiptForQuotationAsync(quotation.ID, ct))
+        {
+            TempData["error"] = "Bu teklife bağlı mal kabul karantina stoğuna işlendiği için teklif silinemez.";
+            return RedirectToAction(nameof(TeklifDetay), new { id });
+        }
+        var requestId = quotation.PurchaseRequestId;
+        var now = DateTime.Now;
+        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        await DeleteQuotationWorkflowAsync(quotation, now, CurrentUser, ct);
+        await _context.SaveChangesAsync(ct);
+        await ReconcileQuotationAlternativesAsync(requestId, now, CurrentUser, ct);
+        await RecalculateRequestAfterOrdersAsync(requestId, now, CurrentUser, ct);
+        await transaction.CommitAsync(ct);
+        TempData["success"] = $"{quotation.QuotationNumber} ve varsa bağlı satınalma siparişi silindi.";
+        return RedirectToAction(nameof(Teklifler));
+    }
+
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> TeklifiOnayaGonder(int id, CancellationToken ct)
     {
         var quotation = await _context.PurSupplierQuotations.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
         if (quotation == null) return NotFound();
-        if (!CanEditQuotation(quotation)) return Forbid();
+        if (!CanSubmitQuotation(quotation)) return Forbid();
         if (quotation.Status != PurSupplierQuotationStatus.Draft)
         {
             TempData["error"] = "Yalnızca taslak teklif onaya gönderilebilir.";
@@ -793,7 +859,7 @@ public sealed class SatinalmaYonetimiController : Controller
         else
         {
             line.Status = PurSupplierQuotationLineStatus.Ordered; line.ApprovedQuantity = approvedQuantity;
-            var order = await _context.PurPurchaseOrders.FirstOrDefaultAsync(x => x.SourceQuotationId == quotation.ID && x.IsDelete != true, ct);
+            var order = await _context.PurPurchaseOrders.FirstOrDefaultAsync(x => x.SourceQuotationId == quotation.ID, ct);
             if (order == null)
             {
                 order = new PurPurchaseOrder
@@ -801,6 +867,8 @@ public sealed class SatinalmaYonetimiController : Controller
                     OrderNumber = $"SS-{now:yyyyMMddHHmmssfff}", SupplierId = quotation.SupplierId, SourceQuotationId = quotation.ID,
                     OrderDate = now.Date, CurrencyCode = quotation.CurrencyCode, ExchangeRate = quotation.ExchangeRate,
                     ExchangeRateDate = quotation.ExchangeRateDate, ExchangeRateSource = quotation.ExchangeRateSource,
+                    FreightCurrencyCode = quotation.CurrencyCode, FreightExchangeRate = quotation.ExchangeRate,
+                    FreightExchangeRateDate = quotation.ExchangeRateDate, FreightExchangeRateSource = quotation.ExchangeRateSource,
                     Status = PurPurchaseOrderStatus.Open,
                     PaymentTerms = quotation.PaymentTerms, DeliveryTerms = quotation.DeliveryTerms, Notes = quotation.Notes,
                     IsActive = true, IsDelete = false, CreateDate = now, CreateUserID = CurrentUser
@@ -808,18 +876,78 @@ public sealed class SatinalmaYonetimiController : Controller
                 _context.PurPurchaseOrders.Add(order);
                 await _context.SaveChangesAsync(ct);
             }
+            else if (order.IsDelete == true)
+            {
+                order.SupplierId = quotation.SupplierId;
+                order.OrderDate = now.Date;
+                order.CurrencyCode = quotation.CurrencyCode;
+                order.ExchangeRate = quotation.ExchangeRate;
+                order.ExchangeRateDate = quotation.ExchangeRateDate;
+                order.ExchangeRateSource = quotation.ExchangeRateSource;
+                order.FreightCurrencyCode = quotation.CurrencyCode;
+                order.FreightExchangeRate = quotation.ExchangeRate;
+                order.FreightExchangeRateDate = quotation.ExchangeRateDate;
+                order.FreightExchangeRateSource = quotation.ExchangeRateSource;
+                order.TransportationType = null;
+                order.FreightPaymentType = null;
+                order.DeliveryWarehouseId = null;
+                order.DeliveryAddress = null;
+                order.CarrierName = null;
+                order.EstimatedFreightAmount = null;
+                order.EstimatedFreightVatRate = null;
+                order.PlannedShipmentDate = null;
+                order.PlannedDeliveryDate = null;
+                order.TrackingNumber = null;
+                order.TransportationNotes = null;
+                order.Status = PurPurchaseOrderStatus.Open;
+                order.PaymentTerms = quotation.PaymentTerms;
+                order.DeliveryTerms = quotation.DeliveryTerms;
+                order.Notes = quotation.Notes;
+                order.IsActive = true;
+                order.IsDelete = false;
+                order.DeleteDate = null;
+                order.DeleteUserID = null;
+                order.UpdateDate = now;
+                order.UpdateUserID = CurrentUser;
+                await _context.SaveChangesAsync(ct);
+            }
             var sequence = await _context.PurPurchaseOrderLines.CountAsync(x => x.PurchaseOrderId == order.ID && x.IsDelete != true, ct) + 1;
             var netTotal = line.NetUnitPrice * approvedQuantity;
             var taxTotal = netTotal * line.VatRate / 100m;
-            _context.PurPurchaseOrderLines.Add(new PurPurchaseOrderLine
+            var orderLine = await _context.PurPurchaseOrderLines.FirstOrDefaultAsync(x => x.SupplierQuotationLineId == line.ID, ct);
+            if (orderLine == null)
             {
-                PurchaseOrderId = order.ID, SupplierQuotationLineId = line.ID, PurchaseRequestLineId = line.PurchaseRequestLineId,
-                Sequence = sequence, MaterialId = line.MaterialId, UnitId = line.UnitId, OrderedQuantity = approvedQuantity,
-                ReceivedQuantity = 0, UnitPrice = line.UnitPrice, DiscountRate = line.DiscountRate, NetUnitPrice = line.NetUnitPrice,
-                VatRate = line.VatRate, NetTotal = netTotal, TaxTotal = taxTotal, GrandTotal = netTotal + taxTotal,
-                RequestedDeliveryDate = line.DeliveryDate, Status = PurPurchaseOrderLineStatus.Open, Notes = line.Notes,
-                IsActive = true, IsDelete = false, CreateDate = now, CreateUserID = CurrentUser
-            });
+                orderLine = new PurPurchaseOrderLine
+                {
+                    SupplierQuotationLineId = line.ID,
+                    CreateDate = now,
+                    CreateUserID = CurrentUser
+                };
+                _context.PurPurchaseOrderLines.Add(orderLine);
+            }
+            orderLine.PurchaseOrderId = order.ID;
+            orderLine.PurchaseRequestLineId = line.PurchaseRequestLineId;
+            orderLine.Sequence = sequence;
+            orderLine.MaterialId = line.MaterialId;
+            orderLine.UnitId = line.UnitId;
+            orderLine.OrderedQuantity = approvedQuantity;
+            orderLine.ReceivedQuantity = 0;
+            orderLine.UnitPrice = line.UnitPrice;
+            orderLine.DiscountRate = line.DiscountRate;
+            orderLine.NetUnitPrice = line.NetUnitPrice;
+            orderLine.VatRate = line.VatRate;
+            orderLine.NetTotal = netTotal;
+            orderLine.TaxTotal = taxTotal;
+            orderLine.GrandTotal = netTotal + taxTotal;
+            orderLine.RequestedDeliveryDate = line.DeliveryDate;
+            orderLine.Status = PurPurchaseOrderLineStatus.Open;
+            orderLine.Notes = line.Notes;
+            orderLine.IsActive = true;
+            orderLine.IsDelete = false;
+            orderLine.DeleteDate = null;
+            orderLine.DeleteUserID = null;
+            orderLine.UpdateDate = now;
+            orderLine.UpdateUserID = CurrentUser;
             await _context.SaveChangesAsync(ct);
             await RecalculatePurchaseOrderTotalsAsync(order.ID, now, CurrentUser, ct);
 
@@ -852,6 +980,7 @@ public sealed class SatinalmaYonetimiController : Controller
                                 QuotationNumber = quotation.QuotationNumber, OrderDate = order.OrderDate, CurrencyCode = order.CurrencyCode,
                                 ExchangeRate = order.ExchangeRate,
                                GrandTotal = order.GrandTotal, Status = order.Status,
+                               HasTransportationPlan = order.TransportationType.HasValue && order.FreightPaymentType.HasValue,
                                LineCount = _context.PurPurchaseOrderLines.Count(x => x.PurchaseOrderId == order.ID && x.IsDelete != true)
                            }).ToListAsync(ct);
         return View(model);
@@ -871,10 +1000,39 @@ public sealed class SatinalmaYonetimiController : Controller
                                QuotationId = quotation.ID, QuotationNumber = quotation.QuotationNumber, OrderDate = order.OrderDate,
                                 CurrencyCode = order.CurrencyCode, ExchangeRate = order.ExchangeRate,
                                 ExchangeRateDate = order.ExchangeRateDate, ExchangeRateSource = order.ExchangeRateSource,
-                                Status = order.Status, NetTotal = order.NetTotal,
+                               Status = order.Status, NetTotal = order.NetTotal,
                                TaxTotal = order.TaxTotal, GrandTotal = order.GrandTotal, PaymentTerms = order.PaymentTerms, DeliveryTerms = order.DeliveryTerms
                            }).FirstOrDefaultAsync(ct);
         if (model == null) return NotFound();
+
+        var transportation = await _context.PurPurchaseOrders.AsNoTracking()
+            .Where(x => x.ID == id && x.IsDelete != true)
+            .Select(x => new PurchaseOrderTransportationFormVM
+            {
+                OrderId = x.ID,
+                TransportationType = x.TransportationType,
+                FreightPaymentType = x.FreightPaymentType,
+                DeliveryWarehouseId = x.DeliveryWarehouseId,
+                DeliveryAddress = x.DeliveryAddress,
+                CarrierName = x.CarrierName,
+                EstimatedFreightAmount = x.EstimatedFreightAmount,
+                EstimatedFreightVatRate = x.EstimatedFreightVatRate,
+                FreightCurrencyCode = x.FreightCurrencyCode,
+                FreightExchangeRate = x.FreightExchangeRate,
+                FreightExchangeRateDate = x.FreightExchangeRateDate,
+                FreightExchangeRateSource = x.FreightExchangeRateSource,
+                PlannedShipmentDate = x.PlannedShipmentDate,
+                PlannedDeliveryDate = x.PlannedDeliveryDate,
+                TrackingNumber = x.TrackingNumber,
+                TransportationNotes = x.TransportationNotes
+            }).FirstAsync(ct);
+        transportation.CanEdit = IsAdmin;
+        transportation.EstimatedFreightAmountInput = transportation.EstimatedFreightAmount?.ToString("0.######", CultureInfo.InvariantCulture);
+        transportation.EstimatedFreightVatRateInput = transportation.EstimatedFreightVatRate?.ToString("0.##", CultureInfo.InvariantCulture) ?? "20";
+        transportation.FreightExchangeRateInput = transportation.FreightExchangeRate.ToString("0.######", CultureInfo.InvariantCulture);
+        await FillPurchaseOrderTransportationOptionsAsync(transportation, ct);
+        model.Transportation = transportation;
+
         model.Lines = await (from line in _context.PurPurchaseOrderLines.AsNoTracking()
                              join material in _context.PrdMaterials.AsNoTracking() on line.MaterialId equals material.ID
                              join unit in _context.PrdUnits.AsNoTracking() on line.UnitId equals unit.ID
@@ -887,14 +1045,928 @@ public sealed class SatinalmaYonetimiController : Controller
                                  UnitPrice = line.UnitPrice, DiscountRate = line.DiscountRate, NetUnitPrice = line.NetUnitPrice,
                                  VatRate = line.VatRate, GrandTotal = line.GrandTotal, RequestedDeliveryDate = line.RequestedDeliveryDate, Status = line.Status
                              }).ToListAsync(ct);
+        model.Receipts = await _context.PurGoodsReceipts.AsNoTracking()
+            .Where(x => x.PurchaseOrderId == id && x.IsDelete != true)
+            .OrderByDescending(x => x.ReceiptDate).ThenByDescending(x => x.ID)
+            .Select(x => new GoodsReceiptListVM
+            {
+                Id = x.ID,
+                ReceiptNumber = x.ReceiptNumber,
+                OrderNumber = model.OrderNumber,
+                SupplierCode = model.SupplierCode,
+                SupplierName = model.SupplierName,
+                ReceiptDate = x.ReceiptDate,
+                DispatchNumber = x.DispatchNumber,
+                LineCount = _context.PurGoodsReceiptLines.Count(y => y.GoodsReceiptId == x.ID && y.IsDelete != true),
+                Status = x.Status,
+                ActualFreightAmount = x.ActualFreightAmount,
+                FreightCurrencyCode = x.FreightCurrencyCode
+            }).ToListAsync(ct);
         return View(model);
     }
 
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SiparisSil(int id, CancellationToken ct)
+    {
+        var order = await _context.PurPurchaseOrders.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (order == null) return NotFound();
+        if (await HasPostedGoodsReceiptForOrderAsync(order.ID, ct))
+        {
+            TempData["error"] = "Bu siparişe bağlı mal kabul karantina stoğuna işlendiği için sipariş silinemez.";
+            return RedirectToAction(nameof(SiparisDetay), new { id });
+        }
+        var quotation = await _context.PurSupplierQuotations.FirstAsync(x => x.ID == order.SourceQuotationId, ct);
+        var requestId = quotation.PurchaseRequestId;
+        var now = DateTime.Now;
+        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        await DeleteOrderAndReopenQuotationAsync(order, now, CurrentUser, ct);
+        await _context.SaveChangesAsync(ct);
+        await ReconcileQuotationAlternativesAsync(requestId, now, CurrentUser, ct);
+        await RecalculateQuotationStatusAsync(quotation.ID, now, CurrentUser, ct);
+        await RecalculateRequestAfterOrdersAsync(requestId, now, CurrentUser, ct);
+        await transaction.CommitAsync(ct);
+        TempData["success"] = $"{order.OrderNumber} silindi; kaynak teklif yeniden değerlendirmeye açıldı.";
+        return RedirectToAction(nameof(TeklifDetay), new { id = quotation.ID });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SiparisNakliyeKaydet([Bind(Prefix = "Transportation")] PurchaseOrderTransportationFormVM model, CancellationToken ct)
+    {
+        var order = await _context.PurPurchaseOrders.FirstOrDefaultAsync(x => x.ID == model.OrderId && x.IsDelete != true, ct);
+        if (order == null) return NotFound();
+
+        var errors = new List<string>();
+        if (!ModelState.IsValid) errors.Add("Nakliye alanlarından biri izin verilen uzunluğu aşıyor.");
+        if (!model.TransportationType.HasValue) errors.Add("Nakliye şeklini seçiniz.");
+        if (!model.FreightPaymentType.HasValue) errors.Add("Nakliye bedelini kimin karşılayacağını seçiniz.");
+        if (model.DeliveryWarehouseId.HasValue && !await _context.PrdWarehouses.AsNoTracking().AnyAsync(x => x.ID == model.DeliveryWarehouseId && x.IsActive != false && x.IsDelete != true, ct))
+            errors.Add("Geçerli ve aktif bir teslimat deposu seçiniz.");
+        if (model.PlannedShipmentDate.HasValue && model.PlannedDeliveryDate.HasValue && model.PlannedDeliveryDate.Value.Date < model.PlannedShipmentDate.Value.Date)
+            errors.Add("Tahmini teslim tarihi tahmini sevk tarihinden önce olamaz.");
+
+        decimal? estimatedFreightAmount = null;
+        decimal? estimatedFreightVatRate = null;
+        var freightCurrencyCode = "TRY";
+        var freightExchangeRate = 1m;
+        DateTime? freightExchangeRateDate = null;
+        var freightExchangeRateSource = "Sabit";
+
+        if (model.FreightPaymentType == PurFreightPaymentType.Buyer)
+        {
+            freightExchangeRateDate = model.FreightExchangeRateDate?.Date;
+            if (!string.IsNullOrWhiteSpace(model.EstimatedFreightAmountInput))
+            {
+                if (!TryParseDecimal(model.EstimatedFreightAmountInput, out var amount) || amount < 0)
+                    errors.Add("Tahmini nakliye tutarı sıfır veya daha büyük olmalıdır.");
+                else
+                    estimatedFreightAmount = amount;
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.EstimatedFreightVatRateInput))
+            {
+                if (!TryParseDecimal(model.EstimatedFreightVatRateInput, out var vatRate) || vatRate < 0 || vatRate > 100)
+                    errors.Add("Nakliye KDV oranı 0 ile 100 arasında olmalıdır.");
+                else
+                    estimatedFreightVatRate = vatRate;
+            }
+            else
+            {
+                estimatedFreightVatRate = 0m;
+            }
+
+            freightCurrencyCode = model.FreightCurrencyCode?.Trim().ToUpperInvariant() ?? string.Empty;
+            if (!new[] { "TRY", "USD", "EUR", "GBP" }.Contains(freightCurrencyCode))
+                errors.Add("Geçerli bir nakliye para birimi seçiniz.");
+            if (freightCurrencyCode == "TRY")
+            {
+                freightExchangeRate = 1m;
+                freightExchangeRateSource = "Sabit";
+                freightExchangeRateDate ??= DateTime.Today;
+            }
+            else if (!TryParseDecimal(model.FreightExchangeRateInput, out freightExchangeRate) || freightExchangeRate <= 0)
+            {
+                errors.Add("Nakliye döviz kuru sıfırdan büyük olmalıdır.");
+            }
+            else
+            {
+                freightExchangeRateSource = string.Equals(model.FreightExchangeRateSource, "TCMB", StringComparison.OrdinalIgnoreCase) ? "TCMB" : "Manuel";
+                if (!freightExchangeRateDate.HasValue) errors.Add("Nakliye kur tarihi zorunludur.");
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            TempData["error"] = string.Join(" ", errors);
+            return RedirectToAction(nameof(SiparisDetay), new { id = model.OrderId });
+        }
+
+        order.TransportationType = model.TransportationType;
+        order.FreightPaymentType = model.FreightPaymentType;
+        order.DeliveryWarehouseId = model.DeliveryWarehouseId;
+        order.DeliveryAddress = Clean(model.DeliveryAddress);
+        order.CarrierName = Clean(model.CarrierName);
+        order.EstimatedFreightAmount = estimatedFreightAmount;
+        order.EstimatedFreightVatRate = estimatedFreightVatRate;
+        order.FreightCurrencyCode = freightCurrencyCode;
+        order.FreightExchangeRate = freightExchangeRate;
+        order.FreightExchangeRateDate = freightExchangeRateDate;
+        order.FreightExchangeRateSource = freightExchangeRateSource;
+        order.PlannedShipmentDate = model.PlannedShipmentDate?.Date;
+        order.PlannedDeliveryDate = model.PlannedDeliveryDate?.Date;
+        order.TrackingNumber = Clean(model.TrackingNumber);
+        order.TransportationNotes = Clean(model.TransportationNotes);
+        order.UpdateDate = DateTime.Now;
+        order.UpdateUserID = CurrentUser;
+        await _context.SaveChangesAsync(ct);
+
+        TempData["success"] = "Planlanan nakliye bilgileri kaydedildi.";
+        return RedirectToAction(nameof(SiparisDetay), new { id = model.OrderId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> MalKabuller(CancellationToken ct)
+    {
+        ViewBag.Modul = "YeniSatinalma";
+        var model = await (from receipt in _context.PurGoodsReceipts.AsNoTracking()
+                           join order in _context.PurPurchaseOrders.AsNoTracking() on receipt.PurchaseOrderId equals order.ID
+                           join supplier in _context.PurSuppliers.AsNoTracking() on order.SupplierId equals supplier.ID
+                           where receipt.IsDelete != true && order.IsDelete != true
+                           orderby receipt.ID descending
+                           select new GoodsReceiptListVM
+                           {
+                               Id = receipt.ID,
+                               ReceiptNumber = receipt.ReceiptNumber,
+                               OrderNumber = order.OrderNumber,
+                               SupplierCode = supplier.Code,
+                               SupplierName = supplier.Name,
+                               ReceiptDate = receipt.ReceiptDate,
+                               DispatchNumber = receipt.DispatchNumber,
+                               LineCount = _context.PurGoodsReceiptLines.Count(x => x.GoodsReceiptId == receipt.ID && x.IsDelete != true),
+                               Status = receipt.Status,
+                               ActualFreightAmount = receipt.ActualFreightAmount,
+                               FreightCurrencyCode = receipt.FreightCurrencyCode
+                           }).ToListAsync(ct);
+        return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> YeniMalKabul(int orderId, CancellationToken ct)
+    {
+        ViewBag.Modul = "YeniSatinalma";
+        var model = new GoodsReceiptFormVM
+        {
+            PurchaseOrderId = orderId,
+            ReceiptDate = DateTime.Today,
+            DispatchDate = DateTime.Today,
+            FreightExchangeRateDate = DateTime.Today
+        };
+        if (!await FillGoodsReceiptFormAsync(model, ct)) return NotFound();
+        if (model.Status == PurGoodsReceiptStatus.Cancelled) return BadRequest();
+        return View("MalKabulFormu", model);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> YeniMalKabul(GoodsReceiptFormVM model, CancellationToken ct)
+    {
+        ViewBag.Modul = "YeniSatinalma";
+        var validLines = await ValidateGoodsReceiptFormAsync(model, null, ct);
+        if (!ModelState.IsValid)
+        {
+            await FillGoodsReceiptFormAsync(model, ct);
+            return View("MalKabulFormu", model);
+        }
+
+        var now = DateTime.Now;
+        var receipt = new PurGoodsReceipt
+        {
+            ReceiptNumber = $"MK-{now:yyyyMMddHHmmssfff}",
+            PurchaseOrderId = model.PurchaseOrderId,
+            Status = PurGoodsReceiptStatus.Recorded,
+            IsActive = true,
+            IsDelete = false,
+            CreateDate = now,
+            CreateUserID = CurrentUser
+        };
+        await SaveGoodsReceiptAsync(receipt, model, validLines, false, ct);
+        TempData["success"] = $"{receipt.ReceiptNumber} numaralı parçalı mal kabul kaydedildi. Miktarlar henüz kullanılabilir stoğa alınmadı.";
+        return RedirectToAction(nameof(MalKabulDetay), new { id = receipt.ID });
+    }
+
+    [HttpGet, Authorize(Roles = "Admin")]
+    public async Task<IActionResult> MalKabulDuzenle(int id, CancellationToken ct)
+    {
+        ViewBag.Modul = "YeniSatinalma";
+        var receipt = await _context.PurGoodsReceipts.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (receipt == null) return NotFound();
+        if (receipt.Status != PurGoodsReceiptStatus.Recorded)
+        {
+            TempData["error"] = "Karantina girişi yapılmış mal kabul doğrudan düzenlenemez. Önce stok hareketinin kontrollü olarak geri alınması gerekir.";
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+        var model = new GoodsReceiptFormVM
+        {
+            Id = receipt.ID,
+            ReceiptNumber = receipt.ReceiptNumber,
+            PurchaseOrderId = receipt.PurchaseOrderId,
+            Status = receipt.Status,
+            ReceiptDate = receipt.ReceiptDate,
+            DispatchNumber = receipt.DispatchNumber,
+            DispatchDate = receipt.DispatchDate,
+            InvoiceNumber = receipt.InvoiceNumber,
+            InvoiceDate = receipt.InvoiceDate,
+            CarrierName = receipt.CarrierName,
+            VehiclePlate = receipt.VehiclePlate,
+            TrackingNumber = receipt.TrackingNumber,
+            ActualFreightAmountInput = receipt.ActualFreightAmount?.ToString("0.######", CultureInfo.InvariantCulture),
+            ActualFreightVatRateInput = receipt.ActualFreightVatRate?.ToString("0.##", CultureInfo.InvariantCulture) ?? "20",
+            FreightCurrencyCode = receipt.FreightCurrencyCode,
+            FreightExchangeRateInput = receipt.FreightExchangeRate.ToString("0.######", CultureInfo.InvariantCulture),
+            FreightExchangeRateDate = receipt.FreightExchangeRateDate,
+            FreightExchangeRateSource = receipt.FreightExchangeRateSource,
+            Notes = receipt.Notes,
+            Lines = await _context.PurGoodsReceiptLines.AsNoTracking()
+                .Where(x => x.GoodsReceiptId == id && x.IsDelete != true)
+                .OrderBy(x => x.Sequence)
+                .Select(x => new GoodsReceiptFormLineVM
+                {
+                    Id = x.ID,
+                    Include = true,
+                    PurchaseOrderLineId = x.PurchaseOrderLineId,
+                    ReceivedQuantityInput = x.ReceivedQuantity.ToString("0.######", CultureInfo.InvariantCulture),
+                    LotNumber = x.LotNumber,
+                    ProductionDate = x.ProductionDate,
+                    ExpirationDate = x.ExpirationDate,
+                    Notes = x.Notes
+                }).ToListAsync(ct)
+        };
+        if (!await FillGoodsReceiptFormAsync(model, ct)) return NotFound();
+        return View("MalKabulFormu", model);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
+    public async Task<IActionResult> MalKabulDuzenle(GoodsReceiptFormVM model, CancellationToken ct)
+    {
+        ViewBag.Modul = "YeniSatinalma";
+        if (!model.Id.HasValue) return BadRequest();
+        var receipt = await _context.PurGoodsReceipts.FirstOrDefaultAsync(x => x.ID == model.Id && x.IsDelete != true, ct);
+        if (receipt == null) return NotFound();
+        if (receipt.Status != PurGoodsReceiptStatus.Recorded)
+        {
+            TempData["error"] = "Karantina girişi yapılmış mal kabul doğrudan düzenlenemez.";
+            return RedirectToAction(nameof(MalKabulDetay), new { id = receipt.ID });
+        }
+        if (receipt.PurchaseOrderId != model.PurchaseOrderId) return BadRequest();
+
+        var validLines = await ValidateGoodsReceiptFormAsync(model, receipt.ID, ct);
+        if (!ModelState.IsValid)
+        {
+            await FillGoodsReceiptFormAsync(model, ct);
+            return View("MalKabulFormu", model);
+        }
+
+        await SaveGoodsReceiptAsync(receipt, model, validLines, true, ct);
+        TempData["success"] = $"{receipt.ReceiptNumber} numaralı mal kabul kaydı güncellendi; sipariş teslim miktarları yeniden hesaplandı.";
+        return RedirectToAction(nameof(MalKabulDetay), new { id = receipt.ID });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> MalKabulDetay(int id, CancellationToken ct)
+    {
+        ViewBag.Modul = "YeniSatinalma";
+        var model = await (from receipt in _context.PurGoodsReceipts.AsNoTracking()
+                           join order in _context.PurPurchaseOrders.AsNoTracking() on receipt.PurchaseOrderId equals order.ID
+                           join supplier in _context.PurSuppliers.AsNoTracking() on order.SupplierId equals supplier.ID
+                           where receipt.ID == id && receipt.IsDelete != true
+                           select new GoodsReceiptDetailVM
+                           {
+                               Id = receipt.ID,
+                               ReceiptNumber = receipt.ReceiptNumber,
+                               PurchaseOrderId = order.ID,
+                               OrderNumber = order.OrderNumber,
+                               SupplierCode = supplier.Code,
+                               SupplierName = supplier.Name,
+                               ReceiptDate = receipt.ReceiptDate,
+                               DispatchNumber = receipt.DispatchNumber,
+                               DispatchDate = receipt.DispatchDate,
+                               InvoiceNumber = receipt.InvoiceNumber,
+                               InvoiceDate = receipt.InvoiceDate,
+                               Status = receipt.Status,
+                               CarrierName = receipt.CarrierName,
+                               VehiclePlate = receipt.VehiclePlate,
+                               TrackingNumber = receipt.TrackingNumber,
+                               ActualFreightAmount = receipt.ActualFreightAmount,
+                               ActualFreightVatRate = receipt.ActualFreightVatRate,
+                               FreightCurrencyCode = receipt.FreightCurrencyCode,
+                               FreightExchangeRate = receipt.FreightExchangeRate,
+                               FreightExchangeRateDate = receipt.FreightExchangeRateDate,
+                               FreightExchangeRateSource = receipt.FreightExchangeRateSource,
+                               QuarantineWarehouseId = receipt.QuarantineWarehouseId,
+                               QuarantineInventoryDocumentId = receipt.QuarantineInventoryDocumentId,
+                               QuarantineDate = receipt.QuarantineDate,
+                               QuarantineUserId = receipt.QuarantineUserId,
+                               Notes = receipt.Notes
+                           }).FirstOrDefaultAsync(ct);
+        if (model == null) return NotFound();
+        model.Lines = await (from line in _context.PurGoodsReceiptLines.AsNoTracking()
+                             join material in _context.PrdMaterials.AsNoTracking() on line.MaterialId equals material.ID
+                             join unit in _context.PrdUnits.AsNoTracking() on line.UnitId equals unit.ID
+                             where line.GoodsReceiptId == id && line.IsDelete != true
+                             orderby line.Sequence
+                             select new GoodsReceiptDetailLineVM
+                             {
+                                 Sequence = line.Sequence,
+                                 MaterialCode = material.Code,
+                                 MaterialName = material.Name,
+                                 ReceivedQuantity = line.ReceivedQuantity,
+                                 Unit = unit.Name,
+                                 LotRequired = material.Type == PrdMaterialType.RawMaterial || material.Type == PrdMaterialType.Packaging || material.RequiresLotTracking,
+                                 ExpirationDateRequired = material.RequiresExpirationDate,
+                                 LotNumber = line.LotNumber,
+                                 ProductionDate = line.ProductionDate,
+                                 ExpirationDate = line.ExpirationDate,
+                                 QuarantineStockLotId = line.QuarantineStockLotId,
+                                 Notes = line.Notes
+                             }).ToListAsync(ct);
+        model.QuarantineWarehouses = await _context.PrdWarehouses.AsNoTracking()
+            .Where(x => x.Type == PrdWarehouseType.Quarantine && x.IsActive != false && x.IsDelete != true)
+            .OrderBy(x => x.Code)
+            .Select(x => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = x.ID.ToString(), Text = x.Code + " - " + x.Name })
+            .ToListAsync(ct);
+        if (model.QuarantineWarehouses.Count == 1) model.QuarantineWarehouses[0].Selected = true;
+        if (model.QuarantineWarehouseId.HasValue)
+        {
+            var warehouse = await _context.PrdWarehouses.AsNoTracking().FirstOrDefaultAsync(x => x.ID == model.QuarantineWarehouseId, ct);
+            model.QuarantineWarehouseCode = warehouse?.Code;
+            model.QuarantineWarehouseName = warehouse?.Name;
+        }
+        if (model.QuarantineInventoryDocumentId.HasValue)
+            model.QuarantineDocumentNumber = await _context.PrdInventoryDocuments.AsNoTracking()
+                .Where(x => x.ID == model.QuarantineInventoryDocumentId)
+                .Select(x => x.DocumentNumber)
+                .FirstOrDefaultAsync(ct);
+        model.QualityInspectionCount = await _context.PurQualityInspections.AsNoTracking().CountAsync(x => x.GoodsReceiptId == id && x.IsDelete != true, ct);
+        model.PendingQualityInspectionCount = await _context.PurQualityInspections.AsNoTracking().CountAsync(x => x.GoodsReceiptId == id && x.IsDelete != true && (x.Status == PrdQualityControlStatus.Pending || x.Status == PrdQualityControlStatus.Sampled), ct);
+        return View(model);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
+    public async Task<IActionResult> MalKabulSil(int id, CancellationToken ct)
+    {
+        var receipt = await _context.PurGoodsReceipts.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (receipt == null) return NotFound();
+        if (receipt.Status != PurGoodsReceiptStatus.Recorded || receipt.QuarantineInventoryDocumentId.HasValue)
+        {
+            TempData["error"] = "Stok hareketi bulunan mal kabul silinemez. Önce karantina girişinin kontrollü geri alma işlemi yapılmalıdır.";
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+        var now = DateTime.Now;
+        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        var lines = await _context.PurGoodsReceiptLines.Where(x => x.GoodsReceiptId == id && x.IsDelete != true).ToListAsync(ct);
+        foreach (var line in lines) SoftDelete(line, now, CurrentUser);
+        SoftDelete(receipt, now, CurrentUser);
+        await _context.SaveChangesAsync(ct);
+        await RecalculatePurchaseOrderReceiptStateAsync(receipt.PurchaseOrderId, now, CurrentUser, ct);
+        await transaction.CommitAsync(ct);
+        TempData["success"] = $"{receipt.ReceiptNumber} silindi; sipariş teslim miktarları yeniden hesaplandı.";
+        return RedirectToAction(nameof(SiparisDetay), new { id = receipt.PurchaseOrderId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> KarantinayaAl(int id, int quarantineWarehouseId, CancellationToken ct)
+    {
+        var receipt = await _context.PurGoodsReceipts.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (receipt == null) return NotFound();
+        if (receipt.Status != PurGoodsReceiptStatus.Recorded || receipt.QuarantineInventoryDocumentId.HasValue)
+        {
+            TempData["error"] = "Bu mal kabul daha önce karantinaya alınmış veya artık bu işleme uygun değil.";
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+
+        var warehouse = await _context.PrdWarehouses.FirstOrDefaultAsync(x => x.ID == quarantineWarehouseId && x.Type == PrdWarehouseType.Quarantine && x.IsActive != false && x.IsDelete != true, ct);
+        if (warehouse == null)
+        {
+            TempData["error"] = "Aktif bir karantina deposu seçiniz.";
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+
+        var order = await _context.PurPurchaseOrders.FirstOrDefaultAsync(x => x.ID == receipt.PurchaseOrderId && x.IsDelete != true, ct);
+        if (order == null) return NotFound();
+        var rows = await (from receiptLine in _context.PurGoodsReceiptLines
+                          join orderLine in _context.PurPurchaseOrderLines on receiptLine.PurchaseOrderLineId equals orderLine.ID
+                          join material in _context.PrdMaterials on receiptLine.MaterialId equals material.ID
+                          where receiptLine.GoodsReceiptId == receipt.ID && receiptLine.IsDelete != true && orderLine.IsDelete != true
+                          orderby receiptLine.Sequence
+                          select new { ReceiptLine = receiptLine, OrderLine = orderLine, Material = material }).ToListAsync(ct);
+        if (rows.Count == 0)
+        {
+            TempData["error"] = "Karantinaya alınacak mal kabul satırı bulunamadı.";
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+
+        var validationErrors = new List<string>();
+        foreach (var row in rows)
+        {
+            var lotRequired = row.Material.Type is PrdMaterialType.RawMaterial or PrdMaterialType.Packaging || row.Material.RequiresLotTracking;
+            if (lotRequired && string.IsNullOrWhiteSpace(row.ReceiptLine.LotNumber))
+                validationErrors.Add($"{row.Material.Code} için lot numarası zorunludur.");
+            if (row.Material.RequiresExpirationDate && !row.ReceiptLine.ExpirationDate.HasValue)
+                validationErrors.Add($"{row.Material.Code} için son kullanma tarihi zorunludur.");
+        }
+        if (validationErrors.Count > 0)
+        {
+            TempData["error"] = string.Join(" ", validationErrors.Distinct());
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+
+        var lotKeys = rows.Select(x => new { x.ReceiptLine.MaterialId, LotNumber = x.ReceiptLine.LotNumber!.Trim() }).Distinct().ToList();
+        var materialIds = lotKeys.Select(x => x.MaterialId).Distinct().ToList();
+        var lotNumbers = lotKeys.Select(x => x.LotNumber).Distinct().ToList();
+        var existingLots = await _context.PrdStockLots
+            .Where(x => x.WarehouseId == warehouse.ID && materialIds.Contains(x.MaterialId) && lotNumbers.Contains(x.LotNumber) && x.IsDelete != true)
+            .ToListAsync(ct);
+        foreach (var row in rows)
+        {
+            var lotNumber = row.ReceiptLine.LotNumber!.Trim();
+            var existingLot = existingLots.FirstOrDefault(x => x.MaterialId == row.ReceiptLine.MaterialId && x.LotNumber == lotNumber);
+            if (existingLot == null) continue;
+            if (existingLot.ProductionDate.HasValue && row.ReceiptLine.ProductionDate.HasValue && existingLot.ProductionDate.Value.Date != row.ReceiptLine.ProductionDate.Value.Date)
+                validationErrors.Add($"{row.Material.Code} / {lotNumber} lotunun üretim tarihi mevcut stok lotuyla uyuşmuyor.");
+            if (existingLot.ExpirationDate.HasValue && row.ReceiptLine.ExpirationDate.HasValue && existingLot.ExpirationDate.Value.Date != row.ReceiptLine.ExpirationDate.Value.Date)
+                validationErrors.Add($"{row.Material.Code} / {lotNumber} lotunun SKT bilgisi mevcut stok lotuyla uyuşmuyor.");
+        }
+        if (validationErrors.Count > 0)
+        {
+            TempData["error"] = string.Join(" ", validationErrors.Distinct());
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+
+        var now = DateTime.Now;
+        var user = CurrentUser;
+        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        var document = new PrdInventoryDocument
+        {
+            DocumentNumber = $"PKAR-{receipt.ID}-{now:yyyyMMddHHmmssfff}",
+            Type = PrdInventoryDocumentType.PurchaseReceipt,
+            Status = PrdInventoryDocumentStatus.Posted,
+            DocumentDate = receipt.ReceiptDate.Date,
+            PostingDate = now,
+            PostedUserId = user,
+            TargetWarehouseId = warehouse.ID,
+            CurrencyCode = "TRY",
+            ExchangeRate = 1m,
+            TotalCost = rows.Sum(x => x.ReceiptLine.ReceivedQuantity * x.OrderLine.NetUnitPrice * order.ExchangeRate),
+            SourceDocumentType = "PurGoodsReceipt",
+            SourceDocumentId = receipt.ID,
+            Notes = $"{receipt.ReceiptNumber} / {receipt.DispatchNumber} karantina girişi",
+            IsActive = true,
+            IsDelete = false,
+            CreateDate = now,
+            CreateUserID = user
+        };
+        _context.PrdInventoryDocuments.Add(document);
+        await _context.SaveChangesAsync(ct);
+
+        var lotMap = existingLots.ToDictionary(x => $"{x.MaterialId}|{x.LotNumber}", StringComparer.OrdinalIgnoreCase);
+        var sequence = 0;
+        foreach (var row in rows)
+        {
+            var lotNumber = row.ReceiptLine.LotNumber!.Trim();
+            var key = $"{row.ReceiptLine.MaterialId}|{lotNumber}";
+            if (!lotMap.TryGetValue(key, out var lot))
+            {
+                lot = new PrdStockLot
+                {
+                    MaterialId = row.ReceiptLine.MaterialId,
+                    WarehouseId = warehouse.ID,
+                    LotNumber = lotNumber,
+                    ProductionDate = row.ReceiptLine.ProductionDate?.Date,
+                    ExpirationDate = row.ReceiptLine.ExpirationDate?.Date,
+                    IsActive = true,
+                    IsDelete = false,
+                    CreateDate = now,
+                    CreateUserID = user
+                };
+                _context.PrdStockLots.Add(lot);
+                await _context.SaveChangesAsync(ct);
+                lotMap[key] = lot;
+            }
+            else
+            {
+                if (!lot.ProductionDate.HasValue && row.ReceiptLine.ProductionDate.HasValue) lot.ProductionDate = row.ReceiptLine.ProductionDate.Value.Date;
+                if (!lot.ExpirationDate.HasValue && row.ReceiptLine.ExpirationDate.HasValue) lot.ExpirationDate = row.ReceiptLine.ExpirationDate.Value.Date;
+            }
+
+            var unitCostTry = row.OrderLine.NetUnitPrice * order.ExchangeRate;
+            var totalCostTry = unitCostTry * row.ReceiptLine.ReceivedQuantity;
+            var documentLine = new PrdInventoryDocumentLine
+            {
+                InventoryDocumentId = document.ID,
+                Sequence = ++sequence,
+                MaterialId = row.ReceiptLine.MaterialId,
+                UnitId = row.ReceiptLine.UnitId,
+                TargetStockLotId = lot.ID,
+                LotNumber = lotNumber,
+                ProductionDate = row.ReceiptLine.ProductionDate?.Date,
+                ExpirationDate = row.ReceiptLine.ExpirationDate?.Date,
+                Quantity = row.ReceiptLine.ReceivedQuantity,
+                OriginalUnitCost = row.OrderLine.NetUnitPrice,
+                CurrencyCode = order.CurrencyCode,
+                ExchangeRate = order.ExchangeRate,
+                UnitCost = unitCostTry,
+                TotalCost = totalCostTry,
+                CostSource = PrdStockCostSource.ApprovedOffer,
+                Notes = $"{receipt.ReceiptNumber} / {receipt.DispatchNumber}",
+                IsActive = true,
+                IsDelete = false,
+                CreateDate = now,
+                CreateUserID = user
+            };
+            _context.PrdInventoryDocumentLines.Add(documentLine);
+            await _context.SaveChangesAsync(ct);
+            _context.PrdStockMovements.Add(new PrdStockMovement
+            {
+                InventoryDocumentId = document.ID,
+                InventoryDocumentLineId = documentLine.ID,
+                MaterialId = row.ReceiptLine.MaterialId,
+                WarehouseId = warehouse.ID,
+                StockLotId = lot.ID,
+                Direction = PrdStockDirection.In,
+                MovementType = PrdStockMovementType.Purchase,
+                Quantity = row.ReceiptLine.ReceivedQuantity,
+                UnitId = row.ReceiptLine.UnitId,
+                OriginalUnitCost = row.OrderLine.NetUnitPrice,
+                CurrencyCode = order.CurrencyCode,
+                ExchangeRate = order.ExchangeRate,
+                UnitCost = unitCostTry,
+                TotalCost = totalCostTry,
+                CostSource = PrdStockCostSource.ApprovedOffer,
+                MovementDate = receipt.ReceiptDate.Date,
+                DocumentNumber = document.DocumentNumber,
+                DocumentType = PrdStockDocumentType.InventoryDocument,
+                DocumentId = document.ID,
+                Description = document.Notes,
+                IsActive = true,
+                IsDelete = false,
+                CreateDate = now,
+                CreateUserID = user
+            });
+            row.ReceiptLine.QuarantineStockLotId = lot.ID;
+            row.ReceiptLine.QuarantineInventoryDocumentLineId = documentLine.ID;
+            row.ReceiptLine.UpdateDate = now;
+            row.ReceiptLine.UpdateUserID = user;
+        }
+        receipt.Status = PurGoodsReceiptStatus.InQuarantine;
+        receipt.QuarantineWarehouseId = warehouse.ID;
+        receipt.QuarantineInventoryDocumentId = document.ID;
+        receipt.QuarantineDate = now;
+        receipt.QuarantineUserId = user;
+        receipt.UpdateDate = now;
+        receipt.UpdateUserID = user;
+        await _context.SaveChangesAsync(ct);
+        await CreateMissingQualityInspectionsAsync(receipt.ID, now, user, ct);
+        await transaction.CommitAsync(ct);
+
+        TempData["success"] = $"{receipt.ReceiptNumber} içindeki {rows.Count} satır {warehouse.Code} - {warehouse.Name} karantina deposuna alındı. Bu stoklar kalite onayı verilene kadar MRP tarafından kullanılmaz.";
+        return RedirectToAction(nameof(MalKabulDetay), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> KaliteyeGonder(int id, CancellationToken ct)
+    {
+        var receipt = await _context.PurGoodsReceipts.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (receipt == null) return NotFound();
+        if (!receipt.QuarantineWarehouseId.HasValue || receipt.Status != PurGoodsReceiptStatus.InQuarantine)
+        {
+            TempData["error"] = "Yalnızca karantina deposuna alınmış mal kabuller kalite analizine gönderilebilir.";
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+        var created = await CreateMissingQualityInspectionsAsync(receipt.ID, DateTime.Now, CurrentUser, ct);
+        await _context.SaveChangesAsync(ct);
+        TempData["success"] = created > 0 ? $"{created} lot için kalite analiz kaydı oluşturuldu." : "Bu mal kabulün kalite analiz kayıtları zaten mevcut.";
+        return RedirectToAction("Analizler", "KaliteYonetimi", new { goodsReceiptId = id });
+    }
+
+    private async Task<int> CreateMissingQualityInspectionsAsync(int goodsReceiptId, DateTime now, string user, CancellationToken ct)
+    {
+        var receipt = await _context.PurGoodsReceipts.AsNoTracking().FirstAsync(x => x.ID == goodsReceiptId, ct);
+        if (!receipt.QuarantineWarehouseId.HasValue) return 0;
+        var existingLineIds = await _context.PurQualityInspections.AsNoTracking()
+            .Where(x => x.GoodsReceiptId == goodsReceiptId && x.IsDelete != true)
+            .Select(x => x.GoodsReceiptLineId)
+            .ToListAsync(ct);
+        var lines = await _context.PurGoodsReceiptLines.AsNoTracking()
+            .Where(x => x.GoodsReceiptId == goodsReceiptId && x.IsDelete != true && x.QuarantineStockLotId.HasValue && !existingLineIds.Contains(x.ID))
+            .OrderBy(x => x.Sequence)
+            .ToListAsync(ct);
+        foreach (var line in lines)
+        {
+            _context.PurQualityInspections.Add(new PurQualityInspection
+            {
+                InspectionNumber = $"KA-{goodsReceiptId}-{line.ID}-{now:yyyyMMddHHmmssfff}",
+                GoodsReceiptId = goodsReceiptId,
+                GoodsReceiptLineId = line.ID,
+                MaterialId = line.MaterialId,
+                StockLotId = line.QuarantineStockLotId!.Value,
+                WarehouseId = receipt.QuarantineWarehouseId.Value,
+                Status = PrdQualityControlStatus.Pending,
+                IsActive = true,
+                IsDelete = false,
+                CreateDate = now,
+                CreateUserID = user
+            });
+        }
+        if (lines.Count > 0) await _context.SaveChangesAsync(ct);
+        return lines.Count;
+    }
+
+    private sealed record ValidGoodsReceiptLine(GoodsReceiptFormLineVM Input, PurPurchaseOrderLine OrderLine, decimal Quantity);
+
+    private async Task<List<ValidGoodsReceiptLine>> ValidateGoodsReceiptFormAsync(GoodsReceiptFormVM model, int? currentReceiptId, CancellationToken ct)
+    {
+        model.Lines ??= [];
+        model.DispatchNumber = model.DispatchNumber?.Trim() ?? string.Empty;
+        if (model.ReceiptDate == default) ModelState.AddModelError(nameof(model.ReceiptDate), "Mal kabul tarihi zorunludur.");
+        if (string.IsNullOrWhiteSpace(model.DispatchNumber)) ModelState.AddModelError(nameof(model.DispatchNumber), "İrsaliye numarası zorunludur.");
+        if (model.DispatchDate.HasValue && model.DispatchDate.Value.Date > model.ReceiptDate.Date)
+            ModelState.AddModelError(nameof(model.DispatchDate), "İrsaliye tarihi mal kabul tarihinden sonra olamaz.");
+        if (model.InvoiceDate.HasValue && string.IsNullOrWhiteSpace(model.InvoiceNumber))
+            ModelState.AddModelError(nameof(model.InvoiceNumber), "Fatura tarihi girildiğinde fatura numarası da girilmelidir.");
+        if (await _context.PurGoodsReceipts.AsNoTracking().AnyAsync(x => x.PurchaseOrderId == model.PurchaseOrderId && x.DispatchNumber == model.DispatchNumber && x.IsDelete != true && (!currentReceiptId.HasValue || x.ID != currentReceiptId.Value), ct))
+            ModelState.AddModelError(nameof(model.DispatchNumber), "Bu siparişte aynı irsaliye numarasıyla daha önce mal kabul yapılmış.");
+
+        var order = await _context.PurPurchaseOrders.AsNoTracking().FirstOrDefaultAsync(x => x.ID == model.PurchaseOrderId && x.IsDelete != true, ct);
+        if (order == null || order.Status == PurPurchaseOrderStatus.Cancelled)
+            ModelState.AddModelError(nameof(model.PurchaseOrderId), "Açık bir satınalma siparişi bulunamadı.");
+
+        var selected = model.Lines.Where(x => x.Include).ToList();
+        if (selected.Count == 0) ModelState.AddModelError(string.Empty, "Teslim alınan en az bir sipariş satırını işaretleyiniz.");
+        if (selected.GroupBy(x => x.PurchaseOrderLineId).Any(x => x.Count() > 1))
+            ModelState.AddModelError(string.Empty, "Aynı sipariş satırı bu mal kabulde birden fazla kez seçilemez.");
+
+        var orderLineIds = selected.Select(x => x.PurchaseOrderLineId).Distinct().ToList();
+        var orderLines = await _context.PurPurchaseOrderLines
+            .Where(x => orderLineIds.Contains(x.ID) && x.PurchaseOrderId == model.PurchaseOrderId && x.IsDelete != true && x.Status != PurPurchaseOrderLineStatus.Cancelled)
+            .ToDictionaryAsync(x => x.ID, ct);
+        var otherReceived = await (from line in _context.PurGoodsReceiptLines.AsNoTracking()
+                                   join receipt in _context.PurGoodsReceipts.AsNoTracking() on line.GoodsReceiptId equals receipt.ID
+                                   where orderLineIds.Contains(line.PurchaseOrderLineId) && line.IsDelete != true && receipt.IsDelete != true &&
+                                         receipt.Status != PurGoodsReceiptStatus.Cancelled && (!currentReceiptId.HasValue || receipt.ID != currentReceiptId.Value)
+                                   group line by line.PurchaseOrderLineId into grouped
+                                   select new { grouped.Key, Quantity = grouped.Sum(x => x.ReceivedQuantity) })
+            .ToDictionaryAsync(x => x.Key, x => x.Quantity, ct);
+        var materials = await _context.PrdMaterials.AsNoTracking()
+            .Where(x => orderLines.Values.Select(y => y.MaterialId).Contains(x.ID))
+            .ToDictionaryAsync(x => x.ID, ct);
+        var result = new List<ValidGoodsReceiptLine>();
+        foreach (var input in selected)
+        {
+            var index = model.Lines.IndexOf(input);
+            if (!orderLines.TryGetValue(input.PurchaseOrderLineId, out var orderLine))
+            {
+                ModelState.AddModelError($"Lines[{index}].Include", "Sipariş satırı artık mal kabul için uygun değil.");
+                continue;
+            }
+            otherReceived.TryGetValue(orderLine.ID, out var previouslyReceived);
+            var remaining = Math.Max(0, orderLine.OrderedQuantity - previouslyReceived);
+            if (!TryParseDecimal(input.ReceivedQuantityInput, out var quantity) || quantity <= 0 || quantity > remaining)
+            {
+                ModelState.AddModelError($"Lines[{index}].ReceivedQuantityInput", $"Miktar sıfırdan büyük ve kalan {remaining:0.######} miktarı aşmamalıdır.");
+                continue;
+            }
+            if (materials.TryGetValue(orderLine.MaterialId, out var material))
+            {
+                if ((material.Type is PrdMaterialType.RawMaterial or PrdMaterialType.Packaging || material.RequiresLotTracking) && string.IsNullOrWhiteSpace(input.LotNumber))
+                    ModelState.AddModelError($"Lines[{index}].LotNumber", "Bu malzeme için lot numarası zorunludur.");
+                if (material.RequiresExpirationDate && !input.ExpirationDate.HasValue)
+                    ModelState.AddModelError($"Lines[{index}].ExpirationDate", "Bu malzeme için son kullanma tarihi zorunludur.");
+            }
+            if (input.ProductionDate.HasValue && input.ExpirationDate.HasValue && input.ExpirationDate.Value.Date < input.ProductionDate.Value.Date)
+                ModelState.AddModelError($"Lines[{index}].ExpirationDate", "Son kullanma tarihi üretim tarihinden önce olamaz.");
+            result.Add(new ValidGoodsReceiptLine(input, orderLine, quantity));
+        }
+
+        model.FreightCurrencyCode = model.FreightCurrencyCode?.Trim().ToUpperInvariant() ?? "TRY";
+        if (!string.IsNullOrWhiteSpace(model.ActualFreightAmountInput))
+        {
+            if (!TryParseDecimal(model.ActualFreightAmountInput, out var freightAmount) || freightAmount < 0)
+                ModelState.AddModelError(nameof(model.ActualFreightAmountInput), "Gerçekleşen nakliye tutarı sıfır veya daha büyük olmalıdır.");
+            if (!TryParseDecimal(model.ActualFreightVatRateInput, out var freightVat) || freightVat < 0 || freightVat > 100)
+                ModelState.AddModelError(nameof(model.ActualFreightVatRateInput), "Nakliye KDV oranı 0 ile 100 arasında olmalıdır.");
+            if (!new[] { "TRY", "USD", "EUR", "GBP" }.Contains(model.FreightCurrencyCode))
+                ModelState.AddModelError(nameof(model.FreightCurrencyCode), "Geçerli bir nakliye para birimi seçiniz.");
+            if (!TryParseDecimal(model.FreightExchangeRateInput, out var freightRate) || freightRate <= 0)
+                ModelState.AddModelError(nameof(model.FreightExchangeRateInput), "Nakliye döviz kuru sıfırdan büyük olmalıdır.");
+            if (!model.FreightExchangeRateDate.HasValue)
+                ModelState.AddModelError(nameof(model.FreightExchangeRateDate), "Nakliye kur tarihi zorunludur.");
+        }
+        return result;
+    }
+
+    private async Task<bool> FillGoodsReceiptFormAsync(GoodsReceiptFormVM model, CancellationToken ct)
+    {
+        var header = await (from order in _context.PurPurchaseOrders.AsNoTracking()
+                            join supplier in _context.PurSuppliers.AsNoTracking() on order.SupplierId equals supplier.ID
+                            where order.ID == model.PurchaseOrderId && order.IsDelete != true
+                            select new { order.OrderNumber, order.Status, supplier.Code, supplier.Name, order.CarrierName, order.TrackingNumber }).FirstOrDefaultAsync(ct);
+        if (header == null) return false;
+        model.OrderNumber = header.OrderNumber;
+        model.SupplierCode = header.Code;
+        model.SupplierName = header.Name;
+        if (!model.Id.HasValue)
+        {
+            model.CarrierName ??= header.CarrierName;
+            model.TrackingNumber ??= header.TrackingNumber;
+        }
+
+        var currentReceiptId = model.Id;
+        var received = await (from line in _context.PurGoodsReceiptLines.AsNoTracking()
+                              join receipt in _context.PurGoodsReceipts.AsNoTracking() on line.GoodsReceiptId equals receipt.ID
+                              where receipt.PurchaseOrderId == model.PurchaseOrderId && receipt.IsDelete != true && line.IsDelete != true &&
+                                    receipt.Status != PurGoodsReceiptStatus.Cancelled && (!currentReceiptId.HasValue || receipt.ID != currentReceiptId.Value)
+                              group line by line.PurchaseOrderLineId into grouped
+                              select new { grouped.Key, Quantity = grouped.Sum(x => x.ReceivedQuantity) })
+            .ToDictionaryAsync(x => x.Key, x => x.Quantity, ct);
+        var metadata = await (from line in _context.PurPurchaseOrderLines.AsNoTracking()
+                              join material in _context.PrdMaterials.AsNoTracking() on line.MaterialId equals material.ID
+                              join unit in _context.PrdUnits.AsNoTracking() on line.UnitId equals unit.ID
+                              where line.PurchaseOrderId == model.PurchaseOrderId && line.IsDelete != true && line.Status != PurPurchaseOrderLineStatus.Cancelled
+                              orderby line.Sequence
+                              select new
+                              {
+                                  Line = line,
+                                  material.Code,
+                                  material.Name,
+                                  Unit = unit.Name,
+                                  RequiresLotTracking = material.Type == PrdMaterialType.RawMaterial || material.Type == PrdMaterialType.Packaging || material.RequiresLotTracking,
+                                  material.RequiresExpirationDate
+                              }).ToListAsync(ct);
+        var posted = model.Lines.GroupBy(x => x.PurchaseOrderLineId).ToDictionary(x => x.Key, x => x.First());
+        var rebuilt = new List<GoodsReceiptFormLineVM>();
+        foreach (var item in metadata)
+        {
+            received.TryGetValue(item.Line.ID, out var previous);
+            if (!posted.TryGetValue(item.Line.ID, out var line))
+                line = new GoodsReceiptFormLineVM { PurchaseOrderLineId = item.Line.ID };
+            line.MaterialCode = item.Code;
+            line.MaterialName = item.Name;
+            line.Unit = item.Unit;
+            line.OrderedQuantity = item.Line.OrderedQuantity;
+            line.PreviouslyReceivedQuantity = previous;
+            line.RemainingQuantity = Math.Max(0, item.Line.OrderedQuantity - previous);
+            line.RequiresLotTracking = item.RequiresLotTracking;
+            line.RequiresExpirationDate = item.RequiresExpirationDate;
+            rebuilt.Add(line);
+        }
+        model.Lines = rebuilt;
+        await FillGoodsReceiptCurrencyOptionsAsync(model);
+        return true;
+    }
+
+    private async Task FillGoodsReceiptCurrencyOptionsAsync(GoodsReceiptFormVM model)
+    {
+        model.Currencies = new[] { "TRY", "USD", "EUR", "GBP" }
+            .Select(x => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = x, Text = x })
+            .ToList();
+        model.CurrentRates = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase) { ["TRY"] = 1m };
+        model.CurrentRateDate = DateTime.Today;
+        try
+        {
+            var rates = await _tcmbService.DovizKuruGetir();
+            if (TryParseDecimal(rates.UsdSatis, out var usdRate) && usdRate > 0) model.CurrentRates["USD"] = usdRate;
+            if (TryParseDecimal(rates.EurSatis, out var eurRate) && eurRate > 0) model.CurrentRates["EUR"] = eurRate;
+            if (rates.Tarih != default) model.CurrentRateDate = rates.Tarih.Date;
+        }
+        catch
+        {
+            model.RateLoadWarning = "TCMB kurları şu anda alınamadı. TRY dışındaki gerçekleşen nakliye için kuru manuel girebilirsiniz.";
+        }
+    }
+
+    private async Task SaveGoodsReceiptAsync(PurGoodsReceipt receipt, GoodsReceiptFormVM model, List<ValidGoodsReceiptLine> validLines, bool isEdit, CancellationToken ct)
+    {
+        var now = DateTime.Now;
+        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        receipt.ReceiptDate = model.ReceiptDate.Date;
+        receipt.DispatchNumber = model.DispatchNumber.Trim();
+        receipt.DispatchDate = model.DispatchDate?.Date;
+        receipt.InvoiceNumber = Clean(model.InvoiceNumber);
+        receipt.InvoiceDate = model.InvoiceDate?.Date;
+        receipt.CarrierName = Clean(model.CarrierName);
+        receipt.VehiclePlate = Clean(model.VehiclePlate);
+        receipt.TrackingNumber = Clean(model.TrackingNumber);
+        receipt.Notes = Clean(model.Notes);
+        if (string.IsNullOrWhiteSpace(model.ActualFreightAmountInput))
+        {
+            receipt.ActualFreightAmount = null;
+            receipt.ActualFreightVatRate = null;
+            receipt.FreightCurrencyCode = "TRY";
+            receipt.FreightExchangeRate = 1m;
+            receipt.FreightExchangeRateDate = model.ReceiptDate.Date;
+            receipt.FreightExchangeRateSource = "Sabit";
+        }
+        else
+        {
+            TryParseDecimal(model.ActualFreightAmountInput, out var freightAmount);
+            TryParseDecimal(model.ActualFreightVatRateInput, out var freightVat);
+            TryParseDecimal(model.FreightExchangeRateInput, out var freightRate);
+            receipt.ActualFreightAmount = freightAmount;
+            receipt.ActualFreightVatRate = freightVat;
+            receipt.FreightCurrencyCode = model.FreightCurrencyCode;
+            receipt.FreightExchangeRate = model.FreightCurrencyCode == "TRY" ? 1m : freightRate;
+            receipt.FreightExchangeRateDate = model.FreightExchangeRateDate?.Date;
+            receipt.FreightExchangeRateSource = model.FreightCurrencyCode == "TRY" ? "Sabit" :
+                (string.Equals(model.FreightExchangeRateSource, "TCMB", StringComparison.OrdinalIgnoreCase) ? "TCMB" : "Manuel");
+        }
+        if (isEdit)
+        {
+            receipt.UpdateDate = now;
+            receipt.UpdateUserID = CurrentUser;
+            var oldLines = await _context.PurGoodsReceiptLines.Where(x => x.GoodsReceiptId == receipt.ID && x.IsDelete != true).ToListAsync(ct);
+            foreach (var oldLine in oldLines) SoftDelete(oldLine, now, CurrentUser);
+        }
+        else
+        {
+            _context.PurGoodsReceipts.Add(receipt);
+            await _context.SaveChangesAsync(ct);
+        }
+
+        var sequence = 0;
+        foreach (var item in validLines)
+        {
+            _context.PurGoodsReceiptLines.Add(new PurGoodsReceiptLine
+            {
+                GoodsReceiptId = receipt.ID,
+                PurchaseOrderLineId = item.OrderLine.ID,
+                Sequence = ++sequence,
+                MaterialId = item.OrderLine.MaterialId,
+                UnitId = item.OrderLine.UnitId,
+                ReceivedQuantity = item.Quantity,
+                LotNumber = Clean(item.Input.LotNumber),
+                ProductionDate = item.Input.ProductionDate?.Date,
+                ExpirationDate = item.Input.ExpirationDate?.Date,
+                Notes = Clean(item.Input.Notes),
+                IsActive = true,
+                IsDelete = false,
+                CreateDate = now,
+                CreateUserID = CurrentUser
+            });
+        }
+        await _context.SaveChangesAsync(ct);
+        await RecalculatePurchaseOrderReceiptStateAsync(receipt.PurchaseOrderId, now, CurrentUser, ct);
+        await transaction.CommitAsync(ct);
+    }
+
+    private async Task RecalculatePurchaseOrderReceiptStateAsync(int orderId, DateTime now, string user, CancellationToken ct)
+    {
+        var order = await _context.PurPurchaseOrders.FirstAsync(x => x.ID == orderId, ct);
+        var orderLines = await _context.PurPurchaseOrderLines.Where(x => x.PurchaseOrderId == orderId && x.IsDelete != true && x.Status != PurPurchaseOrderLineStatus.Cancelled).ToListAsync(ct);
+        var received = await (from line in _context.PurGoodsReceiptLines.AsNoTracking()
+                              join receipt in _context.PurGoodsReceipts.AsNoTracking() on line.GoodsReceiptId equals receipt.ID
+                              where receipt.PurchaseOrderId == orderId && receipt.IsDelete != true && receipt.Status != PurGoodsReceiptStatus.Cancelled && line.IsDelete != true
+                              group line by line.PurchaseOrderLineId into grouped
+                              select new { grouped.Key, Quantity = grouped.Sum(x => x.ReceivedQuantity) })
+            .ToDictionaryAsync(x => x.Key, x => x.Quantity, ct);
+        foreach (var line in orderLines)
+        {
+            line.ReceivedQuantity = Math.Min(line.OrderedQuantity, received.GetValueOrDefault(line.ID));
+            line.Status = line.ReceivedQuantity >= line.OrderedQuantity
+                ? PurPurchaseOrderLineStatus.Received
+                : line.ReceivedQuantity > 0 ? PurPurchaseOrderLineStatus.PartiallyReceived : PurPurchaseOrderLineStatus.Open;
+            line.UpdateDate = now;
+            line.UpdateUserID = user;
+        }
+        order.Status = orderLines.Count > 0 && orderLines.All(x => x.Status == PurPurchaseOrderLineStatus.Received)
+            ? PurPurchaseOrderStatus.Received
+            : orderLines.Any(x => x.ReceivedQuantity > 0) ? PurPurchaseOrderStatus.PartiallyReceived : PurPurchaseOrderStatus.Open;
+        order.UpdateDate = now;
+        order.UpdateUserID = user;
+        await _context.SaveChangesAsync(ct);
+    }
+
     private string CurrentUser => User.Identity?.Name ?? "system";
+
+    private Task<bool> HasPostedGoodsReceiptForOrderAsync(int orderId, CancellationToken ct) =>
+        _context.PurGoodsReceipts.AsNoTracking().AnyAsync(x => x.PurchaseOrderId == orderId && x.IsDelete != true && x.QuarantineInventoryDocumentId.HasValue, ct);
+
+    private Task<bool> HasPostedGoodsReceiptForQuotationAsync(int quotationId, CancellationToken ct) =>
+        (from receipt in _context.PurGoodsReceipts.AsNoTracking()
+         join order in _context.PurPurchaseOrders.AsNoTracking() on receipt.PurchaseOrderId equals order.ID
+         where order.SourceQuotationId == quotationId && order.IsDelete != true && receipt.IsDelete != true && receipt.QuarantineInventoryDocumentId.HasValue
+         select receipt.ID).AnyAsync(ct);
+
+    private Task<bool> HasPostedGoodsReceiptForRequestAsync(int requestId, CancellationToken ct) =>
+        (from receipt in _context.PurGoodsReceipts.AsNoTracking()
+         join order in _context.PurPurchaseOrders.AsNoTracking() on receipt.PurchaseOrderId equals order.ID
+         join quotation in _context.PurSupplierQuotations.AsNoTracking() on order.SourceQuotationId equals quotation.ID
+         where quotation.PurchaseRequestId == requestId && quotation.IsDelete != true && order.IsDelete != true && receipt.IsDelete != true && receipt.QuarantineInventoryDocumentId.HasValue
+         select receipt.ID).AnyAsync(ct);
+    private bool IsAdmin => User.IsInRole("Admin");
     private bool CanApproveRequests => User.IsInRole("Admin") || User.HasClaim("Authorize", "TalepKabul");
     private bool CanApproveQuotations => User.IsInRole("Admin") || User.HasClaim("Authorize", "TeklifKabul");
-    private bool CanEditRequest(PurPurchaseRequest request) => User.IsInRole("Admin") || string.Equals(request.RequestedUserId, CurrentUser, StringComparison.OrdinalIgnoreCase);
-    private bool CanEditQuotation(PurSupplierQuotation quotation) => User.IsInRole("Admin") || string.Equals(quotation.CreateUserID, CurrentUser, StringComparison.OrdinalIgnoreCase);
+    private bool CanEditRequest(PurPurchaseRequest request) => IsAdmin;
+    private bool CanEditQuotation(PurSupplierQuotation quotation) => IsAdmin;
+    private bool CanSubmitRequest(PurPurchaseRequest request) => IsAdmin || string.Equals(request.RequestedUserId, CurrentUser, StringComparison.OrdinalIgnoreCase);
+    private bool CanSubmitQuotation(PurSupplierQuotation quotation) => IsAdmin || string.Equals(quotation.CreateUserID, CurrentUser, StringComparison.OrdinalIgnoreCase);
     private IActionResult RedirectAfterQuotationDecision(QuotationLineDecisionVM input) =>
         input.ReturnToComparison && input.RequestId > 0
             ? RedirectToAction(nameof(TeklifKarsilastir), new { requestId = input.RequestId })
@@ -962,7 +2034,8 @@ public sealed class SatinalmaYonetimiController : Controller
                 Notes = x.Notes
             }).FirstOrDefaultAsync(ct);
         if (model == null) return null;
-        model.CanEdit = User.IsInRole("Admin") || string.Equals(model.RequestedUserId, CurrentUser, StringComparison.OrdinalIgnoreCase);
+        model.CanEdit = IsAdmin;
+        model.CanSubmit = IsAdmin || string.Equals(model.RequestedUserId, CurrentUser, StringComparison.OrdinalIgnoreCase);
         model.CanApprove = CanApproveRequests;
         model.Lines = await (from line in _context.PurPurchaseRequestLines.AsNoTracking()
                              join material in _context.PrdMaterials.AsNoTracking() on line.MaterialId equals material.ID
@@ -1058,6 +2131,7 @@ public sealed class SatinalmaYonetimiController : Controller
         {
             Id = quotation?.ID ?? 0, PurchaseRequestId = request.ID, RequestNumber = request.RequestNumber,
             QuotationNumber = quotation?.QuotationNumber ?? string.Empty, SupplierId = quotation?.SupplierId ?? 0,
+            Status = quotation?.Status ?? PurSupplierQuotationStatus.Draft,
             SupplierQuotationNumber = quotation?.SupplierQuotationNumber, QuotationDate = quotation?.QuotationDate ?? DateTime.Today,
             ValidUntil = quotation?.ValidUntil, CurrencyCode = quotation?.CurrencyCode ?? "TRY",
             ExchangeRateInput = quotation?.ExchangeRate.ToString("0.######", CultureInfo.InvariantCulture) ?? "1",
@@ -1089,9 +2163,16 @@ public sealed class SatinalmaYonetimiController : Controller
             : await _context.PurSupplierQuotationLines.AsNoTracking()
                 .Where(x => x.SupplierQuotationId == quotation.ID && x.IsDelete != true)
                 .ToDictionaryAsync(x => x.PurchaseRequestLineId, ct);
+        var ownOrderIds = quotation == null
+            ? new List<int>()
+            : await _context.PurPurchaseOrders.AsNoTracking()
+                .Where(x => x.SourceQuotationId == quotation.ID && x.IsDelete != true)
+                .Select(x => x.ID)
+                .ToListAsync(ct);
         var ordered = await _context.PurPurchaseOrderLines.AsNoTracking()
             .Where(x => requestLineIds.Contains(x.PurchaseRequestLineId) &&
-                        x.IsDelete != true && x.Status != PurPurchaseOrderLineStatus.Cancelled)
+                        x.IsDelete != true && x.Status != PurPurchaseOrderLineStatus.Cancelled &&
+                        !ownOrderIds.Contains(x.PurchaseOrderId))
             .GroupBy(x => x.PurchaseRequestLineId)
             .Select(x => new { x.Key, Quantity = x.Sum(y => y.OrderedQuantity) })
             .ToDictionaryAsync(x => x.Key, x => x.Quantity, ct);
@@ -1157,6 +2238,40 @@ public sealed class SatinalmaYonetimiController : Controller
         }
     }
 
+    private async Task FillPurchaseOrderTransportationOptionsAsync(PurchaseOrderTransportationFormVM model, CancellationToken ct)
+    {
+        model.TransportationTypes = Enum.GetValues<PurTransportationType>()
+            .Select(x => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = ((int)x).ToString(), Text = x.ToTurkish() })
+            .ToList();
+        model.FreightPaymentTypes = Enum.GetValues<PurFreightPaymentType>()
+            .Select(x => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = ((int)x).ToString(), Text = x.ToTurkish() })
+            .ToList();
+        model.Warehouses = await _context.PrdWarehouses.AsNoTracking()
+            .Where(x => x.IsDelete != true && x.IsActive != false)
+            .OrderBy(x => x.Code)
+            .Select(x => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = x.ID.ToString(),
+                Text = x.Code + " - " + x.Name
+            }).ToListAsync(ct);
+        model.Currencies = new[] { "TRY", "USD", "EUR", "GBP" }
+            .Select(x => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = x, Text = x })
+            .ToList();
+        model.CurrentRates = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase) { ["TRY"] = 1m };
+        model.CurrentRateDate = DateTime.Today;
+        try
+        {
+            var rates = await _tcmbService.DovizKuruGetir();
+            if (TryParseDecimal(rates.UsdSatis, out var usdRate) && usdRate > 0) model.CurrentRates["USD"] = usdRate;
+            if (TryParseDecimal(rates.EurSatis, out var eurRate) && eurRate > 0) model.CurrentRates["EUR"] = eurRate;
+            if (rates.Tarih != default) model.CurrentRateDate = rates.Tarih.Date;
+        }
+        catch
+        {
+            model.RateLoadWarning = "TCMB kurları şu anda alınamadı. TRY dışındaki nakliye bedeli için kuru manuel girebilirsiniz.";
+        }
+    }
+
     private sealed record ValidQuotationLine(SupplierQuotationFormLineVM Input, PurPurchaseRequestLine RequestLine, decimal Quantity, decimal UnitPrice, decimal DiscountRate, decimal VatRate);
 
     private async Task<List<ValidQuotationLine>> ValidateQuotationFormAsync(SupplierQuotationFormVM model, CancellationToken ct)
@@ -1192,7 +2307,13 @@ public sealed class SatinalmaYonetimiController : Controller
         if (selected.Count == 0) ModelState.AddModelError(string.Empty, "Teklife en az bir talep satırı ekleyiniz.");
         var requestLineIds = selected.Select(x => x.PurchaseRequestLineId).Distinct().ToList();
         var requestLines = await _context.PurPurchaseRequestLines.Where(x => requestLineIds.Contains(x.ID) && x.PurchaseRequestId == model.PurchaseRequestId && x.IsDelete != true).ToDictionaryAsync(x => x.ID, ct);
-        var ordered = await _context.PurPurchaseOrderLines.AsNoTracking().Where(x => requestLineIds.Contains(x.PurchaseRequestLineId) && x.IsDelete != true && x.Status != PurPurchaseOrderLineStatus.Cancelled)
+        var ownOrderIds = model.Id <= 0
+            ? new List<int>()
+            : await _context.PurPurchaseOrders.AsNoTracking()
+                .Where(x => x.SourceQuotationId == model.Id && x.IsDelete != true)
+                .Select(x => x.ID)
+                .ToListAsync(ct);
+        var ordered = await _context.PurPurchaseOrderLines.AsNoTracking().Where(x => requestLineIds.Contains(x.PurchaseRequestLineId) && x.IsDelete != true && x.Status != PurPurchaseOrderLineStatus.Cancelled && !ownOrderIds.Contains(x.PurchaseOrderId))
             .GroupBy(x => x.PurchaseRequestLineId).Select(x => new { x.Key, Quantity = x.Sum(y => y.OrderedQuantity) }).ToDictionaryAsync(x => x.Key, x => x.Quantity, ct);
         var result = new List<ValidQuotationLine>();
         foreach (var input in selected)
@@ -1291,6 +2412,7 @@ public sealed class SatinalmaYonetimiController : Controller
         }
         var quotationEntity = await _context.PurSupplierQuotations.AsNoTracking().FirstAsync(x => x.ID == id, ct);
         model.CanEdit = CanEditQuotation(quotationEntity);
+        model.CanSubmit = CanSubmitQuotation(quotationEntity);
         model.CanApprove = CanApproveQuotations;
         return model;
     }
@@ -1334,15 +2456,31 @@ public sealed class SatinalmaYonetimiController : Controller
         var lines = await _context.PurPurchaseRequestLines.Where(x => x.PurchaseRequestId == requestId && x.IsDelete != true).ToListAsync(ct);
         var ordered = await _context.PurPurchaseOrderLines.AsNoTracking().Where(x => lines.Select(l => l.ID).Contains(x.PurchaseRequestLineId) && x.IsDelete != true && x.Status != PurPurchaseOrderLineStatus.Cancelled)
             .GroupBy(x => x.PurchaseRequestLineId).Select(x => new { x.Key, Quantity = x.Sum(y => y.OrderedQuantity) }).ToDictionaryAsync(x => x.Key, x => x.Quantity, ct);
+        var quotedRequestLineIds = await _context.PurSupplierQuotationLines.AsNoTracking()
+            .Where(x => lines.Select(l => l.ID).Contains(x.PurchaseRequestLineId) && x.IsDelete != true)
+            .Select(x => x.PurchaseRequestLineId)
+            .Distinct()
+            .ToListAsync(ct);
+        var quotedRequestLineIdSet = quotedRequestLineIds.ToHashSet();
         foreach (var line in lines.Where(x => x.Status != PurPurchaseRequestLineStatus.Rejected && x.Status != PurPurchaseRequestLineStatus.Cancelled))
         {
             ordered.TryGetValue(line.ID, out var quantity);
             if (line.ApprovedQuantity > 0 && quantity >= line.ApprovedQuantity) line.Status = PurPurchaseRequestLineStatus.Ordered;
-            else if (line.ApprovedQuantity > 0) line.Status = PurPurchaseRequestLineStatus.InQuotation;
+            else if (line.ApprovedQuantity > 0 && quotedRequestLineIdSet.Contains(line.ID)) line.Status = PurPurchaseRequestLineStatus.InQuotation;
+            else if (line.ApprovedQuantity > 0) line.Status = PurPurchaseRequestLineStatus.Approved;
             line.UpdateDate = now; line.UpdateUserID = user;
         }
         var actionable = lines.Where(x => x.Status != PurPurchaseRequestLineStatus.Rejected && x.Status != PurPurchaseRequestLineStatus.Cancelled).ToList();
-        request.Status = actionable.Count > 0 && actionable.All(x => x.Status == PurPurchaseRequestLineStatus.Ordered) ? PurPurchaseRequestStatus.Completed : PurPurchaseRequestStatus.InQuotation;
+        if (actionable.Count > 0 && actionable.All(x => x.Status == PurPurchaseRequestLineStatus.Ordered))
+            request.Status = PurPurchaseRequestStatus.Completed;
+        else if (actionable.Any(x => x.Status == PurPurchaseRequestLineStatus.InQuotation || x.Status == PurPurchaseRequestLineStatus.Ordered))
+            request.Status = PurPurchaseRequestStatus.InQuotation;
+        else if (actionable.Count > 0 && actionable.All(x => x.Status == PurPurchaseRequestLineStatus.Approved))
+            request.Status = PurPurchaseRequestStatus.Approved;
+        else if (actionable.Any(x => x.Status == PurPurchaseRequestLineStatus.Approved))
+            request.Status = PurPurchaseRequestStatus.PartiallyApproved;
+        else
+            request.Status = PurPurchaseRequestStatus.Rejected;
         request.UpdateDate = now; request.UpdateUserID = user;
         await _context.SaveChangesAsync(ct);
     }
@@ -1415,6 +2553,134 @@ public sealed class SatinalmaYonetimiController : Controller
         foreach (var quotationId in affectedQuotationIds)
             await RecalculateQuotationStatusAsync(quotationId, now, user, ct);
         return affectedQuotationIds;
+    }
+
+    private async Task RollbackRequestToDraftAsync(PurPurchaseRequest request, DateTime now, string user, CancellationToken ct)
+    {
+        var quotations = await _context.PurSupplierQuotations
+            .Where(x => x.PurchaseRequestId == request.ID && x.IsDelete != true)
+            .ToListAsync(ct);
+        foreach (var quotation in quotations)
+            await DeleteQuotationWorkflowAsync(quotation, now, user, ct);
+
+        var requestLines = await _context.PurPurchaseRequestLines
+            .Where(x => x.PurchaseRequestId == request.ID && x.IsDelete != true)
+            .ToListAsync(ct);
+        foreach (var line in requestLines)
+        {
+            line.Status = PurPurchaseRequestLineStatus.Draft;
+            line.ApprovedQuantity = 0;
+            line.ApprovedDate = null;
+            line.ApprovedUserId = null;
+            line.ApprovalNote = null;
+            line.UpdateDate = now;
+            line.UpdateUserID = user;
+        }
+
+        request.Status = PurPurchaseRequestStatus.Draft;
+        request.SubmittedDate = null;
+        request.SubmittedUserId = null;
+        request.UpdateDate = now;
+        request.UpdateUserID = user;
+    }
+
+    private async Task DeleteRequestWorkflowAsync(PurPurchaseRequest request, DateTime now, string user, CancellationToken ct)
+    {
+        await RollbackRequestToDraftAsync(request, now, user, ct);
+        var requestLines = await _context.PurPurchaseRequestLines
+            .Where(x => x.PurchaseRequestId == request.ID && x.IsDelete != true)
+            .ToListAsync(ct);
+        foreach (var line in requestLines) SoftDelete(line, now, user);
+        SoftDelete(request, now, user);
+    }
+
+    private async Task RollbackQuotationToDraftAsync(PurSupplierQuotation quotation, DateTime now, string user, CancellationToken ct)
+    {
+        var orders = await _context.PurPurchaseOrders
+            .Where(x => x.SourceQuotationId == quotation.ID && x.IsDelete != true)
+            .ToListAsync(ct);
+        foreach (var order in orders)
+            await SoftDeleteOrderAsync(order, now, user, ct);
+
+        quotation.Status = PurSupplierQuotationStatus.Draft;
+        quotation.SubmittedDate = null;
+        quotation.SubmittedUserId = null;
+        quotation.UpdateDate = now;
+        quotation.UpdateUserID = user;
+    }
+
+    private async Task DeleteQuotationWorkflowAsync(PurSupplierQuotation quotation, DateTime now, string user, CancellationToken ct)
+    {
+        var orders = await _context.PurPurchaseOrders
+            .Where(x => x.SourceQuotationId == quotation.ID && x.IsDelete != true)
+            .ToListAsync(ct);
+        foreach (var order in orders)
+            await SoftDeleteOrderAsync(order, now, user, ct);
+
+        var quotationLines = await _context.PurSupplierQuotationLines
+            .Where(x => x.SupplierQuotationId == quotation.ID && x.IsDelete != true)
+            .ToListAsync(ct);
+        foreach (var line in quotationLines) SoftDelete(line, now, user);
+        SoftDelete(quotation, now, user);
+    }
+
+    private async Task DeleteOrderAndReopenQuotationAsync(PurPurchaseOrder order, DateTime now, string user, CancellationToken ct)
+    {
+        const string reopenNote = "Bağlı satınalma siparişi admin tarafından silindiği için teklif satırı yeniden değerlendirmeye açıldı.";
+        var orderLines = await _context.PurPurchaseOrderLines
+            .Where(x => x.PurchaseOrderId == order.ID && x.IsDelete != true)
+            .ToListAsync(ct);
+        var quotationLineIds = orderLines.Select(x => x.SupplierQuotationLineId).ToList();
+        var quotationLines = await _context.PurSupplierQuotationLines
+            .Where(x => quotationLineIds.Contains(x.ID) && x.IsDelete != true)
+            .ToListAsync(ct);
+
+        foreach (var line in quotationLines)
+        {
+            var previous = line.Status;
+            var previousQuantity = line.ApprovedQuantity;
+            line.Status = PurSupplierQuotationLineStatus.PendingApproval;
+            line.ApprovedQuantity = 0;
+            line.ApprovedDate = null;
+            line.ApprovedUserId = null;
+            line.ApprovalNote = reopenNote;
+            line.UpdateDate = now;
+            line.UpdateUserID = user;
+            _context.PurQuotationApprovalHistories.Add(CreateQuotationHistory(line.SupplierQuotationId, line,
+                PurQuotationApprovalAction.Submitted, previous, line.Status, previousQuantity, reopenNote, now, user));
+        }
+
+        await SoftDeleteGoodsReceiptsForOrderAsync(order.ID, now, user, ct);
+        foreach (var line in orderLines) SoftDelete(line, now, user);
+        SoftDelete(order, now, user);
+    }
+
+    private async Task SoftDeleteOrderAsync(PurPurchaseOrder order, DateTime now, string user, CancellationToken ct)
+    {
+        await SoftDeleteGoodsReceiptsForOrderAsync(order.ID, now, user, ct);
+        var orderLines = await _context.PurPurchaseOrderLines
+            .Where(x => x.PurchaseOrderId == order.ID && x.IsDelete != true)
+            .ToListAsync(ct);
+        foreach (var line in orderLines) SoftDelete(line, now, user);
+        SoftDelete(order, now, user);
+    }
+
+    private async Task SoftDeleteGoodsReceiptsForOrderAsync(int orderId, DateTime now, string user, CancellationToken ct)
+    {
+        var receipts = await _context.PurGoodsReceipts.Where(x => x.PurchaseOrderId == orderId && x.IsDelete != true).ToListAsync(ct);
+        if (receipts.Count == 0) return;
+        var receiptIds = receipts.Select(x => x.ID).ToList();
+        var lines = await _context.PurGoodsReceiptLines.Where(x => receiptIds.Contains(x.GoodsReceiptId) && x.IsDelete != true).ToListAsync(ct);
+        foreach (var line in lines) SoftDelete(line, now, user);
+        foreach (var receipt in receipts) SoftDelete(receipt, now, user);
+    }
+
+    private static void SoftDelete(BaseEntity entity, DateTime now, string user)
+    {
+        entity.IsDelete = true;
+        entity.IsActive = false;
+        entity.DeleteDate = now;
+        entity.DeleteUserID = user;
     }
 
     private static PurQuotationApprovalHistory CreateQuotationHistory(int quotationId, PurSupplierQuotationLine line, PurQuotationApprovalAction action, PurSupplierQuotationLineStatus previousStatus, PurSupplierQuotationLineStatus newStatus, decimal previousApprovedQuantity, string? note, DateTime now, string user) => new()

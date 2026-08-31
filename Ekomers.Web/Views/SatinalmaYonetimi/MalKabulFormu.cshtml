@@ -1,0 +1,127 @@
+@model Ekomers.Models.ViewModels.Purchasing.GoodsReceiptFormVM
+@{
+    var isEdit = Model.Id.HasValue;
+    ViewData["Title"] = isEdit ? "Mal Kabul Düzenle" : "Yeni Mal Kabul";
+    var currentRatesJson = System.Text.Json.JsonSerializer.Serialize(Model.CurrentRates);
+}
+
+<form asp-action="@(isEdit ? "MalKabulDuzenle" : "YeniMalKabul")" method="post">
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="PurchaseOrderId" type="hidden" />
+    <input asp-for="FreightExchangeRateSource" type="hidden" />
+    <div class="card card-custom mb-5">
+        <div class="card-header flex-wrap py-3">
+            <div class="card-title"><h3 class="card-label">@(isEdit ? Model.ReceiptNumber : "Yeni Parçalı Mal Kabul")<span class="d-block text-muted pt-2 font-size-sm">@Model.OrderNumber · @Model.SupplierCode - @Model.SupplierName</span></h3></div>
+            <div class="card-toolbar"><a asp-action="SiparisDetay" asp-route-id="@Model.PurchaseOrderId" class="btn btn-sm btn-light">Siparişe Dön</a></div>
+        </div>
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="alert alert-light-danger"></div>
+            <div class="alert alert-light-info">İrsaliye zorunlu, fatura isteğe bağlıdır. Bu kayıt siparişin teslim miktarını günceller; karantina ve kullanılabilir stok hareketi sonraki aşamada oluşturulacaktır.</div>
+            <div class="row">
+                <div class="col-md-3 form-group"><label asp-for="ReceiptDate"></label><input asp-for="ReceiptDate" type="date" class="form-control" /><span asp-validation-for="ReceiptDate" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="DispatchNumber"></label><input asp-for="DispatchNumber" class="form-control" /><span asp-validation-for="DispatchNumber" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="DispatchDate"></label><input asp-for="DispatchDate" type="date" class="form-control" /><span asp-validation-for="DispatchDate" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="InvoiceNumber"></label><input asp-for="InvoiceNumber" class="form-control" /><span asp-validation-for="InvoiceNumber" class="text-danger"></span></div>
+            </div>
+            <div class="row">
+                <div class="col-md-3 form-group"><label asp-for="InvoiceDate"></label><input asp-for="InvoiceDate" type="date" class="form-control" /><span asp-validation-for="InvoiceDate" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="CarrierName"></label><input asp-for="CarrierName" class="form-control" /></div>
+                <div class="col-md-3 form-group"><label asp-for="VehiclePlate"></label><input asp-for="VehiclePlate" class="form-control" /></div>
+                <div class="col-md-3 form-group"><label asp-for="TrackingNumber"></label><input asp-for="TrackingNumber" class="form-control" /></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-custom mb-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Gerçekleşen Nakliye<span class="d-block text-muted pt-2 font-size-sm">Bu irsaliye/teslimata ait fiili nakliye gideri</span></h3></div></div>
+        <div class="card-body">
+            @if (!string.IsNullOrWhiteSpace(Model.RateLoadWarning))
+            {
+                <div class="alert alert-light-warning">@Model.RateLoadWarning</div>
+            }
+            <div class="row">
+                <div class="col-md-3 form-group"><label asp-for="ActualFreightAmountInput"></label><input asp-for="ActualFreightAmountInput" class="form-control" inputmode="decimal" /><span asp-validation-for="ActualFreightAmountInput" class="text-danger"></span></div>
+                <div class="col-md-2 form-group"><label asp-for="ActualFreightVatRateInput"></label><input asp-for="ActualFreightVatRateInput" class="form-control" inputmode="decimal" /><span asp-validation-for="ActualFreightVatRateInput" class="text-danger"></span></div>
+                <div class="col-md-2 form-group"><label asp-for="FreightCurrencyCode"></label><select asp-for="FreightCurrencyCode" asp-items="Model.Currencies" class="form-control"></select><span asp-validation-for="FreightCurrencyCode" class="text-danger"></span></div>
+                <div class="col-md-2 form-group"><label asp-for="FreightExchangeRateInput"></label><input asp-for="FreightExchangeRateInput" class="form-control" inputmode="decimal" /><small class="form-text text-muted">Kaynak: <strong id="freight-rate-source-text">@Model.FreightExchangeRateSource</strong></small><span asp-validation-for="FreightExchangeRateInput" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="FreightExchangeRateDate"></label><input asp-for="FreightExchangeRateDate" type="date" class="form-control" /><span asp-validation-for="FreightExchangeRateDate" class="text-danger"></span></div>
+            </div>
+            <div class="alert alert-light-info mb-0">Gerçekleşen nakliye, planlanan nakliye bilgisini değiştirmez. Maliyet dağıtım adımında hangi teslimata ve lotlara yansıtılacağı ayrıca belirlenecek.</div>
+        </div>
+    </div>
+
+    <div class="card card-custom">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Teslim Alınan Malzemeler<span class="d-block text-muted pt-2 font-size-sm">Yalnızca bu irsaliyede gelen satırları işaretleyip gerçek miktar, lot, üretim tarihi ve SKT giriniz</span></h3></div></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom align-middle">
+                    <thead><tr><th>Dahil</th><th>Malzeme</th><th>Sipariş / Önceki / Kalan</th><th>Teslim Alınan</th><th>Lot</th><th>Üretim Tarihi</th><th>SKT</th><th>Not</th></tr></thead>
+                    <tbody>
+                    @for (var i = 0; i < Model.Lines.Count; i++)
+                    {
+                        var line = Model.Lines[i];
+                        var unavailable = line.RemainingQuantity <= 0 && !line.Include;
+                        <tr class="receipt-line @(unavailable ? "opacity-50" : "")">
+                            <td>
+                                <input asp-for="Lines[i].PurchaseOrderLineId" type="hidden" />
+                                <input asp-for="Lines[i].Id" type="hidden" />
+                                <label class="checkbox checkbox-lg"><input asp-for="Lines[i].Include" class="include-line" disabled="@unavailable" /><span></span></label>
+                            </td>
+                            <td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span><small class="text-muted">@line.Unit</small></td>
+                            <td>@line.OrderedQuantity.ToString("0.######") / @line.PreviouslyReceivedQuantity.ToString("0.######") / <strong>@line.RemainingQuantity.ToString("0.######") @line.Unit</strong></td>
+                            <td><input asp-for="Lines[i].ReceivedQuantityInput" class="form-control line-input" inputmode="decimal" placeholder="0" /><span asp-validation-for="Lines[i].ReceivedQuantityInput" class="text-danger"></span></td>
+                            <td>
+                                <input asp-for="Lines[i].LotNumber" class="form-control line-input lot-input" data-lot-required="@line.RequiresLotTracking.ToString().ToLowerInvariant()" placeholder="@(line.RequiresLotTracking ? "Zorunlu" : "İsteğe bağlı")" />
+                                @if (line.RequiresLotTracking) { <small class="form-text text-danger">Lot numarası zorunludur.</small> }
+                                <span asp-validation-for="Lines[i].LotNumber" class="text-danger"></span>
+                            </td>
+                            <td><input asp-for="Lines[i].ProductionDate" type="date" class="form-control line-input" /></td>
+                            <td><input asp-for="Lines[i].ExpirationDate" type="date" class="form-control line-input" /><span asp-validation-for="Lines[i].ExpirationDate" class="text-danger"></span></td>
+                            <td><input asp-for="Lines[i].Notes" class="form-control line-input" /></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="row mt-5"><div class="col-md-12 form-group mb-0"><label asp-for="Notes"></label><textarea asp-for="Notes" class="form-control" rows="2"></textarea></div></div>
+        </div>
+        <div class="card-footer text-right"><button type="submit" class="btn btn-primary">@(isEdit ? "Mal Kabulü Güncelle" : "Parçalı Mal Kabulü Kaydet")</button></div>
+    </div>
+</form>
+
+@section JSSection {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            const currentRates = @Html.Raw(currentRatesJson);
+            const currentRateDate = '@Model.CurrentRateDate.ToString("yyyy-MM-dd")';
+            const currency = $('#FreightCurrencyCode');
+            const rate = $('#FreightExchangeRateInput');
+            const rateDate = $('#FreightExchangeRateDate');
+            const rateSource = $('#FreightExchangeRateSource');
+            const sourceText = $('#freight-rate-source-text');
+
+            function setSource(value) { rateSource.val(value); sourceText.text(value); }
+            function setRate() {
+                const code = (currency.val() || '').toUpperCase();
+                if (code === 'TRY') { rate.val('1').prop('readonly', true); rateDate.val(currentRateDate); setSource('Sabit'); return; }
+                rate.prop('readonly', false);
+                if (currentRates[code]) { rate.val(currentRates[code].toString()); rateDate.val(currentRateDate); setSource('TCMB'); }
+                else { rate.val(''); rateDate.val(currentRateDate); setSource('Manuel'); }
+            }
+            currency.on('change', setRate);
+            rate.on('input', function () { if ((currency.val() || '').toUpperCase() !== 'TRY') setSource('Manuel'); });
+            rateDate.on('change', function () { if ((currency.val() || '').toUpperCase() !== 'TRY' && rateDate.val() !== currentRateDate) setSource('Manuel'); });
+            rate.prop('readonly', (currency.val() || '').toUpperCase() === 'TRY');
+
+            function setLineState(checkbox) {
+                const row = $(checkbox).closest('tr');
+                const enabled = checkbox.checked;
+                row.toggleClass('bg-light-primary', enabled);
+                row.find('.line-input').prop('readonly', !enabled);
+                row.find('.lot-input').prop('required', enabled && row.find('.lot-input').data('lot-required') === true);
+            }
+            $('.include-line').each(function () { setLineState(this); }).on('change', function () { setLineState(this); });
+        });
+    </script>
+}

@@ -85,4 +85,14 @@ public static class ProductionEnumText
         PrdInventoryDocumentStatus.Draft => "Taslak", PrdInventoryDocumentStatus.Posted => "İşlendi",
         PrdInventoryDocumentStatus.Cancelled => "İptal", PrdInventoryDocumentStatus.Reversed => "Ters Kayıtla Kapatıldı", _ => value.ToString()
     };
+
+    public static string ToTurkish(this PrdQualityControlStatus value) => value switch
+    {
+        PrdQualityControlStatus.Pending => "Analiz Bekliyor",
+        PrdQualityControlStatus.Sampled => "Numune Alındı",
+        PrdQualityControlStatus.Approved => "Onaylandı",
+        PrdQualityControlStatus.ConditionalApproval => "Şartlı Onay",
+        PrdQualityControlStatus.Rejected => "Reddedildi",
+        _ => value.ToString()
+    };
 }

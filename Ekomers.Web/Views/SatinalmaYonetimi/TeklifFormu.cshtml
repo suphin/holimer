@@ -18,6 +18,10 @@
             @if (isEdit)
             {
                 <div class="alert alert-light-primary"><strong>Teklif No:</strong> @Model.QuotationNumber</div>
+                @if (Model.Status != PurSupplierQuotationStatus.Draft)
+                {
+                    <div class="alert alert-light-warning"><strong>Admin müdahalesi:</strong> Bu teklif kaydedildiğinde bağlı satınalma siparişi geri alınacak ve teklif yeniden taslak durumuna dönecektir.</div>
+                }
             }
             @if (!string.IsNullOrWhiteSpace(Model.RateLoadWarning))
             {

@@ -13,7 +13,7 @@
                 <i class="fas fa-eye"></i>  Görüntüle
             </button>
         </td>
-        @if (User.HasClaim("Authorize", "FileDelete"))
+        @if (User.HasClaim("Authorize", "FileDelete") || User.IsInRole("Admin"))
         {
             <td style="width:100px">
                 <button type="button" class="btn btn-danger btn-sm" itemid="@item.ID" onclick="return confirmFileDeletion('@item.ID','@item.KayitID','@item.ModulID','@item.ModulDosyaYolu')">
@@ -24,7 +24,7 @@
     </tr>
 }
 
-@if (User.HasClaim("Authorize", "FileDelete"))
+@if (User.HasClaim("Authorize", "FileDelete") || User.IsInRole("Admin"))
 {
     <script>
         function BilesenSil(id,kayitId,ModulId,dosyaYolu)

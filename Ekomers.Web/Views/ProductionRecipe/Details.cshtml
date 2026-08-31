@@ -1,25 +1,147 @@
 @model Ekomers.Models.ViewModels.Production.ProductionRecipeDetailVM
-@{ ViewData["Title"] = "Reçete Detayı"; }
-<div class="card card-custom mb-5"><div class="card-header"><div class="card-title"><h3 class="card-label">@Model.Code<span class="d-block text-muted pt-2 font-size-sm">@Model.Product</span></h3></div><div class="card-toolbar"><span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>@if(!Model.CanEdit){<form asp-action="CreateNewVersion" method="post" class="d-inline" onsubmit="return confirm('Bu versiyonun malzemeleri kopyalanarak yeni bir taslak oluşturulsun mu?');"><input type="hidden" name="sourceVersionId" value="@Model.RecipeVersionId"/><button type="submit" class="btn btn-sm btn-light-success">Yeni Versiyon Oluştur</button></form>}</div></div>
-@if(User.IsInRole("Admin")){<div class="card-body border-bottom py-3 text-right"><form asp-action="DeleteVersion" method="post" class="d-inline" onsubmit="return confirm('Yalnızca açık olan reçete versiyonu ve bu versiyonun malzeme kalemleri silinecek. Devam edilsin mi?');"><input type="hidden" name="recipeVersionId" value="@Model.RecipeVersionId"/><button type="submit" class="btn btn-sm btn-light-danger">Bu Versiyonu Sil</button></form></div>}
-@if(User.IsInRole("Admin") && !Model.CanEdit){<div class="card-body border-bottom"><div class="alert alert-light-warning mb-0 d-flex justify-content-between align-items-center"><span>Yönetici olarak bu versiyonu tekrar düzenlemeye açabilirsiniz.</span><form asp-action="ReopenAsDraft" method="post" onsubmit="return confirm('Reçete tekrar taslak durumuna alınacak ve düzenlemeye açılacak. Devam edilsin mi?');"><input type="hidden" name="recipeVersionId" value="@Model.RecipeVersionId"/><button type="submit" class="btn btn-warning">Tekrar Taslağa Al</button></form></div></div>}
-<form asp-action="UpdateVersion" method="post"><input type="hidden" name="RecipeVersionId" value="@Model.RecipeVersionId" /><div class="card-body"><div class="row">
-<div class="col-md-4 form-group"><label>Reçete Adı</label><input name="Name" value="@Model.Name" class="form-control" @(Model.CanEdit?null:"readonly") /></div>
-<div class="col-md-2 form-group"><label>Baz Miktar</label><input name="BaseQuantity" value="@Model.BaseQuantity.ToString(CultureInfo.InvariantCulture)" type="number" step="0.000001" min="0.000001" class="form-control" @(Model.CanEdit?null:"readonly") /></div>
-<div class="col-md-2 form-group"><label>Birim</label><select name="UnitId" class="form-control" disabled="@(Model.CanEdit ? null : "disabled")">@foreach(var unit in Model.Units){if(unit.Value==Model.UnitId.ToString()){<option value="@unit.Value" selected>@unit.Text</option>}else{<option value="@unit.Value">@unit.Text</option>}}</select></div>
-<div class="col-md-2 form-group"><label>Durum</label><select name="Status" class="form-control" disabled="@(Model.CanEdit ? null : "disabled")">@foreach(var status in Enum.GetValues<PrdRecipeStatus>()){if(status==Model.Status){<option value="@((int)status)" selected>@status.ToTurkish()</option>}else{<option value="@((int)status)">@status.ToTurkish()</option>}}</select></div>
-<div class="col-md-2 form-group"><label>Başlangıç</label><input name="ValidFrom" value="@Model.ValidFrom?.ToString("yyyy-MM-dd")" type="date" class="form-control" readonly="@(Model.CanEdit ? null : "readonly")" /></div>
-<div class="col-md-2 form-group"><label>Bitiş</label><input name="ValidTo" value="@Model.ValidTo?.ToString("yyyy-MM-dd")" type="date" class="form-control" readonly="@(Model.CanEdit ? null : "readonly")" /></div>
-<div class="col-md-5 form-group"><label>Açıklama</label><input name="Description" value="@Model.Description" class="form-control" @(Model.CanEdit?null:"readonly") /></div><div class="col-md-5 form-group"><label>Versiyon Notu</label><input name="Notes" value="@Model.Notes" class="form-control" @(Model.CanEdit?null:"readonly") /></div>
-</div></div>@if(Model.CanEdit){<div class="card-footer"><button class="btn btn-primary" type="submit">Reçete Bilgilerini Güncelle</button></div>}</form></div>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Reçete Detayı";
+    var fileModuleId = (int)ModulEnum.UretimRecete;
+    const string filePath = "UretimRecete";
+}
 
-@if(Model.CanEdit){<div class="card card-custom mb-5"><div class="card-header"><div class="card-title"><h3 class="card-label">Yeni Malzeme Kalemi</h3></div></div><form asp-action="AddItem" method="post"><input type="hidden" name="RecipeVersionId" value="@Model.RecipeVersionId" /><div class="card-body"><div class="row">
-<div class="col-md-5 form-group"><label>Malzeme</label><select name="MaterialId" asp-items="Model.Materials" class="form-control kt_select2" data-live-search="true" data-size="5"><option value="">Malzeme seçiniz</option></select></div><div class="col-md-2 form-group"><label>Miktar</label><input name="Quantity" type="number" step="0.000001" min="0.000001" class="form-control" /></div><div class="col-md-2 form-group"><label>Birim</label><select name="UnitId" asp-items="Model.Units" class="form-control"></select></div><div class="col-md-2 form-group"><label>Planlanan Fire %</label><input name="PlannedWasteRate" type="number" step="0.01" min="0" max="100" value="0" class="form-control" /></div><div class="col-md-1 form-group"><label>Zorunlu</label><input type="hidden" name="IsRequired" value="false" /><input name="IsRequired" value="true" type="checkbox" checked class="form-control" /></div>
-<div class="col-md-3 form-group"><label>Alternatif Grup</label><input name="AlternativeGroupCode" class="form-control" /></div><div class="col-md-7 form-group"><label>Not</label><input name="Notes" class="form-control" /></div><div class="col-md-2 form-group d-flex align-items-end"><button class="btn btn-success w-100" type="submit">Kalem Ekle</button></div>
-</div></div></form></div>}
+<div class="card card-custom">
+    <div class="card-header card-header-tabs-line flex-wrap">
+        <div class="card-title">
+            <h3 class="card-label">Reçete Bilgileri<span class="d-block text-muted pt-2 font-size-sm">@Model.Code · v@Model.VersionNumber · @Model.Product</span></h3>
+        </div>
+        <div class="card-toolbar">
+            <ul class="nav nav-tabs nav-bold nav-tabs-line">
+                <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#recipe-details-tab"><span class="nav-icon"><i class="flaticon2-search"></i></span><span class="nav-text">Detaylar</span></a></li>
+                <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#recipe-files-tab"><span class="nav-icon"><i class="flaticon2-document"></i></span><span class="nav-text">Dosyalar</span></a></li>
+                <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#recipe-history-tab"><span class="nav-icon"><i class="flaticon-exclamation-1"></i></span><span class="nav-text">Hareket Kayıtları</span></a></li>
+            </ul>
+        </div>
+    </div>
 
-<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Reçete Malzemeleri <span class="text-muted">(@Model.Items.Count)</span></h3></div></div><div class="card-body">
-@if(Model.Items.Count==0){<div class="alert alert-light-primary mb-0">Bu versiyonda malzeme kalemi yok.</div>}else{<div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>#</th><th>Malzeme</th><th>Tür</th><th>Miktar</th><th>Birim</th><th>Fire %</th><th>Zorunlu</th><th>Alternatif</th><th>İşlem</th></tr></thead><tbody>
-@foreach(var item in Model.Items){var formId=$"item-form-{item.Id}";<tr><td>@item.Sequence</td><td><strong>@item.MaterialCode</strong><span class="d-block text-muted">@item.MaterialName</span></td><td>@item.MaterialType</td><td><input form="@formId" name="Quantity" value="@item.Quantity.ToString(CultureInfo.InvariantCulture)" type="number" step="0.000001" class="form-control form-control-sm" @(Model.CanEdit?null:"readonly") /></td><td><select form="@formId" name="UnitId" class="form-control form-control-sm" disabled="@(Model.CanEdit ? null : "disabled")">@foreach(var unit in Model.Units){if(unit.Value==item.UnitId.ToString()){<option value="@unit.Value" selected>@unit.Text</option>}else{<option value="@unit.Value">@unit.Text</option>}}</select></td><td><input form="@formId" name="PlannedWasteRate" value="@item.PlannedWasteRate.ToString(CultureInfo.InvariantCulture)" type="number" step="0.01" min="0" max="100" class="form-control form-control-sm" @(Model.CanEdit?null:"readonly") /></td><td><input form="@formId" type="hidden" name="IsRequired" value="false" />@if(item.IsRequired){<input form="@formId" name="IsRequired" value="true" type="checkbox" checked disabled="@(Model.CanEdit ? null : "disabled")" />}else{<input form="@formId" name="IsRequired" value="true" type="checkbox" disabled="@(Model.CanEdit ? null : "disabled")" />}</td><td><input form="@formId" name="AlternativeGroupCode" value="@item.AlternativeGroupCode" class="form-control form-control-sm" @(Model.CanEdit?null:"readonly") /></td><td>@if(Model.CanEdit){<form id="@formId" asp-action="UpdateItem" method="post" class="d-inline"><input type="hidden" name="RecipeVersionId" value="@Model.RecipeVersionId" /><input type="hidden" name="ItemId" value="@item.Id" /><input type="hidden" name="MaterialId" value="@item.MaterialId" /><button class="btn btn-sm btn-primary" type="submit">Güncelle</button></form><form asp-action="DeleteItem" method="post" class="d-inline" onsubmit="return confirm('Kalem silinsin mi?');"><input type="hidden" name="itemId" value="@item.Id" /><input type="hidden" name="recipeVersionId" value="@Model.RecipeVersionId" /><button class="btn btn-sm btn-light-danger" type="submit">Sil</button></form>}</td></tr>}
-</tbody></table></div>}</div></div>
+    <div class="card-body">
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="recipe-details-tab" role="tabpanel">
+                <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-5 mb-6">
+                    <div><h4 class="mb-1">@Model.Code - @Model.Name</h4><span class="text-muted">@Model.Product</span></div>
+                    <div class="mt-3 mt-md-0">
+                        <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
+                        @if (!Model.CanEdit)
+                        {
+                            <form asp-action="CreateNewVersion" method="post" class="d-inline" onsubmit="return confirm('Bu versiyonun malzemeleri kopyalanarak yeni bir taslak oluşturulsun mu?');"><input type="hidden" name="sourceVersionId" value="@Model.RecipeVersionId" /><button type="submit" class="btn btn-sm btn-light-success">Yeni Versiyon Oluştur</button></form>
+                        }
+                    </div>
+                </div>
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <div class="d-flex flex-wrap justify-content-end mb-5">
+                        @if (!Model.CanEdit)
+                        {
+                            <form asp-action="ReopenAsDraft" method="post" class="mr-2" onsubmit="return confirm('Reçete tekrar taslak durumuna alınacak ve düzenlemeye açılacak. Devam edilsin mi?');"><input type="hidden" name="recipeVersionId" value="@Model.RecipeVersionId" /><button type="submit" class="btn btn-sm btn-warning">Tekrar Taslağa Al</button></form>
+                        }
+                        <form asp-action="DeleteVersion" method="post" onsubmit="return confirm('Yalnızca açık olan reçete versiyonu ve bu versiyonun malzeme kalemleri silinecek. Devam edilsin mi?');"><input type="hidden" name="recipeVersionId" value="@Model.RecipeVersionId" /><button type="submit" class="btn btn-sm btn-light-danger">Bu Versiyonu Sil</button></form>
+                    </div>
+                }
+
+                <form asp-action="UpdateVersion" method="post">
+                    <input type="hidden" name="RecipeVersionId" value="@Model.RecipeVersionId" />
+                    <div class="row">
+                        <div class="col-md-4 form-group"><label>Reçete Adı</label><input name="Name" value="@Model.Name" class="form-control" @(Model.CanEdit ? null : "readonly") /></div>
+                        <div class="col-md-2 form-group"><label>Baz Miktar</label><input name="BaseQuantity" value="@Model.BaseQuantity.ToString(CultureInfo.InvariantCulture)" type="number" step="0.000001" min="0.000001" class="form-control" @(Model.CanEdit ? null : "readonly") /></div>
+                        <div class="col-md-2 form-group"><label>Birim</label><select name="UnitId" class="form-control" disabled="@(Model.CanEdit ? null : "disabled")">@foreach (var unit in Model.Units) { if (unit.Value == Model.UnitId.ToString()) { <option value="@unit.Value" selected>@unit.Text</option> } else { <option value="@unit.Value">@unit.Text</option> } }</select></div>
+                        <div class="col-md-2 form-group"><label>Durum</label><select name="Status" class="form-control" disabled="@(Model.CanEdit ? null : "disabled")">@foreach (var status in Enum.GetValues<PrdRecipeStatus>()) { if (status == Model.Status) { <option value="@((int)status)" selected>@status.ToTurkish()</option> } else { <option value="@((int)status)">@status.ToTurkish()</option> } }</select></div>
+                        <div class="col-md-2 form-group"><label>Başlangıç</label><input name="ValidFrom" value="@Model.ValidFrom?.ToString("yyyy-MM-dd")" type="date" class="form-control" readonly="@(Model.CanEdit ? null : "readonly")" /></div>
+                        <div class="col-md-2 form-group"><label>Bitiş</label><input name="ValidTo" value="@Model.ValidTo?.ToString("yyyy-MM-dd")" type="date" class="form-control" readonly="@(Model.CanEdit ? null : "readonly")" /></div>
+                        <div class="col-md-5 form-group"><label>Açıklama</label><input name="Description" value="@Model.Description" class="form-control" @(Model.CanEdit ? null : "readonly") /></div>
+                        <div class="col-md-5 form-group"><label>Versiyon Notu</label><input name="Notes" value="@Model.Notes" class="form-control" @(Model.CanEdit ? null : "readonly") /></div>
+                    </div>
+                    @if (Model.CanEdit) { <div class="text-right mb-7"><button class="btn btn-primary" type="submit">Reçete Bilgilerini Güncelle</button></div> }
+                </form>
+
+                @if (Model.CanEdit)
+                {
+                    <div class="border rounded p-5 mb-7">
+                        <h4 class="mb-5">Yeni Malzeme Kalemi</h4>
+                        <form asp-action="AddItem" method="post">
+                            <input type="hidden" name="RecipeVersionId" value="@Model.RecipeVersionId" />
+                            <div class="row">
+                                <div class="col-md-5 form-group"><label>Malzeme</label><select name="MaterialId" asp-items="Model.Materials" class="form-control kt_select2" data-live-search="true" data-size="5"><option value="">Malzeme seçiniz</option></select></div>
+                                <div class="col-md-2 form-group"><label>Miktar</label><input name="Quantity" type="number" step="0.000001" min="0.000001" class="form-control" /></div>
+                                <div class="col-md-2 form-group"><label>Birim</label><select name="UnitId" asp-items="Model.Units" class="form-control"></select></div>
+                                <div class="col-md-2 form-group"><label>Planlanan Fire %</label><input name="PlannedWasteRate" type="number" step="0.01" min="0" max="100" value="0" class="form-control" /></div>
+                                <div class="col-md-1 form-group"><label>Zorunlu</label><input type="hidden" name="IsRequired" value="false" /><input name="IsRequired" value="true" type="checkbox" checked class="form-control" /></div>
+                                <div class="col-md-3 form-group"><label>Alternatif Grup</label><input name="AlternativeGroupCode" class="form-control" /></div>
+                                <div class="col-md-7 form-group"><label>Not</label><input name="Notes" class="form-control" /></div>
+                                <div class="col-md-2 form-group d-flex align-items-end"><button class="btn btn-success w-100" type="submit">Kalem Ekle</button></div>
+                            </div>
+                        </form>
+                    </div>
+                }
+
+                <h4 class="mb-4">Reçete Malzemeleri <span class="text-muted">(@Model.Items.Count)</span></h4>
+                @if (Model.Items.Count == 0)
+                {
+                    <div class="alert alert-light-primary mb-0">Bu versiyonda malzeme kalemi yok.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-separate table-head-custom">
+                            <thead><tr><th>#</th><th>Malzeme</th><th>Tür</th><th>Miktar</th><th>Birim</th><th>Fire %</th><th>Zorunlu</th><th>Alternatif</th><th>İşlem</th></tr></thead>
+                            <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                var formId = $"item-form-{item.Id}";
+                                <tr>
+                                    <td>@item.Sequence</td><td><strong>@item.MaterialCode</strong><span class="d-block text-muted">@item.MaterialName</span></td><td>@item.MaterialType</td>
+                                    <td><input form="@formId" name="Quantity" value="@item.Quantity.ToString(CultureInfo.InvariantCulture)" type="number" step="0.000001" class="form-control form-control-sm" @(Model.CanEdit ? null : "readonly") /></td>
+                                    <td><select form="@formId" name="UnitId" class="form-control form-control-sm" disabled="@(Model.CanEdit ? null : "disabled")">@foreach (var unit in Model.Units) { if (unit.Value == item.UnitId.ToString()) { <option value="@unit.Value" selected>@unit.Text</option> } else { <option value="@unit.Value">@unit.Text</option> } }</select></td>
+                                    <td><input form="@formId" name="PlannedWasteRate" value="@item.PlannedWasteRate.ToString(CultureInfo.InvariantCulture)" type="number" step="0.01" min="0" max="100" class="form-control form-control-sm" @(Model.CanEdit ? null : "readonly") /></td>
+                                    <td><input form="@formId" type="hidden" name="IsRequired" value="false" /><input form="@formId" name="IsRequired" value="true" type="checkbox" checked="@(item.IsRequired ? "checked" : null)" disabled="@(Model.CanEdit ? null : "disabled")" /></td>
+                                    <td><input form="@formId" name="AlternativeGroupCode" value="@item.AlternativeGroupCode" class="form-control form-control-sm" @(Model.CanEdit ? null : "readonly") /></td>
+                                    <td>
+                                        @if (Model.CanEdit)
+                                        {
+                                            <form id="@formId" asp-action="UpdateItem" method="post" class="d-inline"><input type="hidden" name="RecipeVersionId" value="@Model.RecipeVersionId" /><input type="hidden" name="ItemId" value="@item.Id" /><input type="hidden" name="MaterialId" value="@item.MaterialId" /><button class="btn btn-sm btn-primary" type="submit">Güncelle</button></form>
+                                            <form asp-action="DeleteItem" method="post" class="d-inline" onsubmit="return confirm('Kalem silinsin mi?');"><input type="hidden" name="itemId" value="@item.Id" /><input type="hidden" name="recipeVersionId" value="@Model.RecipeVersionId" /><button class="btn btn-sm btn-light-danger" type="submit">Sil</button></form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+            <div class="tab-pane fade" id="recipe-files-tab" role="tabpanel">
+                <div class="mb-6"><h4 class="mb-1">Reçete Dosyaları</h4><span class="text-muted">Bu reçetenin tüm versiyonlarına ait belgeler burada saklanır ve önceki yüklemeler listelenir.</span></div>
+                @await Component.InvokeAsync("CrmDosyaYonetimi", new { VeriID = Model.RecipeId, ModulID = fileModuleId, DosyaYolu = filePath })
+            </div>
+
+            <div class="tab-pane fade" id="recipe-history-tab" role="tabpanel">
+                <div class="mb-6"><h4 class="mb-1">Hareket Kayıtları</h4><span class="text-muted">Reçetenin tüm versiyonlarında yapılan değişiklikler tarih sırasıyla gösterilir.</span></div>
+                @if (Model.History.Count == 0)
+                {
+                    <div class="alert alert-light-primary mb-0">Bu reçete için hareket kaydı bulunmuyor.</div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th style="width:160px">Tarih</th><th style="width:90px">Versiyon</th><th style="width:190px">İşlem</th><th>Açıklama</th><th style="width:180px">Kullanıcı</th></tr></thead><tbody>
+                    @foreach (var history in Model.History) { <tr><td>@history.ActionDate.ToString("dd.MM.yyyy HH:mm")</td><td><span class="label label-light-primary label-inline">@history.Scope</span></td><td><strong>@history.Action</strong></td><td>@history.Description</td><td>@history.User</td></tr> }
+                    </tbody></table></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="mt-4"><a asp-action="Index" class="btn btn-light">Reçete Listesine Dön</a></div>
+
+@{
+    var fileUi = new AuthorizeCrudVM { Controller = "ProductionRecipe", HaritaEkle = false, ModulID = fileModuleId, DosyaYolu = filePath };
+    await Html.RenderPartialAsync("_PartialModalDosya", fileUi);
+    await Html.RenderPartialAsync("_PartialAuthorizeCrud", fileUi);
+}

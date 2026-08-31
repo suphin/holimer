@@ -1,6 +1,288 @@
 @model Ekomers.Models.ViewModels.Purchasing.PurchaseOrderDetailVM
-@{ ViewData["Title"] = "Satınalma Siparişi"; }
-<div class="card card-custom mb-5"><div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">@Model.OrderNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.SupplierCode - @Model.SupplierName</span></h3></div><div class="card-toolbar"><span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span><a asp-action="TeklifDetay" asp-route-id="@Model.QuotationId" class="btn btn-sm btn-light-primary mr-2">Kaynak Teklif</a><a asp-action="Siparisler" class="btn btn-sm btn-light">Listeye Dön</a></div></div><div class="card-body"><div class="row"><div class="col-md-2"><strong>Sipariş Tarihi</strong><div>@Model.OrderDate.ToString("dd.MM.yyyy")</div></div><div class="col-md-2"><strong>Para Birimi</strong><div>@Model.CurrencyCode</div></div><div class="col-md-2"><strong>Kur</strong><div>@Model.ExchangeRate.ToString("N6")</div></div><div class="col-md-2"><strong>Kur Tarihi / Kaynağı</strong><div>@(Model.ExchangeRateDate?.ToString("dd.MM.yyyy") ?? "-") · @Model.ExchangeRateSource</div></div><div class="col-md-2"><strong>Ödeme Koşulu</strong><div>@(Model.PaymentTerms ?? "-")</div></div><div class="col-md-2"><strong>Teslim Koşulu</strong><div>@(Model.DeliveryTerms ?? "-")</div></div></div><div class="row mt-5"><div class="col-md-4"><strong>Sipariş TRY Karşılığı</strong><div>@Model.GrandTotalTry.ToString("N2") TRY</div></div></div></div></div>
-<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Sipariş Satırları (@Model.Lines.Count)</h3></div></div><div class="card-body"><div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>#</th><th>Malzeme</th><th>Sipariş</th><th>Teslim Alınan</th><th>Birim Fiyat</th><th>İskonto</th><th>Net Birim</th><th>KDV</th><th>Toplam</th><th>Planlanan Teslim</th><th>Durum</th></tr></thead><tbody>
-@foreach (var line in Model.Lines) { <tr><td>@line.Sequence</td><td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span></td><td>@line.OrderedQuantity.ToString("0.######") @line.Unit</td><td>@line.ReceivedQuantity.ToString("0.######") @line.Unit</td><td>@line.UnitPrice.ToString("N6")</td><td>%@line.DiscountRate.ToString("0.##")</td><td>@line.NetUnitPrice.ToString("N6")</td><td>%@line.VatRate.ToString("0.##")</td><td>@line.GrandTotal.ToString("N2") @Model.CurrencyCode</td><td>@(line.RequestedDeliveryDate?.ToString("dd.MM.yyyy") ?? "-")</td><td>@line.Status.ToTurkish()</td></tr> }
-</tbody><tfoot><tr><th colspan="8" class="text-right">Net / KDV / Genel Toplam</th><th colspan="3">@Model.NetTotal.ToString("N2") / @Model.TaxTotal.ToString("N2") / <strong>@Model.GrandTotal.ToString("N2") @Model.CurrencyCode</strong><span class="d-block text-muted">@Model.GrandTotalTry.ToString("N2") TRY</span></th></tr></tfoot></table></div><div class="alert alert-light-info mb-0">Bir sonraki aşamada bu açık sipariş üzerinden parçalı mal kabul, irsaliye, lot, üretim tarihi, SKT ve karantina kaydı oluşturulacak.</div></div></div>
+@{
+    ViewData["Title"] = "Satınalma Siparişi";
+    var transportation = Model.Transportation;
+    var currentRatesJson = System.Text.Json.JsonSerializer.Serialize(transportation.CurrentRates);
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                @Model.OrderNumber
+                <span class="d-block text-muted pt-2 font-size-sm">@Model.SupplierCode - @Model.SupplierName</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
+            @if (Model.Status == Ekomers.Models.Enums.PurPurchaseOrderStatus.Open || Model.Status == Ekomers.Models.Enums.PurPurchaseOrderStatus.PartiallyReceived)
+            {
+                <a asp-action="YeniMalKabul" asp-route-orderId="@Model.Id" class="btn btn-sm btn-primary mr-2">Parçalı Mal Kabul</a>
+            }
+            @if (User.IsInRole("Admin"))
+            {
+                <form asp-action="SiparisSil" method="post" class="d-inline" onsubmit="return confirm('Sipariş silinecek ve kaynak teklif yeniden değerlendirmeye açılacak. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-danger mr-2">Siparişi Sil</button></form>
+            }
+            <a asp-action="TeklifDetay" asp-route-id="@Model.QuotationId" class="btn btn-sm btn-light-primary mr-2">Kaynak Teklif</a>
+            <a asp-action="Siparisler" class="btn btn-sm btn-light">Listeye Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-2"><strong>Sipariş Tarihi</strong><div>@Model.OrderDate.ToString("dd.MM.yyyy")</div></div>
+            <div class="col-md-2"><strong>Para Birimi</strong><div>@Model.CurrencyCode</div></div>
+            <div class="col-md-2"><strong>Kur</strong><div>@Model.ExchangeRate.ToString("N6")</div></div>
+            <div class="col-md-2"><strong>Kur Tarihi / Kaynağı</strong><div>@(Model.ExchangeRateDate?.ToString("dd.MM.yyyy") ?? "-") · @Model.ExchangeRateSource</div></div>
+            <div class="col-md-2"><strong>Ödeme Koşulu</strong><div>@(Model.PaymentTerms ?? "-")</div></div>
+            <div class="col-md-2"><strong>Teslim Koşulu</strong><div>@(Model.DeliveryTerms ?? "-")</div></div>
+        </div>
+        <div class="row mt-5">
+            <div class="col-md-4"><strong>Sipariş TRY Karşılığı</strong><div>@Model.GrandTotalTry.ToString("N2") TRY</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Planlanan Nakliye
+                <span class="d-block text-muted pt-2 font-size-sm">Sipariş sevk edilmeden önce bilinen tahmini nakliye bilgileri</span>
+            </h3>
+        </div>
+        @if (transportation.EstimatedFreightAmount.HasValue && transportation.FreightPaymentType == Ekomers.Models.Enums.PurFreightPaymentType.Buyer)
+        {
+            <div class="card-toolbar text-right">
+                <div class="text-muted font-size-sm">Tahmini nakliye toplamı</div>
+                <strong>@transportation.EstimatedFreightGrandTotal.ToString("N2") @transportation.FreightCurrencyCode</strong>
+                <span class="d-block text-muted">@transportation.EstimatedFreightGrandTotalTry.ToString("N2") TRY</span>
+            </div>
+        }
+    </div>
+    <form asp-action="SiparisNakliyeKaydet" method="post">
+        <input asp-for="Transportation.OrderId" type="hidden" />
+        <input asp-for="Transportation.FreightExchangeRateSource" type="hidden" />
+        <div class="card-body">
+            @if (!transportation.TransportationType.HasValue || !transportation.FreightPaymentType.HasValue)
+            {
+                <div class="alert alert-light-warning">Bu siparişin nakliye planı henüz tamamlanmadı. Nakliye şekli ve nakliye bedelini karşılayacak tarafı seçerek planı kaydediniz.</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(transportation.RateLoadWarning))
+            {
+                <div class="alert alert-light-warning">@transportation.RateLoadWarning</div>
+            }
+            <div class="row">
+                <div class="col-md-3 form-group">
+                    <label asp-for="Transportation.TransportationType"></label>
+                    <select asp-for="Transportation.TransportationType" asp-items="transportation.TransportationTypes" class="form-control" disabled="@(!transportation.CanEdit)">
+                        <option value="">Nakliye şekli seçiniz</option>
+                    </select>
+                </div>
+                <div class="col-md-3 form-group">
+                    <label asp-for="Transportation.FreightPaymentType"></label>
+                    <select asp-for="Transportation.FreightPaymentType" asp-items="transportation.FreightPaymentTypes" class="form-control" disabled="@(!transportation.CanEdit)">
+                        <option value="">Ödeme şeklini seçiniz</option>
+                    </select>
+                </div>
+                <div class="col-md-3 form-group">
+                    <label asp-for="Transportation.DeliveryWarehouseId"></label>
+                    <select asp-for="Transportation.DeliveryWarehouseId" asp-items="transportation.Warehouses" class="form-control kt_select2" data-live-search="true" data-size="5" disabled="@(!transportation.CanEdit)">
+                        <option value="">Depo seçiniz</option>
+                    </select>
+                </div>
+                <div class="col-md-3 form-group">
+                    <label asp-for="Transportation.CarrierName"></label>
+                    <input asp-for="Transportation.CarrierName" class="form-control" readonly="@(!transportation.CanEdit)" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 form-group">
+                    <label asp-for="Transportation.DeliveryAddress"></label>
+                    <input asp-for="Transportation.DeliveryAddress" class="form-control" readonly="@(!transportation.CanEdit)" />
+                </div>
+                <div class="col-md-3 form-group">
+                    <label asp-for="Transportation.PlannedShipmentDate"></label>
+                    <input asp-for="Transportation.PlannedShipmentDate" type="date" class="form-control" readonly="@(!transportation.CanEdit)" />
+                </div>
+                <div class="col-md-3 form-group">
+                    <label asp-for="Transportation.PlannedDeliveryDate"></label>
+                    <input asp-for="Transportation.PlannedDeliveryDate" type="date" class="form-control" readonly="@(!transportation.CanEdit)" />
+                </div>
+            </div>
+            <div id="freight-cost-fields" class="row">
+                <div class="col-md-2 form-group">
+                    <label asp-for="Transportation.EstimatedFreightAmountInput"></label>
+                    <input asp-for="Transportation.EstimatedFreightAmountInput" class="form-control freight-cost-input" inputmode="decimal" readonly="@(!transportation.CanEdit)" />
+                </div>
+                <div class="col-md-2 form-group">
+                    <label asp-for="Transportation.EstimatedFreightVatRateInput"></label>
+                    <input asp-for="Transportation.EstimatedFreightVatRateInput" class="form-control freight-cost-input" inputmode="decimal" readonly="@(!transportation.CanEdit)" />
+                </div>
+                <div class="col-md-2 form-group">
+                    <label asp-for="Transportation.FreightCurrencyCode"></label>
+                    <select asp-for="Transportation.FreightCurrencyCode" asp-items="transportation.Currencies" class="form-control freight-cost-input" disabled="@(!transportation.CanEdit)"></select>
+                </div>
+                <div class="col-md-2 form-group">
+                    <label asp-for="Transportation.FreightExchangeRateInput"></label>
+                    <input asp-for="Transportation.FreightExchangeRateInput" class="form-control freight-cost-input" inputmode="decimal" readonly="@(!transportation.CanEdit)" />
+                    <small class="form-text text-muted">Kaynak: <strong id="freight-rate-source-text">@transportation.FreightExchangeRateSource</strong></small>
+                </div>
+                <div class="col-md-2 form-group">
+                    <label asp-for="Transportation.FreightExchangeRateDate"></label>
+                    <input asp-for="Transportation.FreightExchangeRateDate" type="date" class="form-control freight-cost-input" readonly="@(!transportation.CanEdit)" />
+                </div>
+                <div class="col-md-2 form-group">
+                    <label asp-for="Transportation.TrackingNumber"></label>
+                    <input asp-for="Transportation.TrackingNumber" class="form-control" readonly="@(!transportation.CanEdit)" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 form-group mb-0">
+                    <label asp-for="Transportation.TransportationNotes"></label>
+                    <textarea asp-for="Transportation.TransportationNotes" class="form-control" rows="2" readonly="@(!transportation.CanEdit)"></textarea>
+                </div>
+            </div>
+            <div class="alert alert-light-info mt-5 mb-0">
+                Bu tutar planlanan nakliye maliyetidir. Parçalı mal kabul sırasında her teslimatın gerçekleşen nakliye gideri ayrıca kaydedilecek; stok maliyetine dağıtım daha sonraki maliyetlendirme adımında yapılacak.
+            </div>
+        </div>
+        @if (transportation.CanEdit)
+        {
+            <div class="card-footer text-right"><button class="btn btn-primary">Nakliye Planını Kaydet</button></div>
+        }
+    </form>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Sipariş Satırları (@Model.Lines.Count)</h3></div></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-separate table-head-custom">
+                <thead><tr><th>#</th><th>Malzeme</th><th>Sipariş</th><th>Teslim Alınan</th><th>Birim Fiyat</th><th>İskonto</th><th>Net Birim</th><th>KDV</th><th>Toplam</th><th>Planlanan Teslim</th><th>Durum</th></tr></thead>
+                <tbody>
+                @foreach (var line in Model.Lines)
+                {
+                    <tr>
+                        <td>@line.Sequence</td>
+                        <td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span></td>
+                        <td>@line.OrderedQuantity.ToString("0.######") @line.Unit</td>
+                        <td>@line.ReceivedQuantity.ToString("0.######") @line.Unit</td>
+                        <td>@line.UnitPrice.ToString("N6")</td>
+                        <td>%@line.DiscountRate.ToString("0.##")</td>
+                        <td>@line.NetUnitPrice.ToString("N6")</td>
+                        <td>%@line.VatRate.ToString("0.##")</td>
+                        <td>@line.GrandTotal.ToString("N2") @Model.CurrencyCode</td>
+                        <td>@(line.RequestedDeliveryDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                        <td>@line.Status.ToTurkish()</td>
+                    </tr>
+                }
+                </tbody>
+                <tfoot><tr><th colspan="8" class="text-right">Net / KDV / Genel Toplam</th><th colspan="3">@Model.NetTotal.ToString("N2") / @Model.TaxTotal.ToString("N2") / <strong>@Model.GrandTotal.ToString("N2") @Model.CurrencyCode</strong><span class="d-block text-muted">@Model.GrandTotalTry.ToString("N2") TRY</span></th></tr></tfoot>
+            </table>
+        </div>
+        <div class="alert alert-light-info mb-0">Bir sonraki aşamada bu açık sipariş üzerinden parçalı mal kabul, irsaliye, lot, üretim tarihi, SKT ve karantina kaydı oluşturulacak.</div>
+    </div>
+</div>
+
+<div class="card card-custom mt-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">Mal Kabul Geçmişi (@Model.Receipts.Count)<span class="d-block text-muted pt-2 font-size-sm">Her irsaliye ve teslimat ayrı kaydedilir</span></h3></div>
+        <div class="card-toolbar"><a asp-action="MalKabuller" class="btn btn-sm btn-light-primary">Tüm Mal Kabuller</a></div>
+    </div>
+    <div class="card-body">
+        @if (Model.Receipts.Count == 0)
+        {
+            <div class="alert alert-light-primary mb-0">Bu sipariş için henüz mal kabul yapılmadı.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom">
+                    <thead><tr><th>Mal Kabul No</th><th>Tarih</th><th>İrsaliye</th><th>Satır</th><th>Gerçekleşen Nakliye</th><th>Durum</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach (var receipt in Model.Receipts)
+                    {
+                        <tr>
+                            <td><strong>@receipt.ReceiptNumber</strong></td>
+                            <td>@receipt.ReceiptDate.ToString("dd.MM.yyyy")</td>
+                            <td>@receipt.DispatchNumber</td>
+                            <td>@receipt.LineCount</td>
+                            <td>@(receipt.ActualFreightAmount.HasValue ? $"{receipt.ActualFreightAmount:N2} {receipt.FreightCurrencyCode}" : "-")</td>
+                            <td><span class="label label-light-primary label-inline">@receipt.Status.ToTurkish()</span></td>
+                            <td class="text-right"><a asp-action="MalKabulDetay" asp-route-id="@receipt.Id" class="btn btn-sm btn-light-primary">Detay</a></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section JSSection {
+    <script>
+        $(function () {
+            $('.kt_select2').select2({ width: '100%', placeholder: 'Depo seçiniz', allowClear: true });
+
+            const canEdit = @transportation.CanEdit.ToString().ToLowerInvariant();
+            if (!canEdit) return;
+
+            const currentRates = @Html.Raw(currentRatesJson);
+            const currentRateDate = '@transportation.CurrentRateDate.ToString("yyyy-MM-dd")';
+            const payer = $('#Transportation_FreightPaymentType');
+            const currency = $('#Transportation_FreightCurrencyCode');
+            const rate = $('#Transportation_FreightExchangeRateInput');
+            const rateDate = $('#Transportation_FreightExchangeRateDate');
+            const rateSource = $('#Transportation_FreightExchangeRateSource');
+            const sourceText = $('#freight-rate-source-text');
+
+            function showSource(value) {
+                rateSource.val(value);
+                sourceText.text(value);
+            }
+
+            function setRateForCurrency() {
+                const code = (currency.val() || '').toUpperCase();
+                if (code === 'TRY') {
+                    rate.val('1').prop('readonly', true);
+                    rateDate.val(currentRateDate);
+                    showSource('Sabit');
+                    return;
+                }
+
+                rate.prop('readonly', false);
+                if (currentRates[code]) {
+                    rate.val(currentRates[code].toString());
+                    rateDate.val(currentRateDate);
+                    showSource('TCMB');
+                } else {
+                    rate.val('');
+                    rateDate.val(currentRateDate);
+                    showSource('Manuel');
+                }
+            }
+
+            function setFreightCostState(refreshRate) {
+                const buyerPays = payer.val() === '@((int)Ekomers.Models.Enums.PurFreightPaymentType.Buyer)';
+                $('#freight-cost-fields').toggleClass('opacity-50', !buyerPays);
+                $('.freight-cost-input').prop('disabled', !buyerPays);
+                if (buyerPays && refreshRate) {
+                    setRateForCurrency();
+                } else if (buyerPays) {
+                    rate.prop('readonly', (currency.val() || '').toUpperCase() === 'TRY');
+                }
+            }
+
+            payer.on('change', function () { setFreightCostState(true); });
+            currency.on('change', setRateForCurrency);
+            rate.on('input', function () {
+                if ((currency.val() || '').toUpperCase() !== 'TRY') showSource('Manuel');
+            });
+            rateDate.on('change', function () {
+                if ((currency.val() || '').toUpperCase() !== 'TRY' && rateDate.val() !== currentRateDate) showSource('Manuel');
+            });
+
+            setFreightCostState(false);
+        });
+    </script>
+}

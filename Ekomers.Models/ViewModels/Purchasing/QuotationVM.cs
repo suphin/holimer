@@ -69,6 +69,7 @@ public sealed class SupplierQuotationFormVM
     public int PurchaseRequestId { get; set; }
     public string RequestNumber { get; set; } = string.Empty;
     public string QuotationNumber { get; set; } = string.Empty;
+    public PurSupplierQuotationStatus Status { get; set; } = PurSupplierQuotationStatus.Draft;
     [Display(Name = "Tedarikçi")] public int SupplierId { get; set; }
     [StringLength(100), Display(Name = "Firma Teklif Numarası")] public string? SupplierQuotationNumber { get; set; }
     [DataType(DataType.Date), Display(Name = "Teklif Tarihi")] public DateTime QuotationDate { get; set; } = DateTime.Today;
@@ -136,6 +137,7 @@ public sealed class SupplierQuotationDetailVM
     public decimal GrandTotal { get; set; }
     public string? Notes { get; set; }
     public bool CanEdit { get; set; }
+    public bool CanSubmit { get; set; }
     public bool CanApprove { get; set; }
     public int? PurchaseOrderId { get; set; }
     public List<SupplierQuotationDetailLineVM> Lines { get; set; } = [];
@@ -234,6 +236,7 @@ public sealed class PurchaseOrderListVM
     public decimal GrandTotal { get; set; }
     public decimal GrandTotalTry => GrandTotal * ExchangeRate;
     public PurPurchaseOrderStatus Status { get; set; }
+    public bool HasTransportationPlan { get; set; }
     public int LineCount { get; set; }
 }
 
@@ -259,7 +262,44 @@ public sealed class PurchaseOrderDetailVM
     public decimal GrandTotal { get; set; }
     public string? PaymentTerms { get; set; }
     public string? DeliveryTerms { get; set; }
+    public PurchaseOrderTransportationFormVM Transportation { get; set; } = new();
     public List<PurchaseOrderDetailLineVM> Lines { get; set; } = [];
+    public List<GoodsReceiptListVM> Receipts { get; set; } = [];
+}
+
+public sealed class PurchaseOrderTransportationFormVM
+{
+    public int OrderId { get; set; }
+    [Display(Name = "Nakliye Şekli")] public PurTransportationType? TransportationType { get; set; }
+    [Display(Name = "Nakliyeyi Karşılayan")] public PurFreightPaymentType? FreightPaymentType { get; set; }
+    [Display(Name = "Teslimat Deposu")] public int? DeliveryWarehouseId { get; set; }
+    [StringLength(1000), Display(Name = "Teslimat Adresi")] public string? DeliveryAddress { get; set; }
+    [StringLength(250), Display(Name = "Nakliye Firması")] public string? CarrierName { get; set; }
+    [Display(Name = "Tahmini Nakliye Tutarı")] public string? EstimatedFreightAmountInput { get; set; }
+    [Display(Name = "Nakliye KDV %")] public string? EstimatedFreightVatRateInput { get; set; } = "20";
+    [Display(Name = "Nakliye Para Birimi")] public string FreightCurrencyCode { get; set; } = "TRY";
+    [Display(Name = "Nakliye Döviz Kuru")] public string FreightExchangeRateInput { get; set; } = "1";
+    [DataType(DataType.Date), Display(Name = "Nakliye Kur Tarihi")] public DateTime? FreightExchangeRateDate { get; set; } = DateTime.Today;
+    public string FreightExchangeRateSource { get; set; } = "Sabit";
+    [DataType(DataType.Date), Display(Name = "Tahmini Sevk Tarihi")] public DateTime? PlannedShipmentDate { get; set; }
+    [DataType(DataType.Date), Display(Name = "Tahmini Teslim Tarihi")] public DateTime? PlannedDeliveryDate { get; set; }
+    [StringLength(100), Display(Name = "Takip / Sevk Numarası")] public string? TrackingNumber { get; set; }
+    [StringLength(1000), Display(Name = "Nakliye Açıklaması")] public string? TransportationNotes { get; set; }
+    public bool CanEdit { get; set; }
+    public List<SelectListItem> TransportationTypes { get; set; } = [];
+    public List<SelectListItem> FreightPaymentTypes { get; set; } = [];
+    public List<SelectListItem> Warehouses { get; set; } = [];
+    public List<SelectListItem> Currencies { get; set; } = [];
+    public Dictionary<string, decimal> CurrentRates { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public DateTime CurrentRateDate { get; set; } = DateTime.Today;
+    public string? RateLoadWarning { get; set; }
+
+    public decimal? EstimatedFreightAmount { get; set; }
+    public decimal? EstimatedFreightVatRate { get; set; }
+    public decimal FreightExchangeRate { get; set; } = 1m;
+    public decimal EstimatedFreightTax => (EstimatedFreightAmount ?? 0m) * (EstimatedFreightVatRate ?? 0m) / 100m;
+    public decimal EstimatedFreightGrandTotal => (EstimatedFreightAmount ?? 0m) + EstimatedFreightTax;
+    public decimal EstimatedFreightGrandTotalTry => EstimatedFreightGrandTotal * FreightExchangeRate;
 }
 
 public sealed class PurchaseOrderDetailLineVM

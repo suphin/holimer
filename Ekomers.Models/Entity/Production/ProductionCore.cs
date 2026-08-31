@@ -143,6 +143,17 @@ public class PrdRecipeItem : BaseEntity
     public string? Notes { get; set; }
 }
 
+public class PrdRecipeHistory : BaseEntity
+{
+    public int RecipeId { get; set; }
+    public int? RecipeVersionId { get; set; }
+    public int? RecipeItemId { get; set; }
+    public string Action { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public DateTime ActionDate { get; set; }
+    public string? ActionUserId { get; set; }
+}
+
 public class PrdProductionPlanHeader : BaseEntity
 {
     public string PlanNumber { get; set; } = string.Empty;
@@ -264,6 +275,8 @@ public class PrdWarehouseTaskLot : BaseEntity
     public int StockReservationId { get; set; }
     public int StockLotId { get; set; }
     public decimal Quantity { get; set; }
+    public decimal? PreparedQuantity { get; set; }
+    public decimal? ShippedQuantity { get; set; }
 }
 
 public class PrdProductionMaterialActual : BaseEntity
@@ -292,5 +305,12 @@ public class PrdProductionResult : BaseEntity
     public DateTime ProductionDate { get; set; }
     public DateTime? ExpirationDate { get; set; }
     public int? StockLotId { get; set; }
+    public decimal? MaterialCost { get; set; }
+    public decimal? TransportationCost { get; set; }
+    public decimal? LaborCost { get; set; }
+    public decimal? OtherCost { get; set; }
+    public decimal? TotalProductionCost { get; set; }
+    public decimal? UnitProductionCost { get; set; }
+    public string? OtherCostDescription { get; set; }
     public string? Notes { get; set; }
 }
