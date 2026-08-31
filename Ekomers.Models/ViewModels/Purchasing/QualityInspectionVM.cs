@@ -31,6 +31,7 @@ public sealed class QualityInspectionDetailVM
     public string OrderNumber { get; set; } = string.Empty;
     public string SupplierCode { get; set; } = string.Empty;
     public string SupplierName { get; set; } = string.Empty;
+    public int MaterialId { get; set; }
     public string MaterialCode { get; set; } = string.Empty;
     public string MaterialName { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
@@ -40,11 +41,56 @@ public sealed class QualityInspectionDetailVM
     public DateTime? ExpirationDate { get; set; }
     public string WarehouseCode { get; set; } = string.Empty;
     public string WarehouseName { get; set; } = string.Empty;
+    public int? SpecificationSetId { get; set; }
+    public string? SpecificationCode { get; set; }
+    public int? SpecificationVersion { get; set; }
     public PrdQualityControlStatus Status { get; set; }
     public DateTime? DecisionDate { get; set; }
     public string? DecisionUserId { get; set; }
     public string? DecisionNote { get; set; }
     public QualityInspectionFormVM Form { get; set; } = new();
+    public List<QualityInspectionSpecificationResultVM> SpecificationResults { get; set; } = [];
+}
+
+public sealed class QualityInspectionSpecificationResultVM
+{
+    public int ResultId { get; set; }
+    public int SpecificationItemId { get; set; }
+    public int Sequence { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public PrdSpecificationDataType DataType { get; set; }
+    public string? UnitName { get; set; }
+    public decimal? TargetValue { get; set; }
+    public decimal? MinimumValue { get; set; }
+    public decimal? MaximumValue { get; set; }
+    public string? ExpectedText { get; set; }
+    public bool? ExpectedBoolean { get; set; }
+    public string? AllowedValues { get; set; }
+    public string? TestMethod { get; set; }
+    public bool IsRequired { get; set; }
+    public PrdSpecificationCriticality Criticality { get; set; }
+    public string? NumericValue { get; set; }
+    public string? TextValue { get; set; }
+    public bool? BooleanValue { get; set; }
+    public PrdSpecificationResultStatus Status { get; set; }
+    public string? EvaluationNote { get; set; }
+}
+
+public sealed class QualityInspectionSpecificationResultsFormVM
+{
+    public int InspectionId { get; set; }
+    public List<QualityInspectionSpecificationResultInputVM> Results { get; set; } = [];
+}
+
+public sealed class QualityInspectionSpecificationResultInputVM
+{
+    public int ResultId { get; set; }
+    public string? NumericValue { get; set; }
+    public string? TextValue { get; set; }
+    public bool? BooleanValue { get; set; }
+    public PrdSpecificationResultStatus ManualStatus { get; set; }
+    [StringLength(1000)] public string? EvaluationNote { get; set; }
 }
 
 public sealed class QualityInspectionFormVM

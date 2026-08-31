@@ -1,0 +1,169 @@
+@model Ekomers.Models.ViewModels.Profitability.ProductCostFormVM
+@{
+    ViewData["Title"] = "Yeni Ürün Maliyeti";
+}
+
+<div class="card card-custom">
+    <div class="card-header">
+        <div class="card-title">
+            <div>
+                <h3 class="card-label mb-1">Yeni Maliyet Versiyonu</h3>
+                <span class="text-muted">Eski kayıt değiştirilmez; seçilen tarihten itibaren yeni versiyon oluşturulur.</span>
+            </div>
+        </div>
+        <div class="card-toolbar"><a asp-action="Index" class="btn btn-light">Listeye Dön</a></div>
+    </div>
+    <form method="post" asp-action="Yeni">
+        @Html.AntiForgeryToken()
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-5"></div>
+
+            <div class="row">
+                <div class="col-md-8 mb-4">
+                    <label asp-for="LogoMaterialRef" class="form-label"></label>
+                    <select asp-for="LogoMaterialRef" class="kt_select2" data-live-search="true" data-size="5" id="productSelect" required>
+                        <option value="">Ürün seçiniz</option>
+                        @foreach (var product in Model.Products)
+                        {
+                            <option value="@product.LogoMaterialRef" data-unit="@product.UnitCode">@product.ProductCode - @product.ProductName</option>
+                        }
+                    </select>
+                    <span asp-validation-for="LogoMaterialRef" class="text-danger"></span>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <label asp-for="ValidFrom" class="form-label"></label>
+                    <input asp-for="ValidFrom" type="date" class="form-control" />
+                    <span asp-validation-for="ValidFrom" class="text-danger"></span>
+                </div>
+            </div>
+
+            @if (Model.PreviousVersion != null)
+            {
+                <div class="alert alert-light-primary mb-6">
+                    Son kayıt: <strong>v@Model.PreviousVersion.LatestVersionNumber</strong> ·
+                    @Model.PreviousVersion.ValidFrom.ToString("dd.MM.yyyy") ·
+                    <strong>@Model.PreviousVersion.TotalUnitCostTry.ToString("N6") ₺ / @Model.PreviousVersion.UnitCode</strong>.
+                    Alanlar önceki versiyondan kopyalandı; değişikliklerinizi giriniz.
+                </div>
+            }
+
+            <div class="row">
+                <div class="col-md-2 mb-4">
+                    <label asp-for="UnitCode" class="form-label"></label>
+                    <input asp-for="UnitCode" class="form-control" />
+                    <span asp-validation-for="UnitCode" class="text-danger"></span>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <label asp-for="MaterialCost" class="form-label"></label>
+                    <input asp-for="MaterialCost" class="form-control cost-component" type="number" min="0" step="0.000001" />
+                    <span asp-validation-for="MaterialCost" class="text-danger"></span>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <label asp-for="LaborCost" class="form-label"></label>
+                    <input asp-for="LaborCost" class="form-control cost-component" type="number" min="0" step="0.000001" />
+                    <span asp-validation-for="LaborCost" class="text-danger"></span>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <label asp-for="FreightCost" class="form-label"></label>
+                    <input asp-for="FreightCost" class="form-control cost-component" type="number" min="0" step="0.000001" />
+                    <span asp-validation-for="FreightCost" class="text-danger"></span>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <label asp-for="OverheadCost" class="form-label"></label>
+                    <input asp-for="OverheadCost" class="form-control cost-component" type="number" min="0" step="0.000001" />
+                    <span asp-validation-for="OverheadCost" class="text-danger"></span>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <label asp-for="OtherCost" class="form-label"></label>
+                    <input asp-for="OtherCost" class="form-control cost-component" type="number" min="0" step="0.000001" />
+                    <span asp-validation-for="OtherCost" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <label asp-for="CurrencyCode" class="form-label"></label>
+                    <select asp-for="CurrencyCode" class="form-control" id="currencyCode">
+                        <option value="TRY">TRY</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <label asp-for="ExchangeRate" class="form-label"></label>
+                    <input asp-for="ExchangeRate" class="form-control" id="exchangeRate" type="number" min="0.000001" step="0.000001" />
+                    <span asp-validation-for="ExchangeRate" class="text-danger"></span>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <label class="form-label">Toplam birim maliyet</label>
+                    <div class="form-control bg-light font-weight-bold" id="totalCost">0,000000</div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <label class="form-label">TRY karşılığı</label>
+                    <div class="form-control bg-light font-weight-bold" id="totalTry">0,000000</div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <label asp-for="ChangeReason" class="form-label"></label>
+                    <textarea asp-for="ChangeReason" class="form-control" rows="3" placeholder="Örn. Ağustos 2026 gerçekleşen üretim maliyeti"></textarea>
+                    <span asp-validation-for="ChangeReason" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-right">
+            <a asp-action="Index" class="btn btn-light mr-2">Vazgeç</a>
+            <button type="submit" class="btn btn-primary">Yeni Versiyonu Kaydet</button>
+        </div>
+    </form>
+</div>
+
+@section JSSection {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var product = document.getElementById('productSelect');
+            var unit = document.getElementById('UnitCode');
+            var initialProduct = '@Model.LogoMaterialRef';
+
+            product.addEventListener('change', function () {
+                if (!this.value) return;
+                if (this.value !== initialProduct) {
+                    window.location.href = '@Url.Action("Yeni", "UrunMaliyetleri")?logoMaterialRef=' + encodeURIComponent(this.value);
+                    return;
+                }
+                var selected = this.options[this.selectedIndex];
+                if (selected && selected.dataset.unit) unit.value = selected.dataset.unit;
+            });
+
+            function numberValue(element) {
+                var value = (element.value || '0').replace(',', '.');
+                return Number.parseFloat(value) || 0;
+            }
+
+            function calculate() {
+                var total = 0;
+                document.querySelectorAll('.cost-component').forEach(function (input) { total += numberValue(input); });
+                var rate = numberValue(document.getElementById('exchangeRate'));
+                document.getElementById('totalCost').textContent = total.toLocaleString('tr-TR', { minimumFractionDigits: 6, maximumFractionDigits: 6 });
+                document.getElementById('totalTry').textContent = (total * rate).toLocaleString('tr-TR', { minimumFractionDigits: 6, maximumFractionDigits: 6 });
+            }
+
+            document.querySelectorAll('.cost-component, #exchangeRate').forEach(function (input) { input.addEventListener('input', calculate); });
+            document.getElementById('currencyCode').addEventListener('change', function () {
+                var rate = document.getElementById('exchangeRate');
+                if (this.value === 'TRY') {
+                    rate.value = '1';
+                    rate.readOnly = true;
+                } else {
+                    rate.readOnly = false;
+                }
+                calculate();
+            });
+            document.getElementById('currencyCode').dispatchEvent(new Event('change'));
+            calculate();
+        })();
+    </script>
+}

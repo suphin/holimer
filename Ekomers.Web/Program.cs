@@ -5,6 +5,7 @@ using Ekomers.Data.Repository;
 using Ekomers.Data.Repository.IRepository;
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
+using Ekomers.Data.Services.Profitability;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Configuration;
 using Ekomers.Models.ViewModels;
@@ -289,6 +290,7 @@ builder.Services.AddScoped<IEczaneService, EczaneService>();
 builder.Services.AddScoped<ISirketlerService, SirketlerService>();
 builder.Services.AddScoped<IUserShortCutFieldService, UserShortCutFieldService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<ISalesProfitabilityReportService, SalesProfitabilityReportService>();
 builder.Services.AddScoped<IYetkilendirmeService, YetkilendirmeService>();
 
 builder.Services.AddScoped<IMusterilerService, MusterilerService>();

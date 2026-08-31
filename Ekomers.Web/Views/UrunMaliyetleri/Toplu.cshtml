@@ -1,0 +1,313 @@
+@model Ekomers.Models.ViewModels.Profitability.ProductCostBulkVM
+@{
+    ViewData["Title"] = "Toplu Ürün Maliyeti Girişi";
+}
+
+<style>
+    .bulk-cost-table { min-width: 1320px; }
+    .bulk-cost-table th { white-space: nowrap; }
+    .bulk-cost-table .sticky-code { position: sticky; left: 0; z-index: 3; background: #fff; min-width: 165px; }
+    .bulk-cost-table .sticky-name { position: sticky; left: 165px; z-index: 3; background: #fff; min-width: 360px; }
+    .bulk-cost-table thead .sticky-code,
+    .bulk-cost-table thead .sticky-name { background: #f3f6f9; z-index: 4; }
+    .bulk-row.is-changed td { background-color: #e8fff3; }
+    .bulk-row.is-changed .sticky-code,
+    .bulk-row.is-changed .sticky-name { background-color: #e8fff3; }
+    .cost-detail-row td { background: #f8f9fb; }
+    .cost-input { min-width: 145px; }
+</style>
+
+<div class="card card-custom gutter-b">
+    <div class="card-header">
+        <div class="card-title">
+            <div>
+                <h3 class="card-label mb-1">Toplu Ürün Maliyeti Girişi</h3>
+                <span class="text-muted">Boş bırakılan ürünler değiştirilmez; kaydedilen her ürün için yeni tarihsel versiyon açılır.</span>
+            </div>
+        </div>
+        <div class="card-toolbar">
+            <a asp-action="Index" class="btn btn-light">Maliyet Listesine Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="Toplu" class="row align-items-end">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <label class="form-label">Ürün kodu veya adı</label>
+                <input name="search" value="@Model.Search" class="form-control" placeholder="Ara..." />
+            </div>
+            <div class="col-md-3 mb-3 mb-md-0">
+                <label asp-for="CodePrefixes" class="form-label"></label>
+                <input name="codePrefixes" value="@Model.CodePrefixes" class="form-control" placeholder="152HM,153TG" />
+                <span class="form-text text-muted">Virgülle birden fazla ön ek girilebilir.</span>
+                <span asp-validation-for="CodePrefixes" class="text-danger"></span>
+            </div>
+            <div class="col-md-2 mb-3 mb-md-0">
+                <label class="form-label">Maliyet durumu</label>
+                <select name="statusFilter" class="form-control">
+                    <option value="all" selected="@(Model.StatusFilter == "all")">Tüm ürünler</option>
+                    <option value="missing" selected="@(Model.StatusFilter == "missing")">Maliyeti olmayanlar</option>
+                    <option value="defined" selected="@(Model.StatusFilter == "defined")">Maliyeti bulunanlar</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary mr-2">Listele</button>
+                <a asp-action="Toplu" class="btn btn-light">Temizle</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form method="post" asp-action="Toplu" id="bulkCostForm">
+    @Html.AntiForgeryToken()
+    <input asp-for="Search" type="hidden" />
+    <input asp-for="StatusFilter" type="hidden" />
+    <input asp-for="CodePrefixes" type="hidden" />
+
+    <div class="card card-custom gutter-b">
+        <div class="card-header">
+            <div class="card-title"><h3 class="card-label">Ortak Versiyon Bilgileri</h3></div>
+        </div>
+        <div class="card-body">
+            <div asp-validation-summary="All" class="alert alert-light-danger mb-6"></div>
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <label asp-for="ValidFrom" class="form-label"></label>
+                    <input asp-for="ValidFrom" type="date" class="form-control" />
+                    <span asp-validation-for="ValidFrom" class="text-danger"></span>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <label asp-for="CurrencyCode" class="form-label"></label>
+                    <select asp-for="CurrencyCode" class="form-control" id="bulkCurrency">
+                        <option value="TRY">TRY</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <label asp-for="ExchangeRate" class="form-label"></label>
+                    <input asp-for="ExchangeRate" type="number" min="0" step="any" class="form-control" id="bulkRate" />
+                    <span asp-validation-for="ExchangeRate" class="text-danger"></span>
+                </div>
+                <div class="col-md-5 mb-4">
+                    <label asp-for="ChangeReason" class="form-label"></label>
+                    <input asp-for="ChangeReason" class="form-control" placeholder="Örn. Eylül 2026 güncel ürün maliyetleri" />
+                    <span asp-validation-for="ChangeReason" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="alert alert-light-primary mb-0">
+                Hızlı girişte yalnızca <strong>Yeni Birim Maliyet</strong> alanını doldurabilirsiniz.
+                Maliyet bileşenlerini ayrı izlemek için satırdaki <strong>Detay</strong> düğmesini kullanın.
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-custom">
+        <div class="card-header">
+            <div class="card-title">
+                <h3 class="card-label">Ürünler (@Model.TotalProductCount)</h3>
+            </div>
+            <div class="card-toolbar">
+                <span class="label label-light-success label-inline mr-3" id="changedCount">0 ürün değişti</span>
+                <button type="submit" class="btn btn-primary" id="saveBulkCosts">Toplu Maliyetleri Kaydet</button>
+            </div>
+        </div>
+        @if (Model.IsTruncated)
+        {
+            <div class="alert alert-light-warning rounded-0 mb-0">
+                Sonuç sayısı yüksek olduğu için ilk 500 ürün gösteriliyor. Daha dar bir arama veya durum filtresi kullanınız.
+            </div>
+        }
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0 bulk-cost-table">
+                    <thead>
+                        <tr>
+                            <th style="width:52px">Dahil</th>
+                            <th class="sticky-code">Kod</th>
+                            <th class="sticky-name">Ürün Adı</th>
+                            <th>Birim</th>
+                            <th>Son Güncelleme</th>
+                            <th class="text-right">Mevcut Maliyet</th>
+                            <th>Yeni Birim Maliyet</th>
+                            <th class="text-right">TRY Karşılığı</th>
+                            <th>Dağılım</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.Rows.Count == 0)
+                    {
+                        <tr><td colspan="9" class="text-center text-muted py-10">Filtreye uygun ürün bulunamadı.</td></tr>
+                    }
+                    else
+                    {
+                        @for (var i = 0; i < Model.Rows.Count; i++)
+                        {
+                            var row = Model.Rows[i];
+                            var detailId = $"cost-detail-{i}";
+                            <tr class="bulk-row" data-index="@i">
+                                <td class="text-center align-middle">
+                                    <input asp-for="Rows[i].Selected" class="row-selector" />
+                                    <input asp-for="Rows[i].LogoMaterialRef" type="hidden" />
+                                    <input asp-for="Rows[i].ProductCode" type="hidden" />
+                                    <input asp-for="Rows[i].ProductName" type="hidden" />
+                                    <input asp-for="Rows[i].UnitCode" type="hidden" />
+                                    <input asp-for="Rows[i].CurrentVersionNumber" type="hidden" />
+                                    <input asp-for="Rows[i].CurrentValidFrom" type="hidden" />
+                                    <input asp-for="Rows[i].CurrentUnitCostTry" type="hidden" />
+                                </td>
+                                <td class="sticky-code align-middle font-weight-bold">@row.ProductCode</td>
+                                <td class="sticky-name align-middle">@row.ProductName</td>
+                                <td class="align-middle">@row.UnitCode</td>
+                                <td class="align-middle">
+                                    @if (row.CurrentValidFrom.HasValue)
+                                    {
+                                        <div>@row.CurrentValidFrom.Value.ToString("dd.MM.yyyy")</div>
+                                        <span class="text-muted">v@row.CurrentVersionNumber</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="label label-light-warning label-inline">Maliyet yok</span>
+                                    }
+                                </td>
+                                <td class="text-right align-middle font-weight-bold">
+                                    @(row.CurrentUnitCostTry.HasValue ? $"{row.CurrentUnitCostTry:N6} ₺" : "-")
+                                </td>
+                                <td class="align-middle">
+                                    <input asp-for="Rows[i].NewUnitCost" type="number" min="0" step="any"
+                                           class="form-control cost-input quick-cost" placeholder="Yeni maliyet" />
+                                    <span asp-validation-for="Rows[i].NewUnitCost" class="text-danger"></span>
+                                </td>
+                                <td class="text-right align-middle font-weight-bold row-try-total">-</td>
+                                <td class="align-middle">
+                                    <button type="button" class="btn btn-sm btn-light-primary"
+                                            data-toggle="collapse" data-target="#@detailId" aria-expanded="false">
+                                        Detay
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="collapse cost-detail-row" id="@detailId" data-index="@i">
+                                <td colspan="9" class="p-5">
+                                    <div class="row">
+                                        <div class="col-md mb-3 mb-md-0">
+                                            <label class="form-label">Malzeme</label>
+                                            <input asp-for="Rows[i].MaterialCost" type="number" min="0" step="any" class="form-control detail-cost" />
+                                        </div>
+                                        <div class="col-md mb-3 mb-md-0">
+                                            <label class="form-label">İşçilik</label>
+                                            <input asp-for="Rows[i].LaborCost" type="number" min="0" step="any" class="form-control detail-cost" />
+                                        </div>
+                                        <div class="col-md mb-3 mb-md-0">
+                                            <label class="form-label">Nakliye</label>
+                                            <input asp-for="Rows[i].FreightCost" type="number" min="0" step="any" class="form-control detail-cost" />
+                                        </div>
+                                        <div class="col-md mb-3 mb-md-0">
+                                            <label class="form-label">Genel Gider</label>
+                                            <input asp-for="Rows[i].OverheadCost" type="number" min="0" step="any" class="form-control detail-cost" />
+                                        </div>
+                                        <div class="col-md mb-3 mb-md-0">
+                                            <label class="form-label">Diğer</label>
+                                            <input asp-for="Rows[i].OtherCost" type="number" min="0" step="any" class="form-control detail-cost" />
+                                        </div>
+                                        <div class="col-md">
+                                            <label class="form-label">Detay Toplamı</label>
+                                            <div class="form-control bg-light font-weight-bold detail-total">0,000000</div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span class="text-muted">Boş bırakılan satırlar güncellenmez.</span>
+            <button type="submit" class="btn btn-primary">Toplu Maliyetleri Kaydet</button>
+        </div>
+    </div>
+</form>
+
+@section JSSection {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var form = document.getElementById('bulkCostForm');
+            var rateInput = document.getElementById('bulkRate');
+            var currencyInput = document.getElementById('bulkCurrency');
+            var countLabel = document.getElementById('changedCount');
+
+            function numberValue(input) {
+                if (!input || !input.value) return 0;
+                return Number.parseFloat(input.value.replace(',', '.')) || 0;
+            }
+
+            function markRow(index) {
+                var row = document.querySelector('.bulk-row[data-index="' + index + '"]');
+                if (!row) return;
+                var quick = row.querySelector('.quick-cost');
+                var detail = document.querySelector('.cost-detail-row[data-index="' + index + '"]');
+                var hasDetail = detail && Array.from(detail.querySelectorAll('.detail-cost')).some(function (x) { return x.value !== ''; });
+                var changed = row.querySelector('.row-selector').checked || quick.value !== '' || hasDetail;
+                row.classList.toggle('is-changed', changed);
+                if ((quick.value !== '' || hasDetail) && !row.querySelector('.row-selector').checked) {
+                    row.querySelector('.row-selector').checked = true;
+                    changed = true;
+                }
+                var tryTotal = numberValue(quick) * numberValue(rateInput);
+                row.querySelector('.row-try-total').textContent = quick.value === ''
+                    ? '-'
+                    : tryTotal.toLocaleString('tr-TR', { minimumFractionDigits: 6, maximumFractionDigits: 6 }) + ' ₺';
+                updateCount();
+            }
+
+            function updateCount() {
+                var count = document.querySelectorAll('.bulk-row.is-changed').length;
+                countLabel.textContent = count + ' ürün değişti';
+            }
+
+            document.querySelectorAll('.bulk-row').forEach(function (row) {
+                var index = row.dataset.index;
+                row.querySelector('.quick-cost').addEventListener('input', function () { markRow(index); });
+                row.querySelector('.row-selector').addEventListener('change', function () { markRow(index); });
+            });
+
+            document.querySelectorAll('.cost-detail-row').forEach(function (detail) {
+                var index = detail.dataset.index;
+                detail.querySelectorAll('.detail-cost').forEach(function (input) {
+                    input.addEventListener('input', function () {
+                        var total = 0;
+                        detail.querySelectorAll('.detail-cost').forEach(function (x) { total += numberValue(x); });
+                        detail.querySelector('.detail-total').textContent = total.toLocaleString('tr-TR', { minimumFractionDigits: 6, maximumFractionDigits: 6 });
+                        var quick = document.querySelector('.bulk-row[data-index="' + index + '"] .quick-cost');
+                        quick.value = total > 0 ? total.toFixed(6) : '';
+                        markRow(index);
+                    });
+                });
+            });
+
+            rateInput.addEventListener('input', function () {
+                document.querySelectorAll('.bulk-row').forEach(function (row) { markRow(row.dataset.index); });
+            });
+            currencyInput.addEventListener('change', function () {
+                if (this.value === 'TRY') {
+                    rateInput.value = '1';
+                    rateInput.readOnly = true;
+                } else {
+                    rateInput.readOnly = false;
+                }
+                rateInput.dispatchEvent(new Event('input'));
+            });
+            currencyInput.dispatchEvent(new Event('change'));
+
+            form.addEventListener('submit', function (event) {
+                var count = document.querySelectorAll('.bulk-row.is-changed').length;
+                if (count === 0) return;
+                if (!window.confirm(count + ' ürün için yeni maliyet versiyonu oluşturulacak. Devam edilsin mi?')) {
+                    event.preventDefault();
+                }
+            });
+        })();
+    </script>
+}

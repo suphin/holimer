@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Ekomers.Models.Entity;
 using Ekomers.Models.Entity.Production;
 using Ekomers.Models.Entity.Purchasing;
+using Ekomers.Models.Entity.Profitability;
 
 
 
@@ -185,6 +186,9 @@ namespace Ekomers.Data
 		// Bağımsız üretim yönetimi (Prd) tabloları
 		public DbSet<PrdUnit> PrdUnits { get; set; }
 		public DbSet<PrdMaterial> PrdMaterials { get; set; }
+		public DbSet<PrdMaterialSpecificationSet> PrdMaterialSpecificationSets { get; set; }
+		public DbSet<PrdMaterialSpecificationItem> PrdMaterialSpecificationItems { get; set; }
+		public DbSet<PrdMaterialSpecificationHistory> PrdMaterialSpecificationHistories { get; set; }
 		public DbSet<PrdWarehouse> PrdWarehouses { get; set; }
 		public DbSet<PrdStockLot> PrdStockLots { get; set; }
 		public DbSet<PrdStockMovement> PrdStockMovements { get; set; }
@@ -219,6 +223,10 @@ namespace Ekomers.Data
 		public DbSet<PurGoodsReceipt> PurGoodsReceipts { get; set; }
 		public DbSet<PurGoodsReceiptLine> PurGoodsReceiptLines { get; set; }
 		public DbSet<PurQualityInspection> PurQualityInspections { get; set; }
+		public DbSet<PurQualityInspectionSpecificationResult> PurQualityInspectionSpecificationResults { get; set; }
+
+		// Satış ve kârlılık raporu uygulama tabloları (EkomerDB)
+		public DbSet<RptProductCostVersion> RptProductCostVersions { get; set; }
 
 
 
@@ -363,13 +371,42 @@ namespace Ekomers.Data
 
 			ConfigureProductionModel(modelBuilder);
 			ConfigurePurchasingModel(modelBuilder);
+			ConfigureProfitabilityModel(modelBuilder);
+		}
+
+		private static void ConfigureProfitabilityModel(ModelBuilder modelBuilder)
+		{
+			var entity = modelBuilder.Entity<RptProductCostVersion>();
+			entity.ToTable(nameof(RptProductCostVersion));
+			entity.HasIndex(x => new { x.LogoMaterialRef, x.VersionNumber }).IsUnique();
+			entity.HasIndex(x => new { x.LogoMaterialRef, x.Status, x.ValidFrom, x.ValidTo });
+			entity.Property(x => x.ProductCode).HasMaxLength(100);
+			entity.Property(x => x.ProductName).HasMaxLength(250);
+			entity.Property(x => x.UnitCode).HasMaxLength(50);
+			entity.Property(x => x.CurrencyCode).HasMaxLength(3);
+			entity.Property(x => x.Source).HasMaxLength(50);
+			entity.Property(x => x.ChangeReason).HasMaxLength(1000);
+			entity.Property(x => x.ApprovedUserId).HasMaxLength(450);
+			entity.Property(x => x.ValidFrom).HasColumnType("date");
+			entity.Property(x => x.ValidTo).HasColumnType("date");
+			entity.HasCheckConstraint("CK_RptProductCostVersion_VersionNumber", "[VersionNumber] > 0");
+			entity.HasCheckConstraint("CK_RptProductCostVersion_DateRange", "[ValidTo] IS NULL OR [ValidTo] >= [ValidFrom]");
+
+			foreach (var property in entity.Metadata.GetProperties()
+				.Where(x => x.ClrType == typeof(decimal) || x.ClrType == typeof(decimal?)))
+			{
+				property.SetPrecision(18);
+				property.SetScale(6);
+			}
 		}
 
 		private static void ConfigureProductionModel(ModelBuilder modelBuilder)
 		{
 			Type[] productionTypes =
 			[
-				typeof(PrdUnit), typeof(PrdMaterial), typeof(PrdWarehouse), typeof(PrdStockLot),
+				typeof(PrdUnit), typeof(PrdMaterial), typeof(PrdMaterialSpecificationSet),
+				typeof(PrdMaterialSpecificationItem), typeof(PrdMaterialSpecificationHistory),
+				typeof(PrdWarehouse), typeof(PrdStockLot),
 				typeof(PrdStockMovement), typeof(PrdInventoryDocument), typeof(PrdInventoryDocumentLine),
 				typeof(PrdRecipe), typeof(PrdRecipeVersion), typeof(PrdRecipeItem), typeof(PrdRecipeHistory),
 				typeof(PrdProductionPlanHeader), typeof(PrdProductionPlan), typeof(PrdProductionPlanRequirement),
@@ -397,6 +434,24 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdMaterial>().Property(x => x.Code).HasMaxLength(100);
 			modelBuilder.Entity<PrdMaterial>().Property(x => x.LogoCode).HasMaxLength(100);
 			modelBuilder.Entity<PrdMaterial>().Property(x => x.Name).HasMaxLength(250);
+			modelBuilder.Entity<PrdMaterialSpecificationSet>().HasIndex(x => new { x.MaterialId, x.VersionNumber }).IsUnique();
+			modelBuilder.Entity<PrdMaterialSpecificationSet>().HasIndex(x => new { x.MaterialId, x.Status, x.ValidFrom, x.ValidTo });
+			modelBuilder.Entity<PrdMaterialSpecificationSet>().Property(x => x.SpecificationCode).HasMaxLength(100);
+			modelBuilder.Entity<PrdMaterialSpecificationSet>().Property(x => x.ApprovedUserId).HasMaxLength(450);
+			modelBuilder.Entity<PrdMaterialSpecificationSet>().Property(x => x.Notes).HasMaxLength(1000);
+			modelBuilder.Entity<PrdMaterialSpecificationItem>().HasIndex(x => new { x.SpecificationSetId, x.Sequence });
+			modelBuilder.Entity<PrdMaterialSpecificationItem>().HasIndex(x => new { x.SpecificationSetId, x.Code });
+			modelBuilder.Entity<PrdMaterialSpecificationItem>().Property(x => x.Code).HasMaxLength(50);
+			modelBuilder.Entity<PrdMaterialSpecificationItem>().Property(x => x.Name).HasMaxLength(250);
+			modelBuilder.Entity<PrdMaterialSpecificationItem>().Property(x => x.UnitName).HasMaxLength(50);
+			modelBuilder.Entity<PrdMaterialSpecificationItem>().Property(x => x.ExpectedText).HasMaxLength(500);
+			modelBuilder.Entity<PrdMaterialSpecificationItem>().Property(x => x.AllowedValues).HasMaxLength(1000);
+			modelBuilder.Entity<PrdMaterialSpecificationItem>().Property(x => x.TestMethod).HasMaxLength(500);
+			modelBuilder.Entity<PrdMaterialSpecificationItem>().Property(x => x.Notes).HasMaxLength(1000);
+			modelBuilder.Entity<PrdMaterialSpecificationHistory>().HasIndex(x => new { x.SpecificationSetId, x.ActionDate });
+			modelBuilder.Entity<PrdMaterialSpecificationHistory>().Property(x => x.Action).HasMaxLength(100);
+			modelBuilder.Entity<PrdMaterialSpecificationHistory>().Property(x => x.Description).HasMaxLength(2000);
+			modelBuilder.Entity<PrdMaterialSpecificationHistory>().Property(x => x.ActionUserId).HasMaxLength(450);
 			modelBuilder.Entity<PrdWarehouse>().HasIndex(x => x.Code).IsUnique();
 			modelBuilder.Entity<PrdWarehouse>().Property(x => x.Code).HasMaxLength(50);
 			modelBuilder.Entity<PrdWarehouse>().Property(x => x.Name).HasMaxLength(150);
@@ -441,6 +496,10 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdStockReservation>().HasIndex(x => new { x.MaterialId, x.WarehouseId, x.StockLotId, x.Status });
 
 			modelBuilder.Entity<PrdMaterial>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdMaterialSpecificationSet>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdMaterialSpecificationItem>().HasOne<PrdMaterialSpecificationSet>().WithMany().HasForeignKey(x => x.SpecificationSetId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdMaterialSpecificationHistory>().HasOne<PrdMaterialSpecificationSet>().WithMany().HasForeignKey(x => x.SpecificationSetId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdMaterialSpecificationHistory>().HasOne<PrdMaterialSpecificationItem>().WithMany().HasForeignKey(x => x.SpecificationItemId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdStockLot>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdStockLot>().HasOne<PrdWarehouse>().WithMany().HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdStockMovement>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
@@ -517,7 +576,8 @@ namespace Ekomers.Data
 				typeof(PurPurchaseRequest), typeof(PurPurchaseRequestLine), typeof(PurRequestApprovalHistory),
 				typeof(PurSupplier), typeof(PurSupplierQuotation), typeof(PurSupplierQuotationLine),
 				typeof(PurQuotationApprovalHistory), typeof(PurPurchaseOrder), typeof(PurPurchaseOrderLine),
-				typeof(PurGoodsReceipt), typeof(PurGoodsReceiptLine), typeof(PurQualityInspection)
+				typeof(PurGoodsReceipt), typeof(PurGoodsReceiptLine), typeof(PurQualityInspection),
+				typeof(PurQualityInspectionSpecificationResult)
 			];
 
 			foreach (var type in purchasingTypes)
@@ -641,6 +701,11 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PurQualityInspection>().Property(x => x.SpecificationNotes).HasMaxLength(2000);
 			modelBuilder.Entity<PurQualityInspection>().Property(x => x.DecisionUserId).HasMaxLength(450);
 			modelBuilder.Entity<PurQualityInspection>().Property(x => x.DecisionNote).HasMaxLength(1000);
+			modelBuilder.Entity<PurQualityInspectionSpecificationResult>().HasIndex(x => new { x.QualityInspectionId, x.SpecificationItemId }).IsUnique();
+			modelBuilder.Entity<PurQualityInspectionSpecificationResult>().HasIndex(x => new { x.QualityInspectionId, x.Status });
+			modelBuilder.Entity<PurQualityInspectionSpecificationResult>().Property(x => x.TextValue).HasMaxLength(1000);
+			modelBuilder.Entity<PurQualityInspectionSpecificationResult>().Property(x => x.EvaluationNote).HasMaxLength(1000);
+			modelBuilder.Entity<PurQualityInspectionSpecificationResult>().Property(x => x.AnalyzedUserId).HasMaxLength(450);
 
 			modelBuilder.Entity<PurPurchaseRequestLine>().HasOne<PurPurchaseRequest>().WithMany().HasForeignKey(x => x.PurchaseRequestId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurPurchaseRequestLine>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
@@ -677,6 +742,10 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PurQualityInspection>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurQualityInspection>().HasOne<PrdStockLot>().WithMany().HasForeignKey(x => x.StockLotId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PurQualityInspection>().HasOne<PrdWarehouse>().WithMany().HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurQualityInspection>().HasOne<PrdMaterialSpecificationSet>().WithMany().HasForeignKey(x => x.SpecificationSetId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurQualityInspectionSpecificationResult>().HasOne<PurQualityInspection>().WithMany().HasForeignKey(x => x.QualityInspectionId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurQualityInspectionSpecificationResult>().HasOne<PrdMaterialSpecificationSet>().WithMany().HasForeignKey(x => x.SpecificationSetId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurQualityInspectionSpecificationResult>().HasOne<PrdMaterialSpecificationItem>().WithMany().HasForeignKey(x => x.SpecificationItemId).OnDelete(DeleteBehavior.Restrict);
 		}
 
 

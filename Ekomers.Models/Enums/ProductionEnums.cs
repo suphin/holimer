@@ -19,6 +19,10 @@ public enum PrdInventoryDocumentStatus { Draft = 0, Posted = 1, Cancelled = 2, R
 public enum PrdStockCostSource { Manual = 1, Opening = 2, ApprovedOffer = 3, LotAverage = 4, Transfer = 5, Production = 6, Adjustment = 7, LegacyImport = 8 }
 public enum PrdQualityControlRequirement { [Display(Name = "Gerekli Değil")] NotRequired = 0, [Display(Name = "Zorunlu")] Required = 1, [Display(Name = "İsteğe Bağlı")] Optional = 2 }
 public enum PrdQualityControlStatus { Pending = 0, Sampled = 1, Approved = 2, ConditionalApproval = 3, Rejected = 4 }
+public enum PrdSpecificationSetStatus { [Display(Name = "Taslak")] Draft = 0, [Display(Name = "Aktif")] Active = 1, [Display(Name = "Pasif")] Passive = 2 }
+public enum PrdSpecificationDataType { [Display(Name = "Sayısal")] Numeric = 1, [Display(Name = "Metin")] Text = 2, [Display(Name = "Uygun / Uygun Değil")] Boolean = 3, [Display(Name = "Seçenek Listesi")] Selection = 4 }
+public enum PrdSpecificationCriticality { [Display(Name = "Minör")] Minor = 1, [Display(Name = "Majör")] Major = 2, [Display(Name = "Kritik")] Critical = 3 }
+public enum PrdSpecificationResultStatus { [Display(Name = "Bekliyor")] Pending = 0, [Display(Name = "Uygun")] Conforming = 1, [Display(Name = "Uygun Değil")] NonConforming = 2, [Display(Name = "Şartlı Uygun")] Conditional = 3 }
 
 public static class ProductionEnumText
 {
@@ -93,6 +97,40 @@ public static class ProductionEnumText
         PrdQualityControlStatus.Approved => "Onaylandı",
         PrdQualityControlStatus.ConditionalApproval => "Şartlı Onay",
         PrdQualityControlStatus.Rejected => "Reddedildi",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PrdSpecificationSetStatus value) => value switch
+    {
+        PrdSpecificationSetStatus.Draft => "Taslak",
+        PrdSpecificationSetStatus.Active => "Aktif",
+        PrdSpecificationSetStatus.Passive => "Pasif",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PrdSpecificationDataType value) => value switch
+    {
+        PrdSpecificationDataType.Numeric => "Sayısal",
+        PrdSpecificationDataType.Text => "Metin",
+        PrdSpecificationDataType.Boolean => "Uygun / Uygun Değil",
+        PrdSpecificationDataType.Selection => "Seçenek Listesi",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PrdSpecificationCriticality value) => value switch
+    {
+        PrdSpecificationCriticality.Minor => "Minör",
+        PrdSpecificationCriticality.Major => "Majör",
+        PrdSpecificationCriticality.Critical => "Kritik",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PrdSpecificationResultStatus value) => value switch
+    {
+        PrdSpecificationResultStatus.Pending => "Bekliyor",
+        PrdSpecificationResultStatus.Conforming => "Uygun",
+        PrdSpecificationResultStatus.NonConforming => "Uygun Değil",
+        PrdSpecificationResultStatus.Conditional => "Şartlı Uygun",
         _ => value.ToString()
     };
 }

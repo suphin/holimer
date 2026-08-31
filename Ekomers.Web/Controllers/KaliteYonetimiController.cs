@@ -1,10 +1,12 @@
 using Ekomers.Data;
+using Ekomers.Models.Entity.Production;
 using Ekomers.Models.Entity.Purchasing;
 using Ekomers.Models.Enums;
 using Ekomers.Models.ViewModels.Purchasing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Ekomers.Web.Controllers;
 
@@ -76,6 +78,7 @@ public sealed class KaliteYonetimiController : Controller
                                OrderNumber = order.OrderNumber,
                                SupplierCode = supplier.Code,
                                SupplierName = supplier.Name,
+                               MaterialId = material.ID,
                                MaterialCode = material.Code,
                                MaterialName = material.Name,
                                Unit = unit.Name,
@@ -85,6 +88,7 @@ public sealed class KaliteYonetimiController : Controller
                                ExpirationDate = lot.ExpirationDate,
                                WarehouseCode = warehouse.Code,
                                WarehouseName = warehouse.Name,
+                               SpecificationSetId = inspection.SpecificationSetId,
                                Status = inspection.Status,
                                DecisionDate = inspection.DecisionDate,
                                DecisionUserId = inspection.DecisionUserId,
@@ -102,7 +106,137 @@ public sealed class KaliteYonetimiController : Controller
                                    SpecificationNotes = inspection.SpecificationNotes
                                }
                            }).FirstOrDefaultAsync(ct);
-        return model == null ? NotFound() : View(model);
+        if (model == null) return NotFound();
+        if (model.SpecificationSetId.HasValue)
+        {
+            var specification = await _context.PrdMaterialSpecificationSets.AsNoTracking().FirstOrDefaultAsync(x => x.ID == model.SpecificationSetId && x.IsDelete != true, ct);
+            if (specification != null)
+            {
+                model.SpecificationCode = specification.SpecificationCode;
+                model.SpecificationVersion = specification.VersionNumber;
+                model.SpecificationResults = await (from result in _context.PurQualityInspectionSpecificationResults.AsNoTracking()
+                                                      join item in _context.PrdMaterialSpecificationItems.AsNoTracking() on result.SpecificationItemId equals item.ID
+                                                      where result.QualityInspectionId == id && result.IsDelete != true && item.IsDelete != true
+                                                      orderby item.Sequence
+                                                      select new QualityInspectionSpecificationResultVM
+                                                      {
+                                                          ResultId = result.ID, SpecificationItemId = item.ID, Sequence = item.Sequence,
+                                                          Code = item.Code, Name = item.Name, DataType = item.DataType, UnitName = item.UnitName,
+                                                          TargetValue = item.TargetValue, MinimumValue = item.MinimumValue, MaximumValue = item.MaximumValue,
+                                                          ExpectedText = item.ExpectedText, ExpectedBoolean = item.ExpectedBoolean, AllowedValues = item.AllowedValues,
+                                                          TestMethod = item.TestMethod, IsRequired = item.IsRequired, Criticality = item.Criticality,
+                                                          NumericValue = result.NumericValue.HasValue ? result.NumericValue.Value.ToString("0.########", CultureInfo.GetCultureInfo("tr-TR")) : null,
+                                                          TextValue = result.TextValue, BooleanValue = result.BooleanValue, Status = result.Status,
+                                                          EvaluationNote = result.EvaluationNote
+                                                      }).ToListAsync(ct);
+            }
+        }
+        return View(model);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "AdminOrQuality")]
+    public async Task<IActionResult> AktifSpesifikasyonuBagla(int id, CancellationToken ct)
+    {
+        var inspection = await _context.PurQualityInspections.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (inspection == null) return NotFound();
+        if (inspection.SpecificationSetId.HasValue)
+        {
+            TempData["error"] = "Bu analize daha önce bir spesifikasyon versiyonu bağlanmış.";
+            return RedirectToAction(nameof(AnalizDetay), new { id });
+        }
+        if (IsFinal(inspection.Status))
+        {
+            TempData["error"] = "Kararı tamamlanmış analize spesifikasyon bağlanamaz.";
+            return RedirectToAction(nameof(AnalizDetay), new { id });
+        }
+        var set = await FindActiveSpecificationAsync(inspection.MaterialId, DateTime.Now, ct);
+        if (set == null)
+        {
+            TempData["error"] = "Malzeme için geçerli aktif spesifikasyon bulunamadı.";
+            return RedirectToAction(nameof(AnalizDetay), new { id });
+        }
+        inspection.SpecificationSetId = set.ID;
+        inspection.UpdateDate = DateTime.Now;
+        inspection.UpdateUserID = CurrentUser;
+        await _context.SaveChangesAsync(ct);
+        await CreateSpecificationResultRowsAsync(inspection.ID, set.ID, ct);
+        TempData["success"] = $"{set.SpecificationCode} v{set.VersionNumber} analize bağlandı.";
+        return RedirectToAction(nameof(AnalizDetay), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "AdminOrQuality")]
+    public async Task<IActionResult> SpekSonuclariKaydet(QualityInspectionSpecificationResultsFormVM model, CancellationToken ct)
+    {
+        var inspection = await _context.PurQualityInspections.FirstOrDefaultAsync(x => x.ID == model.InspectionId && x.IsDelete != true, ct);
+        if (inspection == null) return NotFound();
+        if (IsFinal(inspection.Status) && !User.IsInRole("Admin")) return Forbid();
+        if (!inspection.SpecificationSetId.HasValue)
+        {
+            TempData["error"] = "Önce aktif spesifikasyonu analize bağlayınız.";
+            return RedirectToAction(nameof(AnalizDetay), new { id = model.InspectionId });
+        }
+        var resultIds = model.Results.Select(x => x.ResultId).Distinct().ToList();
+        var results = await _context.PurQualityInspectionSpecificationResults.Where(x => resultIds.Contains(x.ID) && x.QualityInspectionId == inspection.ID && x.IsDelete != true).ToListAsync(ct);
+        var itemIds = results.Select(x => x.SpecificationItemId).Distinct().ToList();
+        var items = await _context.PrdMaterialSpecificationItems.AsNoTracking().Where(x => itemIds.Contains(x.ID) && x.IsDelete != true).ToDictionaryAsync(x => x.ID, ct);
+        var now = DateTime.Now;
+        foreach (var input in model.Results)
+        {
+            var result = results.FirstOrDefault(x => x.ID == input.ResultId);
+            if (result == null || !items.TryGetValue(result.SpecificationItemId, out var item)) continue;
+            result.NumericValue = null;
+            result.TextValue = null;
+            result.BooleanValue = null;
+            result.EvaluationNote = Clean(input.EvaluationNote);
+            result.Status = PrdSpecificationResultStatus.Pending;
+            switch (item.DataType)
+            {
+                case PrdSpecificationDataType.Numeric:
+                    if (!string.IsNullOrWhiteSpace(input.NumericValue))
+                    {
+                        if (!TryParseDecimal(input.NumericValue, out var numeric))
+                        {
+                            TempData["error"] = $"{item.Code} için geçerli bir sayısal sonuç giriniz.";
+                            return RedirectToAction(nameof(AnalizDetay), new { id = inspection.ID });
+                        }
+                        result.NumericValue = numeric;
+                        result.Status = IsNumericConforming(numeric, item) ? PrdSpecificationResultStatus.Conforming : PrdSpecificationResultStatus.NonConforming;
+                    }
+                    break;
+                case PrdSpecificationDataType.Text:
+                    result.TextValue = Clean(input.TextValue);
+                    if (result.TextValue != null)
+                    {
+                        result.Status = input.ManualStatus is PrdSpecificationResultStatus.Conforming or PrdSpecificationResultStatus.NonConforming or PrdSpecificationResultStatus.Conditional
+                            ? input.ManualStatus : PrdSpecificationResultStatus.Pending;
+                    }
+                    break;
+                case PrdSpecificationDataType.Boolean:
+                    result.BooleanValue = input.BooleanValue;
+                    if (input.BooleanValue.HasValue && item.ExpectedBoolean.HasValue)
+                        result.Status = input.BooleanValue == item.ExpectedBoolean ? PrdSpecificationResultStatus.Conforming : PrdSpecificationResultStatus.NonConforming;
+                    break;
+                case PrdSpecificationDataType.Selection:
+                    result.TextValue = Clean(input.TextValue);
+                    if (result.TextValue != null)
+                    {
+                        var allowed = SplitAllowedValues(item.AllowedValues);
+                        result.Status = allowed.Contains(result.TextValue, StringComparer.OrdinalIgnoreCase) ? PrdSpecificationResultStatus.Conforming : PrdSpecificationResultStatus.NonConforming;
+                    }
+                    break;
+            }
+            result.AnalysisDate = result.Status == PrdSpecificationResultStatus.Pending ? null : now;
+            result.AnalyzedUserId = result.Status == PrdSpecificationResultStatus.Pending ? null : CurrentUser;
+            result.UpdateDate = now;
+            result.UpdateUserID = CurrentUser;
+        }
+        if (!IsFinal(inspection.Status)) inspection.Status = PrdQualityControlStatus.Sampled;
+        inspection.AnalysisDate ??= now;
+        inspection.UpdateDate = now;
+        inspection.UpdateUserID = CurrentUser;
+        await _context.SaveChangesAsync(ct);
+        TempData["success"] = "Spesifikasyon sonuçları kaydedildi ve değerlendirildi.";
+        return RedirectToAction(nameof(AnalizDetay), new { id = inspection.ID });
     }
 
     [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "AdminOrQuality")]
@@ -152,6 +286,25 @@ public sealed class KaliteYonetimiController : Controller
             TempData["error"] = "Geçerli bir kalite kararı seçiniz.";
             return RedirectToAction(nameof(AnalizDetay), new { id = model.Id });
         }
+        if (!inspection.SpecificationSetId.HasValue)
+        {
+            TempData["error"] = "Kalite kararı vermeden önce aktif spesifikasyonu analize bağlayınız.";
+            return RedirectToAction(nameof(AnalizDetay), new { id = model.Id });
+        }
+        var specificationResults = await (from result in _context.PurQualityInspectionSpecificationResults.AsNoTracking()
+                                          join item in _context.PrdMaterialSpecificationItems.AsNoTracking() on result.SpecificationItemId equals item.ID
+                                          where result.QualityInspectionId == inspection.ID && result.IsDelete != true && item.IsDelete != true
+                                          select new { result.Status, item.IsRequired, item.Criticality, item.Code }).ToListAsync(ct);
+        if (specificationResults.Count == 0 || specificationResults.Any(x => x.IsRequired && x.Status == PrdSpecificationResultStatus.Pending))
+        {
+            TempData["error"] = "Tüm zorunlu spesifikasyon sonuçları tamamlanmadan kalite kararı verilemez.";
+            return RedirectToAction(nameof(AnalizDetay), new { id = model.Id });
+        }
+        if (model.Decision == PrdQualityControlStatus.Approved && specificationResults.Any(x => x.Status is PrdSpecificationResultStatus.NonConforming or PrdSpecificationResultStatus.Conditional))
+        {
+            TempData["error"] = "Uygun olmayan veya şartlı spek sonucu varken doğrudan onay verilemez. Şartlı onay veya red kararı seçiniz.";
+            return RedirectToAction(nameof(AnalizDetay), new { id = model.Id });
+        }
         if (!inspection.ResultDate.HasValue || string.IsNullOrWhiteSpace(inspection.ResultSummary))
         {
             TempData["error"] = "Karar vermeden önce sonuç tarihi ve analiz sonuç özetini kaydediniz.";
@@ -199,4 +352,45 @@ public sealed class KaliteYonetimiController : Controller
     private string CurrentUser => User.Identity?.Name ?? "system";
     private static bool IsFinal(PrdQualityControlStatus status) => status is PrdQualityControlStatus.Approved or PrdQualityControlStatus.ConditionalApproval or PrdQualityControlStatus.Rejected;
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private async Task<PrdMaterialSpecificationSet?> FindActiveSpecificationAsync(int materialId, DateTime date, CancellationToken ct)
+    {
+        var dayStart = date.Date;
+        var nextDay = dayStart.AddDays(1);
+        return await _context.PrdMaterialSpecificationSets.AsNoTracking()
+            .Where(x => x.MaterialId == materialId && x.Status == PrdSpecificationSetStatus.Active && x.IsDelete != true &&
+                        (!x.ValidFrom.HasValue || x.ValidFrom < nextDay) && (!x.ValidTo.HasValue || x.ValidTo >= dayStart))
+            .OrderByDescending(x => x.VersionNumber)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    private async Task CreateSpecificationResultRowsAsync(int inspectionId, int setId, CancellationToken ct)
+    {
+        var existingItemIds = await _context.PurQualityInspectionSpecificationResults.AsNoTracking().Where(x => x.QualityInspectionId == inspectionId && x.IsDelete != true).Select(x => x.SpecificationItemId).ToListAsync(ct);
+        var itemIds = await _context.PrdMaterialSpecificationItems.AsNoTracking().Where(x => x.SpecificationSetId == setId && x.IsDelete != true && !existingItemIds.Contains(x.ID)).Select(x => x.ID).ToListAsync(ct);
+        var now = DateTime.Now;
+        foreach (var itemId in itemIds)
+            _context.PurQualityInspectionSpecificationResults.Add(new PurQualityInspectionSpecificationResult { QualityInspectionId = inspectionId, SpecificationSetId = setId, SpecificationItemId = itemId, Status = PrdSpecificationResultStatus.Pending, IsActive = true, IsDelete = false, CreateDate = now, CreateUserID = CurrentUser });
+        if (itemIds.Count > 0) await _context.SaveChangesAsync(ct);
+    }
+
+    private static bool IsNumericConforming(decimal value, PrdMaterialSpecificationItem item)
+    {
+        if (item.MinimumValue.HasValue && value < item.MinimumValue.Value) return false;
+        if (item.MaximumValue.HasValue && value > item.MaximumValue.Value) return false;
+        if (!item.MinimumValue.HasValue && !item.MaximumValue.HasValue && item.TargetValue.HasValue) return value == item.TargetValue.Value;
+        return true;
+    }
+
+    private static List<string> SplitAllowedValues(string? value) => (value ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+    private static bool TryParseDecimal(string? value, out decimal result)
+    {
+        result = 0;
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        var normalized = value.Trim().Replace(" ", string.Empty);
+        if (normalized.Contains(',') && normalized.Contains('.')) normalized = normalized.LastIndexOf(',') > normalized.LastIndexOf('.') ? normalized.Replace(".", string.Empty).Replace(',', '.') : normalized.Replace(",", string.Empty);
+        else if (normalized.Contains(',')) normalized = normalized.Replace(',', '.');
+        return decimal.TryParse(normalized, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out result);
+    }
 }

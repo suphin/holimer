@@ -1,0 +1,48 @@
+@model Ekomers.Models.ViewModels.Production.MaterialSpecificationItemFormVM
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Yeni Spek Maddesi" : "Spek Maddesini Düzenle";
+}
+
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">@ViewData["Title"]<span class="d-block text-muted pt-2 font-size-sm">Spesifikasyon v@ViewBag.VersionNumber</span></h3></div></div>
+    <form asp-action="MaddeDuzenle" method="post">
+        <input asp-for="Id" type="hidden"/><input asp-for="SpecificationSetId" type="hidden"/>
+        <div class="card-body"><div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="row">
+                <div class="col-md-2 form-group"><label asp-for="Sequence"></label><input asp-for="Sequence" class="form-control"/><span asp-validation-for="Sequence" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="Code"></label><input asp-for="Code" class="form-control"/><span asp-validation-for="Code" class="text-danger"></span></div>
+                <div class="col-md-4 form-group"><label asp-for="Name"></label><input asp-for="Name" class="form-control"/><span asp-validation-for="Name" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="DataType"></label><select asp-for="DataType" asp-items="Html.GetEnumSelectList<Ekomers.Models.Enums.PrdSpecificationDataType>()" class="form-control" id="dataType"></select></div>
+            </div>
+            <div class="row numeric-fields">
+                <div class="col-md-3 form-group"><label asp-for="TargetValue"></label><input asp-for="TargetValue" class="form-control" inputmode="decimal"/><span asp-validation-for="TargetValue" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="MinimumValue"></label><input asp-for="MinimumValue" class="form-control" inputmode="decimal"/><span asp-validation-for="MinimumValue" class="text-danger"></span></div>
+                <div class="col-md-3 form-group"><label asp-for="MaximumValue"></label><input asp-for="MaximumValue" class="form-control" inputmode="decimal"/><span asp-validation-for="MaximumValue" class="text-danger"></span></div>
+                <div class="col-md-2 form-group"><label asp-for="UnitName"></label><input asp-for="UnitName" class="form-control" placeholder="%, mg, cP..."/></div>
+                <div class="col-md-1 form-group"><label asp-for="DecimalPlaces"></label><input asp-for="DecimalPlaces" class="form-control"/></div>
+            </div>
+            <div class="row text-fields"><div class="col-12 form-group"><label asp-for="ExpectedText"></label><input asp-for="ExpectedText" class="form-control"/><span asp-validation-for="ExpectedText" class="text-danger"></span></div></div>
+            <div class="row boolean-fields"><div class="col-md-4 form-group"><label asp-for="ExpectedBoolean"></label><select asp-for="ExpectedBoolean" class="form-control"><option value="">Seçiniz</option><option value="true">Uygun</option><option value="false">Uygun Değil</option></select><span asp-validation-for="ExpectedBoolean" class="text-danger"></span></div></div>
+            <div class="row selection-fields"><div class="col-12 form-group"><label asp-for="AllowedValues"></label><input asp-for="AllowedValues" class="form-control" placeholder="Beyaz; Krem; Açık Sarı"/><small class="form-text text-muted">Değerleri noktalı virgülle ayırınız.</small><span asp-validation-for="AllowedValues" class="text-danger"></span></div></div>
+            <div class="row"><div class="col-md-6 form-group"><label asp-for="TestMethod"></label><input asp-for="TestMethod" class="form-control" placeholder="USP, EP, şirket içi metot..."/></div><div class="col-md-3 form-group"><label asp-for="Criticality"></label><select asp-for="Criticality" asp-items="Html.GetEnumSelectList<Ekomers.Models.Enums.PrdSpecificationCriticality>()" class="form-control"></select></div><div class="col-md-3 form-group d-flex align-items-center"><label class="checkbox mt-6"><input asp-for="IsRequired"/><span></span>Zorunlu kontrol</label></div></div>
+            <div class="form-group"><label asp-for="Notes"></label><textarea asp-for="Notes" class="form-control" rows="2"></textarea></div>
+            <div class="alert alert-light-info mb-0">Sayısal kriterler sistem tarafından otomatik değerlendirilir. Metin sonuçlarının uygunluğu kalite personeli tarafından seçilir.</div>
+        </div>
+        <div class="card-footer"><button class="btn btn-primary">Kaydet</button><a asp-action="Detay" asp-route-materialId="@ViewBag.MaterialId" asp-route-setId="@Model.SpecificationSetId" class="btn btn-light ml-2">Vazgeç</a></div>
+    </form>
+</div>
+
+@section JSSection {
+<script>
+    (function () {
+        var select = document.getElementById('dataType');
+        function refresh() {
+            var value = select.value;
+            document.querySelectorAll('.numeric-fields,.text-fields,.boolean-fields,.selection-fields').forEach(function (x) { x.style.display = 'none'; });
+            var selector = value === '1' ? '.numeric-fields' : value === '2' ? '.text-fields' : value === '3' ? '.boolean-fields' : '.selection-fields';
+            document.querySelectorAll(selector).forEach(function (x) { x.style.display = ''; });
+        }
+        select.addEventListener('change', refresh); refresh();
+    })();
+</script>
+}

@@ -31,6 +31,63 @@
     </div>
 </div>
 
+<div class="card card-custom mb-5">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Spesifikasyon Sonuçları<span class="d-block text-muted pt-2 font-size-sm">Lotun bağlandığı spesifikasyon versiyonu değiştirilemez</span></h3></div></div>
+    <div class="card-body">
+        @if (!Model.SpecificationSetId.HasValue)
+        {
+            <div class="alert alert-light-warning">Bu analiz oluşturulurken malzemenin aktif spesifikasyonu bulunmadığı için spek maddeleri bağlanmamış. Kalite kararı vermeden önce aktif bir versiyon oluşturup analize bağlayınız.</div>
+            <a asp-controller="SpesifikasyonYonetimi" asp-action="Index" asp-route-search="@Model.MaterialCode" class="btn btn-light-primary mr-2">Malzeme Speklerini Aç</a>
+            @if (canQuality && !isFinal)
+            {
+                <form asp-action="AktifSpesifikasyonuBagla" method="post" class="d-inline"><input type="hidden" name="id" value="@Model.Id"/><button class="btn btn-primary">Aktif Speki Analize Bağla</button></form>
+            }
+        }
+        else
+        {
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-5"><div><strong>@Model.SpecificationCode · v@Model.SpecificationVersion</strong><span class="d-block text-muted">@Model.SpecificationResults.Count kontrol maddesi</span></div><a asp-controller="SpesifikasyonYonetimi" asp-action="Detay" asp-route-materialId="@Model.MaterialId" asp-route-setId="@Model.SpecificationSetId" class="btn btn-sm btn-light-primary">Spesifikasyonu Aç</a></div>
+            @if (Model.SpecificationResults.Count == 0)
+            {
+                <div class="alert alert-light-danger mb-0">Bağlanan spesifikasyonda analiz maddesi bulunamadı.</div>
+            }
+            else
+            {
+                <form asp-action="SpekSonuclariKaydet" method="post">
+                    <input type="hidden" name="InspectionId" value="@Model.Id"/>
+                    <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Spek / Yöntem</th><th>Kabul Kriteri</th><th>Gerçekleşen</th><th>Değerlendirme</th><th>Not</th></tr></thead><tbody>
+                    @for (var i = 0; i < Model.SpecificationResults.Count; i++)
+                    {
+                        var item = Model.SpecificationResults[i];
+                        var statusClass = item.Status == Ekomers.Models.Enums.PrdSpecificationResultStatus.Conforming ? "label-light-success" : item.Status == Ekomers.Models.Enums.PrdSpecificationResultStatus.NonConforming ? "label-light-danger" : item.Status == Ekomers.Models.Enums.PrdSpecificationResultStatus.Conditional ? "label-light-warning" : "label-light-primary";
+                        var criterion = item.DataType switch
+                        {
+                            Ekomers.Models.Enums.PrdSpecificationDataType.Numeric => $"Hedef: {item.TargetValue?.ToString("0.########") ?? "-"} · Min: {item.MinimumValue?.ToString("0.########") ?? "-"} · Maks: {item.MaximumValue?.ToString("0.########") ?? "-"} {item.UnitName}",
+                            Ekomers.Models.Enums.PrdSpecificationDataType.Text => item.ExpectedText,
+                            Ekomers.Models.Enums.PrdSpecificationDataType.Boolean => item.ExpectedBoolean == true ? "Uygun" : "Uygun Değil",
+                            Ekomers.Models.Enums.PrdSpecificationDataType.Selection => item.AllowedValues,
+                            _ => "-"
+                        };
+                        <tr>
+                            <td><input type="hidden" name="Results[@i].ResultId" value="@item.ResultId"/><strong>@item.Code - @item.Name</strong><span class="d-block text-muted">@(item.TestMethod ?? "Yöntem belirtilmedi") · @item.Criticality.ToTurkish() · @(item.IsRequired ? "Zorunlu" : "İsteğe bağlı")</span></td>
+                            <td>@criterion</td>
+                            <td style="min-width:190px">
+                                @if(item.DataType == Ekomers.Models.Enums.PrdSpecificationDataType.Numeric){<div class="input-group"><input name="Results[@i].NumericValue" value="@item.NumericValue" class="form-control" inputmode="decimal" readonly="@(!canEdit)"/><div class="input-group-append"><span class="input-group-text">@item.UnitName</span></div></div>}
+                                else if(item.DataType == Ekomers.Models.Enums.PrdSpecificationDataType.Text){<input name="Results[@i].TextValue" value="@item.TextValue" class="form-control" readonly="@(!canEdit)"/>}
+                                else if(item.DataType == Ekomers.Models.Enums.PrdSpecificationDataType.Boolean){<select name="Results[@i].BooleanValue" class="form-control" disabled="@(!canEdit)"><option value="">Seçiniz</option><option value="true" selected="@(item.BooleanValue == true)">Uygun</option><option value="false" selected="@(item.BooleanValue == false)">Uygun Değil</option></select>}
+                                else {<select name="Results[@i].TextValue" class="form-control" disabled="@(!canEdit)"><option value="">Seçiniz</option>@foreach(var option in (item.AllowedValues ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)){<option value="@option" selected="@(string.Equals(option,item.TextValue,StringComparison.OrdinalIgnoreCase))">@option</option>}</select>}
+                            </td>
+                            <td style="min-width:150px">@if(item.DataType == Ekomers.Models.Enums.PrdSpecificationDataType.Text){<select name="Results[@i].ManualStatus" class="form-control" disabled="@(!canEdit)"><option value="0" selected="@(item.Status == Ekomers.Models.Enums.PrdSpecificationResultStatus.Pending)">Bekliyor</option><option value="1" selected="@(item.Status == Ekomers.Models.Enums.PrdSpecificationResultStatus.Conforming)">Uygun</option><option value="2" selected="@(item.Status == Ekomers.Models.Enums.PrdSpecificationResultStatus.NonConforming)">Uygun Değil</option><option value="3" selected="@(item.Status == Ekomers.Models.Enums.PrdSpecificationResultStatus.Conditional)">Şartlı Uygun</option></select>}else{<span class="label @statusClass label-inline">@item.Status.ToTurkish()</span>}</td>
+                            <td><input name="Results[@i].EvaluationNote" value="@item.EvaluationNote" class="form-control" readonly="@(!canEdit)"/></td>
+                        </tr>
+                    }
+                    </tbody></table></div>
+                    @if(canEdit){<div class="text-right"><button class="btn btn-primary">Spek Sonuçlarını Kaydet ve Değerlendir</button></div>}
+                </form>
+            }
+        }
+    </div>
+</div>
+
 <form asp-action="AnalizKaydet" method="post">
     <input asp-for="Form.Id" type="hidden" />
     <div class="card card-custom mb-5">

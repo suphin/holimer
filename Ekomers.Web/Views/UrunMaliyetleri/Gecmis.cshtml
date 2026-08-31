@@ -1,0 +1,61 @@
+@model Ekomers.Models.ViewModels.Profitability.ProductCostHistoryVM
+@{
+    ViewData["Title"] = "Maliyet Geçmişi";
+}
+
+<div class="card card-custom gutter-b">
+    <div class="card-header">
+        <div class="card-title">
+            <div>
+                <h3 class="card-label mb-1">@Model.ProductCode</h3>
+                <span class="text-muted">@Model.ProductName · maliyet versiyon geçmişi</span>
+            </div>
+        </div>
+        <div class="card-toolbar">
+            <a asp-action="Yeni" asp-route-logoMaterialRef="@Model.LogoMaterialRef" class="btn btn-primary mr-2">Yeni Versiyon</a>
+            <a asp-action="Index" class="btn btn-light">Listeye Dön</a>
+        </div>
+    </div>
+</div>
+
+@foreach (var version in Model.Versions)
+{
+    <div class="card card-custom gutter-b">
+        <div class="card-header">
+            <div class="card-title">
+                <h3 class="card-label">v@version.VersionNumber</h3>
+                <span class="label label-inline ml-3 @(version.Status == "Aktif" ? "label-light-success" : "label-light-secondary")">@version.Status</span>
+            </div>
+            <div class="card-toolbar text-muted">
+                @version.ValidFrom.ToString("dd.MM.yyyy") – @(version.ValidTo?.ToString("dd.MM.yyyy") ?? "Devam ediyor")
+            </div>
+        </div>
+        <div class="card-body">
+            @if (version.Source == "BulkTotal")
+            {
+                <div class="alert alert-light-info">Bu versiyon bileşenlere dağıtılmadan, toplu ekrandan doğrudan toplam maliyet olarak girildi.</div>
+                <div class="row">
+                    <div class="col-md-6 mb-4"><div class="text-muted">Doğrudan Girilen Birim Maliyet</div><div class="font-weight-bold">@version.TotalUnitCost.ToString("N6") @version.CurrencyCode</div></div>
+                    <div class="col-md-6 mb-4"><div class="text-muted">TRY Karşılığı</div><div class="font-weight-bold text-primary">@version.TotalUnitCostTry.ToString("N6") ₺ / @version.UnitCode</div></div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-md-2 mb-4"><div class="text-muted">Malzeme</div><div class="font-weight-bold">@version.MaterialCost.ToString("N6")</div></div>
+                    <div class="col-md-2 mb-4"><div class="text-muted">İşçilik</div><div class="font-weight-bold">@version.LaborCost.ToString("N6")</div></div>
+                    <div class="col-md-2 mb-4"><div class="text-muted">Nakliye</div><div class="font-weight-bold">@version.FreightCost.ToString("N6")</div></div>
+                    <div class="col-md-2 mb-4"><div class="text-muted">Genel Gider</div><div class="font-weight-bold">@version.OverheadCost.ToString("N6")</div></div>
+                    <div class="col-md-2 mb-4"><div class="text-muted">Diğer</div><div class="font-weight-bold">@version.OtherCost.ToString("N6")</div></div>
+                    <div class="col-md-2 mb-4"><div class="text-muted">Toplam</div><div class="font-weight-bold">@version.TotalUnitCost.ToString("N6") @version.CurrencyCode</div></div>
+                </div>
+            }
+            <div class="row border-top pt-4">
+                <div class="col-md-3"><div class="text-muted">Kur</div><div>@version.ExchangeRate.ToString("N6")</div></div>
+                <div class="col-md-3"><div class="text-muted">TRY Birim Maliyet</div><div class="font-weight-bold text-primary">@version.TotalUnitCostTry.ToString("N6") ₺ / @version.UnitCode</div></div>
+                <div class="col-md-3"><div class="text-muted">Oluşturan</div><div>@version.CreateUser · @(version.CreateDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div></div>
+                <div class="col-md-3"><div class="text-muted">Değişiklik Nedeni</div><div>@(version.ChangeReason ?? "-")</div></div>
+            </div>
+        </div>
+    </div>
+}

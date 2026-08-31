@@ -26,6 +26,50 @@ public class PrdMaterial : BaseEntity
     public string? Description { get; set; }
 }
 
+public class PrdMaterialSpecificationSet : BaseEntity
+{
+    public int MaterialId { get; set; }
+    public string SpecificationCode { get; set; } = string.Empty;
+    public int VersionNumber { get; set; }
+    public PrdSpecificationSetStatus Status { get; set; } = PrdSpecificationSetStatus.Draft;
+    public DateTime? ValidFrom { get; set; }
+    public DateTime? ValidTo { get; set; }
+    public DateTime? ApprovedDate { get; set; }
+    public string? ApprovedUserId { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class PrdMaterialSpecificationItem : BaseEntity
+{
+    public int SpecificationSetId { get; set; }
+    public int Sequence { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public PrdSpecificationDataType DataType { get; set; }
+    public string? UnitName { get; set; }
+    public decimal? TargetValue { get; set; }
+    public decimal? MinimumValue { get; set; }
+    public decimal? MaximumValue { get; set; }
+    public string? ExpectedText { get; set; }
+    public bool? ExpectedBoolean { get; set; }
+    public string? AllowedValues { get; set; }
+    public string? TestMethod { get; set; }
+    public bool IsRequired { get; set; } = true;
+    public PrdSpecificationCriticality Criticality { get; set; } = PrdSpecificationCriticality.Major;
+    public int DecimalPlaces { get; set; } = 2;
+    public string? Notes { get; set; }
+}
+
+public class PrdMaterialSpecificationHistory : BaseEntity
+{
+    public int SpecificationSetId { get; set; }
+    public int? SpecificationItemId { get; set; }
+    public string Action { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public DateTime ActionDate { get; set; }
+    public string ActionUserId { get; set; } = string.Empty;
+}
+
 public class PrdWarehouse : BaseEntity
 {
     public string Code { get; set; } = string.Empty;

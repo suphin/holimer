@@ -46,11 +46,18 @@ namespace Ekomers.Web.Controllers
             _emailSender = emailSender;
             _menuService = menuService;
         }
+        //public IActionResult Index()
+        //{
+        //	var logoConnection = @"";
 
+        //	var encryptedLogoConnection = CryptoHelper.Encrypt(logoConnection);
+
+        //	return Content(encryptedLogoConnection);
+        //}
         public IActionResult Index()
         {
-			return RedirectToAction(nameof(HomeController.SignIn));
-		}
+            return RedirectToAction(nameof(HomeController.SignIn));
+        }
 
         public IActionResult SignUp()
         {

@@ -1658,9 +1658,18 @@ public sealed class SatinalmaYonetimiController : Controller
             .Where(x => x.GoodsReceiptId == goodsReceiptId && x.IsDelete != true && x.QuarantineStockLotId.HasValue && !existingLineIds.Contains(x.ID))
             .OrderBy(x => x.Sequence)
             .ToListAsync(ct);
+        var materialIds = lines.Select(x => x.MaterialId).Distinct().ToList();
+        var today = now.Date;
+        var activeSets = await _context.PrdMaterialSpecificationSets.AsNoTracking()
+            .Where(x => materialIds.Contains(x.MaterialId) && x.Status == PrdSpecificationSetStatus.Active && x.IsDelete != true &&
+                        (!x.ValidFrom.HasValue || x.ValidFrom <= today) && (!x.ValidTo.HasValue || x.ValidTo >= today))
+            .OrderByDescending(x => x.VersionNumber)
+            .ToListAsync(ct);
+        var activeSetByMaterial = activeSets.GroupBy(x => x.MaterialId).ToDictionary(x => x.Key, x => x.First());
+        var createdInspections = new List<PurQualityInspection>();
         foreach (var line in lines)
         {
-            _context.PurQualityInspections.Add(new PurQualityInspection
+            var inspection = new PurQualityInspection
             {
                 InspectionNumber = $"KA-{goodsReceiptId}-{line.ID}-{now:yyyyMMddHHmmssfff}",
                 GoodsReceiptId = goodsReceiptId,
@@ -1668,14 +1677,40 @@ public sealed class SatinalmaYonetimiController : Controller
                 MaterialId = line.MaterialId,
                 StockLotId = line.QuarantineStockLotId!.Value,
                 WarehouseId = receipt.QuarantineWarehouseId.Value,
+                SpecificationSetId = activeSetByMaterial.TryGetValue(line.MaterialId, out var specificationSet) ? specificationSet.ID : null,
                 Status = PrdQualityControlStatus.Pending,
                 IsActive = true,
                 IsDelete = false,
                 CreateDate = now,
                 CreateUserID = user
-            });
+            };
+            _context.PurQualityInspections.Add(inspection);
+            createdInspections.Add(inspection);
         }
-        if (lines.Count > 0) await _context.SaveChangesAsync(ct);
+        if (lines.Count > 0)
+        {
+            await _context.SaveChangesAsync(ct);
+            var setIds = createdInspections.Where(x => x.SpecificationSetId.HasValue).Select(x => x.SpecificationSetId!.Value).Distinct().ToList();
+            var specificationItems = await _context.PrdMaterialSpecificationItems.AsNoTracking().Where(x => setIds.Contains(x.SpecificationSetId) && x.IsDelete != true).ToListAsync(ct);
+            foreach (var inspection in createdInspections.Where(x => x.SpecificationSetId.HasValue))
+            {
+                foreach (var item in specificationItems.Where(x => x.SpecificationSetId == inspection.SpecificationSetId))
+                {
+                    _context.PurQualityInspectionSpecificationResults.Add(new PurQualityInspectionSpecificationResult
+                    {
+                        QualityInspectionId = inspection.ID,
+                        SpecificationSetId = inspection.SpecificationSetId!.Value,
+                        SpecificationItemId = item.ID,
+                        Status = PrdSpecificationResultStatus.Pending,
+                        IsActive = true,
+                        IsDelete = false,
+                        CreateDate = now,
+                        CreateUserID = user
+                    });
+                }
+            }
+            await _context.SaveChangesAsync(ct);
+        }
         return lines.Count;
     }
 

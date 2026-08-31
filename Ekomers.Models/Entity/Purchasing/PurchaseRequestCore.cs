@@ -234,6 +234,7 @@ public class PurQualityInspection : BaseEntity
     public int MaterialId { get; set; }
     public int StockLotId { get; set; }
     public int WarehouseId { get; set; }
+    public int? SpecificationSetId { get; set; }
     public PrdQualityControlStatus Status { get; set; } = PrdQualityControlStatus.Pending;
     public string? SampleNumber { get; set; }
     public DateTime? SampleDate { get; set; }
@@ -247,4 +248,18 @@ public class PurQualityInspection : BaseEntity
     public DateTime? DecisionDate { get; set; }
     public string? DecisionUserId { get; set; }
     public string? DecisionNote { get; set; }
+}
+
+public class PurQualityInspectionSpecificationResult : BaseEntity
+{
+    public int QualityInspectionId { get; set; }
+    public int SpecificationSetId { get; set; }
+    public int SpecificationItemId { get; set; }
+    public decimal? NumericValue { get; set; }
+    public string? TextValue { get; set; }
+    public bool? BooleanValue { get; set; }
+    public PrdSpecificationResultStatus Status { get; set; } = PrdSpecificationResultStatus.Pending;
+    public string? EvaluationNote { get; set; }
+    public DateTime? AnalysisDate { get; set; }
+    public string? AnalyzedUserId { get; set; }
 }

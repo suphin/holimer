@@ -449,7 +449,7 @@
 
 <!--end::FW-->
 <!--begin::FW-->
-@if (User.HasClaim("Modul", "Rapor") || User.IsInRole("Admin"))
+@if (User.HasClaim("Modul", "Rapor") || User.IsInRole("Admin") || User.IsInRole("Yönetici"))
 {
 	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "Rapor" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 		<a href="javascript:;" class="menu-link menu-toggle">
@@ -506,6 +506,24 @@
 								</li>
 							</ul>
 						</div>
+					</li>
+				}
+				@if (User.HasClaim("Rapor", "SatisKarlilik") || User.IsInRole("Admin") || User.IsInRole("Yönetici"))
+				{
+					<li class="menu-item @(controllerName == "SatisKarlilik" ? "menu-item-active" : "")" aria-haspopup="true">
+						<a asp-controller="SatisKarlilik" asp-action="Index" class="menu-link">
+							<i class="menu-bullet menu-bullet-dot"><span></span></i>
+							<span class="menu-text">Satış Kârlılık</span>
+						</a>
+					</li>
+				}
+				@if (User.IsInRole("Admin") || User.IsInRole("Yönetici"))
+				{
+					<li class="menu-item @(controllerName == "UrunMaliyetleri" ? "menu-item-active" : "")" aria-haspopup="true">
+						<a asp-controller="UrunMaliyetleri" asp-action="Index" class="menu-link">
+							<i class="menu-bullet menu-bullet-dot"><span></span></i>
+							<span class="menu-text">Ürün Maliyetleri</span>
+						</a>
 					</li>
 				}
 				@if (User.HasClaim("Rapor", "BorcAlacak") || User.IsInRole("Admin"))
@@ -982,6 +1000,7 @@
 		<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
 			<li class="menu-item menu-item-parent" aria-haspopup="true"><span class="menu-link"><span class="menu-text">Kalite Yönetimi</span></span></li>
 			<li class="menu-item @(controllerName == "KaliteYonetimi" ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="KaliteYonetimi" asp-action="Analizler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Karantina Analizleri</span></a></li>
+			<li class="menu-item @(controllerName == "SpesifikasyonYonetimi" ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SpesifikasyonYonetimi" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Malzeme Spesifikasyonları</span></a></li>
 		</ul></div>
 	</li>
 }

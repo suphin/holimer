@@ -1,0 +1,65 @@
+@model Ekomers.Models.ViewModels.Production.MaterialSpecificationDetailVM
+@{
+    ViewData["Title"] = "Malzeme Spesifikasyonu";
+    var canQuality = User.IsInRole("Admin") || User.HasClaim("Modul", "QUALITY") || User.HasClaim("Authorize", "KaliteOnay");
+    var isDraft = Model.Set?.Status == Ekomers.Models.Enums.PrdSpecificationSetStatus.Draft;
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">@Model.MaterialCode<span class="d-block text-muted pt-2 font-size-sm">@Model.MaterialName · @Model.MaterialType.ToTurkish()</span></h3></div>
+        <div class="card-toolbar"><a asp-action="Index" class="btn btn-sm btn-light mr-2">Listeye Dön</a>@if(canQuality){<form asp-action="YeniVersiyon" method="post"><input type="hidden" name="materialId" value="@Model.MaterialId"/><input type="hidden" name="sourceSetId" value="@Model.SelectedSetId"/><button class="btn btn-sm btn-primary">@(Model.Set == null ? "İlk Speki Oluştur" : "Bu Versiyondan Yeni Taslak")</button></form>}</div>
+    </div>
+    @if (Model.Versions.Count > 0)
+    {
+        <div class="card-body py-4"><div class="d-flex flex-wrap align-items-center"><strong class="mr-4">Versiyonlar:</strong>@foreach(var version in Model.Versions){var active=version.Id==Model.SelectedSetId;<a asp-action="Detay" asp-route-materialId="@Model.MaterialId" asp-route-setId="@version.Id" class="btn btn-sm @(active ? "btn-primary" : "btn-light") mr-2 mb-2">v@version.VersionNumber · @version.Status.ToTurkish() · @version.ItemCount madde</a>}</div></div>
+    }
+</div>
+
+@if (Model.Set == null)
+{
+    <div class="alert alert-light-warning">Bu malzeme için henüz spesifikasyon oluşturulmamış.</div>
+}
+else
+{
+    <form asp-action="BaslikKaydet" method="post">
+        <input asp-for="Set.Id" name="Id" type="hidden"/><input asp-for="Set.MaterialId" name="MaterialId" type="hidden"/>
+        <div class="card card-custom mb-5">
+            <div class="card-header"><div class="card-title"><h3 class="card-label">@Model.Set.SpecificationCode · v@Model.Set.VersionNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.Set.Status.ToTurkish()</span></h3></div><div class="card-toolbar"><span class="label @(Model.Set.Status == Ekomers.Models.Enums.PrdSpecificationSetStatus.Active ? "label-light-success" : Model.Set.Status == Ekomers.Models.Enums.PrdSpecificationSetStatus.Draft ? "label-light-primary" : "label-light") label-inline">@Model.Set.Status.ToTurkish()</span></div></div>
+            <div class="card-body"><div class="row">
+                <div class="col-md-3 form-group"><label asp-for="Set.SpecificationCode"></label><input asp-for="Set.SpecificationCode" name="SpecificationCode" class="form-control" readonly="@(!isDraft)"/></div>
+                <div class="col-md-2 form-group"><label>Versiyon</label><input value="v@Model.Set.VersionNumber" class="form-control" readonly/></div>
+                <div class="col-md-3 form-group"><label asp-for="Set.ValidFrom"></label><input asp-for="Set.ValidFrom" name="ValidFrom" type="date" class="form-control" readonly="@(!isDraft)"/></div>
+                <div class="col-md-3 form-group"><label asp-for="Set.ValidTo"></label><input asp-for="Set.ValidTo" name="ValidTo" type="date" class="form-control" readonly="@(!isDraft)"/></div>
+                <div class="col-12 form-group"><label asp-for="Set.Notes"></label><textarea asp-for="Set.Notes" name="Notes" class="form-control" rows="2" readonly="@(!isDraft)"></textarea></div>
+            </div>@if(Model.Set.ApprovedDate.HasValue){<div class="text-muted">Onay: @Model.Set.ApprovedDate.Value.ToString("dd.MM.yyyy HH:mm") · @(Model.Set.ApprovedUserId ?? "-")</div>}</div>
+            @if (canQuality && isDraft) { <div class="card-footer text-right"><button class="btn btn-light-primary">Başlığı Kaydet</button><button asp-action="Aktiflestir" asp-route-id="@Model.Set.Id" formmethod="post" class="btn btn-success ml-2" onclick="return confirm('Bu versiyon aktifleştirilecek ve mevcut aktif versiyon pasife alınacak. Devam edilsin mi?');">Versiyonu Aktifleştir</button></div> }
+        </div>
+    </form>
+
+    <div class="card card-custom mb-5">
+        <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Spesifikasyon Maddeleri (@Model.Items.Count)<span class="d-block text-muted pt-2 font-size-sm">Sayısal ve nitel kalite kontrol kriterleri</span></h3></div>@if(canQuality && isDraft){<div class="card-toolbar"><a asp-action="MaddeDuzenle" asp-route-setId="@Model.Set.Id" class="btn btn-primary">Yeni Spek Maddesi</a></div>}</div>
+        <div class="card-body">
+            @if(Model.Items.Count == 0){<div class="alert alert-light-warning mb-0">Henüz spek maddesi eklenmemiş.</div>}
+            else
+            {
+                <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Sıra</th><th>Kod / Ad</th><th>Tip</th><th>Kabul Kriteri</th><th>Yöntem</th><th>Kritiklik</th><th>Zorunlu</th><th></th></tr></thead><tbody>
+                @foreach(var item in Model.Items)
+                {
+                    var criterion = item.DataType switch
+                    {
+                        Ekomers.Models.Enums.PrdSpecificationDataType.Numeric => $"Hedef: {item.TargetValue?.ToString("0.########") ?? "-"} · Min: {item.MinimumValue?.ToString("0.########") ?? "-"} · Maks: {item.MaximumValue?.ToString("0.########") ?? "-"} {item.UnitName}",
+                        Ekomers.Models.Enums.PrdSpecificationDataType.Text => item.ExpectedText,
+                        Ekomers.Models.Enums.PrdSpecificationDataType.Boolean => item.ExpectedBoolean == true ? "Uygun" : "Uygun Değil",
+                        Ekomers.Models.Enums.PrdSpecificationDataType.Selection => item.AllowedValues,
+                        _ => "-"
+                    };
+                    <tr><td>@item.Sequence</td><td><strong>@item.Code</strong><span class="d-block text-muted">@item.Name</span></td><td>@item.DataType.ToTurkish()</td><td>@criterion</td><td>@(item.TestMethod ?? "-")</td><td><span class="label @(item.Criticality == Ekomers.Models.Enums.PrdSpecificationCriticality.Critical ? "label-light-danger" : item.Criticality == Ekomers.Models.Enums.PrdSpecificationCriticality.Major ? "label-light-warning" : "label-light-info") label-inline">@item.Criticality.ToTurkish()</span></td><td>@(item.IsRequired ? "Evet" : "Hayır")</td><td class="text-right">@if(canQuality && isDraft){<a asp-action="MaddeDuzenle" asp-route-setId="@Model.Set.Id" asp-route-id="@item.Id" class="btn btn-sm btn-light-primary mr-1">Düzenle</a><form asp-action="MaddeSil" method="post" class="d-inline" onsubmit="return confirm('Spek maddesi silinsin mi?');"><input type="hidden" name="id" value="@item.Id"/><button class="btn btn-sm btn-light-danger">Sil</button></form>}</td></tr>
+                }
+                </tbody></table></div>
+            }
+        </div>
+    </div>
+
+    <div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Hareket Geçmişi</h3></div></div><div class="card-body">@if(Model.History.Count==0){<div class="text-muted">Henüz hareket kaydı yok.</div>}else{<div class="timeline timeline-3">@foreach(var history in Model.History){<div class="timeline-items"><div class="timeline-item"><div class="timeline-media"><i class="flaticon2-check-mark text-primary"></i></div><div class="timeline-content"><div class="d-flex align-items-center justify-content-between mb-2"><span class="font-weight-bold">@history.Action</span><span class="text-muted">@history.ActionDate.ToString("dd.MM.yyyy HH:mm") · @history.ActionUserId</span></div><div class="text-muted">@history.Description</div></div></div></div>}</div>}</div></div>
+}

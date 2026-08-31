@@ -1,0 +1,158 @@
+@model Ekomers.Models.ViewModels.Profitability.SalesProfitabilityPreviewVM
+@{
+    ViewData["Title"] = "Satış Kârlılık Veri Kontrolü";
+}
+
+<div class="card card-custom gutter-b">
+    <div class="card-header">
+        <div class="card-title">
+            <div>
+                <h3 class="card-label mb-1">Satış Kârlılık Veri Kontrolü</h3>
+                <span class="text-muted">Logo: VW_RPT_SATIS_KARLILIK_100 · salt okunur</span>
+            </div>
+        </div>
+        @if (User.IsInRole("Admin") || User.IsInRole("Yönetici"))
+        {
+            <div class="card-toolbar">
+                <a asp-controller="UrunMaliyetleri" asp-action="Index" class="btn btn-light-primary">Ürün Maliyetleri</a>
+            </div>
+        }
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row">
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Başlangıç</label>
+                <input type="date" name="startDate" value="@Model.Filter.StartDate.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Bitiş</label>
+                <input type="date" name="endDate" value="@Model.Filter.EndDate.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Fatura / Cari / Ürün</label>
+                <input type="text" name="search" value="@Model.Filter.Search" class="form-control" placeholder="Kod veya ad" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Fiyat durumu</label>
+                <select name="priceStatus" class="form-control">
+                    <option value="">Tümü</option>
+                    @foreach (var status in Model.PriceStatuses)
+                    {
+                        <option value="@status" selected="@(status == Model.Filter.PriceStatus)">@status</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 mb-3 d-flex align-items-end">
+                <input type="hidden" name="pageSize" value="@Model.Filter.PageSize" />
+                <button type="submit" class="btn btn-primary btn-block">Raporu Getir</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-2"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Satır</div><div class="font-size-h4 font-weight-bold">@Model.TotalCount</div></div></div></div>
+    <div class="col-md-2"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Referans Brüt</div><div class="font-size-h5 font-weight-bold">@Model.ReferenceGrossRevenue.ToString("N2") ₺</div></div></div></div>
+    <div class="col-md-2"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Net Ciro</div><div class="font-size-h5 font-weight-bold">@Model.NetRevenue.ToString("N2") ₺</div></div></div></div>
+    <div class="col-md-2"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">İskonto</div><div class="font-size-h5 font-weight-bold">@Model.DiscountAmount.ToString("N2") ₺</div></div></div></div>
+    <div class="col-md-2"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">İskonto Oranı</div><div class="font-size-h5 font-weight-bold">%@Model.DiscountRate.ToString("N2")</div></div></div></div>
+    <div class="col-md-2"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Fiyat Sorunu</div><div class="font-size-h4 font-weight-bold text-danger">@Model.MissingReferencePriceCount</div></div></div></div>
+</div>
+
+<div class="row">
+    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Bilinen Satış Maliyeti</div><div class="font-size-h5 font-weight-bold">@Model.KnownCostAmount.ToString("N2") ₺</div></div></div></div>
+    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Brüt Kâr</div><div class="font-size-h5 font-weight-bold">@Model.GrossProfit.ToString("N2") ₺</div></div></div></div>
+    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Net Kâr</div><div class="font-size-h5 font-weight-bold @(Model.NetProfit < 0 ? "text-danger" : "text-success")">@Model.NetProfit.ToString("N2") ₺</div></div></div></div>
+    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Net Kâr Oranı</div><div class="font-size-h5 font-weight-bold @(Model.NetProfitRate < 0 ? "text-danger" : "text-success")">%@Model.NetProfitRate.ToString("N2")</div></div></div></div>
+    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Maliyeti Eksik Satır</div><div class="font-size-h4 font-weight-bold text-warning">@Model.MissingCostLineCount</div></div></div></div>
+</div>
+
+@if (Model.MissingCostLineCount > 0)
+{
+    <div class="alert alert-light-warning">
+        <strong>Dikkat:</strong> @Model.MissingCostLineCount satış satırında fatura tarihini kapsayan ürün maliyeti bulunamadı.
+        Kâr toplamları yalnızca maliyeti tanımlı satırların maliyetini içerir.
+    </div>
+}
+
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Fatura Satırları</h3></div></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Tarih / Fatura</th>
+                        <th>Cari</th>
+                        <th>Ürün</th>
+                        <th class="text-right">Miktar</th>
+                        <th>Referans Fiyat</th>
+                        <th class="text-right">Referans Brüt</th>
+                        <th class="text-right">Net</th>
+                        <th class="text-right">İskonto</th>
+                        <th class="text-right">Maliyet</th>
+                        <th class="text-right">Net Kâr</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model.Rows.Count == 0)
+                {
+                    <tr><td colspan="11" class="text-center text-muted py-10">Seçilen aralıkta kayıt bulunamadı.</td></tr>
+                }
+                else
+                {
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td>
+                                <div class="font-weight-bold">@row.InvoiceDate.ToString("dd.MM.yyyy")</div>
+                                <div class="text-muted">@row.InvoiceNumber @(row.IsReturn ? "· İade" : string.Empty)</div>
+                            </td>
+                            <td><div class="font-weight-bold">@row.CustomerCode</div><div class="text-muted">@row.CustomerName</div></td>
+                            <td><div class="font-weight-bold">@row.ProductCode</div><div class="text-muted">@row.ProductName</div></td>
+                            <td class="text-right">@row.Quantity.ToString("N3") @row.Unit</td>
+                            <td>
+                                <div>@(row.ReferenceUnitPrice?.ToString("N6") ?? "-") ₺</div>
+                                <div class="text-muted">@(row.ReferencePriceDate?.ToString("dd.MM.yyyy") ?? "Fiyat yok")</div>
+                            </td>
+                            <td class="text-right">@(row.ReferenceGrossRevenue?.ToString("N2") ?? "-")</td>
+                            <td class="text-right font-weight-bold">@row.NetRevenue.ToString("N2")</td>
+                            <td class="text-right">
+                                <div>@(row.DiscountAmount?.ToString("N2") ?? "-")</div>
+                                <div class="text-muted">@(row.DiscountRate.HasValue ? $"%{row.DiscountRate:N2}" : "-")</div>
+                            </td>
+                            <td class="text-right">
+                                <div>@(row.CostAmount?.ToString("N2") ?? "-")</div>
+                                <div class="text-muted">@(row.UnitCostTry.HasValue ? $"{row.UnitCostTry:N6} ₺ · {row.CostStatus}" : row.CostStatus)</div>
+                            </td>
+                            <td class="text-right">
+                                <div class="font-weight-bold @(row.NetProfit < 0 ? "text-danger" : "text-success")">@(row.NetProfit?.ToString("N2") ?? "-")</div>
+                                <div class="text-muted">@(row.NetProfitRate.HasValue ? $"%{row.NetProfitRate:N2}" : "-")</div>
+                            </td>
+                            <td><span class="label label-inline @(row.PriceStatus == "HESAPLANABILIR" ? "label-light-success" : "label-light-warning")">@row.PriceStatus</span></td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@if (Model.PageCount > 1)
+{
+    <div class="d-flex justify-content-between align-items-center mt-5">
+        <span class="text-muted">Sayfa @Model.Filter.Page / @Model.PageCount</span>
+        <div>
+            @if (Model.Filter.Page > 1)
+            {
+                <a class="btn btn-light-primary" asp-action="Index" asp-route-startDate="@Model.Filter.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.Filter.EndDate.ToString("yyyy-MM-dd")" asp-route-search="@Model.Filter.Search" asp-route-priceStatus="@Model.Filter.PriceStatus" asp-route-page="@(Model.Filter.Page - 1)" asp-route-pageSize="@Model.Filter.PageSize">Önceki</a>
+            }
+            @if (Model.Filter.Page < Model.PageCount)
+            {
+                <a class="btn btn-light-primary" asp-action="Index" asp-route-startDate="@Model.Filter.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.Filter.EndDate.ToString("yyyy-MM-dd")" asp-route-search="@Model.Filter.Search" asp-route-priceStatus="@Model.Filter.PriceStatus" asp-route-page="@(Model.Filter.Page + 1)" asp-route-pageSize="@Model.Filter.PageSize">Sonraki</a>
+            }
+        </div>
+    </div>
+}

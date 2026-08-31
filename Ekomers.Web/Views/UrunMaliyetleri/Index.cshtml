@@ -1,0 +1,82 @@
+@model Ekomers.Models.ViewModels.Profitability.ProductCostIndexVM
+@{
+    ViewData["Title"] = "Ürün Maliyetleri";
+}
+
+<div class="card card-custom gutter-b">
+    <div class="card-header">
+        <div class="card-title">
+            <div>
+                <h3 class="card-label mb-1">Ürün Maliyetleri</h3>
+                <span class="text-muted">Tarihsel ve versiyonlu birim maliyet yönetimi</span>
+            </div>
+        </div>
+        <div class="card-toolbar">
+            <a asp-action="Toplu" class="btn btn-primary mr-2">Toplu Maliyet Girişi</a>
+            <a asp-action="Yeni" class="btn btn-light-primary">Tek Ürün Maliyeti</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row align-items-end">
+            <div class="col-md-8 mb-3 mb-md-0">
+                <label class="form-label">Ürün kodu veya adı</label>
+                <input type="text" name="search" value="@Model.Search" class="form-control" placeholder="Ara..." />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-block">Ara</button>
+            </div>
+            <div class="col-md-2">
+                <a asp-action="Index" class="btn btn-light btn-block">Temizle</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header">
+        <div class="card-title"><h3 class="card-label">Maliyeti Tanımlı Ürünler (@Model.Products.Count)</h3></div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Ürün</th>
+                        <th class="text-center">Son Versiyon</th>
+                        <th>Geçerlilik</th>
+                        <th class="text-right">Birim Maliyet (TRY)</th>
+                        <th class="text-right">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model.Products.Count == 0)
+                {
+                    <tr><td colspan="5" class="text-center text-muted py-10">Henüz ürün maliyeti tanımlanmamış.</td></tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Products)
+                    {
+                        <tr>
+                            <td>
+                                <div class="font-weight-bold">@item.ProductCode</div>
+                                <div class="text-muted">@item.ProductName</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="label label-light-primary label-inline">v@item.LatestVersionNumber</span>
+                                <div class="text-muted mt-1">@item.VersionCount kayıt</div>
+                            </td>
+                            <td>@item.ValidFrom.ToString("dd.MM.yyyy") tarihinden itibaren</td>
+                            <td class="text-right font-weight-bold">@item.TotalUnitCostTry.ToString("N6") ₺ / @item.UnitCode</td>
+                            <td class="text-right">
+                                <a asp-action="Gecmis" asp-route-logoMaterialRef="@item.LogoMaterialRef" class="btn btn-sm btn-light-primary">Geçmiş</a>
+                                <a asp-action="Yeni" asp-route-logoMaterialRef="@item.LogoMaterialRef" class="btn btn-sm btn-primary">Yeni Versiyon</a>
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,43 @@
+@model Ekomers.Models.ViewModels.Production.MaterialSpecificationIndexVM
+@{
+    ViewData["Title"] = "Malzeme Spesifikasyonları";
+    var canQuality = User.IsInRole("Admin") || User.HasClaim("Modul", "QUALITY") || User.HasClaim("Authorize", "KaliteOnay");
+}
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">Malzeme Spesifikasyonları<span class="d-block text-muted pt-2 font-size-sm">Hammadde, ambalaj, yarı mamul ve mamul bazında versiyonlu kalite kriterleri</span></h3></div>
+    </div>
+    <div class="card-body">
+        <form asp-action="Index" method="get" class="mb-6">
+            <div class="row"><div class="col-md-8"><label>Malzeme kodu veya adı</label><div class="input-group"><input name="search" value="@Model.Search" class="form-control" placeholder="Malzeme ara..."/><div class="input-group-append"><button class="btn btn-primary">Ara</button>@if(!string.IsNullOrWhiteSpace(Model.Search)){<a asp-action="Index" class="btn btn-light">Temizle</a>}</div></div></div></div>
+        </form>
+        <div class="alert alert-light-info">Aktif spesifikasyonlar değiştirilemez. Bir kriter değiştiğinde mevcut versiyondan yeni taslak oluşturulur ve onaylandıktan sonra aktifleştirilir.</div>
+        <div class="table-responsive">
+            <table class="table table-separate table-head-custom">
+                <thead><tr><th>Malzeme</th><th>Tür</th><th>Kalite Kontrol</th><th>Versiyon</th><th>Aktif Spek</th><th>Madde</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var item in Model.Materials)
+                {
+                    <tr>
+                        <td><strong>@item.MaterialCode</strong><span class="d-block text-muted">@item.MaterialName</span></td>
+                        <td>@item.MaterialType.ToTurkish()</td>
+                        <td>@Html.DisplayFor(_ => item.QualityRequirement)</td>
+                        <td>@item.VersionCount</td>
+                        <td>@(item.ActiveVersion.HasValue ? $"v{item.ActiveVersion}" : "-")</td>
+                        <td>@item.ActiveItemCount</td>
+                        <td class="text-right">
+                            <a asp-action="Detay" asp-route-materialId="@item.MaterialId" asp-route-setId="@item.ActiveSetId" class="btn btn-sm btn-light-primary mr-1">Detay</a>
+                            @if (canQuality)
+                            {
+                                <form asp-action="YeniVersiyon" method="post" class="d-inline"><input type="hidden" name="materialId" value="@item.MaterialId"/><input type="hidden" name="sourceSetId" value="@item.ActiveSetId"/><button class="btn btn-sm btn-primary">@(item.ActiveSetId.HasValue ? "Yeni Versiyon" : "İlk Speki Oluştur")</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.Materials.Count == 500) { <div class="text-muted mt-4">İlk 500 kayıt gösteriliyor. Arama alanıyla listeyi daraltabilirsiniz.</div> }
+    </div>
+</div>
