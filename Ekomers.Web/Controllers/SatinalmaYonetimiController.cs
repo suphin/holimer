@@ -667,6 +667,7 @@ public sealed class SatinalmaYonetimiController : Controller
         ViewBag.Modul = "YeniSatinalma";
         var request = await _context.PurPurchaseRequests.AsNoTracking().FirstOrDefaultAsync(x => x.ID == requestId && x.IsDelete != true, ct);
         if (request == null) return NotFound();
+        await ReconcileQuotationAlternativesAsync(request.ID, DateTime.Now, CurrentUser, ct);
         var model = new QuotationComparisonVM { RequestId = request.ID, RequestNumber = request.RequestNumber, CanApprove = CanApproveQuotations };
         model.Lines = await (from line in _context.PurSupplierQuotationLines.AsNoTracking()
                              join quotation in _context.PurSupplierQuotations.AsNoTracking() on line.SupplierQuotationId equals quotation.ID
@@ -822,34 +823,12 @@ public sealed class SatinalmaYonetimiController : Controller
             await _context.SaveChangesAsync(ct);
             await RecalculatePurchaseOrderTotalsAsync(order.ID, now, CurrentUser, ct);
 
-            if (alreadyOrdered + approvedQuantity >= requestLine.ApprovedQuantity)
-            {
-                var alternatives = await _context.PurSupplierQuotationLines
-                    .Where(x => x.PurchaseRequestLineId == requestLine.ID && x.ID != line.ID &&
-                                x.Status == PurSupplierQuotationLineStatus.PendingApproval && x.IsDelete != true)
-                    .ToListAsync(ct);
-                foreach (var alternative in alternatives)
-                {
-                    var alternativePrevious = alternative.Status;
-                    var alternativePreviousQuantity = alternative.ApprovedQuantity;
-                    alternative.Status = PurSupplierQuotationLineStatus.Rejected;
-                    alternative.ApprovedQuantity = 0;
-                    alternative.ApprovedDate = now;
-                    alternative.ApprovedUserId = CurrentUser;
-                    alternative.ApprovalNote = $"Talep miktarı {quotation.QuotationNumber} numaralı teklif üzerinden siparişe dönüştürüldüğü için otomatik kapatıldı.";
-                    alternative.UpdateDate = now;
-                    alternative.UpdateUserID = CurrentUser;
-                    affectedQuotationIds.Add(alternative.SupplierQuotationId);
-                    _context.PurQuotationApprovalHistories.Add(CreateQuotationHistory(
-                        alternative.SupplierQuotationId, alternative, PurQuotationApprovalAction.Rejected,
-                        alternativePrevious, alternative.Status, alternativePreviousQuantity,
-                        alternative.ApprovalNote, now, CurrentUser));
-                }
-            }
         }
         line.ApprovedDate = now; line.ApprovedUserId = CurrentUser; line.ApprovalNote = Clean(input.Note); line.UpdateDate = now; line.UpdateUserID = CurrentUser;
         _context.PurQuotationApprovalHistories.Add(CreateQuotationHistory(quotation.ID, line, input.Decision, previous, line.Status, previousQuantity, input.Note, now, CurrentUser));
         await _context.SaveChangesAsync(ct);
+        var reconciledQuotationIds = await ReconcileQuotationAlternativesAsync(requestLine.PurchaseRequestId, now, CurrentUser, ct);
+        foreach (var reconciledQuotationId in reconciledQuotationIds) affectedQuotationIds.Add(reconciledQuotationId);
         foreach (var affectedQuotationId in affectedQuotationIds)
             await RecalculateQuotationStatusAsync(affectedQuotationId, now, CurrentUser, ct);
         await RecalculateRequestAfterOrdersAsync(requestLine.PurchaseRequestId, now, CurrentUser, ct);
@@ -1341,8 +1320,9 @@ public sealed class SatinalmaYonetimiController : Controller
         var quotation = await _context.PurSupplierQuotations.FirstAsync(x => x.ID == quotationId, ct);
         var statuses = await _context.PurSupplierQuotationLines.AsNoTracking().Where(x => x.SupplierQuotationId == quotationId && x.IsDelete != true).Select(x => x.Status).ToListAsync(ct);
         if (statuses.Any(x => x == PurSupplierQuotationLineStatus.PendingApproval))
-            quotation.Status = statuses.Any(x => x == PurSupplierQuotationLineStatus.Ordered || x == PurSupplierQuotationLineStatus.Rejected) ? PurSupplierQuotationStatus.PartiallyApproved : PurSupplierQuotationStatus.PendingApproval;
+            quotation.Status = statuses.Any(x => x == PurSupplierQuotationLineStatus.Ordered || x == PurSupplierQuotationLineStatus.Rejected || x == PurSupplierQuotationLineStatus.NotSelected) ? PurSupplierQuotationStatus.PartiallyApproved : PurSupplierQuotationStatus.PendingApproval;
         else if (statuses.Any(x => x == PurSupplierQuotationLineStatus.Ordered)) quotation.Status = PurSupplierQuotationStatus.ConvertedToOrder;
+        else if (statuses.Count > 0 && statuses.All(x => x == PurSupplierQuotationLineStatus.NotSelected)) quotation.Status = PurSupplierQuotationStatus.NotSelected;
         else if (statuses.Count > 0 && statuses.All(x => x == PurSupplierQuotationLineStatus.Rejected)) quotation.Status = PurSupplierQuotationStatus.Rejected;
         quotation.UpdateDate = now; quotation.UpdateUserID = user;
         await _context.SaveChangesAsync(ct);
@@ -1365,6 +1345,76 @@ public sealed class SatinalmaYonetimiController : Controller
         request.Status = actionable.Count > 0 && actionable.All(x => x.Status == PurPurchaseRequestLineStatus.Ordered) ? PurPurchaseRequestStatus.Completed : PurPurchaseRequestStatus.InQuotation;
         request.UpdateDate = now; request.UpdateUserID = user;
         await _context.SaveChangesAsync(ct);
+    }
+
+    private async Task<HashSet<int>> ReconcileQuotationAlternativesAsync(int requestId, DateTime now, string user, CancellationToken ct)
+    {
+        const string closedNote = "Talep miktarı başka bir teklif üzerinden tamamen siparişe dönüştürüldüğü için otomatik kapatıldı.";
+        const string reopenedNote = "Sipariş miktarı değiştiği için teklif yeniden değerlendirmeye açıldı.";
+
+        var requestLines = await _context.PurPurchaseRequestLines
+            .Where(x => x.PurchaseRequestId == requestId && x.IsDelete != true)
+            .Select(x => new { x.ID, x.ApprovedQuantity })
+            .ToListAsync(ct);
+        if (requestLines.Count == 0) return [];
+
+        var requestLineIds = requestLines.Select(x => x.ID).ToList();
+        var orderedLines = await _context.PurPurchaseOrderLines.AsNoTracking()
+            .Where(x => requestLineIds.Contains(x.PurchaseRequestLineId) && x.IsDelete != true && x.Status != PurPurchaseOrderLineStatus.Cancelled)
+            .Select(x => new { x.PurchaseRequestLineId, x.SupplierQuotationLineId, x.OrderedQuantity })
+            .ToListAsync(ct);
+        var orderedQuantities = orderedLines.GroupBy(x => x.PurchaseRequestLineId).ToDictionary(x => x.Key, x => x.Sum(y => y.OrderedQuantity));
+        var orderedQuotationLineIds = orderedLines.Select(x => x.SupplierQuotationLineId).ToHashSet();
+
+        var candidates = await _context.PurSupplierQuotationLines
+            .Where(x => requestLineIds.Contains(x.PurchaseRequestLineId) && x.IsDelete != true &&
+                        (x.Status == PurSupplierQuotationLineStatus.PendingApproval || x.Status == PurSupplierQuotationLineStatus.NotSelected))
+            .ToListAsync(ct);
+        var affectedQuotationIds = new HashSet<int>();
+
+        foreach (var requestLine in requestLines)
+        {
+            var orderedQuantity = orderedQuantities.GetValueOrDefault(requestLine.ID);
+            var isSatisfied = requestLine.ApprovedQuantity > 0 && orderedQuantity >= requestLine.ApprovedQuantity;
+            foreach (var candidate in candidates.Where(x => x.PurchaseRequestLineId == requestLine.ID && !orderedQuotationLineIds.Contains(x.ID)))
+            {
+                if (isSatisfied && candidate.Status == PurSupplierQuotationLineStatus.PendingApproval)
+                {
+                    var previous = candidate.Status;
+                    var previousQuantity = candidate.ApprovedQuantity;
+                    candidate.Status = PurSupplierQuotationLineStatus.NotSelected;
+                    candidate.ApprovedQuantity = 0;
+                    candidate.ApprovedDate = now;
+                    candidate.ApprovedUserId = user;
+                    candidate.ApprovalNote = closedNote;
+                    candidate.UpdateDate = now;
+                    candidate.UpdateUserID = user;
+                    affectedQuotationIds.Add(candidate.SupplierQuotationId);
+                    _context.PurQuotationApprovalHistories.Add(CreateQuotationHistory(candidate.SupplierQuotationId, candidate,
+                        PurQuotationApprovalAction.Rejected, previous, candidate.Status, previousQuantity, closedNote, now, user));
+                }
+                else if (!isSatisfied && candidate.Status == PurSupplierQuotationLineStatus.NotSelected)
+                {
+                    var previous = candidate.Status;
+                    var previousQuantity = candidate.ApprovedQuantity;
+                    candidate.Status = PurSupplierQuotationLineStatus.PendingApproval;
+                    candidate.ApprovedDate = null;
+                    candidate.ApprovedUserId = null;
+                    candidate.ApprovalNote = reopenedNote;
+                    candidate.UpdateDate = now;
+                    candidate.UpdateUserID = user;
+                    affectedQuotationIds.Add(candidate.SupplierQuotationId);
+                    _context.PurQuotationApprovalHistories.Add(CreateQuotationHistory(candidate.SupplierQuotationId, candidate,
+                        PurQuotationApprovalAction.Submitted, previous, candidate.Status, previousQuantity, reopenedNote, now, user));
+                }
+            }
+        }
+
+        if (affectedQuotationIds.Count == 0) return affectedQuotationIds;
+        await _context.SaveChangesAsync(ct);
+        foreach (var quotationId in affectedQuotationIds)
+            await RecalculateQuotationStatusAsync(quotationId, now, user, ct);
+        return affectedQuotationIds;
     }
 
     private static PurQuotationApprovalHistory CreateQuotationHistory(int quotationId, PurSupplierQuotationLine line, PurQuotationApprovalAction action, PurSupplierQuotationLineStatus previousStatus, PurSupplierQuotationLineStatus newStatus, decimal previousApprovedQuantity, string? note, DateTime now, string user) => new()

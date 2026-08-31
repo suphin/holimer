@@ -53,7 +53,8 @@ public enum PurSupplierQuotationStatus
     Approved = 3,
     Rejected = 4,
     ConvertedToOrder = 5,
-    Cancelled = 6
+    Cancelled = 6,
+    NotSelected = 7
 }
 
 public enum PurSupplierQuotationLineStatus
@@ -63,7 +64,8 @@ public enum PurSupplierQuotationLineStatus
     Approved = 2,
     Rejected = 3,
     Ordered = 4,
-    Cancelled = 5
+    Cancelled = 5,
+    NotSelected = 6
 }
 
 public enum PurQuotationApprovalAction
@@ -142,6 +144,7 @@ public static class PurchasingEnumExtensions
         PurSupplierQuotationStatus.Rejected => "Reddedildi",
         PurSupplierQuotationStatus.ConvertedToOrder => "Siparişe Dönüştü",
         PurSupplierQuotationStatus.Cancelled => "İptal Edildi",
+        PurSupplierQuotationStatus.NotSelected => "Seçilmedi",
         _ => value.ToString()
     };
 
@@ -153,6 +156,7 @@ public static class PurchasingEnumExtensions
         PurSupplierQuotationLineStatus.Rejected => "Reddedildi",
         PurSupplierQuotationLineStatus.Ordered => "Siparişe Dönüştü",
         PurSupplierQuotationLineStatus.Cancelled => "İptal Edildi",
+        PurSupplierQuotationLineStatus.NotSelected => "Seçilmedi",
         _ => value.ToString()
     };
 

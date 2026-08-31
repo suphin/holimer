@@ -21,7 +21,7 @@ else
     @foreach (var group in groups)
     {
         var offers = group.OrderBy(x => x.NetUnitPriceTry).ThenBy(x => x.DeliveryDate).ToList();
-        var priceCandidates = offers.Where(x => x.Status != PurSupplierQuotationLineStatus.Rejected && x.Status != PurSupplierQuotationLineStatus.Cancelled).ToList();
+        var priceCandidates = offers.Where(x => x.Status != PurSupplierQuotationLineStatus.Rejected && x.Status != PurSupplierQuotationLineStatus.Cancelled && x.Status != PurSupplierQuotationLineStatus.NotSelected).ToList();
         decimal? bestNetPriceTry = priceCandidates.Count > 0 ? priceCandidates.Min(x => x.NetUnitPriceTry) : null;
         var first = offers.First();
         <div class="card card-custom mb-5">
@@ -32,14 +32,14 @@ else
                     <div class="text-right"><small class="text-muted d-block">Sipariş / Kalan</small><strong>@first.AlreadyOrderedQuantity.ToString("0.######") / @first.RemainingRequestQuantity.ToString("0.######") @group.Key.Unit</strong></div>
                 </div>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
+            <div class="card-body px-6 py-5">
+                <div class="table-responsive border" style="border-radius:.42rem; overflow:hidden;">
                     <table class="table table-separate table-head-custom mb-0">
                         <thead><tr><th style="min-width:260px">Tedarikçi / Teklif</th><th>Teklif Miktarı</th><th>Liste Fiyatı</th><th>İskonto</th><th>Net Birim</th><th>Kur</th><th>KDV</th><th>Satır Toplamı</th><th style="min-width:180px">Teslim</th><th style="min-width:220px">Koşullar</th><th style="min-width:220px">Durum / İşlem</th></tr></thead>
                         <tbody>
                         @foreach (var offer in offers)
                         {
-                            var isBest = bestNetPriceTry.HasValue && offer.NetUnitPriceTry == bestNetPriceTry.Value && offer.Status != PurSupplierQuotationLineStatus.Rejected && offer.Status != PurSupplierQuotationLineStatus.Cancelled;
+                            var isBest = bestNetPriceTry.HasValue && offer.NetUnitPriceTry == bestNetPriceTry.Value && offer.Status != PurSupplierQuotationLineStatus.Rejected && offer.Status != PurSupplierQuotationLineStatus.Cancelled && offer.Status != PurSupplierQuotationLineStatus.NotSelected;
                             var isExpired = offer.ValidUntil.HasValue && offer.ValidUntil.Value.Date < DateTime.Today;
                             var selectableQuantity = Math.Min(offer.OfferedQuantity, offer.RemainingRequestQuantity);
                             <tr class="@(isBest ? "table-success" : "")">
