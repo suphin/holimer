@@ -26,7 +26,29 @@ public sealed class SalesProfitabilityPreviewVM
     public int MissingCostLineCount { get; set; }
     public int PageCount { get; set; }
     public IReadOnlyList<string> PriceStatuses { get; set; } = [];
+    public IReadOnlyList<SalesProfitabilityGroupRowVM> CustomerSummaries { get; set; } = [];
+    public IReadOnlyList<SalesProfitabilityGroupRowVM> ProductSummaries { get; set; } = [];
+    public IReadOnlyList<SalesProfitabilityGroupRowVM> ChannelSummaries { get; set; } = [];
+    public IReadOnlyList<SalesProfitabilityGroupRowVM> SalesRepresentativeSummaries { get; set; } = [];
     public IReadOnlyList<SalesProfitabilityPreviewRowVM> Rows { get; set; } = [];
+}
+
+public sealed class SalesProfitabilityGroupRowVM
+{
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public int LineCount { get; set; }
+    public decimal? Quantity { get; set; }
+    public string? Unit { get; set; }
+    public decimal ReferenceGrossRevenue { get; set; }
+    public decimal NetRevenue { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public decimal DiscountRate { get; set; }
+    public decimal KnownCostAmount { get; set; }
+    public decimal GrossProfit { get; set; }
+    public decimal NetProfit { get; set; }
+    public decimal NetProfitRate { get; set; }
+    public int MissingCostLineCount { get; set; }
 }
 
 public sealed class SalesProfitabilityPreviewRowVM

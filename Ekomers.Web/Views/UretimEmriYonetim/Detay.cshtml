@@ -1,0 +1,101 @@
+@model Ekomers.Models.ViewModels.Production.ProductionOrderCleanupDetailVM
+@using Ekomers.Models.Enums
+@{
+    ViewData["Title"] = "Üretim Emri Silme Önizlemesi";
+}
+
+<div class="card card-custom mb-6">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">@Model.OrderNumber<span class="d-block text-muted pt-2 font-size-sm">Silme önizlemesi · @Model.PlanNumber</span></h3></div>
+        <div class="card-toolbar"><a asp-action="Index" class="btn btn-light">Yönetim Listesine Dön</a></div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-4"><strong>Ürün</strong><span class="d-block">@Model.ProductCode</span><span class="text-muted">@Model.ProductName</span></div>
+            <div class="col-md-2 mb-4"><strong>Planlanan</strong><span class="d-block">@Model.PlannedQuantity.ToString("0.######") @Model.Unit</span></div>
+            <div class="col-md-2 mb-4"><strong>Parti</strong><span class="d-block">@Model.BatchNumber</span></div>
+            <div class="col-md-2 mb-4"><strong>Durum</strong><span class="d-block">@Model.Status.ToTurkish()</span></div>
+            <div class="col-md-2 mb-4"><strong>Üretim Tarihi</strong><span class="d-block">@Model.PlannedProductionDate.ToString("dd.MM.yyyy")</span></div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-custom mb-6">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Silinecek Bağlı Kayıtlar (@Model.TotalDependentRecordCount)</h3></div></div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-6 col-md-3 col-xl mb-5"><span class="font-size-h3 font-weight-bold">@Model.RequirementCount</span><span class="d-block text-muted">İhtiyaç</span></div>
+            <div class="col-6 col-md-3 col-xl mb-5"><span class="font-size-h3 font-weight-bold">@Model.ReservationCount</span><span class="d-block text-muted">Rezervasyon</span></div>
+            <div class="col-6 col-md-3 col-xl mb-5"><span class="font-size-h3 font-weight-bold">@Model.WarehouseTaskCount</span><span class="d-block text-muted">Depo Görevi</span></div>
+            <div class="col-6 col-md-3 col-xl mb-5"><span class="font-size-h3 font-weight-bold">@Model.WarehouseTaskItemCount</span><span class="d-block text-muted">Görev Satırı</span></div>
+            <div class="col-6 col-md-3 col-xl mb-5"><span class="font-size-h3 font-weight-bold">@Model.WarehouseTaskLotCount</span><span class="d-block text-muted">Görev Lotu</span></div>
+            <div class="col-6 col-md-3 col-xl mb-5"><span class="font-size-h3 font-weight-bold">@Model.ProductionActualCount</span><span class="d-block text-muted">Fiilî Tüketim</span></div>
+            <div class="col-6 col-md-3 col-xl mb-5"><span class="font-size-h3 font-weight-bold">@Model.ProductionResultCount</span><span class="d-block text-muted">Üretim Sonucu</span></div>
+            <div class="col-6 col-md-3 col-xl mb-5"><span class="font-size-h3 font-weight-bold">@Model.InventoryDocumentCount</span><span class="d-block text-muted">Stok Belgesi</span></div>
+            <div class="col-6 col-md-3 col-xl mb-5"><span class="font-size-h3 font-weight-bold">@Model.InventoryDocumentLineCount</span><span class="d-block text-muted">Belge Satırı</span></div>
+            <div class="col-6 col-md-3 col-xl mb-5"><span class="font-size-h3 font-weight-bold text-warning">@Model.StockMovementCount</span><span class="d-block text-muted">Stok Hareketi</span></div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-custom mb-6">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Silme Sonrası Stok Değişimi</h3></div></div>
+    <div class="card-body">
+        @if (Model.StockImpacts.Count == 0)
+        {
+            <div class="alert alert-light-success mb-0">Bu üretim emrinin stok bakiyesine etki eden aktif hareketi yok.</div>
+        }
+        else
+        {
+            <div class="alert alert-light-warning">Aşağıdaki değişimler silme işlemiyle aynı veritabanı işlemi içinde uygulanır. Böylece üretim emrinden önceki stok bakiyesine dönülür.</div>
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom">
+                    <thead><tr><th>Malzeme</th><th>Depo</th><th>Silme Sonrası Değişim</th></tr></thead>
+                    <tbody>
+                    @foreach (var impact in Model.StockImpacts)
+                    {
+                        <tr>
+                            <td><strong>@impact.MaterialCode</strong><span class="d-block text-muted">@impact.MaterialName</span></td>
+                            <td><strong>@impact.WarehouseCode</strong><span class="d-block text-muted">@impact.WarehouseName</span></td>
+                            <td class="@(impact.BalanceChangeAfterDelete > 0 ? "text-success" : "text-danger") font-weight-bold">
+                                @(impact.BalanceChangeAfterDelete > 0 ? "+" : "")@impact.BalanceChangeAfterDelete.ToString("0.######") @impact.Unit
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card card-custom border border-danger">
+    <div class="card-header"><div class="card-title"><h3 class="card-label text-danger">Üretim Emrini Sil</h3></div></div>
+    <form asp-action="Sil" method="post">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+            <div class="alert alert-danger">
+                <strong>Dikkat:</strong> Üretim emri ve yukarıdaki operasyon kayıtları ekranlardan kaldırılır. Stok lot kartları ile kaynak üretim planı korunur; plan satırı yeniden üretim emri oluşturulabilecek duruma açılır. İşlem kullanıcı hareket kayıtlarına yazılır.
+            </div>
+            <div class="form-group">
+                <label>Silme nedeni</label>
+                <textarea asp-for="DeleteReason" class="form-control" rows="3" maxlength="500" required></textarea>
+                <span asp-validation-for="DeleteReason" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label>Onay için <strong>@Model.OrderNumber</strong> yazınız</label>
+                <input asp-for="ConfirmationOrderNumber" class="form-control" autocomplete="off" required />
+                <span asp-validation-for="ConfirmationOrderNumber" class="text-danger"></span>
+            </div>
+            <label class="checkbox checkbox-danger">
+                <input asp-for="ConfirmStockRollback" />
+                <span></span> Bağlı stok hareketlerinin bakiyeden çıkarılacağını ve stokların üretim emrinden önceki duruma döneceğini onaylıyorum.
+            </label>
+        </div>
+        <div class="card-footer text-right">
+            <a asp-action="Index" class="btn btn-light mr-2">Vazgeç</a>
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Üretim emri ve bağlı kayıtlar silinecek, stok bakiyesi geri alınacak. Devam edilsin mi?');">Üretim Emrini ve Bağlı Kayıtları Sil</button>
+        </div>
+    </form>
+</div>

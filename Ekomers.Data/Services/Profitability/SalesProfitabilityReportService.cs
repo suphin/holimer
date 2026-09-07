@@ -58,10 +58,15 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
                 page, pageSize, ct);
             var costQuantities = await ReadCostQuantitiesAsync(
                 connection, whereSql, startDate, endExclusive, search, priceStatus, ct);
+            var availableColumns = await ReadAvailableColumnsAsync(connection, ct);
+            var analysisRows = await ReadAnalysisRowsAsync(
+                connection, whereSql, startDate, endExclusive, search, priceStatus,
+                availableColumns, ct);
             var statuses = await ReadStatusesAsync(connection, ct);
 
             var materialRefs = costQuantities.Select(x => x.LogoMaterialRef)
                 .Concat(rows.Select(x => x.LogoMaterialRef))
+                .Concat(analysisRows.Select(x => x.LogoMaterialRef))
                 .Where(x => x > 0)
                 .Distinct()
                 .ToList();
@@ -78,6 +83,7 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
                 .ToDictionary(x => x.Key, x => x.ToList());
             var costSummary = CalculateCosts(costQuantities, costsByMaterial);
             ApplyRowCosts(rows, costsByMaterial);
+            ApplyAnalysisCosts(analysisRows, costsByMaterial);
 
             return new SalesProfitabilityPreviewVM
             {
@@ -109,6 +115,26 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
                     ? 0
                     : (int)Math.Ceiling(summary.TotalCount / (decimal)pageSize),
                 PriceStatuses = statuses,
+                CustomerSummaries = BuildGroupSummaries(
+                    analysisRows,
+                    x => x.CustomerCode,
+                    x => x.CustomerName,
+                    includeQuantity: false),
+                ProductSummaries = BuildGroupSummaries(
+                    analysisRows.Where(x => string.Equals(x.LineType, "Malzeme", StringComparison.OrdinalIgnoreCase)),
+                    x => x.ProductCode,
+                    x => x.ProductName,
+                    includeQuantity: true),
+                ChannelSummaries = BuildGroupSummaries(
+                    analysisRows,
+                    x => x.ChannelCode,
+                    x => x.ChannelCode,
+                    includeQuantity: false),
+                SalesRepresentativeSummaries = BuildGroupSummaries(
+                    analysisRows,
+                    x => x.SalesRepresentativeCode,
+                    x => x.SalesRepresentativeName,
+                    includeQuantity: false),
                 Rows = rows
             };
         }
@@ -270,6 +296,200 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
 
         return rows;
     }
+
+    private static async Task<HashSet<string>> ReadAvailableColumnsAsync(
+        DbConnection connection,
+        CancellationToken ct)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = N'dbo'
+              AND TABLE_NAME = N'VW_RPT_SATIS_KARLILIK_100';
+            """;
+
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            var column = ReadString(reader, "COLUMN_NAME");
+            if (!string.IsNullOrWhiteSpace(column))
+            {
+                columns.Add(column);
+            }
+        }
+        return columns;
+    }
+
+    private static async Task<List<AnalysisSourceRow>> ReadAnalysisRowsAsync(
+        DbConnection connection,
+        string whereSql,
+        DateTime startDate,
+        DateTime endExclusive,
+        string? search,
+        string? priceStatus,
+        IReadOnlySet<string> availableColumns,
+        CancellationToken ct)
+    {
+        var channelExpression = BuildTextColumnExpression(
+            availableColumns,
+            "SatisKanali", "Satış Kanalı", "CariOzelKod", "Cari Özel Kod", "Kanal");
+        var representativeCodeExpression = BuildTextColumnExpression(
+            availableColumns,
+            "SatisTemsilciKodu", "Satış Temsilci Kodu");
+        var representativeNameExpression = BuildTextColumnExpression(
+            availableColumns,
+            "SatisTemsilciAdi", "Satış Temsilci Adı");
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"""
+            SELECT
+                SatirTuru,
+                CariKod,
+                CariUnvan,
+                MalzemeRef,
+                MalzemeKod,
+                MalzemeAdi,
+                Birim,
+                {channelExpression} AS ChannelCode,
+                {representativeCodeExpression} AS SalesRepresentativeCode,
+                {representativeNameExpression} AS SalesRepresentativeName,
+                CONVERT(date, FaturaTarihi) AS SalesDate,
+                COUNT(1) AS LineCount,
+                COALESCE(SUM(CONVERT(decimal(38, 6), Miktar)), 0) AS Quantity,
+                COALESCE(SUM(CONVERT(decimal(38, 6), ReferansBrutCiroTL)), 0) AS ReferenceGrossRevenue,
+                COALESCE(SUM(CONVERT(decimal(38, 6), GerceklesenNetTutarKdvHaricTL)), 0) AS NetRevenue,
+                COALESCE(SUM(CONVERT(decimal(38, 6), HesaplananIskontoTutarTL)), 0) AS DiscountAmount
+            FROM {ViewName}
+            {whereSql}
+            GROUP BY
+                SatirTuru,
+                CariKod,
+                CariUnvan,
+                MalzemeRef,
+                MalzemeKod,
+                MalzemeAdi,
+                Birim,
+                {channelExpression},
+                {representativeCodeExpression},
+                {representativeNameExpression},
+                CONVERT(date, FaturaTarihi);
+            """;
+        AddFilterParameters(command, startDate, endExclusive, search, priceStatus);
+
+        var rows = new List<AnalysisSourceRow>();
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+        {
+            rows.Add(new AnalysisSourceRow
+            {
+                LineType = ReadString(reader, "SatirTuru") ?? string.Empty,
+                CustomerCode = ReadString(reader, "CariKod") ?? "Tanımsız",
+                CustomerName = ReadString(reader, "CariUnvan") ?? "Tanımsız",
+                LogoMaterialRef = ReadInt32(reader, "MalzemeRef"),
+                ProductCode = ReadString(reader, "MalzemeKod") ?? "Tanımsız",
+                ProductName = ReadString(reader, "MalzemeAdi") ?? "Tanımsız",
+                Unit = ReadString(reader, "Birim"),
+                ChannelCode = ReadString(reader, "ChannelCode") ?? "Tanımsız",
+                SalesRepresentativeCode = ReadString(reader, "SalesRepresentativeCode") ?? "Tanımsız",
+                SalesRepresentativeName = ReadString(reader, "SalesRepresentativeName") ?? "Tanımsız",
+                SalesDate = ReadDateTime(reader, "SalesDate").Date,
+                LineCount = ReadInt32(reader, "LineCount"),
+                Quantity = ReadDecimal(reader, "Quantity"),
+                ReferenceGrossRevenue = ReadDecimal(reader, "ReferenceGrossRevenue"),
+                NetRevenue = ReadDecimal(reader, "NetRevenue"),
+                DiscountAmount = ReadDecimal(reader, "DiscountAmount")
+            });
+        }
+        return rows;
+    }
+
+    private static string BuildTextColumnExpression(
+        IReadOnlySet<string> availableColumns,
+        params string[] candidates)
+    {
+        var column = candidates.FirstOrDefault(availableColumns.Contains);
+        if (column == null)
+        {
+            return "N'Tanımsız'";
+        }
+
+        var safeColumn = column.Replace("]", "]]", StringComparison.Ordinal);
+        return $"COALESCE(NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(250), [{safeColumn}]))), N''), N'Tanımsız')";
+    }
+
+    private static void ApplyAnalysisCosts(
+        IReadOnlyList<AnalysisSourceRow> rows,
+        IReadOnlyDictionary<int, List<RptProductCostVersion>> costsByMaterial)
+    {
+        foreach (var row in rows)
+        {
+            if (!string.Equals(row.LineType, "Malzeme", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var cost = ResolveCost(costsByMaterial, row.LogoMaterialRef, row.SalesDate);
+            if (cost == null)
+            {
+                row.MissingCostLineCount = row.LineCount;
+                continue;
+            }
+            row.KnownCostAmount = row.Quantity * cost.TotalUnitCostTry;
+        }
+    }
+
+    private static IReadOnlyList<SalesProfitabilityGroupRowVM> BuildGroupSummaries(
+        IEnumerable<AnalysisSourceRow> source,
+        Func<AnalysisSourceRow, string> codeSelector,
+        Func<AnalysisSourceRow, string> nameSelector,
+        bool includeQuantity)
+    {
+        return source
+            .GroupBy(x => new
+            {
+                Code = NormalizeGroupValue(codeSelector(x)),
+                Name = NormalizeGroupValue(nameSelector(x))
+            })
+            .Select(group =>
+            {
+                var referenceGross = group.Sum(x => x.ReferenceGrossRevenue);
+                var netRevenue = group.Sum(x => x.NetRevenue);
+                var discount = group.Sum(x => x.DiscountAmount);
+                var knownCost = group.Sum(x => x.KnownCostAmount);
+                var units = group.Select(x => x.Unit)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                return new SalesProfitabilityGroupRowVM
+                {
+                    Code = group.Key.Code,
+                    Name = group.Key.Name,
+                    LineCount = group.Sum(x => x.LineCount),
+                    Quantity = includeQuantity ? group.Sum(x => x.Quantity) : null,
+                    Unit = includeQuantity
+                        ? units.Count switch { 0 => null, 1 => units[0], _ => "Karma" }
+                        : null,
+                    ReferenceGrossRevenue = referenceGross,
+                    NetRevenue = netRevenue,
+                    DiscountAmount = discount,
+                    DiscountRate = referenceGross == 0m ? 0m : discount * 100m / referenceGross,
+                    KnownCostAmount = knownCost,
+                    GrossProfit = referenceGross - knownCost,
+                    NetProfit = netRevenue - knownCost,
+                    NetProfitRate = netRevenue == 0m ? 0m : (netRevenue - knownCost) * 100m / netRevenue,
+                    MissingCostLineCount = group.Sum(x => x.MissingCostLineCount)
+                };
+            })
+            .OrderByDescending(x => x.NetRevenue)
+            .ThenBy(x => x.Code)
+            .Take(100)
+            .ToList();
+    }
+
+    private static string NormalizeGroupValue(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "Tanımsız" : value.Trim();
 
     private static CostSummaryResult CalculateCosts(
         IReadOnlyList<CostQuantityRow> quantities,
@@ -470,6 +690,28 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
 
     private sealed class CostSummaryResult
     {
+        public decimal KnownCostAmount { get; set; }
+        public int MissingCostLineCount { get; set; }
+    }
+
+    private sealed class AnalysisSourceRow
+    {
+        public string LineType { get; set; } = string.Empty;
+        public string CustomerCode { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
+        public int LogoMaterialRef { get; set; }
+        public string ProductCode { get; set; } = string.Empty;
+        public string ProductName { get; set; } = string.Empty;
+        public string? Unit { get; set; }
+        public string ChannelCode { get; set; } = string.Empty;
+        public string SalesRepresentativeCode { get; set; } = string.Empty;
+        public string SalesRepresentativeName { get; set; } = string.Empty;
+        public DateTime SalesDate { get; set; }
+        public int LineCount { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal ReferenceGrossRevenue { get; set; }
+        public decimal NetRevenue { get; set; }
+        public decimal DiscountAmount { get; set; }
         public decimal KnownCostAmount { get; set; }
         public int MissingCostLineCount { get; set; }
     }

@@ -227,6 +227,7 @@ namespace Ekomers.Data
 
 		// Satış ve kârlılık raporu uygulama tabloları (EkomerDB)
 		public DbSet<RptProductCostVersion> RptProductCostVersions { get; set; }
+		public DbSet<RptProductScopePrefix> RptProductScopePrefixes { get; set; }
 
 
 
@@ -398,6 +399,12 @@ namespace Ekomers.Data
 				property.SetPrecision(18);
 				property.SetScale(6);
 			}
+
+			var prefix = modelBuilder.Entity<RptProductScopePrefix>();
+			prefix.ToTable(nameof(RptProductScopePrefix));
+			prefix.HasIndex(x => x.Prefix).IsUnique();
+			prefix.Property(x => x.Prefix).HasMaxLength(50).IsRequired();
+			prefix.Property(x => x.Description).HasMaxLength(250);
 		}
 
 		private static void ConfigureProductionModel(ModelBuilder modelBuilder)

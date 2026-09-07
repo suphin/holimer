@@ -14,7 +14,7 @@
         @if (User.IsInRole("Admin") || User.IsInRole("Yönetici"))
         {
             <div class="card-toolbar">
-                <a asp-controller="UrunMaliyetleri" asp-action="Index" class="btn btn-light-primary">Ürün Maliyetleri</a>
+                <a asp-controller="UrunMaliyetleri" asp-action="Index" target="_blank" class="btn btn-light-primary">Ürün Maliyetleri</a>
             </div>
         }
     </div>
@@ -74,6 +74,145 @@
         Kâr toplamları yalnızca maliyeti tanımlı satırların maliyetini içerir.
     </div>
 }
+
+@{
+    var profitabilityTabs = new[]
+    {
+        new { Id = "customer-profit", Title = "Müşteri", Rows = Model.CustomerSummaries, ShowQuantity = false },
+        new { Id = "product-profit", Title = "Ürün", Rows = Model.ProductSummaries, ShowQuantity = true },
+        new { Id = "channel-profit", Title = "Satış Kanalı", Rows = Model.ChannelSummaries, ShowQuantity = false },
+        new { Id = "representative-profit", Title = "Satış Temsilcisi", Rows = Model.SalesRepresentativeSummaries, ShowQuantity = false }
+    };
+    var receivablesUrl = Url.Action("Receivables", "SatisKarlilik", new { search = Model.Filter.Search });
+    var channelBalanceUrl = Url.Action("ChannelBalance", "SatisKarlilik", new
+    {
+        startDate = Model.Filter.StartDate.ToString("yyyy-MM-dd"),
+        endDate = Model.Filter.EndDate.ToString("yyyy-MM-dd"),
+        search = Model.Filter.Search,
+        priceStatus = Model.Filter.PriceStatus
+    });
+}
+
+<div class="card card-custom gutter-b">
+    <div class="card-header">
+        <div class="card-title">
+            <div>
+                <h3 class="card-label mb-1">Kârlılık Analizleri</h3>
+                <span class="text-muted">Seçilen filtrelere göre net ciro sıralı ilk 100 sonuç</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-body pt-0">
+        <ul class="nav nav-tabs nav-tabs-line nav-tabs-line-3x nav-tabs-line-primary mb-5" role="tablist">
+            @for (var tabIndex = 0; tabIndex < profitabilityTabs.Length; tabIndex++)
+            {
+                var tab = profitabilityTabs[tabIndex];
+                <li class="nav-item">
+                    <a class="nav-link @(tabIndex == 0 ? "active" : "")" data-toggle="tab" href="#@tab.Id" role="tab">
+                        @tab.Title <span class="label label-light-primary label-inline ml-2">@tab.Rows.Count</span>
+                    </a>
+                </li>
+            }
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#channel-balance-profit" role="tab" data-channel-balance-url="@channelBalanceUrl">
+                    Kanal Dengeleme <span class="label label-light-primary label-inline ml-2">Hedef</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#receivables-profit" role="tab" data-receivables-url="@receivablesUrl">
+                    Alacaklar <span class="label label-light-warning label-inline ml-2">Logo</span>
+                </a>
+            </li>
+        </ul>
+        <div class="tab-content">
+            @for (var tabIndex = 0; tabIndex < profitabilityTabs.Length; tabIndex++)
+            {
+                var tab = profitabilityTabs[tabIndex];
+                <div class="tab-pane fade @(tabIndex == 0 ? "show active" : "")" id="@tab.Id" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>@tab.Title</th>
+                                    <th class="text-right">@(tab.ShowQuantity ? "Satış Miktarı" : "Satır")</th>
+                                    <th class="text-right">Referans Brüt</th>
+                                    <th class="text-right">İskonto</th>
+                                    <th class="text-right">Net Ciro</th>
+                                    <th class="text-right">Maliyet</th>
+                                    <th class="text-right">Brüt Kâr</th>
+                                    <th class="text-right">Net Kâr</th>
+                                    <th class="text-right">Kâr Oranı</th>
+                                    <th class="text-right">Eksik Maliyet</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @if (tab.Rows.Count == 0)
+                            {
+                                <tr><td colspan="10" class="text-center text-muted py-8">Bu kırılım için veri bulunamadı.</td></tr>
+                            }
+                            else
+                            {
+                                @foreach (var item in tab.Rows)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="font-weight-bold">@item.Code</div>
+                                            @if (!string.Equals(item.Code, item.Name, StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <div class="text-muted">@item.Name</div>
+                                            }
+                                        </td>
+                                        <td class="text-right">
+                                            @if (tab.ShowQuantity)
+                                            {
+                                                <span>@item.Quantity?.ToString("N0") @item.Unit</span>
+                                            }
+                                            else
+                                            {
+                                                <span>@item.LineCount</span>
+                                            }
+                                        </td>
+                                        <td class="text-right">@item.ReferenceGrossRevenue.ToString("N2")</td>
+                                        <td class="text-right">
+                                            <div>@item.DiscountAmount.ToString("N2")</div>
+                                            <div class="text-muted">%@item.DiscountRate.ToString("N2")</div>
+                                        </td>
+                                        <td class="text-right font-weight-bold">@item.NetRevenue.ToString("N2")</td>
+                                        <td class="text-right">@item.KnownCostAmount.ToString("N2")</td>
+                                        <td class="text-right">@item.GrossProfit.ToString("N2")</td>
+                                        <td class="text-right font-weight-bold @(item.NetProfit < 0 ? "text-danger" : "text-success")">@item.NetProfit.ToString("N2")</td>
+                                        <td class="text-right @(item.NetProfitRate < 0 ? "text-danger" : "text-success")">%@item.NetProfitRate.ToString("N2")</td>
+                                        <td class="text-right">
+                                            @if (item.MissingCostLineCount > 0)
+                                            {
+                                                <span class="label label-light-warning label-inline">@item.MissingCostLineCount</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-success">0</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            <div class="tab-pane fade" id="channel-balance-profit" role="tabpanel" data-loaded="false">
+                <div class="text-center text-muted py-10">
+                    Bu sekme açıldığında kanal hedefleri seçilen filtrelere göre hesaplanacak.
+                </div>
+            </div>
+            <div class="tab-pane fade" id="receivables-profit" role="tabpanel" data-loaded="false">
+                <div class="text-center text-muted py-10">
+                    Bu sekme açıldığında güncel cari bakiyeler Logo'dan yüklenecek.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="card card-custom">
     <div class="card-header"><div class="card-title"><h3 class="card-label">Fatura Satırları</h3></div></div>
@@ -156,3 +295,72 @@
         </div>
     </div>
 }
+
+<div class="modal fade" id="receivableDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cari Açık Hareketleri</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Kapat">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="receivableDetailContent"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var receivablesTab = document.querySelector('a[href="#receivables-profit"]');
+        var receivablesPane = document.getElementById('receivables-profit');
+        var channelBalanceTab = document.querySelector('a[href="#channel-balance-profit"]');
+        var channelBalancePane = document.getElementById('channel-balance-profit');
+
+        async function loadHtml(target, url, loadingText, errorText) {
+            target.innerHTML = '<div class="text-center text-muted py-10"><span class="spinner spinner-primary mr-4"></span>' + loadingText + '</div>';
+            try {
+                var response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                target.innerHTML = await response.text();
+                return true;
+            } catch (error) {
+                target.innerHTML = '<div class="alert alert-light-danger mb-0">' + errorText + '</div>';
+                return false;
+            }
+        }
+
+        if (receivablesTab && receivablesPane) {
+            $(receivablesTab).on('shown.bs.tab', async function () {
+                if (receivablesPane.dataset.loaded === 'true') {
+                    return;
+                }
+                var loaded = await loadHtml(receivablesPane, receivablesTab.dataset.receivablesUrl, 'Cari bakiyeler yükleniyor...', 'Logo cari bilgileri yüklenemedi. Lütfen tekrar deneyin.');
+                receivablesPane.dataset.loaded = loaded ? 'true' : 'false';
+            });
+
+            receivablesPane.addEventListener('click', async function (event) {
+                var button = event.target.closest('.js-receivable-detail');
+                if (!button) {
+                    return;
+                }
+
+                var content = document.getElementById('receivableDetailContent');
+                $('#receivableDetailModal').modal('show');
+                await loadHtml(content, button.dataset.url, 'Açık hareketler yükleniyor...', 'Cari açık hareketleri yüklenemedi. Lütfen tekrar deneyin.');
+            });
+        }
+
+        if (channelBalanceTab && channelBalancePane) {
+            $(channelBalanceTab).on('shown.bs.tab', async function () {
+                if (channelBalancePane.dataset.loaded === 'true') {
+                    return;
+                }
+                var loaded = await loadHtml(channelBalancePane, channelBalanceTab.dataset.channelBalanceUrl, 'Kanal hedefleri hesaplanıyor...', 'Kanal dengeleme hesabı yüklenemedi. Lütfen tekrar deneyin.');
+                channelBalancePane.dataset.loaded = loaded ? 'true' : 'false';
+            });
+        }
+    });
+</script>

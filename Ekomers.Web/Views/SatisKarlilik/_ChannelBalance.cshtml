@@ -1,0 +1,109 @@
+@model Ekomers.Models.ViewModels.Profitability.ChannelBalancingVM
+
+<div class="alert alert-light-primary">
+    <strong>Hesap yöntemi:</strong> En yüksek net ciroya sahip kanal hedef kabul edilir. Diğer kanalın ciro farkı,
+    kendi ortalama net ürün/kutu gelirine bölünerek tahmini ilave satış adedi bulunur. Bu değer hedef önerisidir;
+    ürün karması veya fiyat değişirse yeniden hesaplanmalıdır.
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Message))
+{
+    <div class="alert @(Model.Rows.Count == 0 ? "alert-light-warning" : "alert-light-info")">@Model.Message</div>
+}
+
+<div class="row mb-5">
+    <div class="col-md-3 mb-3 mb-md-0">
+        <div class="border rounded p-4 h-100">
+            <div class="text-muted">Hedef Kanal</div>
+            <div class="font-size-h5 font-weight-bold">@(string.IsNullOrWhiteSpace(Model.TargetChannel) ? "-" : Model.TargetChannel)</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3 mb-md-0">
+        <div class="border rounded p-4 h-100">
+            <div class="text-muted">Hedef Net Ciro</div>
+            <div class="font-size-h5 font-weight-bold">@Model.TargetNetRevenue.ToString("N2") ₺</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3 mb-md-0">
+        <div class="border rounded p-4 h-100">
+            <div class="text-muted">Dönem</div>
+            <div class="font-weight-bold">@Model.StartDate.ToString("dd.MM.yyyy") - @Model.EndDate.ToString("dd.MM.yyyy")</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="border rounded p-4 h-100">
+            <div class="text-muted">Ürün Kapsamı</div>
+            <div class="font-weight-bold">@(Model.ProductPrefixes.Count == 0 ? "-" : string.Join(", ", Model.ProductPrefixes))</div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end mb-3">
+    <span class="text-muted">Son hesaplama: @Model.RetrievedAt.ToString("dd.MM.yyyy HH:mm") · 5 dakika önbellek</span>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>Satış Kanalı</th>
+                <th class="text-right">Satılan</th>
+                <th class="text-right">Net Ciro</th>
+                <th class="text-right">Ort. Net / Birim</th>
+                <th class="text-right">Bilinen Maliyet</th>
+                <th class="text-right">Net Kâr</th>
+                <th class="text-right">Kâr Oranı</th>
+                <th class="text-right">Hedefe Ulaşma</th>
+                <th class="text-right">Ciro Farkı</th>
+                <th class="text-right">Tahmini İlave Satış</th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (Model.Rows.Count == 0)
+        {
+            <tr><td colspan="10" class="text-center text-muted py-8">Hesaplanabilir kanal satışı bulunamadı.</td></tr>
+        }
+        else
+        {
+            @foreach (var item in Model.Rows)
+            {
+                <tr class="@(item.IsTarget ? "table-success" : string.Empty)">
+                    <td>
+                        <span class="font-weight-bold">@item.Channel</span>
+                        @if (item.IsTarget)
+                        {
+                            <span class="label label-light-success label-inline ml-2">Hedef</span>
+                        }
+                    </td>
+                    <td class="text-right">@item.Quantity.ToString("N0") @item.Unit</td>
+                    <td class="text-right font-weight-bold">@item.NetRevenue.ToString("N2")</td>
+                    <td class="text-right">@item.AverageNetRevenuePerUnit.ToString("N2")</td>
+                    <td class="text-right">
+                        <div>@item.KnownCostAmount.ToString("N2")</div>
+                        @if (item.MissingCostLineCount > 0)
+                        {
+                            <div class="text-warning">@item.MissingCostLineCount satır eksik</div>
+                        }
+                    </td>
+                    <td class="text-right font-weight-bold @(item.NetProfit < 0 ? "text-danger" : "text-success")">@item.NetProfit.ToString("N2")</td>
+                    <td class="text-right @(item.NetProfitRate < 0 ? "text-danger" : "text-success")">%@item.NetProfitRate.ToString("N2")</td>
+                    <td class="text-right">%@item.CompletionRate.ToString("N1")</td>
+                    <td class="text-right">@item.RevenueGap.ToString("N2")</td>
+                    <td class="text-right">
+                        @if (item.RequiredAdditionalQuantity.HasValue)
+                        {
+                            <span class="font-weight-bold @(item.RequiredAdditionalQuantity > 0 ? "text-primary" : "text-success")">
+                                @item.RequiredAdditionalQuantity.Value.ToString("N0") @item.Unit
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-warning">Karma birim</span>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+</div>

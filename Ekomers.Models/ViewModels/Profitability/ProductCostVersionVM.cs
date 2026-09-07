@@ -89,9 +89,6 @@ public sealed class ProductCostProductOptionVM
 
 public sealed class ProductCostBulkVM
 {
-    [Display(Name = "Ürün kodu ön ekleri")]
-    public string CodePrefixes { get; set; } = "152HM,153TG";
-
     [Required, DataType(DataType.Date)]
     [Display(Name = "Geçerlilik başlangıcı")]
     public DateTime ValidFrom { get; set; } = DateTime.Today;
@@ -118,7 +115,23 @@ public sealed class ProductCostBulkVM
     public string StatusFilter { get; set; } = "all";
     public int TotalProductCount { get; set; }
     public bool IsTruncated { get; set; }
+    public IReadOnlyList<string> ActiveCodePrefixes { get; set; } = [];
     public List<ProductCostBulkRowVM> Rows { get; set; } = [];
+}
+
+public sealed class ProductCostPrefixManagementVM
+{
+    public IReadOnlyList<ProductCostPrefixRowVM> Prefixes { get; set; } = [];
+}
+
+public sealed class ProductCostPrefixRowVM
+{
+    public int Id { get; set; }
+    public string Prefix { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime? CreateDate { get; set; }
+    public string? CreateUser { get; set; }
 }
 
 public sealed class ProductCostBulkRowVM
@@ -132,11 +145,6 @@ public sealed class ProductCostBulkRowVM
     public DateTime? CurrentValidFrom { get; set; }
     public decimal? CurrentUnitCostTry { get; set; }
     public decimal? NewUnitCost { get; set; }
-    public decimal? MaterialCost { get; set; }
-    public decimal? LaborCost { get; set; }
-    public decimal? FreightCost { get; set; }
-    public decimal? OverheadCost { get; set; }
-    public decimal? OtherCost { get; set; }
 }
 
 public sealed class ProductCostHistoryVM

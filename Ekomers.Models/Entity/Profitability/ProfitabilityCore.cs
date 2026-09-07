@@ -37,3 +37,12 @@ public sealed class RptProductCostVersion : BaseEntity
     public DateTime? ApprovedDate { get; set; }
     public string? ApprovedUserId { get; set; }
 }
+
+/// <summary>
+/// Satış kârlılığı ve toplu maliyet işlemlerine dahil edilecek Logo ürün kodu ön ekidir.
+/// </summary>
+public sealed class RptProductScopePrefix : BaseEntity
+{
+    public string Prefix { get; set; } = string.Empty;
+    public string? Description { get; set; }
+}

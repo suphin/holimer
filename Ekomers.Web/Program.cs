@@ -231,9 +231,9 @@ builder.Services.AddSession(options =>
 //	cfg.AddProfile<MappingProfile>();
 //});
 
-// Current
-builder.Services.AddAutoMapper(cfg => cfg.LicenseKey = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ikx1Y2t5UGVubnlTb2Z0d2FyZUxpY2Vuc2VLZXkvYmJiMTNhY2I1OTkwNGQ4OWI0Y2IxYzg1ZjA4OGNjZjkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2x1Y2t5cGVubnlzb2Z0d2FyZS5jb20iLCJhdWQiOiJMdWNreVBlbm55U29mdHdhcmUiLCJleHAiOiIxNzg2MTQ3MjAwIiwiaWF0IjoiMTc1NDY0NDAzNiIsImFjY291bnRfaWQiOiIwMTk4ODhlZWRkYTE3N2MyOWIxOGFlZGQyZTUzYWRkZiIsImN1c3RvbWVyX2lkIjoiY3RtXzAxazI0ZXllcHlodnB3OHY4M3c2Zno2MXExIiwic3ViX2lkIjoiLSIsImVkaXRpb24iOiIwIiwidHlwZSI6IjIifQ.uqEYp8MlwJpgaOkCGCMT551xnVMkaAtjxC-0DuxIYZcchWSKZ5TzTu9vHVKR6w9e13pdtWhpZU-0XBpsX2n-WI0Wn2dqNAqAFbmQluAd42N3mr4fVE6J7GJSMEBK1AbONOpW08p2cb_xIXpFe11JLLEw-wp9q8V2W4uY4qcbkOKVS-cK3c6mUIWKmXTwSChdkJZ_I_HPvB4NvNetP3Uvr-YzrFpFyqvgRo-tKHDpTrncNN12Ff9DSYDCwXs-3G1ExD4bBfDTXs9VF8ikcH5wPR8sJfSbcNcqEdXWnR2KTYnp18EL56f9MhgV9YPhSTULe7ghXk5ULfm7t2cXRSdWdg", typeof(Program));
+// AutoMapper yalnızca uygulamanın kendi profilini yükler; tüm assembly taraması yapılmaz.
 builder.Services.AddAutoMapper(cfg => {
+	cfg.AddProfile<Ekomers.Web.MappingProfile>();
 	cfg.LicenseKey = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ikx1Y2t5UGVubnlTb2Z0d2FyZUxpY2Vuc2VLZXkvYmJiMTNhY2I1OTkwNGQ4OWI0Y2IxYzg1ZjA4OGNjZjkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2x1Y2t5cGVubnlzb2Z0d2FyZS5jb20iLCJhdWQiOiJMdWNreVBlbm55U29mdHdhcmUiLCJleHAiOiIxNzg2MTQ3MjAwIiwiaWF0IjoiMTc1NDY0NDAzNiIsImFjY291bnRfaWQiOiIwMTk4ODhlZWRkYTE3N2MyOWIxOGFlZGQyZTUzYWRkZiIsImN1c3RvbWVyX2lkIjoiY3RtXzAxazI0ZXllcHlodnB3OHY4M3c2Zno2MXExIiwic3ViX2lkIjoiLSIsImVkaXRpb24iOiIwIiwidHlwZSI6IjIifQ.uqEYp8MlwJpgaOkCGCMT551xnVMkaAtjxC-0DuxIYZcchWSKZ5TzTu9vHVKR6w9e13pdtWhpZU-0XBpsX2n-WI0Wn2dqNAqAFbmQluAd42N3mr4fVE6J7GJSMEBK1AbONOpW08p2cb_xIXpFe11JLLEw-wp9q8V2W4uY4qcbkOKVS-cK3c6mUIWKmXTwSChdkJZ_I_HPvB4NvNetP3Uvr-YzrFpFyqvgRo-tKHDpTrncNN12Ff9DSYDCwXs-3G1ExD4bBfDTXs9VF8ikcH5wPR8sJfSbcNcqEdXWnR2KTYnp18EL56f9MhgV9YPhSTULe7ghXk5ULfm7t2cXRSdWdg";
 });
 //var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
@@ -291,6 +291,8 @@ builder.Services.AddScoped<ISirketlerService, SirketlerService>();
 builder.Services.AddScoped<IUserShortCutFieldService, UserShortCutFieldService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<ISalesProfitabilityReportService, SalesProfitabilityReportService>();
+builder.Services.AddScoped<ICustomerReceivablesService, CustomerReceivablesService>();
+builder.Services.AddScoped<IChannelBalancingService, ChannelBalancingService>();
 builder.Services.AddScoped<IYetkilendirmeService, YetkilendirmeService>();
 
 builder.Services.AddScoped<IMusterilerService, MusterilerService>();
@@ -299,6 +301,7 @@ builder.Services.AddScoped<IFirsatService, FirsatService>();
 builder.Services.AddScoped<ITeklifService, TeklifService>();
 builder.Services.AddScoped<IMalzemeService, MalzemeService>();
 builder.Services.AddScoped<ProductionCatalogSyncService>();
+builder.Services.AddScoped<IProductionOrderCleanupService, ProductionOrderCleanupService>();
 builder.Services.AddScoped<PurchasingSupplierImportService>();
 builder.Services.AddScoped<IMalzemeFiyatService, MalzemeFiyatService>();
 builder.Services.AddScoped<ISiparisService, SiparisService>();
@@ -330,6 +333,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<TtnService>();
 builder.Services.AddScoped<IMailJobService, MailJobService>();
 
+builder.Services.AddMemoryCache();
 builder.Services.AddDistributedMemoryCache();
 
 

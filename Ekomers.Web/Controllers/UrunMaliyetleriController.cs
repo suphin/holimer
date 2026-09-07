@@ -183,10 +183,117 @@ public sealed class UrunMaliyetleriController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> OnEkler(CancellationToken ct)
+    {
+        ViewBag.Modul = "Rapor";
+        var rows = await _context.RptProductScopePrefixes.AsNoTracking()
+            .Where(x => x.IsDelete != true)
+            .OrderByDescending(x => x.IsActive == true)
+            .ThenBy(x => x.Prefix)
+            .Select(x => new ProductCostPrefixRowVM
+            {
+                Id = x.ID,
+                Prefix = x.Prefix,
+                Description = x.Description,
+                IsActive = x.IsActive == true,
+                CreateDate = x.CreateDate,
+                CreateUser = x.CreateUserID
+            })
+            .ToListAsync(ct);
+        return View(new ProductCostPrefixManagementVM { Prefixes = rows });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> OnEkEkle(string prefix, string? description, CancellationToken ct)
+    {
+        prefix = NormalizePrefix(prefix);
+        description = Clean(description);
+        if (string.IsNullOrWhiteSpace(prefix))
+        {
+            TempData["error"] = "Ürün kodu ön eki giriniz.";
+            return RedirectToAction(nameof(OnEkler));
+        }
+        if (prefix.Length > 50 || prefix.Any(char.IsWhiteSpace))
+        {
+            TempData["error"] = "Ön ek en fazla 50 karakter olmalı ve boşluk içermemelidir.";
+            return RedirectToAction(nameof(OnEkler));
+        }
+
+        var existing = await _context.RptProductScopePrefixes
+            .FirstOrDefaultAsync(x => x.Prefix == prefix, ct);
+        var now = DateTime.Now;
+        if (existing != null)
+        {
+            if (existing.IsDelete != true && existing.IsActive == true)
+            {
+                TempData["error"] = $"{prefix} ön eki zaten aktif.";
+                return RedirectToAction(nameof(OnEkler));
+            }
+            existing.IsDelete = false;
+            existing.DeleteDate = null;
+            existing.DeleteUserID = null;
+            existing.IsActive = true;
+            existing.Description = description;
+            existing.UpdateDate = now;
+            existing.UpdateUserID = CurrentUser;
+        }
+        else
+        {
+            _context.RptProductScopePrefixes.Add(new RptProductScopePrefix
+            {
+                Prefix = prefix,
+                Description = description,
+                IsActive = true,
+                IsDelete = false,
+                CreateDate = now,
+                CreateUserID = CurrentUser
+            });
+        }
+
+        await _context.SaveChangesAsync(ct);
+        TempData["success"] = $"{prefix} ön eki kaydedildi.";
+        return RedirectToAction(nameof(OnEkler));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> OnEkDurum(int id, CancellationToken ct)
+    {
+        var row = await _context.RptProductScopePrefixes
+            .FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (row == null)
+        {
+            return NotFound();
+        }
+        row.IsActive = row.IsActive != true;
+        row.UpdateDate = DateTime.Now;
+        row.UpdateUserID = CurrentUser;
+        await _context.SaveChangesAsync(ct);
+        TempData["success"] = $"{row.Prefix} ön eki {(row.IsActive == true ? "aktif" : "pasif")} yapıldı.";
+        return RedirectToAction(nameof(OnEkler));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> OnEkSil(int id, CancellationToken ct)
+    {
+        var row = await _context.RptProductScopePrefixes
+            .FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+        if (row == null)
+        {
+            return NotFound();
+        }
+        row.IsDelete = true;
+        row.IsActive = false;
+        row.DeleteDate = DateTime.Now;
+        row.DeleteUserID = CurrentUser;
+        await _context.SaveChangesAsync(ct);
+        TempData["success"] = $"{row.Prefix} ön eki kaldırıldı.";
+        return RedirectToAction(nameof(OnEkler));
+    }
+
+    [HttpGet]
     public async Task<IActionResult> Toplu(
         string? search,
         string statusFilter = "all",
-        string? codePrefixes = null,
         CancellationToken ct = default)
     {
         ViewBag.Modul = "Rapor";
@@ -194,9 +301,6 @@ public sealed class UrunMaliyetleriController : Controller
         {
             Search = Clean(search),
             StatusFilter = NormalizeStatusFilter(statusFilter),
-            CodePrefixes = Request.Query.ContainsKey(nameof(codePrefixes))
-                ? codePrefixes ?? string.Empty
-                : "152MM,153TG",
             ValidFrom = DateTime.Today
         };
         await PopulateBulkRowsAsync(model, ct);
@@ -209,7 +313,6 @@ public sealed class UrunMaliyetleriController : Controller
         ViewBag.Modul = "Rapor";
         model.CurrencyCode = (model.CurrencyCode ?? string.Empty).Trim().ToUpperInvariant();
         model.ChangeReason = (model.ChangeReason ?? string.Empty).Trim();
-        model.CodePrefixes = (model.CodePrefixes ?? string.Empty).Trim();
         model.ValidFrom = model.ValidFrom.Date;
         model.StatusFilter = NormalizeStatusFilter(model.StatusFilter);
         if (model.CurrencyCode == "TRY")
@@ -225,10 +328,11 @@ public sealed class UrunMaliyetleriController : Controller
         {
             ModelState.AddModelError(nameof(model.CurrencyCode), "Desteklenen bir para birimi seçiniz.");
         }
-        var allowedPrefixes = ParseCodePrefixes(model.CodePrefixes);
+        var allowedPrefixes = await ReadActivePrefixesAsync(ct);
         if (allowedPrefixes.Count == 0)
         {
-            ModelState.AddModelError(nameof(model.CodePrefixes), "En az bir ürün kodu ön eki giriniz.");
+            ModelState.AddModelError(string.Empty,
+                "Aktif ürün kodu ön eki bulunmuyor. Ön ek yönetiminden en az bir kayıt ekleyiniz.");
         }
 
         var changedRows = model.Rows
@@ -256,54 +360,17 @@ public sealed class UrunMaliyetleriController : Controller
                 continue;
             }
 
-            var components = new[]
+            if (row.NewUnitCost < 0)
             {
-                row.MaterialCost, row.LaborCost, row.FreightCost, row.OverheadCost, row.OtherCost
-            };
-            if (components.Any(x => x < 0) || row.NewUnitCost < 0)
-            {
-                ModelState.AddModelError(key, "Maliyet değerleri negatif olamaz.");
+                ModelState.AddModelError(key, "Maliyet negatif olamaz.");
                 continue;
             }
-
-            var hasDetails = components.Any(x => x.HasValue);
-            decimal material;
-            decimal labor;
-            decimal freight;
-            decimal overhead;
-            decimal other;
-            decimal total;
-            string source;
-            if (hasDetails)
+            if (!row.NewUnitCost.HasValue)
             {
-                material = row.MaterialCost ?? 0m;
-                labor = row.LaborCost ?? 0m;
-                freight = row.FreightCost ?? 0m;
-                overhead = row.OverheadCost ?? 0m;
-                other = row.OtherCost ?? 0m;
-                total = material + labor + freight + overhead + other;
-                source = "BulkDetailed";
-                if (row.NewUnitCost.HasValue && Math.Abs(row.NewUnitCost.Value - total) > 0.000001m)
-                {
-                    ModelState.AddModelError(key, "Yeni maliyet, detay kalemlerinin toplamıyla aynı olmalıdır.");
-                    continue;
-                }
+                ModelState.AddModelError(key, "Seçilen ürün için yeni maliyet giriniz.");
+                continue;
             }
-            else
-            {
-                if (!row.NewUnitCost.HasValue)
-                {
-                    ModelState.AddModelError(key, "Seçilen ürün için yeni maliyet giriniz.");
-                    continue;
-                }
-                // Şemada toplam maliyet için ayrı bir bileşen bulunmadığından hızlı giriş,
-                // Source alanıyla işaretlenerek ana maliyet bileşeninde saklanır.
-                material = row.NewUnitCost.Value;
-                labor = freight = overhead = other = 0m;
-                total = row.NewUnitCost.Value;
-                source = "BulkTotal";
-            }
-
+            var total = row.NewUnitCost.Value;
             if (total <= 0)
             {
                 ModelState.AddModelError(key, "Toplam maliyet sıfırdan büyük olmalıdır.");
@@ -311,7 +378,7 @@ public sealed class UrunMaliyetleriController : Controller
             }
             row.NewUnitCost = total;
             parsedCosts[row.LogoMaterialRef] = new BulkCostValues(
-                material, labor, freight, overhead, other, total, source);
+                total, 0m, 0m, 0m, 0m, total, "BulkTotal");
         }
 
         var materialRefs = parsedCosts.Keys.ToList();
@@ -554,7 +621,8 @@ public sealed class UrunMaliyetleriController : Controller
 
     private async Task PopulateBulkRowsAsync(ProductCostBulkVM model, CancellationToken ct)
     {
-        var prefixes = ParseCodePrefixes(model.CodePrefixes);
+        var prefixes = await ReadActivePrefixesAsync(ct);
+        model.ActiveCodePrefixes = prefixes;
         if (prefixes.Count == 0)
         {
             model.Rows = [];
@@ -614,6 +682,7 @@ public sealed class UrunMaliyetleriController : Controller
 
     private async Task RehydrateBulkRowsAsync(ProductCostBulkVM model, CancellationToken ct)
     {
+        model.ActiveCodePrefixes = await ReadActivePrefixesAsync(ct);
         var refs = model.Rows.Select(x => x.LogoMaterialRef).Where(x => x > 0).Distinct().ToList();
         var logoProducts = await _logoContext.Items.AsNoTracking()
             .Where(x => refs.Contains(x.LOGICALREF))
@@ -659,9 +728,7 @@ public sealed class UrunMaliyetleriController : Controller
     }
 
     private static bool IsChanged(ProductCostBulkRowVM row) =>
-        row.Selected || row.NewUnitCost.HasValue || row.MaterialCost.HasValue ||
-        row.LaborCost.HasValue || row.FreightCost.HasValue || row.OverheadCost.HasValue ||
-        row.OtherCost.HasValue;
+        row.Selected || row.NewUnitCost.HasValue;
 
     private static string NormalizeStatusFilter(string? value) => value?.Trim().ToLowerInvariant() switch
     {
@@ -670,12 +737,12 @@ public sealed class UrunMaliyetleriController : Controller
         _ => "all"
     };
 
-    private static IReadOnlyList<string> ParseCodePrefixes(string? value) =>
-        (value ?? string.Empty)
-        .Split([',', ';', '\r', '\n', ' ', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-        .Select(x => x.ToUpperInvariant())
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .ToList();
+    private async Task<IReadOnlyList<string>> ReadActivePrefixesAsync(CancellationToken ct) =>
+        await _context.RptProductScopePrefixes.AsNoTracking()
+            .Where(x => x.IsDelete != true && x.IsActive == true)
+            .OrderBy(x => x.Prefix)
+            .Select(x => x.Prefix)
+            .ToListAsync(ct);
 
     private static Expression<Func<LG_100_ITEMS, bool>> BuildCodePrefixExpression(
         IReadOnlyList<string> prefixes)
@@ -699,6 +766,9 @@ public sealed class UrunMaliyetleriController : Controller
 
     private static string? Clean(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string NormalizePrefix(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToUpperInvariant();
 
     private static string StatusText(RptProductCostVersionStatus status) => status switch
     {

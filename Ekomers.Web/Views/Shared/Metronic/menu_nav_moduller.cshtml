@@ -955,6 +955,10 @@
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Emirler" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Emirler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Emirleri</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && (actionName == "DepoHazirlama" || actionName == "DepoGorevDetay") ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="DepoHazirlama" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Depo Hazırlama Emirleri</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && (actionName == "Gerceklesen" || actionName == "GerceklesenDetay") ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Gerceklesen" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Gerçekleşen Üretim</span></a></li>
+			@if (User.IsInRole("Admin"))
+			{
+				<li class="menu-item @(controllerName == "UretimEmriYonetim" ? "menu-item-active" : "")"><a asp-controller="UretimEmriYonetim" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Kayıt Yönetimi</span></a></li>
+			}
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Izlenebilirlik" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Izlenebilirlik" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Lot / Parti İzlenebilirliği</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Raporlar" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Raporlar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Raporları</span></a></li>
 		</ul></div>

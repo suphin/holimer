@@ -1,0 +1,114 @@
+@model Ekomers.Models.ViewModels.Profitability.ProductCostPrefixManagementVM
+@{
+    ViewData["Title"] = "Ürün Kodu Ön Ekleri";
+}
+
+<div class="card card-custom gutter-b">
+    <div class="card-header">
+        <div class="card-title">
+            <div>
+                <h3 class="card-label mb-1">Ürün Kodu Ön Ekleri</h3>
+                <span class="text-muted">Toplu maliyet işlemlerine dahil edilecek Logo ürün gruplarını yönetin.</span>
+            </div>
+        </div>
+        <div class="card-toolbar">
+            <a asp-action="Toplu" class="btn btn-primary mr-2">Toplu Maliyete Git</a>
+            <a asp-action="Index" class="btn btn-light">Maliyet Listesine Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (TempData["success"] != null)
+        {
+            <div class="alert alert-light-success">@TempData["success"]</div>
+        }
+        @if (TempData["error"] != null)
+        {
+            <div class="alert alert-light-danger">@TempData["error"]</div>
+        }
+        <form method="post" asp-action="OnEkEkle" class="row align-items-end">
+            @Html.AntiForgeryToken()
+            <div class="col-md-3 mb-3 mb-md-0">
+                <label class="form-label">Ürün kodu ön eki</label>
+                <input name="prefix" class="form-control text-uppercase" maxlength="50" required
+                       placeholder="Ürün kodunun başlangıcı" autocomplete="off" />
+            </div>
+            <div class="col-md-7 mb-3 mb-md-0">
+                <label class="form-label">Açıklama</label>
+                <input name="description" class="form-control" maxlength="250"
+                       placeholder="Bu ürün grubunun açıklaması (isteğe bağlı)" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-block">Ön Ek Ekle</button>
+            </div>
+        </form>
+        <div class="alert alert-light-info mt-5 mb-0">
+            Eşleşme ürün kodunun başlangıcına göre yapılır. Pasif kayıtlar ürün listesine dahil edilmez;
+            silinen kayıtlar geçmiş maliyet versiyonlarını etkilemez.
+        </div>
+    </div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header">
+        <div class="card-title"><h3 class="card-label">Tanımlı Ön Ekler (@Model.Prefixes.Count)</h3></div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Ön Ek</th>
+                        <th>Açıklama</th>
+                        <th>Durum</th>
+                        <th>Oluşturan</th>
+                        <th class="text-right">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model.Prefixes.Count == 0)
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-10">
+                            Henüz ürün kodu ön eki tanımlanmamış. Toplu maliyet listesi ön ek eklenene kadar boş kalacaktır.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Prefixes)
+                    {
+                        <tr>
+                            <td class="font-weight-bold"><code>@item.Prefix*</code></td>
+                            <td>@(item.Description ?? "-")</td>
+                            <td>
+                                <span class="label label-inline @(item.IsActive ? "label-light-success" : "label-light-secondary")">
+                                    @(item.IsActive ? "Aktif" : "Pasif")
+                                </span>
+                            </td>
+                            <td>
+                                <div>@(item.CreateUser ?? "-")</div>
+                                <div class="text-muted">@(item.CreateDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div>
+                            </td>
+                            <td class="text-right">
+                                <form method="post" asp-action="OnEkDurum" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm @(item.IsActive ? "btn-light-warning" : "btn-light-success")">
+                                        @(item.IsActive ? "Pasif Yap" : "Aktif Yap")
+                                    </button>
+                                </form>
+                                <form method="post" asp-action="OnEkSil" class="d-inline"
+                                      onsubmit="return confirm('@item.Prefix ön eki kaldırılsın mı?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-light-danger">Sil</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -4,7 +4,7 @@
 }
 
 <style>
-    .bulk-cost-table { min-width: 1320px; }
+    .bulk-cost-table { min-width: 1120px; }
     .bulk-cost-table th { white-space: nowrap; }
     .bulk-cost-table .sticky-code { position: sticky; left: 0; z-index: 3; background: #fff; min-width: 165px; }
     .bulk-cost-table .sticky-name { position: sticky; left: 165px; z-index: 3; background: #fff; min-width: 360px; }
@@ -13,7 +13,6 @@
     .bulk-row.is-changed td { background-color: #e8fff3; }
     .bulk-row.is-changed .sticky-code,
     .bulk-row.is-changed .sticky-name { background-color: #e8fff3; }
-    .cost-detail-row td { background: #f8f9fb; }
     .cost-input { min-width: 145px; }
 </style>
 
@@ -26,22 +25,31 @@
             </div>
         </div>
         <div class="card-toolbar">
+            <a asp-action="OnEkler" class="btn btn-light-primary mr-2">Ön Ekleri Yönet</a>
             <a asp-action="Index" class="btn btn-light">Maliyet Listesine Dön</a>
         </div>
     </div>
     <div class="card-body">
+        <div class="d-flex align-items-center flex-wrap mb-5">
+            <span class="font-weight-bold mr-3">İşleme alınan ürün kodları:</span>
+            @if (Model.ActiveCodePrefixes.Count == 0)
+            {
+                <span class="label label-light-danger label-inline">Aktif ön ek bulunmuyor</span>
+            }
+            else
+            {
+                @foreach (var prefix in Model.ActiveCodePrefixes)
+                {
+                    <span class="label label-light-success label-inline mr-2 mb-1">@prefix*</span>
+                }
+            }
+        </div>
         <form method="get" asp-action="Toplu" class="row align-items-end">
-            <div class="col-md-4 mb-3 mb-md-0">
+            <div class="col-md-6 mb-3 mb-md-0">
                 <label class="form-label">Ürün kodu veya adı</label>
                 <input name="search" value="@Model.Search" class="form-control" placeholder="Ara..." />
             </div>
             <div class="col-md-3 mb-3 mb-md-0">
-                <label asp-for="CodePrefixes" class="form-label"></label>
-                <input name="codePrefixes" value="@Model.CodePrefixes" class="form-control" placeholder="152HM,153TG" />
-                <span class="form-text text-muted">Virgülle birden fazla ön ek girilebilir.</span>
-                <span asp-validation-for="CodePrefixes" class="text-danger"></span>
-            </div>
-            <div class="col-md-2 mb-3 mb-md-0">
                 <label class="form-label">Maliyet durumu</label>
                 <select name="statusFilter" class="form-control">
                     <option value="all" selected="@(Model.StatusFilter == "all")">Tüm ürünler</option>
@@ -61,7 +69,6 @@
     @Html.AntiForgeryToken()
     <input asp-for="Search" type="hidden" />
     <input asp-for="StatusFilter" type="hidden" />
-    <input asp-for="CodePrefixes" type="hidden" />
 
     <div class="card card-custom gutter-b">
         <div class="card-header">
@@ -96,8 +103,8 @@
                 </div>
             </div>
             <div class="alert alert-light-primary mb-0">
-                Hızlı girişte yalnızca <strong>Yeni Birim Maliyet</strong> alanını doldurabilirsiniz.
-                Maliyet bileşenlerini ayrı izlemek için satırdaki <strong>Detay</strong> düğmesini kullanın.
+                Toplu girişte ürünün <strong>yeni toplam birim maliyetini</strong> giriniz.
+                Malzeme, işçilik ve diğer bileşenleri ayrı kaydetmek için tek ürün maliyet ekranını kullanabilirsiniz.
             </div>
         </div>
     </div>
@@ -131,20 +138,18 @@
                             <th class="text-right">Mevcut Maliyet</th>
                             <th>Yeni Birim Maliyet</th>
                             <th class="text-right">TRY Karşılığı</th>
-                            <th>Dağılım</th>
                         </tr>
                     </thead>
                     <tbody>
                     @if (Model.Rows.Count == 0)
                     {
-                        <tr><td colspan="9" class="text-center text-muted py-10">Filtreye uygun ürün bulunamadı.</td></tr>
+                        <tr><td colspan="8" class="text-center text-muted py-10">Filtreye uygun ürün bulunamadı.</td></tr>
                     }
                     else
                     {
                         @for (var i = 0; i < Model.Rows.Count; i++)
                         {
                             var row = Model.Rows[i];
-                            var detailId = $"cost-detail-{i}";
                             <tr class="bulk-row" data-index="@i">
                                 <td class="text-center align-middle">
                                     <input asp-for="Rows[i].Selected" class="row-selector" />
@@ -179,42 +184,6 @@
                                     <span asp-validation-for="Rows[i].NewUnitCost" class="text-danger"></span>
                                 </td>
                                 <td class="text-right align-middle font-weight-bold row-try-total">-</td>
-                                <td class="align-middle">
-                                    <button type="button" class="btn btn-sm btn-light-primary"
-                                            data-toggle="collapse" data-target="#@detailId" aria-expanded="false">
-                                        Detay
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr class="collapse cost-detail-row" id="@detailId" data-index="@i">
-                                <td colspan="9" class="p-5">
-                                    <div class="row">
-                                        <div class="col-md mb-3 mb-md-0">
-                                            <label class="form-label">Malzeme</label>
-                                            <input asp-for="Rows[i].MaterialCost" type="number" min="0" step="any" class="form-control detail-cost" />
-                                        </div>
-                                        <div class="col-md mb-3 mb-md-0">
-                                            <label class="form-label">İşçilik</label>
-                                            <input asp-for="Rows[i].LaborCost" type="number" min="0" step="any" class="form-control detail-cost" />
-                                        </div>
-                                        <div class="col-md mb-3 mb-md-0">
-                                            <label class="form-label">Nakliye</label>
-                                            <input asp-for="Rows[i].FreightCost" type="number" min="0" step="any" class="form-control detail-cost" />
-                                        </div>
-                                        <div class="col-md mb-3 mb-md-0">
-                                            <label class="form-label">Genel Gider</label>
-                                            <input asp-for="Rows[i].OverheadCost" type="number" min="0" step="any" class="form-control detail-cost" />
-                                        </div>
-                                        <div class="col-md mb-3 mb-md-0">
-                                            <label class="form-label">Diğer</label>
-                                            <input asp-for="Rows[i].OtherCost" type="number" min="0" step="any" class="form-control detail-cost" />
-                                        </div>
-                                        <div class="col-md">
-                                            <label class="form-label">Detay Toplamı</label>
-                                            <div class="form-control bg-light font-weight-bold detail-total">0,000000</div>
-                                        </div>
-                                    </div>
-                                </td>
                             </tr>
                         }
                     }
@@ -247,11 +216,9 @@
                 var row = document.querySelector('.bulk-row[data-index="' + index + '"]');
                 if (!row) return;
                 var quick = row.querySelector('.quick-cost');
-                var detail = document.querySelector('.cost-detail-row[data-index="' + index + '"]');
-                var hasDetail = detail && Array.from(detail.querySelectorAll('.detail-cost')).some(function (x) { return x.value !== ''; });
-                var changed = row.querySelector('.row-selector').checked || quick.value !== '' || hasDetail;
+                var changed = row.querySelector('.row-selector').checked || quick.value !== '';
                 row.classList.toggle('is-changed', changed);
-                if ((quick.value !== '' || hasDetail) && !row.querySelector('.row-selector').checked) {
+                if (quick.value !== '' && !row.querySelector('.row-selector').checked) {
                     row.querySelector('.row-selector').checked = true;
                     changed = true;
                 }
@@ -271,20 +238,6 @@
                 var index = row.dataset.index;
                 row.querySelector('.quick-cost').addEventListener('input', function () { markRow(index); });
                 row.querySelector('.row-selector').addEventListener('change', function () { markRow(index); });
-            });
-
-            document.querySelectorAll('.cost-detail-row').forEach(function (detail) {
-                var index = detail.dataset.index;
-                detail.querySelectorAll('.detail-cost').forEach(function (input) {
-                    input.addEventListener('input', function () {
-                        var total = 0;
-                        detail.querySelectorAll('.detail-cost').forEach(function (x) { total += numberValue(x); });
-                        detail.querySelector('.detail-total').textContent = total.toLocaleString('tr-TR', { minimumFractionDigits: 6, maximumFractionDigits: 6 });
-                        var quick = document.querySelector('.bulk-row[data-index="' + index + '"] .quick-cost');
-                        quick.value = total > 0 ? total.toFixed(6) : '';
-                        markRow(index);
-                    });
-                });
             });
 
             rateInput.addEventListener('input', function () {

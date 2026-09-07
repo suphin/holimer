@@ -1,0 +1,88 @@
+@model Ekomers.Models.ViewModels.Profitability.CustomerReceivablesVM
+
+<div class="row mb-5">
+    <div class="col-md-3 mb-3 mb-md-0">
+        <div class="border rounded p-4 h-100">
+            <div class="text-muted">Toplam Alacak</div>
+            <div class="font-size-h4 font-weight-bold text-danger">@Model.TotalReceivable.ToString("N2") ₺</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3 mb-md-0">
+        <div class="border rounded p-4 h-100">
+            <div class="text-muted">Gecikmiş Alacak</div>
+            <div class="font-size-h4 font-weight-bold text-warning">@(Model.TotalOverdue?.ToString("N2") ?? "-") ₺</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3 mb-md-0">
+        <div class="border rounded p-4 h-100">
+            <div class="text-muted">Vadesi Gelmemiş</div>
+            <div class="font-size-h4 font-weight-bold">@(Model.TotalNotDue?.ToString("N2") ?? "-") ₺</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="border rounded p-4 h-100">
+            <div class="text-muted">Müşteri Lehine Bakiye</div>
+            <div class="font-size-h4 font-weight-bold text-success">@Model.TotalCustomerCredit.ToString("N2") ₺</div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.HasDueDateBreakdown)
+{
+    <div class="alert alert-light-warning">
+        Güncel bakiye Logo cari bakiye görünümünden alındı. Logo ödeme hareketi alanları bulunamadığı için vade kırılımı gösterilemiyor.
+    </div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-muted">Yalnızca açık bakiyesi bulunan cariler gösterilir.</span>
+    <span class="text-muted">Son okuma: @Model.RetrievedAt.ToString("dd.MM.yyyy HH:mm") · 5 dakika önbellek</span>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>Cari</th>
+                <th class="text-right">Borç Toplamı</th>
+                <th class="text-right">Alacak Toplamı</th>
+                <th class="text-right">Güncel Alacak</th>
+                <th class="text-right">Gecikmiş</th>
+                <th class="text-right">Vadesi Gelmemiş</th>
+                <th class="text-right">Müşteri Alacağı</th>
+                <th class="text-right">İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (Model.Rows.Count == 0)
+        {
+            <tr><td colspan="8" class="text-center text-muted py-8">Filtreye uygun açık cari bakiyesi bulunamadı.</td></tr>
+        }
+        else
+        {
+            @foreach (var item in Model.Rows)
+            {
+                <tr>
+                    <td>
+                        <div class="font-weight-bold">@item.CustomerCode</div>
+                        <div class="text-muted">@item.CustomerName</div>
+                    </td>
+                    <td class="text-right">@item.DebitTotal.ToString("N2")</td>
+                    <td class="text-right">@item.CreditTotal.ToString("N2")</td>
+                    <td class="text-right font-weight-bold @(item.Receivable > 0 ? "text-danger" : string.Empty)">@item.Receivable.ToString("N2")</td>
+                    <td class="text-right text-warning">@(item.OverdueReceivable?.ToString("N2") ?? "-")</td>
+                    <td class="text-right">@(item.NotDueReceivable?.ToString("N2") ?? "-")</td>
+                    <td class="text-right text-success">@item.CustomerCredit.ToString("N2")</td>
+                    <td class="text-right">
+                        <button type="button"
+                                class="btn btn-sm btn-light-primary js-receivable-detail"
+                                data-url="@Url.Action("ReceivableDetail", "SatisKarlilik", new { customerCode = item.CustomerCode })">
+                            Açık Hareketler
+                        </button>
+                    </td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+</div>
