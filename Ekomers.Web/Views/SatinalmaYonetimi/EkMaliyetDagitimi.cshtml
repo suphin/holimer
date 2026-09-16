@@ -1,0 +1,162 @@
+@model Ekomers.Models.ViewModels.Purchasing.GoodsReceiptLandedCostVM
+@{
+    ViewData["Title"] = "Ek Maliyet Dağıtımı";
+    var unavailableLine = Model.Lines.FirstOrDefault(x => !x.CanAllocate && !x.IsReturned);
+    var allocableCount = Model.Lines.Count(x => x.CanAllocate);
+    var canPost = !Model.IsPosted && allocableCount > 0 && unavailableLine == null &&
+        Model.ReceiptStatus != Ekomers.Models.Enums.PurGoodsReceiptStatus.Recorded &&
+        Model.ReceiptStatus != Ekomers.Models.Enums.PurGoodsReceiptStatus.Cancelled;
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Ek Maliyet Dağıtımı
+                <span class="d-block text-muted pt-2 font-size-sm">@Model.ReceiptNumber · @Model.OrderNumber · @Model.SupplierCode - @Model.SupplierName</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <span class="label label-light-primary label-inline mr-2">@Model.ReceiptStatus.ToTurkish()</span>
+            <a asp-action="MalKabulDetay" asp-route-id="@Model.GoodsReceiptId" class="btn btn-sm btn-light-primary">Mal Kabule Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light-info mb-0">
+            Ek maliyetler, stok miktarını değiştirmeden mevcut lotların değerini artırır. Dağıtım malzeme satırlarının KDV hariç alış değerine göre yapılır. Nakliye KDV'si indirilebilir vergi kabul edildiğinden stok maliyetine eklenmez; yalnızca net nakliye tutarı kullanılır.
+        </div>
+    </div>
+</div>
+
+@if (Model.IsPosted)
+{
+    <div class="card card-custom mb-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Dağıtım Tamamlandı<span class="d-block text-muted pt-2 font-size-sm">Kayıt değiştirilemez; düzeltme için ters maliyet belgesi gerekir</span></h3></div></div>
+        <div class="card-body">
+            <div class="alert alert-light-success">
+                <strong>@Model.LandedCostDocumentNumber</strong> numaralı dağıtım, <strong>@Model.InventoryDocumentNumber</strong> stok belgesiyle işlendi.
+                <span class="d-block">@(Model.PostingDate?.ToString("dd.MM.yyyy HH:mm") ?? "-") · @(Model.PostedUserId ?? "-")</span>
+            </div>
+            <div class="row">
+                <div class="col-md"><strong>Nakliye</strong><div>@Model.FreightCostTry.ToString("N2") TRY</div></div>
+                <div class="col-md"><strong>Gümrük / İthalat</strong><div>@Model.PostedCustomsCostTry.ToString("N2") TRY</div></div>
+                <div class="col-md"><strong>Sigorta</strong><div>@Model.PostedInsuranceCostTry.ToString("N2") TRY</div></div>
+                <div class="col-md"><strong>Elleçleme / İşçilik</strong><div>@Model.PostedHandlingLaborCostTry.ToString("N2") TRY</div></div>
+                <div class="col-md"><strong>Diğer</strong><div>@Model.PostedOtherCostTry.ToString("N2") TRY</div></div>
+                <div class="col-md"><strong>Toplam</strong><div class="text-primary font-weight-bolder">@Model.PostedTotalCostTry.ToString("N2") TRY</div></div>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.Notes)) { <div class="mt-5"><strong>Açıklama</strong><div>@Model.Notes</div></div> }
+        </div>
+    </div>
+}
+else
+{
+    <form asp-action="EkMaliyetDagitimi" method="post" onsubmit="return confirm('Ek maliyetler lot değerlerine işlenecek ve kayıt değiştirilemeyecek. Devam edilsin mi?');">
+        <input type="hidden" asp-for="GoodsReceiptId" />
+        <div class="card card-custom mb-5">
+            <div class="card-header"><div class="card-title"><h3 class="card-label">Dağıtılacak Giderler<span class="d-block text-muted pt-2 font-size-sm">Tutarlar TRY ve KDV hariç girilmelidir</span></h3></div></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-4 col-md-6 form-group">
+                        <label>Gerçekleşen Net Nakliye</label>
+                        <input value="@Model.FreightCostTry.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)" class="form-control landed-cost-input" readonly data-fixed-cost="true" />
+                        <small class="form-text text-muted">@Model.FreightAmount.ToString("N2") @Model.FreightCurrencyCode × @Model.FreightExchangeRate.ToString("N6") kur</small>
+                    </div>
+                    <div class="col-lg-4 col-md-6 form-group"><label asp-for="CustomsCostInput"></label><input asp-for="CustomsCostInput" class="form-control landed-cost-input" inputmode="decimal" placeholder="0,00" /></div>
+                    <div class="col-lg-4 col-md-6 form-group"><label asp-for="InsuranceCostInput"></label><input asp-for="InsuranceCostInput" class="form-control landed-cost-input" inputmode="decimal" placeholder="0,00" /></div>
+                    <div class="col-lg-4 col-md-6 form-group"><label asp-for="HandlingLaborCostInput"></label><input asp-for="HandlingLaborCostInput" class="form-control landed-cost-input" inputmode="decimal" placeholder="0,00" /></div>
+                    <div class="col-lg-4 col-md-6 form-group"><label asp-for="OtherCostInput"></label><input asp-for="OtherCostInput" class="form-control landed-cost-input" inputmode="decimal" placeholder="0,00" /></div>
+                    <div class="col-lg-4 col-md-6 form-group"><label>Toplam Ek Maliyet</label><div id="landed-cost-total" class="form-control font-weight-bolder text-primary bg-light">0,00 TRY</div></div>
+                </div>
+                <div class="form-group mb-0"><label asp-for="Notes"></label><textarea asp-for="Notes" class="form-control" rows="2" placeholder="Belge, firma veya gider açıklaması..."></textarea></div>
+            </div>
+        </div>
+
+        @if (Model.Lines.Any(x => x.IsReturned))
+        {
+            <div class="alert alert-light-warning">Tedarikçiye iade edilmiş satırlar artık stokta bulunmadığından dağıtıma dahil edilmez. Toplam gider, stokta kalan satırlar arasında paylaştırılır.</div>
+        }
+        @if (unavailableLine != null)
+        {
+            <div class="alert alert-light-danger"><strong>@unavailableLine.MaterialCode</strong> için dağıtım yapılamıyor: @unavailableLine.BlockingReason</div>
+        }
+
+        <div class="card card-custom">
+            <div class="card-header flex-wrap py-3">
+                <div class="card-title"><h3 class="card-label">Dağılım Önizlemesi<span class="d-block text-muted pt-2 font-size-sm">@allocableCount lot maliyet dağıtımına uygun</span></h3></div>
+                <div class="card-toolbar"><span class="label label-light-primary label-inline">Malzeme Alış Değerine Göre</span></div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-separate table-head-custom">
+                        <thead><tr><th>Malzeme / Lot</th><th>Teslim Alınan</th><th>Güncel Konum</th><th>Alış Değeri</th><th>Dağıtım Oranı</th><th>Eklenecek Maliyet</th><th>Mevcut → Yeni Birim Maliyet</th></tr></thead>
+                        <tbody>
+                        @foreach (var line in Model.Lines)
+                        {
+                            <tr class="landed-cost-line" data-rate="@line.AllocationRate.ToString("0.##########", System.Globalization.CultureInfo.InvariantCulture)" data-stock-quantity="@line.CurrentStockQuantity.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)" data-stock-value="@line.CurrentStockValueTry.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)" data-eligible="@(line.CanAllocate ? "true" : "false")">
+                                <td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span><span class="label label-light label-inline mt-1">Lot: @line.LotNumber</span></td>
+                                <td>@line.ReceivedQuantity.ToString("0.######") @line.Unit</td>
+                                <td>@(line.Warehouse ?? "-")<span class="d-block text-muted">Mevcut: @line.CurrentStockQuantity.ToString("0.######") @line.Unit</span></td>
+                                <td>@line.BaseLineValueTry.ToString("N2") TRY</td>
+                                <td>@if(line.CanAllocate){<span>%@((line.AllocationRate * 100m).ToString("N2"))</span>}else{<span class="label label-light-warning label-inline">Hariç</span><small class="d-block text-muted mt-1">@line.BlockingReason</small>}</td>
+                                <td class="allocated-cost">@(line.CanAllocate ? "0,00 TRY" : "-")</td>
+                                <td>@if(line.CanAllocate){<strong>@line.CurrentUnitCostTry.ToString("N6")</strong><span class="mx-2">→</span><strong class="text-primary result-unit-cost">@line.CurrentUnitCostTry.ToString("N6")</strong><span> TRY/@line.Unit</span>}else{<span>-</span>}</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer text-right">
+                <button class="btn btn-primary" disabled="@(!canPost)">Ek Maliyetleri Stoka Dağıt</button>
+            </div>
+        </div>
+    </form>
+}
+
+@if (Model.IsPosted)
+{
+    <div class="card card-custom">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Lot Bazında Dağılım</h3></div></div>
+        <div class="card-body">
+            <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Malzeme / Lot</th><th>Depo</th><th>Dağıtım Matrahı</th><th>Oran</th><th>Yüklenen Maliyet</th><th>Güncel Lot Birim Maliyeti</th></tr></thead><tbody>
+            @foreach (var line in Model.Lines.Where(x => x.AllocatedCostTry != 0))
+            {
+                <tr><td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName · @line.LotNumber</span></td><td>@line.Warehouse</td><td>@line.BaseLineValueTry.ToString("N2") TRY</td><td>%@((line.AllocationRate * 100m).ToString("N2"))</td><td><strong>@line.AllocatedCostTry.ToString("N2") TRY</strong></td><td>@line.CurrentUnitCostTry.ToString("N6") TRY/@line.Unit</td></tr>
+            }
+            </tbody></table></div>
+        </div>
+    </div>
+}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var inputs = Array.from(document.querySelectorAll('.landed-cost-input'));
+        if (!inputs.length) return;
+        var money = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        var unitCost = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 6, maximumFractionDigits: 6 });
+        function parseNumber(value) {
+            value = (value || '').trim().replace(/\s/g, '');
+            if (!value) return 0;
+            if (value.indexOf(',') >= 0 && value.indexOf('.') >= 0)
+                value = value.lastIndexOf(',') > value.lastIndexOf('.') ? value.replace(/\./g, '').replace(',', '.') : value.replace(/,/g, '');
+            else if (value.indexOf(',') >= 0) value = value.replace(',', '.');
+            var parsed = Number(value);
+            return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+        }
+        function refresh() {
+            var total = inputs.reduce(function (sum, input) { return sum + parseNumber(input.value); }, 0);
+            document.getElementById('landed-cost-total').textContent = money.format(total) + ' TRY';
+            document.querySelectorAll('.landed-cost-line[data-eligible="true"]').forEach(function (row) {
+                var rate = Number(row.dataset.rate || 0);
+                var quantity = Number(row.dataset.stockQuantity || 0);
+                var stockValue = Number(row.dataset.stockValue || 0);
+                var allocation = total * rate;
+                row.querySelector('.allocated-cost').textContent = money.format(allocation) + ' TRY';
+                row.querySelector('.result-unit-cost').textContent = unitCost.format(quantity > 0 ? (stockValue + allocation) / quantity : 0);
+            });
+        }
+        inputs.forEach(function (input) { input.addEventListener('input', refresh); });
+        refresh();
+    });
+</script>

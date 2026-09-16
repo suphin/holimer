@@ -40,7 +40,7 @@
             @if (Model.PreviousVersion != null)
             {
                 <div class="alert alert-light-primary mb-6">
-                    Son kayıt: <strong>v@Model.PreviousVersion.LatestVersionNumber</strong> ·
+                    Son kayıt: <strong>v@(Model.PreviousVersion.LatestVersionNumber)</strong> ·
                     @Model.PreviousVersion.ValidFrom.ToString("dd.MM.yyyy") ·
                     <strong>@Model.PreviousVersion.TotalUnitCostTry.ToString("N6") ₺ / @Model.PreviousVersion.UnitCode</strong>.
                     Alanlar önceki versiyondan kopyalandı; değişikliklerinizi giriniz.

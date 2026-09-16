@@ -1,0 +1,45 @@
+@model IReadOnlyList<Ekomers.Models.Entity.Purchasing.PurEmailTemplate>
+@{
+    ViewData["Title"] = "Satınalma E-posta Taslakları";
+}
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap border-0 pt-6 pb-0">
+        <div class="card-title"><h3 class="card-label">E-posta Taslakları<span class="d-block text-muted pt-2 font-size-sm">Tedarikçiden fiyat istemek için kullanılan hazır yazılar</span></h3></div>
+        <div class="card-toolbar">
+            <a asp-action="FiyatIstekleri" class="btn btn-light mr-2">Gönderim Geçmişi</a>
+            <a asp-action="MailTaslakYeni" class="btn btn-primary">Yeni Taslak</a>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (Model.Count == 0)
+        {
+            <div class="alert alert-light-warning">Henüz e-posta taslağı tanımlanmamış. Fiyat isteği göndermeden önce bir taslak oluşturunuz.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom">
+                    <thead><tr><th>Taslak</th><th>Konu</th><th>Durum</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td><strong>@item.Name</strong></td>
+                                <td>@item.SubjectTemplate</td>
+                                <td>@if (item.IsDefault) { <span class="label label-light-success label-inline">Varsayılan</span> } else { <span class="text-muted">-</span> }</td>
+                                <td class="text-right">
+                                    <a asp-action="MailTaslakDuzenle" asp-route-id="@item.ID" class="btn btn-sm btn-light-primary mr-2">Düzenle</a>
+                                    <form asp-action="MailTaslakSil" asp-route-id="@item.ID" method="post" class="d-inline" onsubmit="return confirm('Bu e-posta taslağı silinsin mi?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-light-danger">Sil</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

@@ -1,7 +1,19 @@
 ﻿@{
 	string controllerName = Context.Request.RouteValues["controller"]!.ToString()!;
 	string actionName = Context.Request.RouteValues["action"]!.ToString()!;
+	var purchasingPermissionNames = new[] { "SatinalmaGoruntule", "SatinalmaTalepOlustur", "SatinalmaTalepDuzenle", "TalepKabul", "SatinalmaTedarikciYonet", "SatinalmaTeklifYonet", "TeklifKabul", "SatinalmaSiparisYonet", "SatinalmaMalKabulYonet", "SatinalmaKarantinaIsle", "SatinalmaEkMaliyetDagit", "SatinalmaStokSonuclandir", "SatinalmaSurecGeriAl", "SatinalmaKayitSil" };
+	var hasPurchasingAccess = User.IsInRole("Admin") || User.HasClaim("Modul", "PURCHASING") || User.Claims.Any(x => x.Type == "Authorize" && purchasingPermissionNames.Contains(x.Value));
+	var canCreatePurchaseRequest = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaTalepOlustur");
+	var hasQualityAnalysisAccess = User.IsInRole("Admin") || User.HasClaim("Modul", "QUALITY") || User.HasClaim("Authorize", "KaliteOnay") || User.Claims.Any(x => x.Type == "Authorize" && new[] { "KaliteAnalizGoruntule", "KaliteAnalizDuzenle", "KaliteKararVer", "KaliteKarariGeriAl", "SatinalmaKayitSil" }.Contains(x.Value));
+	var hasQualityStockAccess = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaStokSonuclandir") || User.HasClaim("Authorize", "SatinalmaSurecGeriAl");
+	var hasQualityDefinitionAccess = User.IsInRole("Admin") || User.HasClaim("Modul", "QUALITY") || User.HasClaim("Authorize", "KaliteOnay");
 }
+<li class="menu-item @(controllerName == "KisiselPlanlayici" ? "menu-item-active" : "")" aria-haspopup="true">
+	<a asp-controller="KisiselPlanlayici" asp-action="Index" class="menu-link">
+		<span class="svg-icon menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2m0 16H5V9h14v11M7 11h5v5H7z"/></svg></span>
+		<span class="menu-text">Notlarım ve Takvimim</span>
+	</a>
+</li>
 <!--begin::Dijital Şirket-->
 @if (User.HasClaim("Modul", "DijitalSirket") || User.IsInRole("Admin"))
 {
@@ -932,6 +944,51 @@
 }
 
 <!--end::Uretim-->
+
+@if (User.IsInRole("Admin"))
+{
+	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "SistemYonetimi" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+		<a href="javascript:;" class="menu-link menu-toggle">
+			<span class="svg-icon menu-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+					<path fill="#000000" d="M12 2a2 2 0 0 1 2 2v.35a7.9 7.9 0 0 1 1.71.71l.25-.25a2 2 0 1 1 2.83 2.83l-.25.25c.31.54.55 1.11.71 1.71h.35a2 2 0 1 1 0 4h-.35a7.9 7.9 0 0 1-.71 1.71l.25.25a2 2 0 1 1-2.83 2.83l-.25-.25a7.9 7.9 0 0 1-1.71.71V20a2 2 0 1 1-4 0v-.35a7.9 7.9 0 0 1-1.71-.71l-.25.25a2 2 0 1 1-2.83-2.83l.25-.25a7.9 7.9 0 0 1-.71-1.71H4.4a2 2 0 1 1 0-4h.35c.16-.6.4-1.17.71-1.71l-.25-.25a2 2 0 1 1 2.83-2.83l.25.25A7.9 7.9 0 0 1 10 4.35V4a2 2 0 0 1 2-2Zm0 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" />
+				</svg>
+			</span>
+			<span class="menu-text">Sistem Yönetimi</span>
+			<i class="menu-arrow"></i>
+		</a>
+		<div class="menu-submenu">
+			<i class="menu-arrow"></i>
+			<ul class="menu-subnav">
+				<li class="menu-item @(controllerName == "HataKayitlari" ? "menu-item-active" : "")" aria-haspopup="true">
+					<a asp-controller="HataKayitlari" asp-action="Index" class="menu-link">
+						<i class="menu-bullet menu-bullet-dot"><span></span></i>
+						<span class="menu-text">Hata Kayıtları</span>
+					</a>
+				</li>
+			</ul>
+		</div>
+	</li>
+}
+<!--begin::Uretim Siparis Yonetimi-->
+@if (User.IsInRole("Admin") || User.HasClaim("Modul", "Uretim") || User.Claims.Any(x => x.Type == "Authorize" && x.Value.StartsWith("UretimSiparis")))
+{
+	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "UretimSiparis" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+		<a href="javascript:;" class="menu-link menu-toggle">
+			<span class="svg-icon menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-1 4-6 4-6-4V5l6 4 6-4v2m0 12H6v-8l6 4 6-4v8Z"/></svg></span>
+			<span class="menu-text">Sipariş Yönetimi</span><i class="menu-arrow"></i>
+		</a>
+		<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
+			<li class="menu-item menu-item-parent"><span class="menu-link"><span class="menu-text">Sipariş Yönetimi</span></span></li>
+			<li class="menu-item @(controllerName == "UretimSiparisleri" && (actionName == "Index" || actionName == "Detay" || actionName == "Yeni" || actionName == "Duzenle") ? "menu-item-active" : "")"><a asp-controller="UretimSiparisleri" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Gelen Siparişler</span></a></li>
+			@if (User.IsInRole("Admin") || User.HasClaim("Modul", "Uretim") || User.HasClaim("Authorize", "UretimSiparisPlanla"))
+			{
+				<li class="menu-item @(controllerName == "UretimSiparisleri" && actionName == "PlanlamaHavuzu" ? "menu-item-active" : "")"><a asp-controller="UretimSiparisleri" asp-action="PlanlamaHavuzu" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Planlama Havuzu</span></a></li>
+			}
+		</ul></div>
+	</li>
+}
+<!--end::Uretim Siparis Yonetimi-->
 <!--begin::Yeni Uretim Yonetimi-->
 @if (User.HasClaim("Modul", "Uretim") || User.IsInRole("Admin"))
 {
@@ -945,11 +1002,31 @@
 		<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
 			<li class="menu-item menu-item-parent"><span class="menu-link"><span class="menu-text">Üretim Yönetimi</span></span></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Dashboard" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Dashboard" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Paneli</span></a></li>
-			<li class="menu-item @(controllerName == "UretimYonetimi" && (actionName == "Depolar" || actionName == "DepoYeni" || actionName == "DepoDuzenle") ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Depolar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Depolar</span></a></li>
+			<li class="menu-item menu-item-submenu @((
+				(controllerName == "UretimYonetimi" && (actionName == "Depolar" || actionName == "DepoYeni" || actionName == "DepoDuzenle")) ||
+				controllerName == "ProductionCatalog" ||
+				controllerName == "ProductionRecipe" ||
+				controllerName == "MaterialReferenceCost" ||
+				(controllerName == "ReceteMaliyetleri" && actionName == "BirimDonusumleri")
+			) ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+				<a href="javascript:;" class="menu-link menu-toggle">
+					<i class="menu-bullet menu-bullet-line"><span></span></i>
+					<span class="menu-text">Tanımlamalar</span>
+					<i class="menu-arrow"></i>
+				</a>
+				<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
+					<li class="menu-item @(controllerName == "UretimYonetimi" && (actionName == "Depolar" || actionName == "DepoYeni" || actionName == "DepoDuzenle") ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Depolar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Depolar</span></a></li>
+					<li class="menu-item @(controllerName == "ProductionCatalog" ? "menu-item-active" : "")"><a asp-controller="ProductionCatalog" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Malzeme Kataloğu</span></a></li>
+					<li class="menu-item @(controllerName == "ProductionRecipe" ? "menu-item-active" : "")"><a asp-controller="ProductionRecipe" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Reçeteler</span></a></li>
+					<li class="menu-item @(controllerName == "MaterialReferenceCost" ? "menu-item-active" : "")"><a asp-controller="MaterialReferenceCost" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Malzeme Referans Maliyetleri</span></a></li>
+					<li class="menu-item @(controllerName == "ReceteMaliyetleri" && actionName == "BirimDonusumleri" ? "menu-item-active" : "")"><a asp-controller="ReceteMaliyetleri" asp-action="BirimDonusumleri" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Birim Dönüşümleri</span></a></li>
+				</ul></div>
+			</li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && (actionName == "Stoklar" || actionName == "MevcutStokAktar") ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Stoklar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Stokları</span></a></li>
+			<li class="menu-item @(controllerName == "ProductionStockCount" ? "menu-item-active" : "")"><a asp-controller="ProductionStockCount" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Depo Sayımı</span></a></li>
 			<li class="menu-item @(controllerName == "ProductionInventory" ? "menu-item-active" : "")"><a asp-controller="ProductionInventory" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Stok Hareketleri</span></a></li>
-			<li class="menu-item @(controllerName == "ProductionCatalog" ? "menu-item-active" : "")"><a asp-controller="ProductionCatalog" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Malzeme Kataloğu</span></a></li>
-			<li class="menu-item @(controllerName == "ProductionRecipe" ? "menu-item-active" : "")"><a asp-controller="ProductionRecipe" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Reçeteler</span></a></li>
+			<li class="menu-item @(controllerName == "ReceteMaliyetleri" && actionName == "Index" ? "menu-item-active" : "")"><a asp-controller="ReceteMaliyetleri" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Reçete Maliyet Hesabı</span></a></li>
+			<li class="menu-item @(controllerName == "ReceteMaliyetleri" && (actionName == "KayitliHesaplar" || actionName == "KayitDetay") ? "menu-item-active" : "")"><a asp-controller="ReceteMaliyetleri" asp-action="KayitliHesaplar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Kayıtlı Maliyet Hesapları</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Planlama" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Planlama" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Yeni Üretim Planı</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && (actionName == "Planlar" || actionName == "PlanDetay") ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Planlar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Planları</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Emirler" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Emirler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Emirleri</span></a></li>
@@ -966,7 +1043,7 @@
 }
 <!--end::Yeni Uretim Yonetimi-->
 <!--begin::Yeni Satinalma Yonetimi-->
-@if (User.HasClaim("Modul", "PURCHASING") || User.IsInRole("Admin"))
+@if (hasPurchasingAccess)
 {
 	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "YeniSatinalma" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 		<a href="javascript:;" class="menu-link menu-toggle">
@@ -978,33 +1055,43 @@
 		<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
 			<li class="menu-item menu-item-parent" aria-haspopup="true"><span class="menu-link"><span class="menu-text">Yeni Satınalma</span></span></li>
 			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "Talepler" || actionName == "TalepDetay" || actionName == "TalepDuzenle") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="Talepler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Satınalma Talepleri</span></a></li>
-			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "YeniTalep" || actionName == "TalepFormu") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="YeniTalep" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Yeni Talep</span></a></li>
+			@if (canCreatePurchaseRequest)
+			{
+				<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "YeniTalep" || actionName == "TalepFormu") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="YeniTalep" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Yeni Talep</span></a></li>
+			}
 			@if (User.IsInRole("Admin") || User.HasClaim("Authorize", "TalepKabul"))
 			{
 				<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "OnayBekleyenler" || actionName == "TalepOnay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="OnayBekleyenler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Talep Onayları</span></a></li>
 			}
 			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "Tedarikciler" || actionName == "TedarikciYeni" || actionName == "TedarikciDuzenle" || actionName == "TedarikciAktar") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="Tedarikciler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Tedarikçiler</span></a></li>
-			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "TeklifTalepleri" || actionName == "YeniTeklif" || actionName == "TeklifDuzenle" || actionName == "TeklifKarsilastir") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="TeklifTalepleri" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Teklif Bekleyen Talepler</span></a></li>
+			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "TeklifTalepleri" || actionName == "FiyatTeklifiIste" || actionName == "YeniTeklif" || actionName == "TeklifDuzenle" || actionName == "TeklifKarsilastir") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="TeklifTalepleri" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Teklif Bekleyen Talepler</span></a></li>
+			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "FiyatIstekleri" || actionName == "FiyatIstegiDetay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="FiyatIstekleri" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Fiyat İstekleri</span></a></li>
+			@if (User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaTeklifYonet"))
+			{
+				<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "MailTaslaklari" || actionName == "MailTaslakYeni" || actionName == "MailTaslakDuzenle") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="MailTaslaklari" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">E-posta Taslakları</span></a></li>
+			}
 			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "Teklifler" || actionName == "TeklifDetay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="Teklifler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Tedarikçi Teklifleri</span></a></li>
 			@if (User.IsInRole("Admin") || User.HasClaim("Authorize", "TeklifKabul"))
 			{
 				<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "TeklifOnaylari" || actionName == "TeklifOnay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="TeklifOnaylari" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Teklif Onayları</span></a></li>
 			}
 			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "Siparisler" || actionName == "SiparisDetay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="Siparisler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Satınalma Siparişleri</span></a></li>
-			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "MalKabuller" || actionName == "YeniMalKabul" || actionName == "MalKabulDuzenle" || actionName == "MalKabulDetay") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="MalKabuller" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Mal Kabuller</span></a></li>
+			<li class="menu-item @(controllerName == "LogoPurchaseInvoice" ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="LogoPurchaseInvoice" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Logo Alım Faturaları</span></a></li>
+			<li class="menu-item @(controllerName == "SatinalmaYonetimi" && (actionName == "MalKabuller" || actionName == "YeniMalKabul" || actionName == "MalKabulDuzenle" || actionName == "MalKabulDetay" || actionName == "EkMaliyetDagitimi") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SatinalmaYonetimi" asp-action="MalKabuller" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Mal Kabuller</span></a></li>
 		</ul></div>
 	</li>
 }
 <!--end::Yeni Satinalma Yonetimi-->
 <!--begin::Kalite Yonetimi-->
-@if (User.IsInRole("Admin") || User.HasClaim("Modul", "QUALITY") || User.HasClaim("Authorize", "KaliteOnay") || User.HasClaim("Modul", "PURCHASING"))
+@if (hasQualityAnalysisAccess || hasQualityStockAccess || hasQualityDefinitionAccess)
 {
 	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "KaliteYonetimi" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 		<a href="javascript:;" class="menu-link menu-toggle"><span class="svg-icon menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3v2h1v5.59L4.59 16A2 2 0 0 0 6 19.41h12A2 2 0 0 0 19.41 16L14 10.59V5h1V3H9m3 8.41V5h0v6.41L17.59 17H6.41L12 11.41Z" /></svg></span><span class="menu-text">Kalite Yönetimi</span><i class="menu-arrow"></i></a>
 		<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
 			<li class="menu-item menu-item-parent" aria-haspopup="true"><span class="menu-link"><span class="menu-text">Kalite Yönetimi</span></span></li>
-			<li class="menu-item @(controllerName == "KaliteYonetimi" ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="KaliteYonetimi" asp-action="Analizler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Karantina Analizleri</span></a></li>
-			<li class="menu-item @(controllerName == "SpesifikasyonYonetimi" ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SpesifikasyonYonetimi" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Malzeme Spesifikasyonları</span></a></li>
+			@if (hasQualityAnalysisAccess) { <li class="menu-item @(controllerName == "KaliteYonetimi" && (actionName == "Analizler" || actionName == "AnalizDetay" || actionName == "AktifSpesifikasyonuBagla" || actionName == "SpekSonuclariKaydet" || actionName == "AnalizKaydet" || actionName == "KararVer") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="KaliteYonetimi" asp-action="Analizler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Karantina Analizleri</span></a></li> }
+			@if (hasQualityStockAccess) { <li class="menu-item @(controllerName == "KaliteYonetimi" && (actionName == "StokSonuclandirma" || actionName == "StokSonuclandir") ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="KaliteYonetimi" asp-action="StokSonuclandirma" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Stok Sonuçlandırma</span></a></li> }
+			@if (hasQualityDefinitionAccess) { <li class="menu-item @(controllerName == "SpesifikasyonYonetimi" ? "menu-item-active" : "")" aria-haspopup="true"><a asp-controller="SpesifikasyonYonetimi" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Malzeme Spesifikasyonları</span></a></li> }
 		</ul></div>
 	</li>
 }

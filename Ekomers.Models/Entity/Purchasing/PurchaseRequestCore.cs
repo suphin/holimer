@@ -112,6 +112,38 @@ public class PurSupplierQuotationLine : BaseEntity
     public string? Notes { get; set; }
 }
 
+public class PurEmailTemplate : BaseEntity
+{
+    public string Name { get; set; } = string.Empty;
+    public string SubjectTemplate { get; set; } = string.Empty;
+    public string BodyTemplate { get; set; } = string.Empty;
+    public bool IsDefault { get; set; }
+}
+
+public class PurPriceRequestEmail : BaseEntity
+{
+    public string ReferenceNumber { get; set; } = string.Empty;
+    public int SupplierId { get; set; }
+    public int? EmailTemplateId { get; set; }
+    public string RecipientEmail { get; set; } = string.Empty;
+    public string SenderName { get; set; } = string.Empty;
+    public string SenderEmail { get; set; } = string.Empty;
+    public string SenderAccount { get; set; } = string.Empty;
+    public string Subject { get; set; } = string.Empty;
+    public string BodyHtml { get; set; } = string.Empty;
+    public DateTime? ResponseDeadline { get; set; }
+    public PurPriceRequestEmailStatus Status { get; set; } = PurPriceRequestEmailStatus.Draft;
+    public DateTime? SentDate { get; set; }
+    public string? ErrorMessage { get; set; }
+}
+
+public class PurPriceRequestEmailLine : BaseEntity
+{
+    public int PriceRequestEmailId { get; set; }
+    public int PurchaseRequestLineId { get; set; }
+    public decimal Quantity { get; set; }
+}
+
 public class PurQuotationApprovalHistory : BaseEntity
 {
     public int SupplierQuotationId { get; set; }
@@ -224,6 +256,36 @@ public class PurGoodsReceiptLine : BaseEntity
     public int? QuarantineStockLotId { get; set; }
     public int? QuarantineInventoryDocumentLineId { get; set; }
     public string? Notes { get; set; }
+}
+
+public class PurGoodsReceiptLandedCost : BaseEntity
+{
+    public int GoodsReceiptId { get; set; }
+    public string DocumentNumber { get; set; } = string.Empty;
+    public PurLandedCostAllocationMethod AllocationMethod { get; set; } = PurLandedCostAllocationMethod.ByMaterialValue;
+    public decimal FreightCostTry { get; set; }
+    public decimal CustomsCostTry { get; set; }
+    public decimal InsuranceCostTry { get; set; }
+    public decimal HandlingLaborCostTry { get; set; }
+    public decimal OtherCostTry { get; set; }
+    public decimal TotalCostTry { get; set; }
+    public int InventoryDocumentId { get; set; }
+    public DateTime PostingDate { get; set; }
+    public string PostedUserId { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+}
+
+public class PurGoodsReceiptLandedCostAllocation : BaseEntity
+{
+    public int LandedCostId { get; set; }
+    public int GoodsReceiptLineId { get; set; }
+    public int MaterialId { get; set; }
+    public int WarehouseId { get; set; }
+    public int StockLotId { get; set; }
+    public decimal BaseLineValueTry { get; set; }
+    public decimal AllocationRate { get; set; }
+    public decimal AllocatedCostTry { get; set; }
+    public int InventoryDocumentLineId { get; set; }
 }
 
 public class PurQualityInspection : BaseEntity

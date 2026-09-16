@@ -14,6 +14,7 @@ public class InventoryDocumentListVM
     public string TargetWarehouse { get; set; } = string.Empty;
     public int LineCount { get; set; }
     public decimal TotalCost { get; set; }
+    public bool CanDeleteFromInventory { get; set; }
 }
 
 public sealed class InventoryDocumentCreateVM
@@ -50,6 +51,8 @@ public sealed class InventoryDocumentDetailVM : InventoryDocumentListVM
     public string CurrencyCode { get; set; } = "TRY";
     public decimal ExchangeRate { get; set; }
     public string? Notes { get; set; }
+    public string? SourceDocumentType { get; set; }
+    public int? SourceDocumentId { get; set; }
     public List<InventoryDocumentDetailLineVM> Lines { get; set; } = [];
 }
 
@@ -64,6 +67,7 @@ public sealed class InventoryDocumentDetailLineVM
     public string Unit { get; set; } = string.Empty;
     public decimal UnitCost { get; set; }
     public decimal TotalCost { get; set; }
+    public PrdStockMovementType? MovementType { get; set; }
     public string? Notes { get; set; }
 }
 

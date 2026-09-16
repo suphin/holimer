@@ -47,6 +47,26 @@
 		<!--end::Separator-->
 		<!--begin::Nav-->
 		<div class="navi navi-spacer-x-0 p-0">
+			@{
+				var modernThemeEnabled=!string.Equals(Context.Request.Cookies["PortalTheme"],"classic",StringComparison.OrdinalIgnoreCase);
+				var themeReturnUrl=Context.Request.Path+Context.Request.QueryString;
+			}
+			<form asp-controller="Home" asp-action="TemaDegistir" method="post" class="mb-3">
+				@Html.AntiForgeryToken()
+				<input type="hidden" name="theme" value="@(modernThemeEnabled?"classic":"modern")" />
+				<input type="hidden" name="returnUrl" value="@themeReturnUrl" />
+				<button type="submit" class="navi-item border-0 bg-transparent text-left w-100 p-0">
+					<span class="navi-link">
+						<span class="symbol symbol-40 bg-light mr-3">
+							<span class="symbol-label"><i class="flaticon2-gear text-success"></i></span>
+						</span>
+						<span class="navi-text">
+							<span class="font-weight-bold d-block">@(modernThemeEnabled?"Klasik Metronic'e Dön":"Yeni Ferah Temaya Geç")</span>
+							<span class="text-muted">Tema tercihiniz bu tarayıcıda saklanır</span>
+						</span>
+					</span>
+				</button>
+			</form>
 			<!--begin::Item-->
 			<a href="Home/Profile" class="navi-item">
 				<div class="navi-link">

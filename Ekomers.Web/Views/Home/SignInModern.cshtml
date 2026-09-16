@@ -1,0 +1,118 @@
+@model SignInVM
+@{
+	Layout = null;
+	var returnUrl = Context.Request.Query["returnUrl"].ToString();
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta name="description" content="Holimer kurumsal portal giriş sayfası" />
+	<title>Giriş Yap | Holimer Kurumsal Portal</title>
+	<link rel="shortcut icon" href="~/img/favicon.ico" />
+	<link href="~/assets1/plugins/global/plugins.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<link href="~/assets1/css/style.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<link href="~/css/signin-modern.css?v=1.0.0" rel="stylesheet" type="text/css" />
+</head>
+<body class="holimer-auth-body">
+	<main class="holimer-auth-page">
+		<section class="holimer-auth-shell" aria-label="Holimer Portal Girişi">
+			<div class="holimer-auth-form-panel">
+				<div class="holimer-auth-form-wrap">
+					<a asp-controller="Home" asp-action="SignIn" class="holimer-auth-logo" aria-label="Holimer giriş sayfası">
+						<img src="~/img/holimer-logo-blue-hd.png" alt="Holimer optimum health" />
+					</a>
+
+					<div class="holimer-auth-heading">
+						<span class="holimer-auth-kicker">KURUMSAL PORTAL</span>
+						<h1>Tekrar hoş geldiniz</h1>
+						<p>Hesabınıza güvenli bir şekilde giriş yapın.</p>
+					</div>
+
+					<form asp-action="SignIn" asp-route-returnUrl="@returnUrl" method="post" class="holimer-auth-form" novalidate>
+						<div asp-validation-summary="ModelOnly" class="holimer-auth-alert" role="alert"></div>
+
+						<div class="holimer-auth-field">
+							<label asp-for="Email">E-posta adresi</label>
+							<div class="holimer-auth-input-wrap">
+								<span class="holimer-auth-input-icon" aria-hidden="true">
+									<svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5h16v11H4v-11Z" stroke="currentColor" stroke-width="1.7"/><path d="m5 8 7 5 7-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+								</span>
+								<input asp-for="Email" type="email" autocomplete="username" inputmode="email" placeholder="ornek@holimer.com" autofocus required />
+							</div>
+							<span asp-validation-for="Email" class="holimer-auth-validation"></span>
+						</div>
+
+						<div class="holimer-auth-field">
+							<div class="holimer-auth-label-row">
+								<label asp-for="Password">Şifre</label>
+								<a asp-controller="Home" asp-action="ForgotPassword">Şifremi unuttum</a>
+							</div>
+							<div class="holimer-auth-input-wrap">
+								<span class="holimer-auth-input-icon" aria-hidden="true">
+									<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+								</span>
+								<input asp-for="Password" autocomplete="current-password" placeholder="Şifrenizi girin" required />
+								<button type="button" class="holimer-password-toggle" id="password-toggle" aria-label="Şifreyi göster" aria-pressed="false">
+									<svg class="eye-open" viewBox="0 0 24 24" fill="none"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.7"/></svg>
+									<svg class="eye-closed" viewBox="0 0 24 24" fill="none"><path d="m4 4 16 16M10.7 6.1A9 9 0 0 1 12 6c6 0 9.5 6 9.5 6a15 15 0 0 1-2.1 2.7M6.2 7.2C3.8 9 2.5 12 2.5 12s3.5 6 9.5 6c1 0 2-.2 2.8-.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M9.9 9.9A3 3 0 0 0 14.1 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+								</button>
+							</div>
+							<span asp-validation-for="Password" class="holimer-auth-validation"></span>
+						</div>
+
+						<button type="submit" id="kt_login_singin_form_submit_button" class="holimer-auth-submit">
+							<span>Giriş Yap</span>
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						</button>
+					</form>
+
+					<div class="holimer-auth-register">
+						<span>Henüz hesabınız yok mu?</span>
+						<a asp-controller="Home" asp-action="SignUp">Yeni üyelik oluşturun</a>
+					</div>
+
+					<div class="holimer-auth-security">
+						<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 3 8.2 7 10 4-1.8 7-5.4 7-10V6l-7-3Z" stroke="currentColor" stroke-width="1.6"/><path d="m9.2 12 1.8 1.8 3.9-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						<span>Güvenli ve şifreli bağlantı</span>
+					</div>
+				</div>
+			</div>
+
+			<aside class="holimer-auth-showcase">
+				<div class="holimer-auth-orb holimer-auth-orb-one"></div>
+				<div class="holimer-auth-orb holimer-auth-orb-two"></div>
+				<div class="holimer-auth-showcase-content">
+					<span class="holimer-auth-showcase-badge">HOLİMER İLAÇ A.Ş.</span>
+					<h2>İş süreçleriniz<br />tek merkezde.</h2>
+					<p>Üretimden satın almaya, stoktan raporlamaya kadar operasyonunuzu güvenle yönetin.</p>
+
+					<div class="holimer-auth-feature-list">
+						<div class="holimer-auth-feature"><span>✓</span><div><strong>Merkezi yönetim</strong><small>Tüm modüllere tek noktadan erişim</small></div></div>
+						<div class="holimer-auth-feature"><span>✓</span><div><strong>Yetki kontrollü erişim</strong><small>Kullanıcı rolüne göre güvenli işlemler</small></div></div>
+						<div class="holimer-auth-feature"><span>✓</span><div><strong>Anlık görünürlük</strong><small>Operasyon ve raporlar her zaman elinizin altında</small></div></div>
+					</div>
+				</div>
+				<div class="holimer-auth-showcase-footer">Optimum health, güçlü operasyon.</div>
+			</aside>
+		</section>
+		<footer class="holimer-auth-footer">© @DateTime.Now.Year Holimer İlaç A.Ş. · Kurumsal Portal</footer>
+	</main>
+
+	<script>
+		(function () {
+			var toggle = document.getElementById('password-toggle');
+			var password = document.getElementById('Password');
+			if (!toggle || !password) return;
+			toggle.addEventListener('click', function () {
+				var visible = password.type === 'text';
+				password.type = visible ? 'password' : 'text';
+				toggle.classList.toggle('is-visible', !visible);
+				toggle.setAttribute('aria-pressed', (!visible).toString());
+				toggle.setAttribute('aria-label', visible ? 'Şifreyi göster' : 'Şifreyi gizle');
+			});
+		})();
+	</script>
+</body>
+</html>

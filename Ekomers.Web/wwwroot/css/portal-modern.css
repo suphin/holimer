@@ -1,0 +1,492 @@
+:root {
+    --portal-green: #255b45;
+    --portal-green-dark: #194534;
+    --portal-green-soft: #eaf2ed;
+    --portal-nav-blue: #2469d8;
+    --portal-nav-blue-dark: #174fa8;
+    --portal-nav-blue-soft: #eaf2ff;
+    --portal-nav-hover: #f3f7fc;
+    --portal-bg: #f4f7f5;
+    --portal-surface: #ffffff;
+    --portal-border: #e1e8e3;
+    --portal-text: #1f2924;
+    --portal-muted: #75817a;
+    --portal-aside-width: 76px;
+    --portal-header-height: 66px;
+}
+
+body.portal-modern {
+    background: var(--portal-bg);
+    color: var(--portal-text);
+    font-family: Inter, "Segoe UI", Poppins, sans-serif;
+}
+
+.portal-modern .page,
+.portal-modern .wrapper,
+.portal-modern .content {
+    background: var(--portal-bg);
+}
+
+.portal-brand-mark {
+    display: none;
+}
+
+.portal-modern-logo {
+    display: none;
+}
+
+.portal-modern .portal-brand-mark {
+    display: inline-flex !important;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 40px;
+    border-radius: 11px;
+    background: linear-gradient(145deg, #0b3f9f, #315fb4);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -.04em;
+    box-shadow: 0 4px 12px rgba(10, 62, 158, .18);
+}
+
+/* Masaüstünde dar ikon rayı, üzerine gelince mevcut Metronic davranışıyla açılır. */
+@media (min-width: 992px) {
+    .portal-modern.aside-fixed .aside {
+        width: var(--portal-aside-width);
+        background: var(--portal-surface);
+        border-right: 1px solid var(--portal-border);
+        box-shadow: none;
+    }
+
+    .portal-modern.aside-fixed .wrapper {
+        padding-left: var(--portal-aside-width);
+    }
+
+    .portal-modern.aside-fixed .header {
+        left: var(--portal-aside-width);
+    }
+
+    .portal-modern .aside:hover,
+    .portal-modern.aside-minimize-hover .aside {
+        width: 265px;
+        box-shadow: 12px 0 35px rgba(30, 65, 49, .10);
+    }
+
+    .portal-modern .aside:hover .brand,
+    .portal-modern.aside-minimize-hover .brand {
+        width: 265px;
+    }
+
+    .portal-modern .aside .brand {
+        width: var(--portal-aside-width);
+        height: var(--portal-header-height);
+        margin-top: 0 !important;
+        padding: 0 17px;
+        background: var(--portal-surface);
+        border-bottom: 1px solid var(--portal-border);
+    }
+
+    .portal-modern .aside:not(:hover) .brand-logo img {
+        display: none;
+    }
+
+    .portal-modern .aside:hover .portal-brand-mark,
+    .portal-modern.aside-minimize-hover .portal-brand-mark {
+        display: none !important;
+    }
+
+    .portal-modern .aside:hover .portal-modern-logo,
+    .portal-modern.aside-minimize-hover .portal-modern-logo {
+        display: block !important;
+        width: auto;
+        max-width: 150px;
+        max-height: 56px;
+        object-fit: contain;
+    }
+
+    .portal-modern .aside:hover .portal-classic-logo,
+    .portal-modern.aside-minimize-hover .portal-classic-logo {
+        display: none;
+    }
+
+    .portal-modern.portal-modern-aside-expanded.aside-fixed .aside,
+    .portal-modern.portal-modern-aside-expanded .aside .brand {
+        width: 265px;
+    }
+
+    .portal-modern.portal-modern-aside-expanded.aside-fixed .wrapper {
+        padding-left: 265px;
+    }
+
+    .portal-modern.portal-modern-aside-expanded.aside-fixed .header {
+        left: 265px;
+    }
+
+    .portal-modern.portal-modern-aside-expanded .portal-brand-mark,
+    .portal-modern.portal-modern-aside-expanded .portal-classic-logo {
+        display: none !important;
+    }
+
+    .portal-modern.portal-modern-aside-expanded .portal-modern-logo {
+        display: block !important;
+        width: auto;
+        max-width: 150px;
+        max-height: 56px;
+        object-fit: contain;
+    }
+}
+
+.portal-classic .portal-classic-logo {
+    width: auto;
+    max-width: 155px;
+    max-height: 58px;
+    object-fit: contain;
+}
+
+.portal-mobile-logo {
+    width: auto;
+    max-width: 62px;
+    max-height: 46px;
+    object-fit: contain;
+}
+
+.portal-modern .aside-menu,
+.portal-modern .aside-menu .menu-nav,
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-open > .menu-heading,
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-open > .menu-link,
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-active > .menu-heading,
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-active > .menu-link {
+    background: var(--portal-surface);
+}
+
+.portal-modern .aside-menu .menu-nav > .menu-item > .menu-link {
+    min-height: 48px;
+    margin: 3px 9px;
+    padding: 9px 15px;
+    border-radius: 10px;
+}
+
+.portal-modern .aside-menu .menu-nav > .menu-item > .menu-link .menu-text,
+.portal-modern .aside-menu .menu-nav > .menu-item > .menu-link .menu-arrow,
+.portal-modern .aside-menu .menu-nav > .menu-section .menu-text {
+    color: #4f5c55;
+}
+
+.portal-modern .aside-menu .menu-nav > .menu-item > .menu-link .menu-icon,
+.portal-modern .aside-menu .menu-nav > .menu-item > .menu-link .menu-icon.svg-icon svg g [fill] {
+    color: #627269;
+    fill: #627269;
+}
+
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-active > .menu-link,
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-open > .menu-link,
+.portal-modern .aside-menu .menu-nav > .menu-item > .menu-link:hover {
+    background: var(--portal-nav-blue-soft);
+}
+
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-active > .menu-link .menu-text,
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-open > .menu-link .menu-text,
+.portal-modern .aside-menu .menu-nav > .menu-item > .menu-link:hover .menu-text {
+    color: var(--portal-nav-blue-dark);
+}
+
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-active > .menu-link .menu-icon,
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-open > .menu-link .menu-icon,
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-active > .menu-link .menu-arrow,
+.portal-modern .aside-menu .menu-nav > .menu-item.menu-item-open > .menu-link .menu-arrow {
+    color: var(--portal-nav-blue) !important;
+}
+
+/* Açık temada alt menüler eski koyu Metronic renklerini miras almasın. */
+.portal-modern .aside-menu .menu-nav .menu-submenu,
+.portal-modern .aside-menu .menu-nav .menu-subnav {
+    background: var(--portal-surface) !important;
+}
+
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item > .menu-link {
+    width: auto;
+    min-height: 38px;
+    margin: 2px 9px;
+    border-radius: 8px;
+    background: transparent !important;
+}
+
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item > .menu-link .menu-text,
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item > .menu-link .menu-arrow {
+    color: #6e7a8e !important;
+}
+
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item > .menu-link .menu-bullet.menu-bullet-dot > span,
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item > .menu-link .menu-bullet.menu-bullet-line > span {
+    background-color: #a9b4c4 !important;
+}
+
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item.menu-item-open > .menu-link,
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item > .menu-link:hover {
+    background: var(--portal-nav-hover) !important;
+}
+
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item.menu-item-open > .menu-link .menu-text,
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item.menu-item-open > .menu-link .menu-arrow,
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item > .menu-link:hover .menu-text,
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item > .menu-link:hover .menu-arrow {
+    color: var(--portal-nav-blue-dark) !important;
+}
+
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item.menu-item-open > .menu-link .menu-bullet > span,
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item > .menu-link:hover .menu-bullet > span {
+    background-color: var(--portal-nav-blue) !important;
+}
+
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item.menu-item-active > .menu-link {
+    background: var(--portal-nav-blue-soft) !important;
+    box-shadow: inset 3px 0 0 var(--portal-nav-blue);
+}
+
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item.menu-item-active > .menu-link .menu-text,
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item.menu-item-active > .menu-link .menu-arrow {
+    color: var(--portal-nav-blue-dark) !important;
+    font-weight: 600;
+}
+
+.portal-modern .aside-menu .menu-nav .menu-subnav > .menu-item.menu-item-active > .menu-link .menu-bullet > span {
+    background-color: var(--portal-nav-blue) !important;
+}
+
+.portal-modern .header {
+    height: var(--portal-header-height);
+    background: rgba(255, 255, 255, .96);
+    border-bottom: 1px solid var(--portal-border);
+    box-shadow: none;
+}
+
+.portal-modern.header-fixed .wrapper {
+    padding-top: var(--portal-header-height);
+}
+
+.portal-modern .subheader {
+    min-height: 54px;
+    background: var(--portal-surface);
+    border-bottom: 1px solid var(--portal-border);
+    box-shadow: none;
+}
+
+.portal-modern.subheader-fixed .content {
+    padding-top: 54px;
+}
+
+.portal-modern .content > .d-flex.flex-column-fluid > .container-fluid,
+.portal-modern .subheader .container-fluid,
+.portal-modern .header .container-fluid {
+    width: 100%;
+    max-width: 1760px;
+    margin-right: auto;
+    margin-left: auto;
+    padding-right: 24px;
+    padding-left: 24px;
+}
+
+.portal-modern .content > .d-flex.flex-column-fluid {
+    padding-top: 24px;
+    padding-bottom: 30px;
+}
+
+.portal-modern .card,
+.portal-modern .card.card-custom {
+    border: 1px solid var(--portal-border);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(32, 62, 48, .035);
+    overflow: hidden;
+}
+
+.portal-modern .card.card-custom > .card-header,
+.portal-modern .card > .card-header {
+    min-height: 68px;
+    padding-right: 24px;
+    padding-left: 24px;
+    border-bottom: 1px solid var(--portal-border);
+}
+
+.portal-modern .card.card-custom > .card-body,
+.portal-modern .card > .card-body {
+    padding: 24px;
+}
+
+.portal-modern .card .card-title .card-label,
+.portal-modern h1,
+.portal-modern h2,
+.portal-modern h3,
+.portal-modern h4,
+.portal-modern h5 {
+    color: var(--portal-text);
+    letter-spacing: -.02em;
+}
+
+.portal-modern .text-muted,
+.portal-modern .form-text {
+    color: var(--portal-muted) !important;
+}
+
+.portal-modern .btn {
+    min-height: 40px;
+    border-radius: 9px;
+    font-weight: 600;
+}
+
+.portal-modern .btn-sm {
+    min-height: 34px;
+    border-radius: 8px;
+}
+
+.portal-modern .btn-primary,
+.portal-modern .btn.btn-primary {
+    color: #fff;
+    background-color: var(--portal-green);
+    border-color: var(--portal-green);
+}
+
+.portal-modern .btn-primary:hover,
+.portal-modern .btn-primary:focus,
+.portal-modern .btn-primary:not(:disabled):not(.disabled):active {
+    color: #fff;
+    background-color: var(--portal-green-dark);
+    border-color: var(--portal-green-dark);
+}
+
+.portal-modern .btn-light-primary,
+.portal-modern .label-light-primary,
+.portal-modern .alert-light-primary {
+    color: var(--portal-green-dark);
+    background-color: var(--portal-green-soft);
+    border-color: transparent;
+}
+
+.portal-modern a,
+.portal-modern .text-primary {
+    color: var(--portal-green);
+}
+
+.portal-modern .form-control,
+.portal-modern .custom-select,
+.portal-modern .select2-container--default .select2-selection--single,
+.portal-modern .bootstrap-select > .dropdown-toggle {
+    min-height: 42px;
+    border: 1px solid #dce5df;
+    border-radius: 9px;
+    background-color: #fff;
+}
+
+.portal-modern .form-control:focus,
+.portal-modern .custom-select:focus,
+.portal-modern .select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: #7da18f;
+    box-shadow: 0 0 0 3px rgba(37, 91, 69, .10);
+}
+
+.portal-modern .table {
+    color: #354139;
+}
+
+.portal-modern .table thead th,
+.portal-modern .table.table-head-custom thead th {
+    padding-top: 13px;
+    padding-bottom: 13px;
+    color: #77837c;
+    background: #f8faf8;
+    border-bottom: 1px solid var(--portal-border);
+    font-size: 11px;
+    letter-spacing: .055em;
+}
+
+.portal-modern .table td {
+    padding-top: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #edf1ee;
+    vertical-align: middle;
+}
+
+.portal-modern .modal-content,
+.portal-modern .dropdown-menu,
+.portal-modern .offcanvas {
+    border: 1px solid var(--portal-border);
+    border-radius: 14px;
+    box-shadow: 0 18px 60px rgba(24, 48, 37, .16);
+}
+
+.portal-modern .footer {
+    background: var(--portal-surface);
+    border-top: 1px solid var(--portal-border);
+}
+
+@media (max-width: 1599.98px) {
+    .portal-modern .content > .d-flex.flex-column-fluid > .container-fluid,
+    .portal-modern .subheader .container-fluid,
+    .portal-modern .header .container-fluid {
+        max-width: none;
+        padding-right: 20px;
+        padding-left: 20px;
+    }
+
+    .portal-modern .content > .d-flex.flex-column-fluid {
+        padding-top: 20px;
+    }
+}
+
+@media (min-width: 992px) and (max-width: 1366px) {
+    .portal-modern .content > .d-flex.flex-column-fluid > .container-fluid,
+    .portal-modern .subheader .container-fluid,
+    .portal-modern .header .container-fluid {
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+
+    .portal-modern .content > .d-flex.flex-column-fluid {
+        padding-top: 16px;
+        padding-bottom: 20px;
+    }
+
+    .portal-modern .card.card-custom > .card-header,
+    .portal-modern .card > .card-header {
+        min-height: 60px;
+        padding-right: 18px;
+        padding-left: 18px;
+    }
+
+    .portal-modern .card.card-custom > .card-body,
+    .portal-modern .card > .card-body {
+        padding: 18px;
+    }
+
+    .portal-modern .table td {
+        padding-top: 11px;
+        padding-bottom: 11px;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .portal-modern .header-mobile {
+        background: var(--portal-green-dark);
+    }
+
+    .portal-modern .content > .d-flex.flex-column-fluid > .container-fluid,
+    .portal-modern .subheader .container-fluid {
+        max-width: none;
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .portal-modern .content > .d-flex.flex-column-fluid {
+        padding-top: 12px;
+    }
+
+    .portal-modern .card.card-custom > .card-header,
+    .portal-modern .card > .card-header,
+    .portal-modern .card.card-custom > .card-body,
+    .portal-modern .card > .card-body {
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+}

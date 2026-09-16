@@ -1,5 +1,5 @@
 @model Ekomers.Models.ViewModels.Purchasing.SupplierQuotationDetailVM
-@{ ViewData["Title"] = "Teklif Detayı"; }
+@{ ViewData["Title"] = "Teklif Detayı"; var canDelete = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaKayitSil"); }
 <div class="card card-custom mb-5">
     <div class="card-header flex-wrap py-3">
         <div class="card-title"><h3 class="card-label">@Model.QuotationNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.SupplierCode - @Model.SupplierName</span></h3></div>
@@ -7,7 +7,10 @@
             <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
             @if (Model.CanEdit)
             {
-                <a asp-action="TeklifDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-primary mr-2" onclick="return confirm('İlerlemiş bir teklif düzenlenirse bağlı sipariş geri alınarak teklif taslağa döndürülür. Devam edilsin mi?');">Admin Düzenle</a>
+                    <a asp-action="TeklifDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-primary mr-2" onclick="return confirm('İlerlemiş bir teklif düzenlenirse bağlı sipariş geri alınarak teklif taslağa döndürülür. Devam edilsin mi?');">Düzenle</a>
+            }
+            @if (canDelete)
+            {
                 <form asp-action="TeklifSil" method="post" class="d-inline" onsubmit="return confirm('Teklif ve varsa bağlı satınalma siparişi silinecek. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-danger mr-2">Sil</button></form>
             }
             @if (Model.Status == PurSupplierQuotationStatus.Draft && Model.CanSubmit)

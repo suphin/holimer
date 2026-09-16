@@ -1,0 +1,109 @@
+@model Ekomers.Models.ViewModels.Purchasing.LogoPurchaseInvoiceDetailVM
+
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-light-danger mb-0">@Model.Error</div>
+}
+else if (Model.Lines.Count == 0)
+{
+    <div class="alert alert-light-warning mb-0">Fatura kalemi bulunamadı.</div>
+}
+else
+{
+    <div class="row mb-6">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <span class="text-muted d-block">Fatura</span>
+            <strong>@Model.InvoiceNumber</strong>
+            @if (!string.IsNullOrWhiteSpace(Model.DocumentNumber))
+            {
+                <span class="d-block text-muted font-size-sm">Belge: @Model.DocumentNumber</span>
+            }
+        </div>
+        <div class="col-lg-2 col-md-6 mb-3"><span class="text-muted d-block">Fatura Tarihi</span><strong>@Model.InvoiceDate.ToString("dd.MM.yyyy")</strong></div>
+        <div class="col-lg-4 col-md-6 mb-3"><span class="text-muted d-block">Tedarikçi</span><strong>@Model.SupplierName</strong><span class="d-block text-muted">@Model.SupplierCode</span></div>
+        <div class="col-lg-3 col-md-6 mb-3"><span class="text-muted d-block">Fatura Net Toplamı</span><strong>@Model.InvoiceNetTotalTry.ToString("N2") TRY</strong></div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-lg-3 col-md-6 mb-2"><span class="text-muted">Ödeme Planı:</span> @(string.IsNullOrWhiteSpace(Model.PaymentPlan) ? "-" : Model.PaymentPlan)</div>
+        <div class="col-lg-3 col-md-6 mb-2"><span class="text-muted">Sipariş:</span> @(string.IsNullOrWhiteSpace(Model.OrderNumber) ? "-" : Model.OrderNumber)</div>
+        <div class="col-lg-3 col-md-6 mb-2"><span class="text-muted">İrsaliye:</span> @(string.IsNullOrWhiteSpace(Model.DispatchNumber) ? "-" : Model.DispatchNumber)</div>
+        <div class="col-lg-3 col-md-6 mb-2"><span class="text-muted">İrsaliye Tarihi:</span> @(Model.DispatchDate?.ToString("dd.MM.yyyy") ?? "-")</div>
+    </div>
+
+    <div class="alert @(Model.IsEInvoice ? "alert-light-success" : "alert-light-secondary") mb-6">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div class="mr-4 mb-2">
+                <strong>Elektronik Belge</strong>
+                <span class="d-block">@(Model.IsEInvoice ? "e-Fatura" : "Bu kayıt e-Fatura olarak işaretli değil")</span>
+                @if (!string.IsNullOrWhiteSpace(Model.GibStatus))
+                {
+                    <span class="d-block text-muted">GİB durumu: @Model.GibStatus</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.DocumentTrackingNumber))
+                {
+                    <span class="d-block text-muted">Doküman takip no: @Model.DocumentTrackingNumber</span>
+                }
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.EInvoiceGuid))
+            {
+                <div class="mb-2 text-lg-right">
+                    <span class="text-muted d-block">ETTN / UUID</span>
+                    <code id="invoiceEttn">@Model.EInvoiceGuid</code>
+                    <button type="button" class="btn btn-sm btn-light-primary ml-2" onclick="navigator.clipboard.writeText(document.getElementById('invoiceEttn').textContent)">Kopyala</button>
+                </div>
+            }
+        </div>
+        @if (Model.IsEInvoice)
+        {
+            <div class="border-top mt-3 pt-3">
+                @if (!string.IsNullOrWhiteSpace(Model.EInvoiceGuid))
+                {
+                    <button type="button"
+                            class="btn btn-primary js-logo-invoice-pdf"
+                            data-title="@Model.InvoiceNumber - @Model.SupplierName"
+                            data-url="@Url.Action("FaturaGorseli", new { invoiceNumber = Model.InvoiceNumber, invoiceDate = Model.InvoiceDate.ToString("yyyy-MM-dd"), supplierCode = Model.SupplierCode })">
+                        <i class="flaticon2-document"></i> Fatura Görselini Göster
+                    </button>
+                    <span class="text-muted ml-3">PDF eLogo servisinden anlık olarak alınır.</span>
+                }
+                else
+                {
+                    <span class="text-muted">Fatura görseli için ETTN/UUID bilgisi bulunamadı.</span>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-separate table-head-custom table-checkable align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Ürün</th>
+                    <th>Miktar</th>
+                    <th>Logo Birim Fiyat</th>
+                    <th>Kur</th>
+                    <th>Net Birim (TRY)</th>
+                    <th>Net Satır (TRY)</th>
+                    <th>KDV (TRY)</th>
+                    <th>Toplam (TRY)</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var line in Model.Lines)
+            {
+                <tr>
+                    <td><strong>@line.ProductCode</strong><span class="d-block text-muted">@line.ProductName</span></td>
+                    <td>@line.Quantity.ToString("N4") @line.Unit</td>
+                    <td>@line.LogoUnitPrice.ToString("N6") @line.CurrencyCode</td>
+                    <td>@line.ExchangeRate.ToString("N6")</td>
+                    <td><strong>@line.NetUnitPriceTry.ToString("N6")</strong></td>
+                    <td>@line.NetLineTry.ToString("N2")</td>
+                    <td>@line.VatTry.ToString("N2")</td>
+                    <td><strong>@line.TotalTry.ToString("N2")</strong></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

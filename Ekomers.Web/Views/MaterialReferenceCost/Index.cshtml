@@ -1,0 +1,115 @@
+@model Ekomers.Models.ViewModels.Production.MaterialReferenceCostListVM
+@{
+    ViewData["Title"] = "Malzeme Referans Maliyetleri";
+}
+
+<div class="card card-custom mb-6">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Malzeme Referans Maliyetleri
+                <span class="d-block text-muted pt-2 font-size-sm">Stok oluşturmadan reçete hesaplarında kullanılacak tarihsel maliyetler</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <a asp-controller="LogoPurchaseInvoice" asp-action="Index" class="btn btn-light-info mr-2">Logo Alım Faturaları</a>
+            <a asp-action="ExcelAktar" class="btn btn-primary mr-2">Excel'den Toplu Al</a>
+            <a asp-action="TopluAktarimlar" class="btn btn-light-primary mr-2">Toplu Aktarım Geçmişi</a>
+            <a asp-controller="ReceteMaliyetleri" asp-action="Index" class="btn btn-light-primary">Reçete Maliyet Hesabına Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light-primary mb-6">
+            Referans maliyeti bir stok girişi değildir; miktar, lot ve depo bakiyesini değiştirmez. Reçete hesabında önce son maliyetli gerçek depo girişi, bu yoksa geçerli referans maliyeti kullanılır.
+        </div>
+        <form method="get" class="row align-items-end">
+            <div class="col-lg-5 mb-3">
+                <label class="font-weight-bold" for="search">Malzeme Ara</label>
+                <input id="search" name="search" value="@Model.Search" class="form-control" placeholder="Kod veya malzeme adı..." />
+            </div>
+            <div class="col-lg-4 mb-3">
+                <label class="font-weight-bold" for="status">Maliyet Durumu</label>
+                <select id="status" name="status" class="form-control">
+                    <option value="missing" selected="@(Model.Status == "missing")">Eksik (@Model.MissingCount)</option>
+                    <option value="reference" selected="@(Model.Status == "reference")">Referansla tamamlanan (@Model.ReferenceCount)</option>
+                    <option value="stock" selected="@(Model.Status == "stock")">Gerçek stok maliyetli (@Model.StockCount)</option>
+                    <option value="all" selected="@(Model.Status == "all")">Tümü</option>
+                </select>
+            </div>
+            <div class="col-lg-3 mb-3">
+                <button type="submit" class="btn btn-primary mr-2">Filtrele</button>
+                <a asp-action="Index" class="btn btn-light">Temizle</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header py-3">
+        <div class="card-title"><h3 class="card-label">Reçetelerde Kullanılan Malzemeler (@Model.Rows.Count)</h3></div>
+    </div>
+    <div class="card-body pt-3">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="alert alert-light-success mb-0">Bu filtreye uyan malzeme bulunamadı.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom table-checkable align-middle">
+                    <thead>
+                        <tr>
+                            <th>Malzeme</th>
+                            <th>Tür / Baz Birim</th>
+                            <th>Reçete</th>
+                            <th>Gerçek Stok Maliyeti</th>
+                            <th>Geçerli Referans Maliyeti</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td><strong>@row.MaterialCode</strong><span class="d-block text-muted">@row.MaterialName</span></td>
+                            <td>@row.MaterialType<span class="d-block text-muted">@row.BaseUnit</span></td>
+                            <td>@row.RecipeCount reçete</td>
+                            <td>
+                                @if (row.HasStockCost)
+                                {
+                                    <span class="label label-light-success label-inline mb-1">Var</span>
+                                    <strong class="d-block">@row.StockUnitCostTry?.ToString("N6") TRY / @row.StockCostUnit</strong>
+                                    <span class="text-muted font-size-sm">@row.StockCostDate?.ToString("dd.MM.yyyy")</span>
+                                }
+                                else
+                                {
+                                    <span class="label label-light-danger label-inline">Yok</span>
+                                }
+                            </td>
+                            <td>
+                                @if (row.ReferenceUnitCostTry.HasValue)
+                                {
+                                    <strong>@row.ReferenceUnitCostTry.Value.ToString("N6") TRY / @row.ReferenceUnit</strong>
+                                    <span class="d-block text-muted font-size-sm">v@(row.ReferenceVersion) · @row.ReferenceUnitCost?.ToString("N6") @row.ReferenceCurrencyCode × @row.ReferenceExchangeRate?.ToString("N6")</span>
+                                    <span class="d-block text-muted font-size-sm">@row.ReferenceValidFrom?.ToString("dd.MM.yyyy") · @row.ReferenceSource</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger">Tanımlanmadı</span>
+                                }
+                            </td>
+                            <td class="text-nowrap">
+                                <a asp-action="Yeni" asp-route-materialId="@row.MaterialId" class="btn btn-sm btn-primary">@(row.ReferenceVersion.HasValue ? "Yeni Versiyon" : "Maliyet Gir")</a>
+                                @if (row.ReferenceVersion.HasValue)
+                                {
+                                    <a asp-action="Detay" asp-route-materialId="@row.MaterialId" class="btn btn-sm btn-light-primary">Geçmiş</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

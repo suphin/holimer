@@ -1,4 +1,5 @@
 using Ekomers.Data;
+using Ekomers.Data.Services;
 using Ekomers.Models.Entity.Production;
 using Ekomers.Models.ViewModels.Production;
 using Microsoft.AspNetCore.Authorization;
@@ -10,27 +11,37 @@ using Ekomers.Models.Enums;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using System.Globalization;
+using System.Data;
 
 namespace Ekomers.Web.Controllers;
 
 [Authorize(Policy = "AdminOrUretim")]
 public sealed class ProductionRecipeController : Controller
 {
+    private const string RecipeVersionCreatePolicy = "ReceteVersiyonOlustur";
+    private const string RecipeVersionReopenPolicy = "ReceteVersiyonTaslakAc";
     private const string ImportSessionKey = "PrdRecipeImportRows";
     private readonly ApplicationDbContext _context;
 
     public ProductionRecipeController(ApplicationDbContext context) => _context = context;
 
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(string? search, CancellationToken cancellationToken)
     {
         ViewBag.Modul = "YeniUretim";
+        search = search?.Trim();
+        ViewBag.Search = search;
         var model = await (
             from recipe in _context.PrdRecipes.AsNoTracking()
             join version in _context.PrdRecipeVersions.AsNoTracking() on recipe.ID equals version.RecipeId
             join product in _context.PrdMaterials.AsNoTracking() on recipe.ProductMaterialId equals product.ID
             join unit in _context.PrdUnits.AsNoTracking() on version.UnitId equals unit.ID
-            where recipe.IsDelete != true && version.IsDelete != true
+            where recipe.IsDelete != true && version.IsDelete != true &&
+                  (string.IsNullOrEmpty(search) ||
+                   EF.Functions.Like(recipe.Code, "%" + search + "%") ||
+                   EF.Functions.Like(recipe.Name, "%" + search + "%") ||
+                   EF.Functions.Like(product.Code, "%" + search + "%") ||
+                   EF.Functions.Like(product.Name, "%" + search + "%"))
             orderby recipe.Code, version.VersionNumber descending
             select new ProductionRecipeListVM
             {
@@ -50,7 +61,7 @@ public sealed class ProductionRecipeController : Controller
         return View(model);
     }
 
-    [HttpGet]
+    [HttpGet, Authorize(Policy = RecipeVersionCreatePolicy)]
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
         ViewBag.Modul = "YeniUretim";
@@ -59,7 +70,7 @@ public sealed class ProductionRecipeController : Controller
         return View(model);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = RecipeVersionCreatePolicy)]
     public async Task<IActionResult> Create(ProductionRecipeCreateVM model, [FromForm(Name = "BaseQuantity")] string baseQuantityText, CancellationToken cancellationToken)
     {
         ViewBag.Modul = "YeniUretim";
@@ -153,7 +164,7 @@ public sealed class ProductionRecipeController : Controller
                                  UnitId=unit.ID, Unit=unit.Name, PlannedWasteRate=item.PlannedWasteRate,
                                  IsRequired=item.IsRequired, AlternativeGroupCode=item.AlternativeGroupCode, Notes=item.Notes
                              }).ToListAsync(ct);
-        model.Units = await _context.PrdUnits.AsNoTracking().Where(x => x.IsDelete != true && x.IsActive != false).OrderBy(x => x.Name).Select(x => new SelectListItem(x.Name, x.ID.ToString())).ToListAsync(ct);
+        model.Units = await GetUnitSelections(model.UnitId, ct);
         model.Materials = await _context.PrdMaterials.AsNoTracking().Where(x => x.IsDelete != true && x.IsActive != false).OrderBy(x => x.Code).Select(x => new SelectListItem(x.Code + " - " + x.Name, x.ID.ToString())).ToListAsync(ct);
         model.History = await (from history in _context.PrdRecipeHistories.AsNoTracking()
                                join historyVersion in _context.PrdRecipeVersions.AsNoTracking() on history.RecipeVersionId equals (int?)historyVersion.ID into versionJoin
@@ -215,9 +226,12 @@ public sealed class ProductionRecipeController : Controller
         if (await _context.PrdRecipeItems.AnyAsync(x => x.RecipeVersionId==model.RecipeVersionId && x.MaterialId==model.MaterialId && x.IsDelete!=true, ct)) return RecipeEditError(model.RecipeVersionId, "Bu malzeme reçetede zaten mevcut.");
         var material=await _context.PrdMaterials.AsNoTracking().FirstOrDefaultAsync(x=>x.ID==model.MaterialId && x.IsDelete!=true,ct);
         if (material==null || !await _context.PrdUnits.AnyAsync(x=>x.ID==model.UnitId && x.IsDelete!=true,ct)) return RecipeEditError(model.RecipeVersionId,"Malzeme veya birim bulunamadı.");
-        var sequence=(await _context.PrdRecipeItems.Where(x=>x.RecipeVersionId==model.RecipeVersionId && x.IsDelete!=true).MaxAsync(x=>(int?)x.Sequence,ct) ?? 0)+1;
+        await using var transaction=await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable,ct);
+        // Sequence alanı reçete versiyonu içinde benzersizdir. Silinmiş satırların sıra
+        // numaraları da veritabanında kaldığı için yeni sıra tüm geçmiş üzerinden üretilir.
+        var sequence=(await _context.PrdRecipeItems.Where(x=>x.RecipeVersionId==model.RecipeVersionId).MaxAsync(x=>(int?)x.Sequence,ct) ?? 0)+1;
         var now=DateTime.Now;var user=User.Identity?.Name;var recipeItem=new PrdRecipeItem { RecipeVersionId=model.RecipeVersionId,MaterialId=model.MaterialId,Quantity=model.Quantity,UnitId=model.UnitId,PlannedWasteRate=model.PlannedWasteRate,Sequence=sequence,IsRequired=model.IsRequired,AlternativeGroupCode=model.AlternativeGroupCode,Notes=model.Notes,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user };
-        await using var transaction=await _context.Database.BeginTransactionAsync(ct);_context.PrdRecipeItems.Add(recipeItem);await _context.SaveChangesAsync(ct);AddRecipeHistory(version.RecipeId,version.ID,recipeItem.ID,"Malzeme Eklendi",$"{material.Code} - {material.Name} reçeteye {model.Quantity:0.######} miktarla eklendi.",now,user);
+        _context.PrdRecipeItems.Add(recipeItem);await _context.SaveChangesAsync(ct);AddRecipeHistory(version.RecipeId,version.ID,recipeItem.ID,"Malzeme Eklendi",$"{material.Code} - {material.Name} reçeteye {model.Quantity:0.######} miktarla eklendi.",now,user);
         await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct); TempData["success"]="Reçete kalemi eklendi."; return RedirectToAction(nameof(Details),new{id=model.RecipeVersionId});
     }
 
@@ -245,7 +259,7 @@ public sealed class ProductionRecipeController : Controller
         item.IsDelete=true;item.DeleteDate=now;item.DeleteUserID=user;AddRecipeHistory(version.RecipeId,version.ID,item.ID,"Malzeme Silindi",$"{material.Code} - {material.Name} reçeteden çıkarıldı.",now,user);await _context.SaveChangesAsync(ct);TempData["success"]="Reçete kalemi silindi.";return RedirectToAction(nameof(Details),new{id=recipeVersionId});
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = RecipeVersionCreatePolicy)]
     public async Task<IActionResult> CreateNewVersion(int sourceVersionId,CancellationToken ct)
     {
         var source=await _context.PrdRecipeVersions.AsNoTracking().FirstOrDefaultAsync(x=>x.ID==sourceVersionId&&x.IsDelete!=true,ct);
@@ -264,7 +278,7 @@ public sealed class ProductionRecipeController : Controller
         return RedirectToAction(nameof(Details),new{id=newVersion.ID});
     }
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = RecipeVersionReopenPolicy)]
     public async Task<IActionResult> ReopenAsDraft(int recipeVersionId,CancellationToken ct)
     {
         var version=await _context.PrdRecipeVersions.FirstOrDefaultAsync(x=>x.ID==recipeVersionId&&x.IsDelete!=true,ct);
@@ -316,10 +330,10 @@ public sealed class ProductionRecipeController : Controller
         return decimal.TryParse(normalized,NumberStyles.AllowLeadingSign|NumberStyles.AllowDecimalPoint,CultureInfo.InvariantCulture,out result);
     }
 
-    [HttpGet]
+    [HttpGet, Authorize(Policy = RecipeVersionCreatePolicy)]
     public IActionResult Import() { ViewBag.Modul = "YeniUretim"; return View(); }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = RecipeVersionCreatePolicy)]
     public async Task<IActionResult> PreviewImport(IFormFile file, CancellationToken ct)
     {
         ViewBag.Modul = "YeniUretim";
@@ -338,7 +352,7 @@ public sealed class ProductionRecipeController : Controller
         return View("ImportPreview", new ProductionRecipeImportPreviewVM { RowCount = rows.Count, RecipeCount = rows.Select(x => x.ProductCode).Distinct(StringComparer.OrdinalIgnoreCase).Count(), ComponentCount = rows.Select(x => x.ComponentCode).Distinct(StringComparer.OrdinalIgnoreCase).Count(), MissingMaterialCount = missing.Count, MissingMaterialCodes = missing, ExistingRecipeCount = existingRecipes.Count, ExistingRecipeCodes = existingRecipes, SampleRows = rows.Take(20).ToList() });
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = RecipeVersionCreatePolicy)]
     public async Task<IActionResult> ConfirmImport(CancellationToken ct)
     {
         var json = HttpContext.Session.GetString(ImportSessionKey);
@@ -350,9 +364,21 @@ public sealed class ProductionRecipeController : Controller
         await using var tx = await _context.Database.BeginTransactionAsync(ct);
 
         var units = await _context.PrdUnits.ToListAsync(ct);
-        var unitByCode = units.ToDictionary(x => Normalize(x.Code), StringComparer.OrdinalIgnoreCase); var unitAdded = 0;
-        foreach (var source in rows.GroupBy(x => Normalize(x.UnitCode)).Select(x => x.First()))
-            if (!unitByCode.ContainsKey(Normalize(source.UnitCode))) { var u = NewUnit(source.UnitCode, source.UnitName, now, userId); _context.PrdUnits.Add(u); unitByCode[Normalize(u.Code)] = u; unitAdded++; }
+        var unitByCode = units
+            .GroupBy(x => ProductionUnitNormalizer.CanonicalCode(x.Code, x.Name), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderByDescending(y => y.IsDelete != true && y.IsActive != false)
+                    .ThenByDescending(y => Normalize(y.Code) == x.Key)
+                    .ThenBy(y => y.ID)
+                    .First(),
+                StringComparer.OrdinalIgnoreCase);
+        var unitAdded = 0;
+        foreach (var source in rows.GroupBy(x => ProductionUnitNormalizer.CanonicalCode(x.UnitCode, x.UnitName)).Select(x => x.First()))
+        {
+            var canonicalCode = ProductionUnitNormalizer.CanonicalCode(source.UnitCode, source.UnitName);
+            if (!unitByCode.ContainsKey(canonicalCode)) { var u = NewUnit(canonicalCode, source.UnitName, now, userId); _context.PrdUnits.Add(u); unitByCode[canonicalCode] = u; unitAdded++; }
+        }
         if (!unitByCode.ContainsKey("ADET")) { var u = NewUnit("ADET", "Adet", now, userId); _context.PrdUnits.Add(u); unitByCode[u.Code] = u; unitAdded++; }
         await _context.SaveChangesAsync(ct);
 
@@ -378,7 +404,7 @@ public sealed class ProductionRecipeController : Controller
             var version=new PrdRecipeVersion { RecipeId=recipe.ID, VersionNumber=1, BaseQuantity=1m, UnitId=product.UnitId, Status=PrdRecipeStatus.Draft, Notes="Excel reçete aktarımı", IsActive=true, IsDelete=false, CreateDate=now, CreateUserID=userId };
             _context.PrdRecipeVersions.Add(version); await _context.SaveChangesAsync(ct);
             var sequence=1;
-            foreach (var row in group) { _context.PrdRecipeItems.Add(new PrdRecipeItem { RecipeVersionId=version.ID, MaterialId=materialByCode[Normalize(row.ComponentCode)].ID, Quantity=row.Quantity, UnitId=unitByCode[Normalize(row.UnitCode)].ID, Sequence=sequence++, IsRequired=true, PlannedWasteRate=0m, IsActive=true, IsDelete=false, CreateDate=now, CreateUserID=userId }); itemAdded++; }
+            foreach (var row in group) { _context.PrdRecipeItems.Add(new PrdRecipeItem { RecipeVersionId=version.ID, MaterialId=materialByCode[Normalize(row.ComponentCode)].ID, Quantity=row.Quantity, UnitId=unitByCode[ProductionUnitNormalizer.CanonicalCode(row.UnitCode, row.UnitName)].ID, Sequence=sequence++, IsRequired=true, PlannedWasteRate=0m, IsActive=true, IsDelete=false, CreateDate=now, CreateUserID=userId }); itemAdded++; }
             recipeByCode[recipeCode]=recipe; recipeAdded++;
         }
         await _context.SaveChangesAsync(ct); await tx.CommitAsync(ct); HttpContext.Session.Remove(ImportSessionKey);
@@ -394,7 +420,7 @@ public sealed class ProductionRecipeController : Controller
         for (var n=2;n<=last;n++) { var p=Normalize(ws.Cell(n,1).GetString()); var c=Normalize(ws.Cell(n,4).GetString()); var u=Normalize(ws.Cell(n,9).GetString()); if (p=="" && c=="") continue; if(p==""||c==""||u==""||!ws.Cell(n,7).TryGetValue<decimal>(out var q)||q<=0) throw new InvalidOperationException($"{n}. satırda kod, miktar veya birim geçersiz."); if(!keys.Add($"{p}|{c}|{u}")) throw new InvalidOperationException($"{n}. satırda yinelenen reçete kalemi var."); rows.Add(new() { RowNumber=n, ProductCode=p, ProductName=ws.Cell(n,2).GetString().Trim(), ComponentCode=c, ComponentName=ws.Cell(n,5).GetString().Trim(), Quantity=q, UnitCode=u, UnitName=ws.Cell(n,10).GetString().Trim() }); }
         return rows;
     }
-    private static PrdUnit NewUnit(string code,string name,DateTime now,string? userId)=>new(){Code=Normalize(code),Name=string.IsNullOrWhiteSpace(name)?Normalize(code):name.Trim(),IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=userId};
+    private static PrdUnit NewUnit(string code,string name,DateTime now,string? userId)=>new(){Code=ProductionUnitNormalizer.CanonicalCode(code,name),Name=ProductionUnitNormalizer.DisplayName(code,name),IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=userId};
     private static string Normalize(string? value)=>(value??"").Trim().ToUpperInvariant();
     private static PrdMaterialType DetectMaterialType(string code)=>code.Contains("YM",StringComparison.OrdinalIgnoreCase)?PrdMaterialType.SemiFinished:code.Contains("MM",StringComparison.OrdinalIgnoreCase)?PrdMaterialType.FinishedProduct:code.Contains("HM",StringComparison.OrdinalIgnoreCase)?PrdMaterialType.RawMaterial:PrdMaterialType.Other;
 
@@ -404,9 +430,24 @@ public sealed class ProductionRecipeController : Controller
             .Where(x => x.IsDelete != true && x.IsActive != false)
             .OrderBy(x => x.Code).Select(x => new SelectListItem(x.Code + " - " + x.Name, x.ID.ToString()))
             .ToListAsync(cancellationToken);
-        model.Units = await _context.PrdUnits.AsNoTracking()
+        model.Units = await GetUnitSelections(model.UnitId, cancellationToken);
+    }
+
+    private async Task<List<SelectListItem>> GetUnitSelections(int? selectedUnitId, CancellationToken ct)
+    {
+        var units = await _context.PrdUnits.AsNoTracking()
             .Where(x => x.IsDelete != true && x.IsActive != false)
-            .OrderBy(x => x.Name).Select(x => new SelectListItem(x.Name, x.ID.ToString()))
-            .ToListAsync(cancellationToken);
+            .ToListAsync(ct);
+
+        return units
+            .GroupBy(x => ProductionUnitNormalizer.CanonicalCode(x.Code, x.Name), StringComparer.OrdinalIgnoreCase)
+            .Select(group =>
+            {
+                var unit = group.FirstOrDefault(x => x.ID == selectedUnitId)
+                    ?? group.OrderByDescending(x => Normalize(x.Code) == group.Key).ThenBy(x => x.ID).First();
+                return new SelectListItem(ProductionUnitNormalizer.DisplayName(group.Key, unit.Name), unit.ID.ToString());
+            })
+            .OrderBy(x => x.Text)
+            .ToList();
     }
 }

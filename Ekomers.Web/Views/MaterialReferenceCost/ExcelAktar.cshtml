@@ -1,0 +1,47 @@
+@model Ekomers.Models.ViewModels.Production.MaterialReferenceCostImportUploadVM
+@{
+    ViewData["Title"] = "Excel'den Referans Maliyeti Al";
+}
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">Excel'den Toplu Maliyet Al
+                <span class="d-block text-muted pt-2 font-size-sm">Formüller ve Mamül Maliyet sayfaları önce kontrol edilir; kayıt ön izlemeden sonra yapılır</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <a asp-action="TopluAktarimlar" class="btn btn-light-primary mr-2">Aktarım Geçmişi</a>
+            <a asp-action="Index" class="btn btn-light">Listeye Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light-primary">
+            <strong>Formüller:</strong> K sütunundaki Hamm(KG) değeri kilogram maliyeti olarak alınır.<br />
+            <strong>Mamül Maliyet:</strong> yalnızca E sütunundaki Amb birim fiyatı(TL) kullanılır; reçetedeki gerçek kullanım miktarına bölünerek ambalajın birim maliyeti bulunur.
+        </div>
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+        <form asp-action="ExcelOnizle" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div class="row align-items-end">
+                <div class="col-lg-5 mb-4">
+                    <label for="file" class="font-weight-bold">Excel Dosyası</label>
+                    <input id="file" name="file" type="file" class="form-control" accept=".xlsx" required />
+                    <span class="form-text text-muted">En fazla 10 MB, .xlsx</span>
+                </div>
+                <div class="col-lg-3 mb-4">
+                    <label asp-for="ValidFrom" class="font-weight-bold">Geçerlilik Başlangıcı</label>
+                    <input asp-for="ValidFrom" type="date" class="form-control" required />
+                    <span asp-validation-for="ValidFrom" class="text-danger"></span>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <label asp-for="Notes" class="font-weight-bold">Aktarım Notu</label>
+                    <input asp-for="Notes" class="form-control" maxlength="1000" placeholder="Kaynak, dönem veya açıklama..." />
+                </div>
+            </div>
+            <div class="text-right">
+                <button type="submit" class="btn btn-primary">Dosyayı Kontrol Et</button>
+            </div>
+        </form>
+    </div>
+</div>

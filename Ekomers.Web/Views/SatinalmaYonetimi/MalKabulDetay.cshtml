@@ -1,6 +1,11 @@
 @model Ekomers.Models.ViewModels.Purchasing.GoodsReceiptDetailVM
 @{
     ViewData["Title"] = "Mal Kabul Detayı";
+    var canDelete = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaKayitSil");
+    var canUndo = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaSurecGeriAl");
+    var canEdit = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaMalKabulYonet");
+    var canQuarantine = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaKarantinaIsle");
+    var canAllocateCost = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaEkMaliyetDagit");
 }
 
 <div class="card card-custom mb-5">
@@ -8,10 +13,10 @@
         <div class="card-title"><h3 class="card-label">@Model.ReceiptNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.OrderNumber · @Model.SupplierCode - @Model.SupplierName</span></h3></div>
         <div class="card-toolbar">
             <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
-            @if (User.IsInRole("Admin") && Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Recorded)
+            @if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Recorded)
             {
-                <a asp-action="MalKabulDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-primary mr-2">Düzenle</a>
-                <form asp-action="MalKabulSil" method="post" class="d-inline mr-2" onsubmit="return confirm('Mal kabul silinecek ve sipariş teslim miktarları yeniden hesaplanacak. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-danger">Sil</button></form>
+                @if (canEdit) { <a asp-action="MalKabulDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-primary mr-2">Düzenle</a> }
+                @if (canDelete) { <form asp-action="MalKabulSil" method="post" class="d-inline mr-2" onsubmit="return confirm('Mal kabul silinecek ve sipariş teslim miktarları yeniden hesaplanacak. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-danger">Sil</button></form> }
             }
             <a asp-action="SiparisDetay" asp-route-id="@Model.PurchaseOrderId" class="btn btn-sm btn-light">Siparişe Dön</a>
         </div>
@@ -47,7 +52,7 @@
                     Karantina girişi öncesinde eksik izlenebilirlik bilgilerini tamamlayınız.
                     @if (missingLot.Count > 0) { <span class="d-block">Lot eksik: @string.Join(", ", missingLot.Select(x => x.MaterialCode))</span> }
                     @if (missingExpiration.Count > 0) { <span class="d-block">SKT eksik: @string.Join(", ", missingExpiration.Select(x => x.MaterialCode))</span> }
-                    @if (User.IsInRole("Admin")) { <a asp-action="MalKabulDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-danger mt-3">Mal Kabulü Düzenle</a> }
+                    @if (canEdit) { <a asp-action="MalKabulDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-danger mt-3">Mal Kabulü Düzenle</a> }
                 </div>
             }
             else if (Model.QuarantineWarehouses.Count == 0)
@@ -56,7 +61,7 @@
             }
             else
             {
-                <form asp-action="KarantinayaAl" method="post" onsubmit="return confirm('Teslim alınan lotlar seçilen karantina deposuna stok girişi olarak işlenecek. Devam edilsin mi?');">
+                @if (canQuarantine) { <form asp-action="KarantinayaAl" method="post" onsubmit="return confirm('Teslim alınan lotlar seçilen karantina deposuna stok girişi olarak işlenecek. Devam edilsin mi?');">
                     <input type="hidden" name="id" value="@Model.Id" />
                     <div class="row align-items-end">
                         <div class="col-md-6 form-group mb-md-0">
@@ -65,7 +70,7 @@
                         </div>
                         <div class="col-md-6 text-md-right"><button class="btn btn-warning">Lotları Karantinaya Al</button></div>
                     </div>
-                </form>
+                </form> } else { <div class="alert alert-light-info mb-0">Karantina stok girişi yapma yetkiniz bulunmuyor.</div> }
             }
         }
         else if (Model.QuarantineInventoryDocumentId.HasValue)
@@ -77,8 +82,19 @@
                 <div class="col-md-3"><strong>İşlemi Yapan</strong><div>@(Model.QuarantineUserId ?? "-")</div></div>
             </div>
             <div class="alert alert-light-info mt-5 mb-0">Karantina stoğu fiziksel stoktur fakat ana depo veya üretim deposu stoklarına dahil değildir. Sonraki işlem laboratuvar/kalite analizidir.</div>
+            @if (canUndo)
+            {
+                <div class="border rounded p-4 mt-5">
+                    <strong>Karantina girişini geri al</strong>
+                    <span class="d-block text-muted mb-3">Önce stok sonucu ve kalite kayıtları geriye alınmalıdır. İşlem, stok girişini silmez; ters stok belgesi oluşturur.</span>
+                    <form asp-action="KarantinaGirisiniGeriAl" method="post" onsubmit="return confirm('Karantina stok girişi ters hareketle geri alınacak. Devam edilsin mi?');">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <div class="input-group"><input name="reason" class="form-control" minlength="5" maxlength="1000" placeholder="Geri alma gerekçesi" required /><div class="input-group-append"><button class="btn btn-light-warning">Karantina Girişini Geri Al</button></div></div>
+                    </form>
+                </div>
+            }
             <div class="mt-5">
-                @if (Model.QualityInspectionCount == 0 && Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.InQuarantine)
+                @if (Model.QualityInspectionCount == 0 && Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.InQuarantine && canQuarantine)
                 {
                     <form asp-action="KaliteyeGonder" method="post" class="d-inline"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-primary">Analiz Kayıtlarını Oluştur</button></form>
                 }
@@ -86,6 +102,7 @@
                 {
                     <a asp-controller="KaliteYonetimi" asp-action="Analizler" asp-route-goodsReceiptId="@Model.Id" class="btn btn-light-primary">Kalite Analizlerini Gör (@Model.QualityInspectionCount)</a>
                     @if (Model.PendingQualityInspectionCount > 0) { <span class="text-muted ml-3">@Model.PendingQualityInspectionCount analiz sonuç bekliyor.</span> }
+                    else { <a asp-controller="KaliteYonetimi" asp-action="StokSonuclandirma" asp-route-search="@Model.ReceiptNumber" asp-route-status="all" class="btn btn-light-success ml-2">Stok Sonuçlarını Gör</a> }
                 }
             </div>
         }
@@ -109,6 +126,10 @@
         {
             <div class="alert alert-light-primary mb-0">Bu teslimat için gerçekleşen nakliye gideri girilmedi.</div>
         }
+        @if (Model.QuarantineInventoryDocumentId.HasValue && canAllocateCost)
+        {
+            <div class="text-right mt-5"><a asp-action="EkMaliyetDagitimi" asp-route-id="@Model.Id" class="btn btn-light-primary">Ek Maliyet Dağıtımını Aç</a></div>
+        }
     </div>
 </div>
 
@@ -118,6 +139,26 @@
         @if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Recorded)
         {
             <div class="alert alert-light-warning">Bu miktarlar siparişte teslim alınan olarak görünür; henüz karantina veya kullanılabilir stok değildir.</div>
+        }
+        else if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.TransferredToStock)
+        {
+            <div class="alert alert-light-success">Bu mal kabuldeki tüm lotlar kalite onayı sonrasında kullanılabilir stoğa alınmıştır.</div>
+        }
+        else if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Returned)
+        {
+            <div class="alert alert-light-danger">Bu mal kabuldeki tüm lotlar kalite reddi sonrasında tedarikçiye iade edilmiştir.</div>
+        }
+        else if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Scrapped)
+        {
+            <div class="alert alert-light-danger">Bu mal kabuldeki tüm lotlar kalite reddi sonrasında hurda deposuna alınmıştır.</div>
+        }
+        else if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.CompletedWithMixedDisposition)
+        {
+            <div class="alert alert-light-info">Bu mal kabuldeki lotlar farklı stok sonuçlarıyla tamamlanmıştır. Ayrıntıları stok sonuçlandırma ekranından görebilirsiniz.</div>
+        }
+        else if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.StockPartiallyCompleted)
+        {
+            <div class="alert alert-light-warning">Bu mal kabulde bazı lotlar sonuçlandırılmış, bazı lotlar ise hâlâ karantina deposundadır.</div>
         }
         else
         {

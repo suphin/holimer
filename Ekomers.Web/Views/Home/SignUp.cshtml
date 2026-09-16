@@ -1,200 +1,226 @@
-﻿@model RegisterVM;
+@model RegisterVM
 @{
 	Layout = null;
+	var successMessage = TempData["Message"] as string;
+	var errorMessage = TempData["MessageError"] as string;
 }
 <!DOCTYPE html>
 <html lang="tr">
-<!--begin::Head-->
 <head>
-	<base href="../../../../">
 	<meta charset="utf-8" />
-	<title>Giriş Sayfası - Holimer İlaç</title>
-	<meta name="description" content="Giriş Sayfası - Holimer İlaç" />
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-	<!--begin::Fonts-->
-	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" />
-	<!--end::Fonts-->
-	<!--begin::Page Custom Styles(used by this page)-->
-	<link href="assets1/css/pages/login/login-4.css?v=7.0.5" rel="stylesheet" type="text/css" />
-	<!--end::Page Custom Styles-->
-	<!--begin::Global Theme Styles(used by all pages)-->
-	<link href="assets1/plugins/global/plugins.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
-	<link href="assets1/plugins/custom/prismjs/prismjs.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
-	<link href="assets1/css/style.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
-	<link href="assets1/css/custom.css" rel="stylesheet" type="text/css" />
-	<!--end::Global Theme Styles-->
-	<!--begin::Layout Themes(used by all pages)-->
-	<link href="assets1/css/themes/layout/header/base/light.css?v=7.0.5" rel="stylesheet" type="text/css" />
-	<link href="assets1/css/themes/layout/header/menu/light.css?v=7.0.5" rel="stylesheet" type="text/css" />
-	<link href="assets1/css/themes/layout/brand/dark.css?v=7.0.5" rel="stylesheet" type="text/css" />
-	<link href="assets1/css/themes/layout/aside/dark.css?v=7.0.5" rel="stylesheet" type="text/css" />
-	<!--end::Layout Themes-->
-	@* <link rel="shortcut icon" href="assets1/media/logos/favicon.ico" /> *@
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta name="description" content="Holimer kurumsal portal yeni üyelik sayfası" />
+	<title>Yeni Üyelik | Holimer Kurumsal Portal</title>
+	@if (!string.IsNullOrWhiteSpace(successMessage))
+	{
+		<meta http-equiv="refresh" content="4;url=@Url.Action("SignIn", "Home")" />
+	}
 	<link rel="shortcut icon" href="~/img/favicon.ico" />
-	<style>
-		.login-logo {
-			display: flex;
-			justify-content: center;
-			align-items: center;
-		}
-
-			.login-logo img {
-				display: block;
-				margin: 0 auto;
-			}
-	</style>
+	<link href="~/assets1/plugins/global/plugins.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<link href="~/assets1/css/style.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
+	<link href="~/css/signin-modern.css?v=1.0.0" rel="stylesheet" type="text/css" />
+	<link href="~/css/signup-modern.css?v=1.0.0" rel="stylesheet" type="text/css" />
 </head>
-<!--end::Head-->
-<!--begin::Body-->
-<body id="kt_body" class="header-fixed header-mobile-fixed subheader-enabled subheader-fixed aside-enabled aside-fixed aside-minimize-hoverable page-loading">
-	<!--begin::Main-->
-	<div class="d-flex flex-column flex-root">
-		<!--begin::Login-->
-		<div class="login login-4 wizard d-flex flex-column flex-lg-row flex-column-fluid">
-			<!--begin::Content-->
-			<div class="login-container order-2 order-lg-1 d-flex flex-center flex-row-fluid px-7 pt-lg-0 pb-lg-0 pt-4 pb-6 bg-white">
-				<!--begin::Wrapper-->
-				<div class="login-content d-flex flex-column pt-lg-0 pt-12">
-					<!--begin::Logo-->
-					<a href="#" class="login-logo pb-xl-20 pb-15">
-						<img src="img/holimer2025.png" class="max-h-120px" alt="" />
+<body class="holimer-auth-body holimer-signup-body">
+	<main class="holimer-auth-page">
+		<section class="holimer-auth-shell holimer-signup-shell" aria-label="Holimer Portal Yeni Üyelik">
+			<div class="holimer-auth-form-panel holimer-signup-form-panel">
+				<div class="holimer-auth-form-wrap holimer-signup-form-wrap">
+					<a asp-controller="Home" asp-action="SignIn" class="holimer-auth-logo holimer-signup-logo" aria-label="Holimer giriş sayfasına dön">
+						<img src="~/img/holimer-logo-blue-hd.png" alt="Holimer optimum health" />
 					</a>
-					<!--end::Logo-->
-					<!--begin::Signin-->
-					<div class="login-form">
-						<!--begin::Form-->
-						<form asp-action="SignUp" method="post">
-							@if (TempData["Message"] != null)
-							{ 
-								<meta http-equiv="refresh" content="3;url=Home/SignIn">
-								<div class="alert alert-success" role="alert">
-									@TempData["Message"]
-									<p>Ana sayfaya yönlendiriliyorsunuz...</p>
+
+					<div class="holimer-auth-heading holimer-signup-heading">
+						<span class="holimer-auth-kicker">KURUMSAL PORTAL</span>
+						<h1>Yeni hesap oluşturun</h1>
+						<p>Kurumsal bilgilerinizi girerek portal üyelik başvurunuzu tamamlayın.</p>
+					</div>
+
+					@if (!string.IsNullOrWhiteSpace(successMessage))
+					{
+						<div class="holimer-signup-notice" role="status">
+							<span class="holimer-signup-notice-icon" aria-hidden="true">✓</span>
+							<div>
+								<strong>@successMessage</strong>
+								<small>Giriş sayfasına yönlendiriliyorsunuz…</small>
+							</div>
+						</div>
+					}
+					@if (!string.IsNullOrWhiteSpace(errorMessage))
+					{
+						<div class="holimer-auth-alert" role="alert">@errorMessage</div>
+					}
+
+					<form asp-action="SignUp" method="post" class="holimer-auth-form holimer-signup-form">
+						<div asp-validation-summary="ModelOnly" class="holimer-auth-alert" role="alert"></div>
+
+						<div class="holimer-signup-section-title">
+							<span>1</span>
+							<div><strong>Kurum bilgileri</strong><small>Çalıştığınız şirket ve departman</small></div>
+						</div>
+						<div class="holimer-signup-grid">
+							<div class="holimer-auth-field">
+								<label asp-for="SirketID"></label>
+								<div class="holimer-auth-input-wrap holimer-signup-select-wrap">
+									<select asp-for="SirketID" asp-items="@(new SelectList(ViewBag.SirketListe, "ID", "SirketAdi"))" required>
+										<option value="0">Şirket seçiniz</option>
+									</select>
 								</div>
-							}
-							@if (TempData["MessageError"] != null)
-							{
-								<div class="alert alert-danger" role="alert">@TempData["MessageError"]</div>
-							}
-							<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
-							<div class="form-group">
-								<label asp-for="SirketID" class="control-label"></label>
-								<select asp-for="SirketID" class="form-control" asp-items="@(new SelectList(ViewBag.SirketListe, "ID", "SirketAdi"))">
-									<option value="0">Şirket Seçiniz</option>
-								</select>
-								<span asp-validation-for="SirketID" class="text-danger"></span>
-								<span class="form-text text-muted">Şirket Seçiniz </span>
-							</div>
-							<div class="form-group">
-								<label asp-for="DepartmanID" class="control-label"></label>
-								<select asp-for="DepartmanID" class="form-control"   asp-items="@(new SelectList(ViewBag.IlgiliMudurlukListe, "ID", "Ad"))">
-									<option value="0">Departman Seçiniz</option>
-								</select>
-								<span asp-validation-for="DepartmanID" class="text-danger"></span>
-								<span class="form-text text-muted">Departman Seçiniz </span>
-							</div>
-							<div class="form-group">
-								<label asp-for="UserName" class="control-label"></label>
-								<input asp-for="UserName" class="form-control" autocomplete="off" required placeholder="adiniz.soyadiniz şeklinde giriniz!" />
-								<span asp-validation-for="UserName" class="text-danger"></span>
-								<span class="form-text text-muted">Kullanıcı adınız "tugba.celik" şeklinde olmalı. </span>
+								<span asp-validation-for="SirketID" class="holimer-auth-validation"></span>
 							</div>
 
-							<div class="form-group">
-								<label asp-for="AdSoyad" class="control-label"></label>
-								<input asp-for="AdSoyad" class="form-control" required/>
-								<span asp-validation-for="AdSoyad" class="text-danger"></span>
-								<span class="form-text text-muted">Adınız "Tuğba Çelik" şeklinde olmalı. </span>
+							<div class="holimer-auth-field">
+								<label asp-for="DepartmanID"></label>
+								<div class="holimer-auth-input-wrap holimer-signup-select-wrap">
+									<select asp-for="DepartmanID" asp-items="@(new SelectList(ViewBag.IlgiliMudurlukListe, "ID", "Ad"))" required>
+										<option value="0">Departman seçiniz</option>
+									</select>
+								</div>
+								<span asp-validation-for="DepartmanID" class="holimer-auth-validation"></span>
 							</div>
-							<div class="form-group">
-								<label asp-for="PhoneNumber" class="control-label"></label>
-								<input asp-for="PhoneNumber" class="form-control" placeholder="0505 123 12 12" id="phoneNumber" required/>
-								<span asp-validation-for="PhoneNumber" class="text-danger"></span>
-								<span class="form-text text-muted">Telefon numaranız "0505 123 12 12" şeklinde olmalı. </span>
-							</div>
-							<div class="form-group">
-								<label asp-for="Email" class="control-label"></label>
-								<input asp-for="Email" class="form-control" placeholder="adiniz.soyadiniz@domain.com.tr şeklinde giriniz!" required/>
-								<span asp-validation-for="Email" class="text-danger"></span>
-								<span class="form-text text-muted">Eposta adresiniz "tugba.celik@domain.com.tr" şeklinde olmalı. </span>
-							</div>
-							<div class="form-group">
-								<label asp-for="Password" class="control-label"></label>
-								<input asp-for="Password" class="form-control" autocomplete="off" placeholder="harf ve sayı bulunmalı!" required/>
-								<span asp-validation-for="Password" class="text-danger"></span>
-								<span class="form-text text-muted">Şifreniz en az 8 karakter uzunluğunda olmalıdır. Büyük küçük harf, sayı ve özel karakter barındırmalıdır. </span>
-							</div>
-							<div class="form-group">
-								<label asp-for="ConfirmPassword" class="control-label"></label>
-								<input asp-for="ConfirmPassword" class="form-control" autocomplete="off" placeholder="harf ve sayı bulunmalı!" required />
-								<span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-								<span class="form-text text-muted">Şifreniz en az 8 karakter uzunluğunda olmalıdır. Büyük küçük harf, sayı ve özel karakter barındırmalıdır. </span>
-							</div>
-							<div class="form-group">
-								<input type="submit" value="Üye oluştur" class="btn btn-success" />
-
-							</div>
-						</form>
-						<br />
-						<hr>
-						<br />
-						<div class="text-center">
-							 
-							<a asp-controller="Home" asp-action="SignIn" class="small">Giriş Sayfası</a> 
 						</div>
 
-						<!--end::Form-->
+						<div class="holimer-signup-section-title">
+							<span>2</span>
+							<div><strong>Kişisel bilgiler</strong><small>Hesabınız ve iletişim bilgileriniz</small></div>
+						</div>
+						<div class="holimer-signup-grid">
+							<div class="holimer-auth-field">
+								<label asp-for="AdSoyad"></label>
+								<div class="holimer-auth-input-wrap">
+									<span class="holimer-auth-input-icon" aria-hidden="true">
+										<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c.5-4 3-6 7-6s6.5 2 7 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+									</span>
+									<input asp-for="AdSoyad" autocomplete="name" placeholder="Adınız ve soyadınız" required />
+								</div>
+								<span asp-validation-for="AdSoyad" class="holimer-auth-validation"></span>
+							</div>
+
+							<div class="holimer-auth-field">
+								<label asp-for="UserName"></label>
+								<div class="holimer-auth-input-wrap">
+									<span class="holimer-auth-input-icon" aria-hidden="true">
+										<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19c.5-3.2 2.4-5 5.5-5 1.5 0 2.8.4 3.7 1.2M17 8v8m-4-4h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+									</span>
+									<input asp-for="UserName" autocomplete="username" placeholder="adiniz.soyadiniz" required />
+								</div>
+								<span asp-validation-for="UserName" class="holimer-auth-validation"></span>
+							</div>
+
+							<div class="holimer-auth-field">
+								<label asp-for="PhoneNumber"></label>
+								<div class="holimer-auth-input-wrap">
+									<span class="holimer-auth-input-icon" aria-hidden="true">
+										<svg viewBox="0 0 24 24" fill="none"><path d="M7 3h3l1.2 4-2 1.5a16 16 0 0 0 6.3 6.3l1.5-2 4 1.2v3c0 2.2-1.8 4-4 4C9.3 21 3 14.7 3 7c0-2.2 1.8-4 4-4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+									</span>
+									<input asp-for="PhoneNumber" id="phoneNumber" type="tel" autocomplete="tel" inputmode="tel" placeholder="05__ ___ __ __" required />
+								</div>
+								<span asp-validation-for="PhoneNumber" class="holimer-auth-validation"></span>
+							</div>
+
+							<div class="holimer-auth-field">
+								<label asp-for="Email">E-posta adresi</label>
+								<div class="holimer-auth-input-wrap">
+									<span class="holimer-auth-input-icon" aria-hidden="true">
+										<svg viewBox="0 0 24 24" fill="none"><path d="M4 6.5h16v11H4v-11Z" stroke="currentColor" stroke-width="1.7"/><path d="m5 8 7 5 7-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+									</span>
+									<input asp-for="Email" type="email" autocomplete="email" inputmode="email" placeholder="ornek@holimer.com" required />
+								</div>
+								<span asp-validation-for="Email" class="holimer-auth-validation"></span>
+							</div>
+						</div>
+
+						<div class="holimer-signup-section-title">
+							<span>3</span>
+							<div><strong>Güvenlik</strong><small>Güçlü bir parola belirleyin</small></div>
+						</div>
+						<div class="holimer-signup-grid">
+							<div class="holimer-auth-field">
+								<label asp-for="Password"></label>
+								<div class="holimer-auth-input-wrap">
+									<span class="holimer-auth-input-icon" aria-hidden="true">
+										<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+									</span>
+									<input asp-for="Password" type="password" autocomplete="new-password" placeholder="En az 8 karakter" required />
+									<button type="button" class="holimer-password-toggle" data-password-toggle="Password" aria-label="Şifreyi göster" aria-pressed="false">
+										<svg class="eye-open" viewBox="0 0 24 24" fill="none"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.7"/></svg>
+										<svg class="eye-closed" viewBox="0 0 24 24" fill="none"><path d="m4 4 16 16M10.7 6.1A9 9 0 0 1 12 6c6 0 9.5 6 9.5 6a15 15 0 0 1-2.1 2.7M6.2 7.2C3.8 9 2.5 12 2.5 12s3.5 6 9.5 6c1 0 2-.2 2.8-.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+									</button>
+								</div>
+								<span asp-validation-for="Password" class="holimer-auth-validation"></span>
+							</div>
+
+							<div class="holimer-auth-field">
+								<label asp-for="ConfirmPassword">Şifre tekrarı</label>
+								<div class="holimer-auth-input-wrap">
+									<span class="holimer-auth-input-icon" aria-hidden="true">
+										<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+									</span>
+									<input asp-for="ConfirmPassword" type="password" autocomplete="new-password" placeholder="Şifrenizi yeniden girin" required />
+									<button type="button" class="holimer-password-toggle" data-password-toggle="ConfirmPassword" aria-label="Şifre tekrarını göster" aria-pressed="false">
+										<svg class="eye-open" viewBox="0 0 24 24" fill="none"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.7"/></svg>
+										<svg class="eye-closed" viewBox="0 0 24 24" fill="none"><path d="m4 4 16 16M10.7 6.1A9 9 0 0 1 12 6c6 0 9.5 6 9.5 6a15 15 0 0 1-2.1 2.7M6.2 7.2C3.8 9 2.5 12 2.5 12s3.5 6 9.5 6c1 0 2-.2 2.8-.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+									</button>
+								</div>
+								<span asp-validation-for="ConfirmPassword" class="holimer-auth-validation"></span>
+							</div>
+						</div>
+
+						<p class="holimer-signup-password-hint">Şifreniz en az 8 karakter; büyük harf, küçük harf, rakam ve özel karakter içermelidir.</p>
+
+						<button type="submit" class="holimer-auth-submit holimer-signup-submit">
+							<span>Üyeliği Oluştur</span>
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						</button>
+					</form>
+
+					<div class="holimer-auth-register holimer-signup-login-link">
+						<span>Zaten hesabınız var mı?</span>
+						<a asp-controller="Home" asp-action="SignIn">Giriş yapın</a>
 					</div>
-					<!--end::Signin-->
 				</div>
-				<!--end::Wrapper-->
 			</div>
-			<!--begin::Content-->
-			<!--begin::Aside-->
-			@{
-				await Html.RenderPartialAsync("metronic1/_PartialLoginPage");
-			}
-			<!--end::Aside-->
-		</div>
-		<!--end::Login-->
-	</div>
-	<!--end::Main-->
-	
-	<!--begin::Global Config(global config for global JS scripts)-->
-	<script>var KTAppSettings = { "breakpoints": { "sm": 576, "md": 768, "lg": 992, "xl": 1200, "xxl": 1400 }, "colors": { "theme": { "base": { "white": "#ffffff", "primary": "#3699FF", "secondary": "#E5EAEE", "success": "#1BC5BD", "info": "#8950FC", "warning": "#FFA800", "danger": "#F64E60", "light": "#E4E6EF", "dark": "#181C32" }, "light": { "white": "#ffffff", "primary": "#E1F0FF", "secondary": "#EBEDF3", "success": "#C9F7F5", "info": "#EEE5FF", "warning": "#FFF4DE", "danger": "#FFE2E5", "light": "#F3F6F9", "dark": "#D6D6E0" }, "inverse": { "white": "#ffffff", "primary": "#ffffff", "secondary": "#3F4254", "success": "#ffffff", "info": "#ffffff", "warning": "#ffffff", "danger": "#ffffff", "light": "#464E5F", "dark": "#ffffff" } }, "gray": { "gray-100": "#F3F6F9", "gray-200": "#EBEDF3", "gray-300": "#E4E6EF", "gray-400": "#D1D3E0", "gray-500": "#B5B5C3", "gray-600": "#7E8299", "gray-700": "#5E6278", "gray-800": "#3F4254", "gray-900": "#181C32" } }, "font-family": "Poppins" };</script>
-	<!--end::Global Config-->
-	<!--begin::Global Theme Bundle(used by all pages)-->
-	<script src="assets1/plugins/global/plugins.bundle.js?v=7.0.5"></script>
-	<script src="assets1/plugins/custom/prismjs/prismjs.bundle.js?v=7.0.5"></script>
-	<script src="assets1/js/scripts.bundle.js?v=7.0.5"></script>
-	<!--end::Global Theme Bundle-->
+
+			<aside class="holimer-auth-showcase holimer-signup-showcase">
+				<div class="holimer-auth-orb holimer-auth-orb-one"></div>
+				<div class="holimer-auth-orb holimer-auth-orb-two"></div>
+				<div class="holimer-auth-showcase-content">
+					<span class="holimer-auth-showcase-badge">HOLİMER İLAÇ A.Ş.</span>
+					<h2>Ekibinize<br />katılın.</h2>
+					<p>Kurumsal portal hesabınızla günlük iş akışlarınıza hızlı ve güvenli biçimde erişin.</p>
+
+					<div class="holimer-auth-feature-list">
+						<div class="holimer-auth-feature"><span>✓</span><div><strong>Tek hesapla erişim</strong><small>Yetkiniz dahilindeki tüm modüller</small></div></div>
+						<div class="holimer-auth-feature"><span>✓</span><div><strong>Güvenli kullanıcı yönetimi</strong><small>Rol ve departmana göre kontrollü erişim</small></div></div>
+						<div class="holimer-auth-feature"><span>✓</span><div><strong>Kolay başlangıç</strong><small>Bilgilerinizi tamamlayın ve hesabınızı oluşturun</small></div></div>
+					</div>
+				</div>
+				<div class="holimer-auth-showcase-footer">Optimum health, güçlü operasyon.</div>
+			</aside>
+		</section>
+		<footer class="holimer-auth-footer">© @DateTime.Now.Year Holimer İlaç A.Ş. · Kurumsal Portal</footer>
+	</main>
+
+	<script src="~/assets1/plugins/global/plugins.bundle.js?v=7.0.5"></script>
+	<partial name="_ValidationScriptsPartial" />
 	<script>
-		var KTInputmask = function () {
-    
-    // Private functions
-    var demos = function () {
-        // date format
-         // phone number format
-        $("#phoneNumber").inputmask("mask", {
-            "mask": "9999 999 99 99"
-        }); 
-    }
+		(function () {
+			document.querySelectorAll('[data-password-toggle]').forEach(function (toggle) {
+				var input = document.getElementById(toggle.getAttribute('data-password-toggle'));
+				if (!input) return;
+				toggle.addEventListener('click', function () {
+					var visible = input.type === 'text';
+					input.type = visible ? 'password' : 'text';
+					toggle.classList.toggle('is-visible', !visible);
+					toggle.setAttribute('aria-pressed', (!visible).toString());
+					toggle.setAttribute('aria-label', visible ? 'Şifreyi göster' : 'Şifreyi gizle');
+				});
+			});
 
-    return {
-        // public functions
-        init: function() {
-            demos(); 
-        }
-    };
-}();
-
-jQuery(document).ready(function() {
-    KTInputmask.init();
-});
+			if (window.jQuery && jQuery.fn.inputmask) {
+				jQuery('#phoneNumber').inputmask('mask', { mask: '9999 999 99 99' });
+			}
+		})();
 	</script>
-	<!--begin::Page Scripts(used by this page)-->
-	<script src="assets1/js/pages/custom/login/login-4.js?v=7.0.5"></script>
-	<!--end::Page Scripts-->
 </body>
-<!--end::Body-->
 </html>

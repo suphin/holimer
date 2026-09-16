@@ -1,9 +1,17 @@
 @model Ekomers.Models.ViewModels.Purchasing.QualityInspectionDetailVM
 @{
     ViewData["Title"] = "Kalite Analizi";
-    var canQuality = User.IsInRole("Admin") || User.HasClaim("Modul", "QUALITY") || User.HasClaim("Authorize", "KaliteOnay");
+    var hasLegacyQualityAccess = User.HasClaim("Modul", "QUALITY") || User.HasClaim("Authorize", "KaliteOnay");
+    var canEditQuality = User.IsInRole("Admin") || hasLegacyQualityAccess || User.HasClaim("Authorize", "KaliteAnalizDuzenle");
+    var canDecideQuality = User.IsInRole("Admin") || hasLegacyQualityAccess || User.HasClaim("Authorize", "KaliteKararVer");
+    var canProcessStock = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaStokSonuclandir") || User.HasClaim("Authorize", "SatinalmaSurecGeriAl");
     var isFinal = Model.Status == Ekomers.Models.Enums.PrdQualityControlStatus.Approved || Model.Status == Ekomers.Models.Enums.PrdQualityControlStatus.ConditionalApproval || Model.Status == Ekomers.Models.Enums.PrdQualityControlStatus.Rejected;
-    var canEdit = canQuality && (!isFinal || User.IsInRole("Admin"));
+    var isDisposed = !string.IsNullOrWhiteSpace(Model.DispositionDocumentNumber);
+    var canEdit = canEditQuality && !isDisposed && !isFinal;
+    var canDecide = canDecideQuality && !isDisposed && !isFinal;
+    var canUndoWorkflow = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaSurecGeriAl");
+    var canUndoDecision = User.IsInRole("Admin") || User.HasClaim("Authorize", "KaliteKarariGeriAl");
+    var canDelete = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaKayitSil");
     var labelClass = Model.Status switch
     {
         Ekomers.Models.Enums.PrdQualityControlStatus.Approved => "label-light-success",
@@ -17,7 +25,7 @@
 <div class="card card-custom mb-5">
     <div class="card-header flex-wrap py-3">
         <div class="card-title"><h3 class="card-label">@Model.InspectionNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.MaterialCode - @Model.MaterialName</span></h3></div>
-        <div class="card-toolbar"><span class="label @labelClass label-inline mr-2">@Model.Status.ToTurkish()</span><a asp-action="Analizler" asp-route-goodsReceiptId="@Model.GoodsReceiptId" class="btn btn-sm btn-light mr-2">Analizlere Dön</a><a asp-controller="SatinalmaYonetimi" asp-action="MalKabulDetay" asp-route-id="@Model.GoodsReceiptId" class="btn btn-sm btn-light-primary">Mal Kabul</a></div>
+        <div class="card-toolbar"><span class="label @labelClass label-inline mr-2">@Model.Status.ToTurkish()</span>@if(isFinal && canProcessStock){<a asp-action="StokSonuclandirma" asp-route-search="@Model.InspectionNumber" asp-route-status="all" class="btn btn-sm btn-light-success mr-2">Stok Sonucu</a>}<a asp-action="Analizler" asp-route-goodsReceiptId="@Model.GoodsReceiptId" class="btn btn-sm btn-light mr-2">Analizlere Dön</a><a asp-controller="SatinalmaYonetimi" asp-action="MalKabulDetay" asp-route-id="@Model.GoodsReceiptId" class="btn btn-sm btn-light-primary">Mal Kabul</a></div>
     </div>
     <div class="card-body">
         <div class="row">
@@ -31,21 +39,38 @@
     </div>
 </div>
 
+@if (isDisposed)
+{
+    <div class="alert alert-custom alert-light-success mb-5">
+        <div class="alert-text">
+            <strong>Stok sonucu tamamlandı:</strong> @Model.DispositionText
+            <span class="d-block">Belge: @Model.DispositionDocumentNumber · @(Model.DispositionDate?.ToString("dd.MM.yyyy HH:mm") ?? "-"). Bu kalite kaydı ve bağlı analiz sonuçları artık değiştirilemez.</span>
+        </div>
+    </div>
+}
+else if (isFinal)
+{
+    <div class="alert alert-custom alert-light-warning mb-5">
+        <div class="alert-text"><strong>Kalite kararı tamamlandı; lot hâlâ karantina deposunda.</strong> Stok Sonucu ekranından kullanılabilir stok, tedarikçiye iade veya hurda işlemini tamamlayınız.</div>
+        @if (canProcessStock) { <div class="alert-close"><a asp-action="StokSonuclandirma" asp-route-search="@Model.InspectionNumber" class="btn btn-sm btn-warning">Stok Sonuçlandırmaya Git</a></div> }
+    </div>
+}
+
 <div class="card card-custom mb-5">
     <div class="card-header"><div class="card-title"><h3 class="card-label">Spesifikasyon Sonuçları<span class="d-block text-muted pt-2 font-size-sm">Lotun bağlandığı spesifikasyon versiyonu değiştirilemez</span></h3></div></div>
     <div class="card-body">
         @if (!Model.SpecificationSetId.HasValue)
         {
-            <div class="alert alert-light-warning">Bu analiz oluşturulurken malzemenin aktif spesifikasyonu bulunmadığı için spek maddeleri bağlanmamış. Kalite kararı vermeden önce aktif bir versiyon oluşturup analize bağlayınız.</div>
+            <div class="alert alert-light-warning">Bu analiz oluşturulurken malzemenin aktif spesifikasyonu bulunmadığı için spek maddeleri bağlanmamış. Onay veya şartlı onay için aktif bir versiyon bağlanmalıdır; doğrudan red için karar gerekçesi yeterlidir.</div>
             <a asp-controller="SpesifikasyonYonetimi" asp-action="Index" asp-route-search="@Model.MaterialCode" class="btn btn-light-primary mr-2">Malzeme Speklerini Aç</a>
-            @if (canQuality && !isFinal)
+            @if (canEditQuality && !isFinal)
             {
                 <form asp-action="AktifSpesifikasyonuBagla" method="post" class="d-inline"><input type="hidden" name="id" value="@Model.Id"/><button class="btn btn-primary">Aktif Speki Analize Bağla</button></form>
             }
         }
         else
         {
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-5"><div><strong>@Model.SpecificationCode · v@Model.SpecificationVersion</strong><span class="d-block text-muted">@Model.SpecificationResults.Count kontrol maddesi</span></div><a asp-controller="SpesifikasyonYonetimi" asp-action="Detay" asp-route-materialId="@Model.MaterialId" asp-route-setId="@Model.SpecificationSetId" class="btn btn-sm btn-light-primary">Spesifikasyonu Aç</a></div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-5"><div><strong>@Model.SpecificationCode · v@(Model.SpecificationVersion)</strong><span class="d-block text-muted">@Model.SpecificationResults.Count kontrol maddesi</span></div><a asp-controller="SpesifikasyonYonetimi" asp-action="Detay" asp-route-materialId="@Model.MaterialId" asp-route-setId="@Model.SpecificationSetId" class="btn btn-sm btn-light-primary">Spesifikasyonu Aç</a></div>
             @if (Model.SpecificationResults.Count == 0)
             {
                 <div class="alert alert-light-danger mb-0">Bağlanan spesifikasyonda analiz maddesi bulunamadı.</div>
@@ -88,12 +113,44 @@
     </div>
 </div>
 
+@if (canUndoWorkflow || canUndoDecision || canDelete)
+{
+    <div class="card card-custom mt-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Yetkili İşlemleri<span class="d-block text-muted pt-2 font-size-sm">İşlemler geriye doğru sırayla uygulanır ve stok hareketleri ters kayıtla korunur</span></h3></div></div>
+        <div class="card-body">
+            @if (isDisposed && canUndoWorkflow)
+            {
+                <form asp-action="StokSonucunuGeriAl" method="post" class="mb-5" onsubmit="return confirm('Stok sonucu ters hareketlerle geri alınacak. Devam edilsin mi?');">
+                    <input type="hidden" name="inspectionId" value="@Model.Id" />
+                    <label>Stok sonucunu geri alma gerekçesi</label>
+                    <div class="input-group"><input name="reason" class="form-control" minlength="5" maxlength="1000" required /><div class="input-group-append"><button class="btn btn-warning">Stok Sonucunu Geri Al</button></div></div>
+                </form>
+            }
+            @if (isFinal && !isDisposed && canUndoDecision)
+            {
+                <form asp-action="KarariGeriAl" method="post" class="mb-5" onsubmit="return confirm('Kalite kararı geri alınarak kayıt yeniden değerlendirmeye açılacak. Devam edilsin mi?');">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <label>Kalite kararını geri alma gerekçesi</label>
+                    <div class="input-group"><input name="reason" class="form-control" minlength="5" maxlength="1000" required /><div class="input-group-append"><button class="btn btn-light-warning">Kalite Kararını Geri Al</button></div></div>
+                </form>
+            }
+            @if (!isDisposed && canDelete)
+            {
+                <form asp-action="KaliteKaydiSil" method="post" onsubmit="return confirm('Kalite kaydı ve bağlı analiz sonuçları silinecek. Mal kabul üzerinden yeniden oluşturulabilir. Devam edilsin mi?');">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button class="btn btn-light-danger">Kalite Kaydını Sil</button>
+                </form>
+            }
+        </div>
+    </div>
+}
+
 <form asp-action="AnalizKaydet" method="post">
     <input asp-for="Form.Id" type="hidden" />
     <div class="card card-custom mb-5">
         <div class="card-header"><div class="card-title"><h3 class="card-label">Numune ve Analiz Bilgileri</h3></div></div>
         <div class="card-body">
-            @if (!canQuality) { <div class="alert alert-light-info">Bu ekran salt okunur. Analiz bilgilerini kalite yetkilisi veya admin güncelleyebilir.</div> }
+            @if (!canEditQuality) { <div class="alert alert-light-info">Bu ekran salt okunur. Analiz bilgilerini güncelleme yetkiniz bulunmuyor.</div> }
             <div class="row">
                 <div class="col-md-3 form-group"><label asp-for="Form.SampleNumber"></label><input asp-for="Form.SampleNumber" class="form-control" readonly="@(!canEdit)" /></div>
                 <div class="col-md-3 form-group"><label asp-for="Form.SampleDate"></label><input asp-for="Form.SampleDate" type="datetime-local" class="form-control" readonly="@(!canEdit)" /></div>
@@ -120,7 +177,7 @@
         {
             <div class="row mb-5"><div class="col-md-4"><strong>Karar</strong><div>@Model.Status.ToTurkish()</div></div><div class="col-md-4"><strong>Karar Tarihi / Yetkili</strong><div>@(Model.DecisionDate?.ToString("dd.MM.yyyy HH:mm") ?? "-") · @(Model.DecisionUserId ?? "-")</div></div><div class="col-md-4"><strong>Karar Notu</strong><div>@(Model.DecisionNote ?? "-")</div></div></div>
         }
-        @if (canEdit)
+        @if (canDecide)
         {
             <form asp-action="KararVer" method="post" onsubmit="return confirm('Seçilen kalite kararı lotun sonraki stok sürecini belirleyecek. Devam edilsin mi?');">
                 <input type="hidden" name="Id" value="@Model.Id" />
@@ -128,7 +185,7 @@
                 <div class="text-right"><button name="Decision" value="@((int)Ekomers.Models.Enums.PrdQualityControlStatus.Rejected)" class="btn btn-light-danger mr-2">Reddet</button><button name="Decision" value="@((int)Ekomers.Models.Enums.PrdQualityControlStatus.ConditionalApproval)" class="btn btn-light-warning mr-2">Şartlı Onay</button><button name="Decision" value="@((int)Ekomers.Models.Enums.PrdQualityControlStatus.Approved)" class="btn btn-success">Onayla</button></div>
             </form>
         }
-        else if (!canQuality)
+        else if (!canDecideQuality)
         {
             <div class="alert alert-light-info mb-0">Kalite kararı verme yetkiniz bulunmuyor.</div>
         }

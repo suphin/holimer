@@ -168,7 +168,7 @@
                                     @if (row.CurrentValidFrom.HasValue)
                                     {
                                         <div>@row.CurrentValidFrom.Value.ToString("dd.MM.yyyy")</div>
-                                        <span class="text-muted">v@row.CurrentVersionNumber</span>
+                                        <span class="text-muted">v@(row.CurrentVersionNumber)</span>
                                     }
                                     else
                                     {

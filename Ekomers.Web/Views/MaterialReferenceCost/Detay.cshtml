@@ -1,0 +1,68 @@
+@model Ekomers.Models.ViewModels.Production.MaterialReferenceCostDetailVM
+@{
+    ViewData["Title"] = "Referans Maliyet Geçmişi";
+    var canEditReferenceCost = User.IsInRole("Admin") || User.HasClaim("Authorize", "ReferansMaliyetDuzenle");
+}
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                @Model.MaterialCode - @Model.MaterialName
+                <span class="d-block text-muted pt-2 font-size-sm">@Model.MaterialType · Ana birim: @Model.BaseUnit · Referans maliyet geçmişi</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <a asp-action="Yeni" asp-route-materialId="@Model.MaterialId" class="btn btn-primary mr-2">Yeni Versiyon</a>
+            <a asp-action="Index" class="btn btn-light">Listeye Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light-primary">Yeni maliyet girildiğinde önceki versiyonun bitiş tarihi otomatik kapanır. Admin veya Referans Maliyet Düzenleme yetkisi verilen kullanıcılar mevcut kayıtları düzeltebilir.</div>
+        @if (Model.Versions.Count == 0)
+        {
+            <div class="alert alert-light-warning mb-0">Henüz referans maliyet kaydı bulunmuyor.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom">
+                    <thead><tr><th>Versiyon</th><th>Geçerlilik</th><th>Girilen Maliyet</th><th>TRY Karşılığı</th><th>Kaynak</th><th>Açıklama</th><th>Kayıt</th>@if (canEditReferenceCost) { <th>İşlem</th> }</tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Versions)
+                    {
+                        <tr>
+                            <td><strong>v@(row.VersionNumber)</strong>@if (!row.ValidTo.HasValue) { <span class="label label-light-success label-inline ml-2">Güncel</span> }</td>
+                            <td>@row.ValidFrom.ToString("dd.MM.yyyy")<span class="d-block text-muted">@(row.ValidTo?.ToString("dd.MM.yyyy") ?? "Devam ediyor")</span></td>
+                            <td><strong>@row.UnitCost.ToString("N6") @row.CurrencyCode</strong><span class="d-block text-muted">Kur: @row.ExchangeRate.ToString("N6") · /@row.Unit</span></td>
+                            <td><strong>@row.UnitCostTry.ToString("N6") TRY / @row.Unit</strong></td>
+                            <td>
+                                @row.Source
+                                @if (row.ImportBatchId.HasValue)
+                                {
+                                    <a asp-action="TopluAktarimDetay" asp-route-id="@row.ImportBatchId" class="d-block font-size-sm">@row.ImportBatchNumber</a>
+                                    <span class="d-block text-muted font-size-sm">@row.SourceSheet · satır @row.SourceRow</span>
+                                }
+                            </td>
+                            <td>@(row.Notes ?? "-")</td>
+                            <td>
+                                @row.CreateDate?.ToString("dd.MM.yyyy HH:mm")
+                                <span class="d-block text-muted">@row.CreatedUser</span>
+                                @if (row.UpdateDate.HasValue)
+                                {
+                                    <span class="d-block text-primary font-size-sm mt-1">Düzenlendi: @row.UpdateDate.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                                    <span class="d-block text-muted font-size-sm">@row.UpdatedUser</span>
+                                }
+                            </td>
+                            @if (canEditReferenceCost)
+                            {
+                                <td><a asp-action="Duzenle" asp-route-id="@row.Id" class="btn btn-sm btn-light-primary">Düzenle</a></td>
+                            }
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,37 @@
+@model Ekomers.Models.ViewModels.SystemErrorLogDetailVM
+@{
+    ViewData["Title"] = "Hata Kaydı Detayı";
+}
+
+<div class="card card-custom gutter-b">
+    <div class="card-header">
+        <div class="card-title"><div><h3 class="card-label mb-1">Hata Kaydı Detayı</h3><code id="trackingNumber" class="text-dark">@Model.TrackingNumber</code></div></div>
+        <div class="card-toolbar">
+            <button type="button" class="btn btn-light-primary mr-2" onclick="copyTrackingNumber(this)">Takip Numarasını Kopyala</button>
+            <a asp-action="Index" asp-route-trackingNumber="@Model.TrackingNumber" class="btn btn-light">Listeye Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-6">
+            <div class="col-md-3 mb-3"><div class="text-muted">Tarih</div><div class="font-weight-bold">@Model.OccurredAt.ToString("dd.MM.yyyy HH:mm:ss")</div></div>
+            <div class="col-md-3 mb-3"><div class="text-muted">Kullanıcı</div><div class="font-weight-bold">@(Model.UserName ?? "-")</div></div>
+            <div class="col-md-3 mb-3"><div class="text-muted">IP adresi</div><div class="font-weight-bold">@(Model.RemoteIpAddress ?? "-")</div></div>
+            <div class="col-md-3 mb-3"><div class="text-muted">Controller / Action</div><div class="font-weight-bold">@(Model.ControllerName ?? "-") / @(Model.ActionName ?? "-")</div></div>
+            <div class="col-12"><div class="text-muted">İstek</div><div class="font-weight-bold"><span class="label label-light label-inline mr-2">@Model.HttpMethod</span>@Model.RequestPath</div></div>
+        </div>
+        <div class="alert alert-light-danger"><div class="font-weight-bold mb-2">@Model.ExceptionType</div><div>@Model.Message</div></div>
+        <h5 class="mb-3">Teknik ayrıntılar</h5>
+        <pre class="rounded p-5 mb-0" style="white-space:pre-wrap;overflow:auto;max-height:560px;background:#20252b;color:#eef1f5">@Model.ExceptionDetails</pre>
+    </div>
+</div>
+
+<script>
+    function copyTrackingNumber(button) {
+        var value = document.getElementById('trackingNumber').textContent.trim();
+        navigator.clipboard.writeText(value).then(function () {
+            var oldText = button.textContent;
+            button.textContent = 'Kopyalandı';
+            setTimeout(function () { button.textContent = oldText; }, 1500);
+        });
+    }
+</script>

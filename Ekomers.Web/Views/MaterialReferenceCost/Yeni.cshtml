@@ -1,0 +1,187 @@
+@using Ekomers.Models.Enums
+@model Ekomers.Models.ViewModels.Production.MaterialReferenceCostEditVM
+@{
+    ViewData["Title"] = "Referans Maliyeti Gir";
+}
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Referans Maliyeti Gir
+                <span class="d-block text-muted pt-2 font-size-sm">@Model.MaterialCode - @Model.MaterialName</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <a asp-action="Detay" asp-route-materialId="@Model.MaterialId" class="btn btn-light-primary mr-2">Geçmiş</a>
+            <a asp-action="Index" class="btn btn-light">Listeye Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light-success">
+            Bu işlem yalnızca maliyet versiyonu oluşturur. Stok miktarı, depo bakiyesi ve lot kayıtları değişmez.
+        </div>
+        @if (Model.CurrentVersion != null)
+        {
+            <div class="alert alert-light-primary">
+                Son kayıt: <strong>v@(Model.CurrentVersion.VersionNumber) · @Model.CurrentVersion.UnitCostTry.ToString("N6") TRY / @Model.CurrentVersion.Unit</strong>
+                <span class="d-block text-muted">@Model.CurrentVersion.ValidFrom.ToString("dd.MM.yyyy") tarihinden itibaren · @Model.CurrentVersion.Source</span>
+            </div>
+        }
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+        <form asp-action="Yeni" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="MaterialId" type="hidden" />
+            <input asp-for="ReturnUrl" type="hidden" />
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <label class="font-weight-bold">Malzeme</label>
+                    <div class="form-control bg-light">@Model.MaterialCode - @Model.MaterialName</div>
+                    <span class="form-text text-muted">@Model.MaterialType · Ana birim: @Model.BaseUnit</span>
+                </div>
+                <div class="col-lg-2 mb-4">
+                    <label asp-for="UnitCost" class="font-weight-bold">Birim Maliyet</label>
+                    <input asp-for="UnitCost" class="form-control" inputmode="decimal" placeholder="0,000000" required />
+                    <span asp-validation-for="UnitCost" class="text-danger"></span>
+                </div>
+                <div class="col-lg-2 mb-4">
+                    <label asp-for="UnitId" class="font-weight-bold">Maliyet Birimi</label>
+                    <select asp-for="UnitId" asp-items="Model.Units" class="form-control" required></select>
+                </div>
+                <div class="col-lg-2 mb-4">
+                    <label asp-for="CurrencyCode" class="font-weight-bold">Para Birimi</label>
+                    <select asp-for="CurrencyCode" class="form-control" id="currencyCode">
+                        <option value="TRY">TRY</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 mb-4">
+                    <label asp-for="ExchangeRate" class="font-weight-bold">Kur</label>
+                    <input asp-for="ExchangeRate" class="form-control" id="exchangeRate" inputmode="decimal" required />
+                    <span asp-validation-for="ExchangeRate" class="text-danger"></span>
+                </div>
+                <div class="col-lg-3 mb-4">
+                    <label asp-for="ValidFrom" class="font-weight-bold">Geçerlilik Başlangıcı</label>
+                    <input asp-for="ValidFrom" type="date" class="form-control" required />
+                    <span asp-validation-for="ValidFrom" class="text-danger"></span>
+                </div>
+                <div class="col-lg-3 mb-4">
+                    <label asp-for="Source" class="font-weight-bold">Kaynak</label>
+                    <select asp-for="Source" asp-items="Html.GetEnumSelectList<PrdMaterialReferenceCostSource>()" class="form-control"></select>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <label asp-for="Notes" class="font-weight-bold">Açıklama / Belge Referansı</label>
+                    <input asp-for="Notes" class="form-control" maxlength="1000" placeholder="Teklif no, tedarikçi, açıklama..." />
+                </div>
+            </div>
+            <div class="text-right">
+                <button type="submit" class="btn btn-primary">Yeni Maliyet Versiyonunu Kaydet</button>
+            </div>
+        </form>
+
+        <div class="separator separator-dashed my-8"></div>
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+            <div>
+                <h4 class="mb-1">Logo Satınalma Fiyat Geçmişi</h4>
+                <span class="text-muted">İptal edilmemiş satınalma faturalarındaki son 100 hareket</span>
+            </div>
+            <span class="label label-light-primary label-inline">LogoConnection · Salt okunur</span>
+        </div>
+        <div class="alert alert-light-primary">
+            <strong>Net TRY / birim</strong>, Logo satır matrahının miktara bölünmesiyle hesaplanır; böylece satır iskontosu varsa maliyete yansır. “Maliyete Kullan” seçilen değeri forma taşır, siz kaydetmeden maliyet versiyonu oluşmaz.
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.LogoPurchasePriceError))
+        {
+            <div class="alert alert-light-warning">@Model.LogoPurchasePriceError</div>
+        }
+        else if (Model.LogoPurchasePrices.Count == 0)
+        {
+            <div class="alert alert-light-warning mb-0">Bu malzeme kodu için Logo'da geçerli satınalma faturası bulunamadı.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tarih / Fatura</th>
+                            <th>Tedarikçi</th>
+                            <th>Miktar</th>
+                            <th>Logo Birim Fiyatı</th>
+                            <th>Net TRY / Birim</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @for (var i = 0; i < Model.LogoPurchasePrices.Count; i++)
+                    {
+                        var row = Model.LogoPurchasePrices[i];
+                        <tr>
+                            <td>
+                                <strong>@row.InvoiceDate.ToString("dd.MM.yyyy")</strong>
+                                @if (i == 0) { <span class="label label-light-success label-inline ml-2">Son Alım</span> }
+                                <span class="d-block text-primary">@row.InvoiceNumber</span>
+                            </td>
+                            <td><strong>@row.SupplierName</strong><span class="d-block text-muted">@row.SupplierCode</span></td>
+                            <td>@row.Quantity.ToString("N6") @row.Unit</td>
+                            <td>
+                                <strong>@row.LogoUnitPrice.ToString("N6") @row.CurrencyCode</strong>
+                                @if (row.ExchangeRate > 0) { <span class="d-block text-muted">Kur: @row.ExchangeRate.ToString("N6")</span> }
+                            </td>
+                            <td><strong class="text-success">@row.NetUnitPriceTry.ToString("N6") TRY / @row.Unit</strong><span class="d-block text-muted">Satır neti: @row.NetLineAmountTry.ToString("N2") TRY</span></td>
+                            <td>
+                                <button type="button"
+                                        class="btn btn-sm btn-light-primary use-logo-cost"
+                                        data-cost="@row.NetUnitPriceTry.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)"
+                                        data-unit-id="@row.ProductionUnitId"
+                                        data-invoice="@row.InvoiceNumber"
+                                        data-supplier="@row.SupplierName"
+                                        data-date="@row.InvoiceDate.ToString("dd.MM.yyyy")"
+                                        disabled="@(!row.CanUseAsReference)">Maliyete Kullan</button>
+                                @if (!row.ProductionUnitId.HasValue)
+                                {
+                                    <span class="d-block text-danger font-size-sm mt-1">Logo birimi eşleşmedi</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+(function () {
+    const currency = document.getElementById('currencyCode');
+    const rate = document.getElementById('exchangeRate');
+    if (!currency || !rate) return;
+    function syncRate() {
+        const isTry = currency.value === 'TRY';
+        if (isTry) rate.value = '1';
+        rate.readOnly = isTry;
+    }
+    currency.addEventListener('change', syncRate);
+    syncRate();
+
+    document.querySelectorAll('.use-logo-cost').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const unitCost = document.getElementById('UnitCost');
+            const unit = document.getElementById('UnitId');
+            const source = document.getElementById('Source');
+            const notes = document.getElementById('Notes');
+            if (unitCost) unitCost.value = button.dataset.cost.replace('.', ',');
+            if (unit && button.dataset.unitId) unit.value = button.dataset.unitId;
+            currency.value = 'TRY';
+            rate.value = '1';
+            syncRate();
+            if (source) source.value = '7';
+            if (notes) notes.value = 'Logo fatura ' + button.dataset.invoice + ' · ' + button.dataset.supplier + ' · ' + button.dataset.date;
+            if (unitCost) { unitCost.focus(); unitCost.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        });
+    });
+})();
+</script>

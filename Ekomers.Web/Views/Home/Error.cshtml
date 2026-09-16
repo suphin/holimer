@@ -1,32 +1,84 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+@model ErrorViewModel
 @{
+    ViewData["Title"] = "Hata";
+    Layout = null;
 }
-@{
-    ViewData["Title"] = "Error";
-    Layout = null;// "~/Views/Shared/_Layout.cshtml"; // Eğer farklı bir layout kullanıyorsanız, burayı değiştirin.
-}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hata - Holimer</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; padding: 32px 18px; display: grid; place-items: center; background: #f3f6f9; color: #263238; font-family: Poppins, Arial, sans-serif; }
+        .error-card { width: min(920px, 100%); overflow: hidden; border: 1px solid #e4e9ef; border-radius: 14px; background: #fff; box-shadow: 0 12px 35px rgba(38, 50, 56, .09); }
+        .error-header { padding: 28px 32px; border-bottom: 1px solid #edf0f4; background: linear-gradient(135deg, #fff5f5, #fff); }
+        .error-code { display: inline-block; margin-bottom: 10px; padding: 5px 10px; border-radius: 6px; color: #f1416c; background: #fff0f3; font-size: 13px; font-weight: 700; }
+        h1 { margin: 0 0 8px; font-size: 27px; }
+        p { margin: 0; line-height: 1.6; color: #697386; }
+        .error-body { padding: 28px 32px; }
+        .info-grid { display: grid; grid-template-columns: 150px 1fr; gap: 12px 18px; margin-bottom: 24px; }
+        .info-label { color: #8a94a6; font-size: 13px; font-weight: 600; }
+        .info-value { overflow-wrap: anywhere; font-family: Consolas, monospace; font-size: 13px; }
+        .details { margin-top: 22px; border: 1px solid #ffd4dc; border-radius: 9px; background: #fff8f9; }
+        .details summary { padding: 15px 18px; cursor: pointer; color: #c6284e; font-weight: 700; }
+        .details-content { padding: 0 18px 18px; }
+        .message { margin-bottom: 14px; padding: 12px; border-radius: 7px; background: #fff; color: #b42318; white-space: pre-wrap; overflow-wrap: anywhere; }
+        pre { max-height: 360px; margin: 0; padding: 14px; overflow: auto; border-radius: 7px; background: #20252b; color: #d7e0e8; font: 12px/1.55 Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .actions { display: flex; flex-wrap: wrap; gap: 10px; padding: 20px 32px; border-top: 1px solid #edf0f4; }
+        .btn { display: inline-block; padding: 10px 17px; border: 0; border-radius: 7px; cursor: pointer; color: #fff; background: #3699ff; font: 600 14px Poppins, Arial, sans-serif; text-decoration: none; }
+        .btn-secondary { color: #52606d; background: #eef2f6; }
+        @@media (max-width: 600px) { .error-header, .error-body, .actions { padding-left: 20px; padding-right: 20px; } .info-grid { grid-template-columns: 1fr; gap: 5px; } }
+    </style>
+</head>
+<body>
+    <main class="error-card">
+        <header class="error-header">
+            <span class="error-code">İŞLEM TAMAMLANAMADI</span>
+            <h1>Beklenmeyen bir hata oluştu</h1>
+            <p>Hata kaydedildi. Aşağıdaki takip numarasıyla teknik ekip kayıtları inceleyebilir.</p>
+        </header>
 
- 
-    <!-- Page Heading -->
-    <div class="card shadow">
-        <div class="card-body">
-            <div class="form-group text-left">
-                <h1 class="h3 mb-0 text-gray-800">Hata Sayfası</h1>
-                <br />
-                <br />
-                <h1 class="text-danger">Hata! Bir şeyler ters gitti.</h1>
-                <p>İsteğinizi işlerken bir hata oluştu.</p>
-                <p><a asp-action="Member" asp-controller="Home">Ana Sayfaya Git</a></p>
-
-                @if (Model != null && Model is Exception exception)
-                {
-                    <h4>Exception Details:</h4>
-                    @* <p>@exception.Message</p> *@
-                }
+        <section class="error-body">
+            <div class="info-grid">
+                <div class="info-label">İstek adresi</div>
+                <div class="info-value">@(string.IsNullOrWhiteSpace(Model?.RequestPath) ? "-" : Model.RequestPath)</div>
+                <div class="info-label">Takip numarası</div>
+                <div class="info-value">@(string.IsNullOrWhiteSpace(Model?.RequestId) ? "-" : Model.RequestId)</div>
             </div>
-        </div>
-    </div>
-    <br />
- 
+
+            @if (Model?.ShowTechnicalDetails == true)
+            {
+                <details class="details" open>
+                    <summary>Teknik hata ayrıntıları</summary>
+                    <div class="details-content">
+                        <div class="info-grid">
+                            <div class="info-label">Exception türü</div>
+                            <div class="info-value">@(Model.ExceptionType ?? "-")</div>
+                        </div>
+                        <div class="message">@(Model.ExceptionMessage ?? "Hata mesajı alınamadı.")</div>
+                        @if (!string.IsNullOrWhiteSpace(Model.TechnicalDetails))
+                        {
+                            <pre>@Model.TechnicalDetails</pre>
+                        }
+                    </div>
+                </details>
+            }
+            else
+            {
+                <p>Teknik ayrıntılar yalnızca yönetici yetkisine sahip kullanıcılar tarafından görüntülenebilir.</p>
+            }
+        </section>
+
+        <footer class="actions">
+            <button type="button" class="btn" onclick="history.back()">Önceki Sayfaya Dön</button>
+            <a asp-action="Member" asp-controller="Home" class="btn btn-secondary">Ana Sayfaya Git</a>
+            @if (User.IsInRole("Admin") && !string.IsNullOrWhiteSpace(Model?.RequestId))
+            {
+                <a asp-controller="HataKayitlari" asp-action="Index" asp-route-trackingNumber="@Model.RequestId" class="btn btn-secondary">Kayıtta Görüntüle</a>
+            }
+        </footer>
+    </main>
+</body>
+</html>

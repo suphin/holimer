@@ -4,12 +4,14 @@
     ViewData["Title"] = "Reçete Detayı";
     var fileModuleId = (int)ModulEnum.UretimRecete;
     const string filePath = "UretimRecete";
+    var canCreateRecipeVersion = User.IsInRole("Admin") || User.HasClaim("Authorize", "ReceteVersiyonOlustur");
+    var canReopenRecipeVersion = User.IsInRole("Admin") || User.HasClaim("Authorize", "ReceteVersiyonTaslakAc");
 }
 
 <div class="card card-custom">
     <div class="card-header card-header-tabs-line flex-wrap">
         <div class="card-title">
-            <h3 class="card-label">Reçete Bilgileri<span class="d-block text-muted pt-2 font-size-sm">@Model.Code · v@Model.VersionNumber · @Model.Product</span></h3>
+            <h3 class="card-label">Reçete Bilgileri<span class="d-block text-muted pt-2 font-size-sm">@Model.Code · v@(Model.VersionNumber) · @Model.Product</span></h3>
         </div>
         <div class="card-toolbar">
             <ul class="nav nav-tabs nav-bold nav-tabs-line">
@@ -27,21 +29,24 @@
                     <div><h4 class="mb-1">@Model.Code - @Model.Name</h4><span class="text-muted">@Model.Product</span></div>
                     <div class="mt-3 mt-md-0">
                         <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
-                        @if (!Model.CanEdit)
+                        @if (!Model.CanEdit && canCreateRecipeVersion)
                         {
                             <form asp-action="CreateNewVersion" method="post" class="d-inline" onsubmit="return confirm('Bu versiyonun malzemeleri kopyalanarak yeni bir taslak oluşturulsun mu?');"><input type="hidden" name="sourceVersionId" value="@Model.RecipeVersionId" /><button type="submit" class="btn btn-sm btn-light-success">Yeni Versiyon Oluştur</button></form>
                         }
                     </div>
                 </div>
 
-                @if (User.IsInRole("Admin"))
+                @if (canReopenRecipeVersion || User.IsInRole("Admin"))
                 {
                     <div class="d-flex flex-wrap justify-content-end mb-5">
-                        @if (!Model.CanEdit)
+                        @if (!Model.CanEdit && canReopenRecipeVersion)
                         {
                             <form asp-action="ReopenAsDraft" method="post" class="mr-2" onsubmit="return confirm('Reçete tekrar taslak durumuna alınacak ve düzenlemeye açılacak. Devam edilsin mi?');"><input type="hidden" name="recipeVersionId" value="@Model.RecipeVersionId" /><button type="submit" class="btn btn-sm btn-warning">Tekrar Taslağa Al</button></form>
                         }
-                        <form asp-action="DeleteVersion" method="post" onsubmit="return confirm('Yalnızca açık olan reçete versiyonu ve bu versiyonun malzeme kalemleri silinecek. Devam edilsin mi?');"><input type="hidden" name="recipeVersionId" value="@Model.RecipeVersionId" /><button type="submit" class="btn btn-sm btn-light-danger">Bu Versiyonu Sil</button></form>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <form asp-action="DeleteVersion" method="post" onsubmit="return confirm('Yalnızca açık olan reçete versiyonu ve bu versiyonun malzeme kalemleri silinecek. Devam edilsin mi?');"><input type="hidden" name="recipeVersionId" value="@Model.RecipeVersionId" /><button type="submit" class="btn btn-sm btn-light-danger">Bu Versiyonu Sil</button></form>
+                        }
                     </div>
                 }
 

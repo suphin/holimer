@@ -1,0 +1,53 @@
+@model Ekomers.Models.ViewModels.Purchasing.PurchasingEmailTemplateVM
+@{
+    ViewData["Title"] = Model.Id > 0 ? "E-posta Taslağını Düzenle" : "Yeni E-posta Taslağı";
+}
+
+<form asp-action="MailTaslakKaydet" method="post">
+    @Html.AntiForgeryToken()
+    <input asp-for="Id" type="hidden" />
+    <div class="card card-custom">
+        <div class="card-header flex-wrap border-0 pt-6 pb-0">
+            <div class="card-title"><h3 class="card-label">@ViewData["Title"]<span class="d-block text-muted pt-2 font-size-sm">Hazır fiyat teklif isteği metnini yönetin</span></h3></div>
+            <div class="card-toolbar">
+                <a asp-action="MailTaslaklari" class="btn btn-light mr-2">Vazgeç</a>
+                <button type="submit" class="btn btn-primary">Taslağı Kaydet</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+            <div class="row">
+                <div class="col-lg-8 form-group">
+                    <label asp-for="Name">Taslak Adı</label>
+                    <input asp-for="Name" class="form-control" placeholder="Örn. Standart fiyat isteği" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="col-lg-4 form-group d-flex align-items-end">
+                    <div class="checkbox-inline mb-3">
+                        <label class="checkbox checkbox-primary"><input asp-for="IsDefault" /><span></span>Varsayılan taslak olarak kullan</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label asp-for="SubjectTemplate">E-posta Konusu</label>
+                <input asp-for="SubjectTemplate" class="form-control" />
+                <span asp-validation-for="SubjectTemplate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="BodyTemplate">E-posta İçeriği (HTML)</label>
+                <textarea asp-for="BodyTemplate" class="form-control font-family-monospace" rows="18"></textarea>
+                <span asp-validation-for="BodyTemplate" class="text-danger"></span>
+            </div>
+            <div class="alert alert-light-info mb-0">
+                <strong>Kullanılabilir alanlar:</strong>
+                <code>{TEDARIKCI_ADI}</code>, <code>{TALEP_NUMARALARI}</code>, <code>{TALEP_TABLOSU}</code>,
+                <code>{SON_TARIH}</code>, <code>{EK_NOT}</code>, <code>{GONDEREN_AD_SOYAD}</code>,
+                <code>{GONDEREN_EPOSTA}</code>, <code>{KULLANICI_HESABI}</code>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

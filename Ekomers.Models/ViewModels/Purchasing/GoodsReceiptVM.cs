@@ -155,3 +155,60 @@ public sealed class GoodsReceiptDetailLineVM
     public int? QuarantineStockLotId { get; set; }
     public string? Notes { get; set; }
 }
+
+public sealed class GoodsReceiptLandedCostVM
+{
+    public int GoodsReceiptId { get; set; }
+    public string ReceiptNumber { get; set; } = string.Empty;
+    public string OrderNumber { get; set; } = string.Empty;
+    public string SupplierCode { get; set; } = string.Empty;
+    public string SupplierName { get; set; } = string.Empty;
+    public DateTime ReceiptDate { get; set; }
+    public PurGoodsReceiptStatus ReceiptStatus { get; set; }
+    public decimal FreightAmount { get; set; }
+    public decimal FreightExchangeRate { get; set; } = 1m;
+    public string FreightCurrencyCode { get; set; } = "TRY";
+    public decimal FreightCostTry { get; set; }
+    [Display(Name = "Gümrük / İthalat Gideri (TRY)")] public string? CustomsCostInput { get; set; }
+    [Display(Name = "Sigorta Gideri (TRY)")] public string? InsuranceCostInput { get; set; }
+    [Display(Name = "Elleçleme / İşçilik (TRY)")] public string? HandlingLaborCostInput { get; set; }
+    [Display(Name = "Diğer Giderler (TRY)")] public string? OtherCostInput { get; set; }
+    [StringLength(1000), Display(Name = "Açıklama")] public string? Notes { get; set; }
+    public bool IsPosted { get; set; }
+    public string? LandedCostDocumentNumber { get; set; }
+    public string? InventoryDocumentNumber { get; set; }
+    public DateTime? PostingDate { get; set; }
+    public string? PostedUserId { get; set; }
+    public decimal PostedCustomsCostTry { get; set; }
+    public decimal PostedInsuranceCostTry { get; set; }
+    public decimal PostedHandlingLaborCostTry { get; set; }
+    public decimal PostedOtherCostTry { get; set; }
+    public decimal PostedTotalCostTry { get; set; }
+    public List<GoodsReceiptLandedCostLineVM> Lines { get; set; } = [];
+}
+
+public sealed class GoodsReceiptLandedCostLineVM
+{
+    public int GoodsReceiptLineId { get; set; }
+    public int MaterialId { get; set; }
+    public int UnitId { get; set; }
+    public int? WarehouseId { get; set; }
+    public int? StockLotId { get; set; }
+    public int Sequence { get; set; }
+    public string MaterialCode { get; set; } = string.Empty;
+    public string MaterialName { get; set; } = string.Empty;
+    public decimal ReceivedQuantity { get; set; }
+    public string Unit { get; set; } = string.Empty;
+    public string LotNumber { get; set; } = string.Empty;
+    public string? Warehouse { get; set; }
+    public decimal BaseLineValueTry { get; set; }
+    public decimal CurrentStockQuantity { get; set; }
+    public decimal CurrentStockValueTry { get; set; }
+    public bool CanAllocate { get; set; }
+    public bool IsReturned { get; set; }
+    public string? BlockingReason { get; set; }
+    public decimal AllocationRate { get; set; }
+    public decimal AllocatedCostTry { get; set; }
+    public decimal CurrentUnitCostTry => CurrentStockQuantity == 0 ? 0 : CurrentStockValueTry / CurrentStockQuantity;
+    public decimal ResultUnitCostTry => CurrentStockQuantity == 0 ? 0 : (CurrentStockValueTry + AllocatedCostTry) / CurrentStockQuantity;
+}

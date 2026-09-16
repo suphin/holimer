@@ -1,0 +1,61 @@
+@model List<Ekomers.Models.ViewModels.Production.RecipeCostScenarioListRowVM>
+@{
+    ViewData["Title"] = "Kayıtlı Reçete Maliyetleri";
+}
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Kayıtlı Maliyet Çalışmaları
+                <span class="d-block text-muted pt-2 font-size-sm">Üretim miktarları, reçete maliyetleri ve dağıtılan giderlerin tarihsel kayıtları</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <a asp-action="BirimDonusumleri" class="btn btn-light-primary mr-3">Birim Dönüşümleri</a>
+            <a asp-action="Index" class="btn btn-primary">Yeni Hesaplama</a>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (Model.Count == 0)
+        {
+            <div class="alert alert-light-warning mb-0">Henüz kaydedilmiş maliyet çalışması yok.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom table-checkable">
+                    <thead>
+                        <tr>
+                            <th>Çalışma</th>
+                            <th>Tarih</th>
+                            <th>Ürün</th>
+                            <th>Toplam Üretim</th>
+                            <th>Reçete Maliyeti</th>
+                            <th>Genel Gider</th>
+                            <th>Toplam Gider</th>
+                            <th>Kaydeden</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model)
+                    {
+                        <tr>
+                            <td><strong>@row.Name</strong><span class="d-block text-muted font-size-sm">@row.ScenarioNumber</span></td>
+                            <td>@row.CalculationDate.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@row.LineCount</td>
+                            <td>@row.TotalProductionQuantity.ToString("N6")</td>
+                            <td>@row.TotalRecipeCost.ToString("N2") TRY</td>
+                            <td>@((row.FixedCost + row.VariableCost).ToString("N2")) TRY</td>
+                            <td><strong>@row.TotalCost.ToString("N2") TRY</strong></td>
+                            <td>@row.CreatedUser</td>
+                            <td class="text-right"><a asp-action="KayitDetay" asp-route-id="@row.Id" class="btn btn-sm btn-light-primary">Detay</a></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

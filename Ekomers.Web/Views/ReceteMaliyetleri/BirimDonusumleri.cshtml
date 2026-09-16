@@ -1,0 +1,90 @@
+@model Ekomers.Models.ViewModels.Production.ProductionUnitConversionManagementVM
+@{
+    ViewData["Title"] = "Birim Dönüşümleri";
+}
+
+<div class="card card-custom mb-6">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">Birim Dönüşümleri<span class="d-block text-muted pt-2 font-size-sm">Reçete ve depo maliyet birimleri arasındaki ürün bazlı dönüşümler</span></h3>
+        </div>
+        <div class="card-toolbar"><a asp-action="Index" class="btn btn-light">Maliyet Hesabına Dön</a></div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light-primary">
+            Gram–kilogram ve mililitre–litre dönüşümleri sistem tarafından otomatik yapılır. Koli, paket ve adet ilişkileri ürün içeriğine göre değiştiği için burada tanımlanır. Örnek: <strong>1 Koli = 24 Adet</strong> için kaynak Koli, hedef Adet ve katsayı 24 girilir. Ters yön otomatik hesaplanır.
+        </div>
+        <form asp-action="BirimDonusumEkle" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row align-items-end">
+                <div class="col-lg-4 mb-5">
+                    <label asp-for="MaterialId" class="font-weight-bold">Malzeme / Ürün</label>
+                    <select asp-for="MaterialId" asp-items="Model.Materials" class="kt_select2 form-control" data-live-search="true" data-size="5">
+                        <option value="">Tüm malzemeler için genel dönüşüm</option>
+                    </select>
+                    <span class="form-text text-muted">Koli içeriği değişiyorsa mutlaka ürün seçin.</span>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-5">
+                    <label asp-for="FromUnitId" class="font-weight-bold">Kaynak Birim</label>
+                    <select asp-for="FromUnitId" asp-items="Model.Units" class="kt_select2 form-control" data-live-search="true" data-size="5" required>
+                        <option value="">Seçiniz</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-5">
+                    <label asp-for="ToUnitId" class="font-weight-bold">Hedef Birim</label>
+                    <select asp-for="ToUnitId" asp-items="Model.Units" class="kt_select2 form-control" data-live-search="true" data-size="5" required>
+                        <option value="">Seçiniz</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-5">
+                    <label asp-for="Factor" class="font-weight-bold">Katsayı</label>
+                    <input asp-for="Factor" class="form-control" inputmode="decimal" placeholder="Örn. 24" required />
+                </div>
+                <div class="col-lg-2 mb-5">
+                    <button type="submit" class="btn btn-primary btn-block">Kaydet</button>
+                </div>
+                <div class="col-12 mb-5">
+                    <label asp-for="Description" class="font-weight-bold">Açıklama</label>
+                    <input asp-for="Description" class="form-control" maxlength="250" placeholder="Örn. Bu üründe bir koli 24 adet içerir" />
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Tanımlı Dönüşümler (@Model.Rows.Count)</h3></div></div>
+    <div class="card-body">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="alert alert-light-warning mb-0">Henüz özel birim dönüşümü tanımlanmadı.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom">
+                    <thead><tr><th>Malzeme / Kapsam</th><th>Dönüşüm</th><th>Açıklama</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td><strong>@row.Material</strong></td>
+                            <td>1 @row.FromUnit = <strong>@row.Factor.ToString("0.######") @row.ToUnit</strong></td>
+                            <td>@(string.IsNullOrWhiteSpace(row.Description) ? "-" : row.Description)</td>
+                            <td class="text-right">
+                                <form asp-action="BirimDonusumSil" method="post" onsubmit="return confirm('Bu birim dönüşümü kaldırılsın mı?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@row.Id" />
+                                    <button type="submit" class="btn btn-sm btn-light-danger">Kaldır</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<script src="~/js/select2.js?v=7.0.5"></script>

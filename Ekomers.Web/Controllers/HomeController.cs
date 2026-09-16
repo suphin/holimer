@@ -3,9 +3,12 @@ using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
+using Ekomers.Models;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.ViewModels;
 using Ekomers.Models.ViewModels.Admin;
+using Ekomers.Models.Enums;
+using Ekomers.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +16,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System.Drawing;
 
 // Add the following using directive at the top of the file to resolve the 'Image' type:
@@ -58,6 +62,27 @@ namespace Ekomers.Web.Controllers
         {
             return RedirectToAction(nameof(HomeController.SignIn));
         }
+
+		[Authorize]
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public IActionResult TemaDegistir(string? theme,string? returnUrl)
+		{
+			var selectedTheme=string.Equals(theme,"classic",StringComparison.OrdinalIgnoreCase)?"classic":"modern";
+			Response.Cookies.Append("PortalTheme",selectedTheme,new CookieOptions
+			{
+				HttpOnly=true,
+				IsEssential=true,
+				SameSite=SameSiteMode.Lax,
+				Secure=Request.IsHttps,
+				Expires=DateTimeOffset.UtcNow.AddYears(1),
+				Path="/"
+			});
+
+			if(!string.IsNullOrWhiteSpace(returnUrl)&&Url.IsLocalUrl(returnUrl))
+				return LocalRedirect(returnUrl);
+			return RedirectToAction(nameof(Member));
+		}
 
         public IActionResult SignUp()
         {
@@ -143,7 +168,7 @@ namespace Ekomers.Web.Controllers
             {
 				return RedirectToAction(nameof(HomeController.Member));
 			}
-			return View();
+			return View("SignInModern");
 		}
 		//private async Task HandleUserLoginEvent(string username)
   //      {
@@ -152,9 +177,15 @@ namespace Ekomers.Web.Controllers
             
   //      }
         [HttpPost]
+		[ValidateAntiForgeryToken]
         public async Task<IActionResult> SignIn(SignInVM model, string? returnUrl = null)
         {
-            returnUrl = returnUrl ?? Url.Action("Member", "Home");
+			if (!ModelState.IsValid)
+				return View("SignInModern", model);
+
+			returnUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+				? returnUrl
+				: Url.Action("Member", "Home");
 
             var user = await _userManager.FindByEmailAsync(model.Email);
 			 
@@ -165,7 +196,7 @@ namespace Ekomers.Web.Controllers
             if (user == null)
             {
                 ModelState.AddModelError(String.Empty, "Eposta veya şifre yanlış");
-                return RedirectToAction(nameof(HomeController.SignIn));
+                return View("SignInModern", model);
             }
 
             var signInResult = await _signInManager.PasswordSignInAsync(user, model.Password, false, true);
@@ -196,11 +227,11 @@ namespace Ekomers.Web.Controllers
             if(signInResult.IsLockedOut)
             {
                 ModelState.AddModelError(String.Empty, "Hesap kilitlendi, 3 dakika boyunca giriş yapamazsınız.");
-                return View();
+                return View("SignInModern", model);
             }
             
             ModelState.AddModelError(string.Empty, "Eposta veya şifre yanlış");
-            return RedirectToAction(nameof(HomeController.SignIn));
+            return View("SignInModern", model);
         }
 
         public async Task<IActionResult> LogOut()
@@ -219,11 +250,130 @@ namespace Ekomers.Web.Controllers
 
 
         [Authorize]
-        public async Task<IActionResult> Member()
+        public async Task<IActionResult> Member(CancellationToken ct)
         {
             var user =await  _userManager.FindByNameAsync(User.Identity!.Name);
-            return View(user);
+			var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			ViewBag.Shortcuts = await _context.UserShortCut
+				.AsNoTracking()
+				.Where(x => x.UserID == userId && x.IsDelete != true && x.IsActive != false && x.PageUrl != null)
+				.OrderBy(x => x.SortOrder)
+				.ThenBy(x => x.ID)
+				.ToListAsync(ct);
+			ViewBag.OperationsDashboard = await BuildOperationsDashboardAsync(ct);
+			return View("MemberModern", user);
         }
+
+		private async Task<OperationalDashboardVM> BuildOperationsDashboardAsync(CancellationToken ct)
+		{
+			var purchasingPermissions = new[]
+			{
+				"SatinalmaGoruntule", "SatinalmaTalepOlustur", "SatinalmaTalepDuzenle", "TalepKabul",
+				"SatinalmaTedarikciYonet", "SatinalmaTeklifYonet", "TeklifKabul", "SatinalmaSiparisYonet",
+				"SatinalmaMalKabulYonet", "SatinalmaKarantinaIsle", "SatinalmaEkMaliyetDagit",
+				"SatinalmaStokSonuclandir", "SatinalmaSurecGeriAl", "SatinalmaKayitSil"
+			};
+			var qualityPermissions = new[]
+			{
+				"KaliteAnalizGoruntule", "KaliteAnalizDuzenle", "KaliteKararVer", "KaliteKarariGeriAl",
+				"SatinalmaStokSonuclandir", "SatinalmaSurecGeriAl", "SatinalmaKayitSil"
+			};
+			var isAdmin = User.IsInRole("Admin");
+			var model = new OperationalDashboardVM
+			{
+				GeneratedAt = DateTime.Now,
+				CanSeePurchasing = isAdmin || User.HasClaim("Modul", "PURCHASING") || User.Claims.Any(x => x.Type == "Authorize" && purchasingPermissions.Contains(x.Value)),
+				CanSeeCustomerOrders = isAdmin || User.HasClaim("Modul", "Uretim") || User.HasClaim("Authorize", "UretimSiparisGoruntule"),
+				CanSeeProduction = isAdmin || User.HasClaim("Modul", "Uretim"),
+				CanSeeQuality = isAdmin || User.HasClaim("Modul", "QUALITY") || User.HasClaim("Authorize", "KaliteOnay") || User.Claims.Any(x => x.Type == "Authorize" && qualityPermissions.Contains(x.Value)),
+				CanSeeWarehouse = isAdmin || User.HasClaim("Modul", "Uretim")
+			};
+
+			if (model.CanSeePurchasing)
+			{
+				model.Purchasing.PendingRequests = await _context.PurPurchaseRequests.AsNoTracking().CountAsync(x => x.IsDelete != true && (x.Status == PurPurchaseRequestStatus.PendingApproval || x.Status == PurPurchaseRequestStatus.PartiallyApproved), ct);
+				model.Purchasing.PendingQuotations = await _context.PurSupplierQuotations.AsNoTracking().CountAsync(x => x.IsDelete != true && (x.Status == PurSupplierQuotationStatus.PendingApproval || x.Status == PurSupplierQuotationStatus.PartiallyApproved), ct);
+				model.Purchasing.OpenOrders = await _context.PurPurchaseOrders.AsNoTracking().CountAsync(x => x.IsDelete != true && (x.Status == PurPurchaseOrderStatus.Open || x.Status == PurPurchaseOrderStatus.PartiallyReceived), ct);
+				model.Purchasing.QuarantineReceipts = await _context.PurGoodsReceipts.AsNoTracking().CountAsync(x => x.IsDelete != true && (x.Status == PurGoodsReceiptStatus.Recorded || x.Status == PurGoodsReceiptStatus.InQuarantine || x.Status == PurGoodsReceiptStatus.QualityPartiallyDecided || x.Status == PurGoodsReceiptStatus.StockPartiallyCompleted), ct);
+			}
+
+			var today = DateTime.Today;
+			if (model.CanSeeCustomerOrders)
+			{
+				var openOrders = _context.PrdCustomerOrders.AsNoTracking().Where(x => x.IsDelete != true && x.Status != PrdCustomerOrderStatus.Completed && x.Status != PrdCustomerOrderStatus.Cancelled);
+				model.CustomerOrders.ReadyForPlanning = await openOrders.CountAsync(x => x.Status == PrdCustomerOrderStatus.ReadyForPlanning || x.Status == PrdCustomerOrderStatus.PartiallyPlanned, ct);
+				model.CustomerOrders.InProduction = await openOrders.CountAsync(x => x.Status == PrdCustomerOrderStatus.Planned || x.Status == PrdCustomerOrderStatus.InProduction, ct);
+				model.CustomerOrders.Overdue = await openOrders.CountAsync(x => x.RequestedDeliveryDate < today, ct);
+				model.CustomerOrders.Upcoming = await openOrders.OrderBy(x => x.RequestedDeliveryDate).ThenByDescending(x => x.Priority).Take(5).Select(x => new DashboardCustomerOrderRowVM
+				{
+					Id = x.ID, OrderNumber = x.OrderNumber, CustomerName = x.CustomerName, DeliveryDate = x.RequestedDeliveryDate,
+					Status = x.Status.ToTurkish(), IsOverdue = x.RequestedDeliveryDate < today
+				}).ToListAsync(ct);
+			}
+
+			if (model.CanSeeProduction)
+			{
+				model.Production.OpenPlans = await _context.PrdProductionPlanHeaders.AsNoTracking().CountAsync(x => x.IsDelete != true && x.Status != PrdProductionPlanHeaderStatus.ConvertedToOrders && x.Status != PrdProductionPlanHeaderStatus.Cancelled, ct);
+				var activeProductionOrders = _context.PrdProductionOrders.AsNoTracking().Where(x => x.IsDelete != true && x.Status != PrdProductionOrderStatus.Completed && x.Status != PrdProductionOrderStatus.Cancelled);
+				model.Production.ActiveOrders = await activeProductionOrders.CountAsync(ct);
+				model.Production.MaterialWaiting = await activeProductionOrders.CountAsync(x => x.Status == PrdProductionOrderStatus.MaterialWaiting, ct);
+				model.Production.WarehouseTasksWaiting = await _context.PrdWarehouseTasks.AsNoTracking().CountAsync(x => x.IsDelete != true && (x.Status == PrdWarehouseTaskStatus.Waiting || x.Status == PrdWarehouseTaskStatus.Preparing || x.Status == PrdWarehouseTaskStatus.Shortage), ct);
+				model.Production.Upcoming = await (from productionOrder in activeProductionOrders
+					join material in _context.PrdMaterials.AsNoTracking() on productionOrder.ProductMaterialId equals material.ID
+					orderby productionOrder.PlannedProductionDate, productionOrder.ID
+					select new DashboardProductionOrderRowVM
+					{
+						Id = productionOrder.ID, OrderNumber = productionOrder.OrderNumber, ProductCode = material.Code, ProductName = material.Name,
+						ProductionDate = productionOrder.PlannedProductionDate, Status = productionOrder.Status.ToTurkish()
+					}).Take(5).ToListAsync(ct);
+			}
+
+			if (model.CanSeeQuality)
+			{
+				var inspections = _context.PurQualityInspections.AsNoTracking().Where(x => x.IsDelete != true);
+				model.Quality.Pending = await inspections.CountAsync(x => x.Status == PrdQualityControlStatus.Pending, ct);
+				model.Quality.Sampled = await inspections.CountAsync(x => x.Status == PrdQualityControlStatus.Sampled, ct);
+				model.Quality.Conditional = await inspections.CountAsync(x => x.Status == PrdQualityControlStatus.ConditionalApproval, ct);
+				model.Quality.Rejected = await inspections.CountAsync(x => x.Status == PrdQualityControlStatus.Rejected, ct);
+				model.Quality.Waiting = await (from inspection in inspections
+					join material in _context.PrdMaterials.AsNoTracking() on inspection.MaterialId equals material.ID
+					where inspection.Status == PrdQualityControlStatus.Pending || inspection.Status == PrdQualityControlStatus.Sampled
+					orderby inspection.Status, inspection.ID descending
+					select new DashboardQualityRowVM
+					{
+						Id = inspection.ID, InspectionNumber = inspection.InspectionNumber, MaterialCode = material.Code,
+						MaterialName = material.Name, Status = inspection.Status.ToTurkish()
+					}).Take(5).ToListAsync(ct);
+			}
+
+			if (model.CanSeeWarehouse)
+			{
+				model.Warehouse.ActiveWarehouses = await _context.PrdWarehouses.AsNoTracking().CountAsync(x => x.IsDelete != true && x.IsActive != false, ct);
+				var balances = await _context.PrdStockMovements.AsNoTracking().Where(x => x.IsDelete != true)
+					.GroupBy(x => x.MaterialId)
+					.Select(g => new
+					{
+						MaterialId = g.Key,
+						Quantity = g.Sum(x => x.Direction == PrdStockDirection.In ? x.Quantity : -x.Quantity),
+						Value = g.Sum(x => x.Direction == PrdStockDirection.In ? x.TotalCost : -x.TotalCost)
+					}).ToListAsync(ct);
+				model.Warehouse.StockedMaterials = balances.Count(x => x.Quantity > 0);
+				model.Warehouse.TotalStockValue = balances.Sum(x => x.Value);
+				var criticalMaterials = await _context.PrdMaterials.AsNoTracking()
+					.Where(x => x.IsDelete != true && x.IsActive != false && x.CriticalQuantity.HasValue && x.CriticalQuantity.Value > 0)
+					.Select(x => new { x.ID, x.Code, x.Name, CriticalQuantity = x.CriticalQuantity!.Value }).ToListAsync(ct);
+				var balanceMap = balances.ToDictionary(x => x.MaterialId, x => x.Quantity);
+				model.Warehouse.CriticalStock = criticalMaterials.Select(x => new DashboardCriticalStockRowVM
+				{
+					MaterialId = x.ID, MaterialCode = x.Code, MaterialName = x.Name,
+					Quantity = balanceMap.TryGetValue(x.ID, out var quantity) ? quantity : 0,
+					CriticalQuantity = x.CriticalQuantity
+				}).Where(x => x.Quantity <= x.CriticalQuantity).OrderBy(x => x.Quantity / x.CriticalQuantity).ThenBy(x => x.MaterialCode).Take(5).ToList();
+				model.Warehouse.CriticalMaterials = criticalMaterials.Count(x => !balanceMap.TryGetValue(x.ID, out var quantity) || quantity <= x.CriticalQuantity);
+			}
+
+			return model;
+		}
 	 
 		//public IActionResult ForgetPassword()
 		//{
@@ -289,17 +439,32 @@ namespace Ekomers.Web.Controllers
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        public async Task<IActionResult> Error()
         {
-            //return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             var exceptionHandlerPathFeature = HttpContext.Features.Get<IExceptionHandlerPathFeature>();
-            if (exceptionHandlerPathFeature != null)
+            var environment = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
+            var logger = HttpContext.RequestServices.GetRequiredService<ILogger<HomeController>>();
+            var exception = exceptionHandlerPathFeature?.Error;
+            var requestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+
+            if (exception != null)
             {
-                var exception = exceptionHandlerPathFeature.Error;
-                // İsterseniz burada loglama yapabilirsiniz.
-                return View("Error", exception);
+                logger.LogError(exception, "İşlenmeyen hata. Path: {Path}, RequestId: {RequestId}", exceptionHandlerPathFeature?.Path, requestId);
+                var errorLogWriter = HttpContext.RequestServices.GetRequiredService<SystemErrorLogWriter>();
+                await errorLogWriter.WriteAsync(
+                    exception,
+                    HttpContext,
+                    requestId,
+                    requestPath: exceptionHandlerPathFeature?.Path);
             }
-            return View("Error");
+
+            var model = ErrorViewModel.FromException(
+                exception,
+                exceptionHandlerPathFeature?.Path ?? HttpContext.Request.Path,
+                requestId,
+                environment.IsDevelopment() || User.IsInRole("Admin"));
+
+            return View("Error", model);
         }
         [Authorize]
         public IActionResult AccessDenied()

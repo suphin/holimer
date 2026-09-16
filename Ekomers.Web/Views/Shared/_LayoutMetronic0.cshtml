@@ -1,4 +1,8 @@
 ﻿
+@{
+	var portalTheme = Context.Request.Cookies["PortalTheme"];
+	var useModernPortalTheme = !string.Equals(portalTheme, "classic", StringComparison.OrdinalIgnoreCase);
+}
 <!DOCTYPE html>
 <html lang="tr">
 <!--begin::Head-->
@@ -19,6 +23,10 @@
 	<link href="assets1/css/style.bundle.css?v=7.0.5" rel="stylesheet" type="text/css" />
 	<!--end::Global Theme Styles-->
 	<link href="@Url.Content("~/css/custom.css")" rel="stylesheet">
+	@if (useModernPortalTheme)
+	{
+		<link href="@Url.Content("~/css/portal-modern.css?v=1.0.5")" rel="stylesheet" type="text/css" />
+	}
 	<!--begin::Page Vendors Styles(used by this page)-->
 	@await RenderSectionAsync("CSSection", false)
 	<!--end::Page Vendors Styles-->
@@ -35,13 +43,13 @@
 </head>
 <!--end::Head-->
 <!--begin::Body-->
-<body id="kt_body" class="header-fixed header-mobile-fixed subheader-enabled subheader-fixed aside-enabled aside-fixed aside-minimize-hoverable page-loading">
+<body id="kt_body" class="header-fixed header-mobile-fixed subheader-enabled subheader-fixed aside-enabled aside-fixed aside-minimize-hoverable page-loading @(useModernPortalTheme ? "portal-modern aside-minimize" : "portal-classic")">
 	<!--begin::Main-->
 	<!--begin::Header Mobile-->
 	<div id="kt_header_mobile" class="header-mobile align-items-center header-mobile-fixed">
 		<!--begin::Logo-->
 		<a href="/Home/Member" class="brand-logo">
-			<img alt="Logo" src="~/img/holimerlogo_white.png" width="60px" />
+			<img class="portal-mobile-logo" alt="Holimer optimum health" src="~/img/holimer-logo-blue-hd.png" style="width:auto;max-width:62px;max-height:46px;object-fit:contain" />
 		</a>
 		<!--end::Logo-->
 		<!--begin::Toolbar-->
@@ -85,7 +93,9 @@
 					<!--begin::Logo-->
 					<a href="/Home/Member" class="brand-logo no-print">
 						@* <img alt="Logo" src="assets0/media/logos/logo-light.png" /> *@
-						<img alt="Logo" src="~/img/holimerlogo_white.png" width="160px" />
+						<img class="portal-classic-logo" alt="Holimer optimum health" src="~/img/holimer-logo-blue-hd.png" style="width:auto;max-width:155px;max-height:58px;object-fit:contain" />
+						<img class="portal-modern-logo" alt="Holimer optimum health" src="~/img/holimer-logo-blue-hd.png" style="display:none" />
+						<span class="portal-brand-mark" aria-hidden="true" style="display:none">H</span>
 
 					</a>
 					<!--end::Logo-->
@@ -215,9 +225,99 @@
 	<script src="@Url.Content("~/js/ajax.js")"></script>
 	<script src="@Url.Content("~/js/custom.js")"></script>
 	<script src="@Url.Content("~/js/select2.js?v=7.0.5")"></script>
+	@if (useModernPortalTheme)
+	{
+		<script>
+			(function () {
+				var body = document.body;
+				var toggle = document.getElementById('kt_aside_toggle');
+				if (!body || !toggle) return;
+
+				var storageKey = 'PortalModernAsideExpanded';
+				var expanded = window.localStorage.getItem(storageKey) === 'true';
+				var applyState = function () {
+					body.classList.toggle('portal-modern-aside-expanded', expanded);
+					body.classList.toggle('aside-minimize', !expanded);
+					toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+					toggle.setAttribute('aria-label', expanded ? 'Menüyü daralt' : 'Menüyü genişlet');
+					toggle.title = expanded ? 'Menüyü daralt' : 'Menüyü genişlet';
+				};
+
+				applyState();
+				toggle.addEventListener('click', function (event) {
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					expanded = !expanded;
+					window.localStorage.setItem(storageKey, expanded ? 'true' : 'false');
+					applyState();
+				}, true);
+			})();
+		</script>
+	}
+	<script>
+		(function () {
+			var form = document.getElementById('portal-shortcut-form');
+			var button = document.getElementById('portal-shortcut-toggle');
+			if (!form || !button || !window.fetch) return;
+
+			var icon = document.getElementById('portal-shortcut-icon');
+			var label = document.getElementById('portal-shortcut-label');
+			var pageUrl = form.getAttribute('data-page-url');
+			var pageTitle = form.getAttribute('data-page-title');
+			var tokenInput = form.querySelector('input[name="__RequestVerificationToken"]');
+
+			function applyState(isAdded) {
+				button.classList.toggle('btn-light-primary', !isAdded);
+				button.classList.toggle('btn-light-warning', isAdded);
+				button.title = isAdded ? 'Bu sayfayı kısayollardan kaldır' : 'Bu sayfayı ana sayfaya ekle';
+				if (icon) icon.textContent = isAdded ? '★' : '☆';
+				if (label) label.textContent = isAdded ? 'Kısayoldan çıkar' : 'Kısayola ekle';
+			}
+
+			fetch('/UserActions/ShortcutStatus?url=' + encodeURIComponent(pageUrl), {
+				headers: { 'X-Requested-With': 'XMLHttpRequest' }
+			})
+				.then(function (response) { return response.ok ? response.json() : null; })
+				.then(function (result) { if (result) applyState(result.isAdded); })
+				.catch(function () { });
+
+			button.addEventListener('click', function () {
+				button.disabled = true;
+				var data = new URLSearchParams();
+				data.append('url', pageUrl);
+				data.append('title', pageTitle);
+				if (tokenInput) data.append('__RequestVerificationToken', tokenInput.value);
+
+				fetch('/UserActions/ShortcutToggle', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+						'X-Requested-With': 'XMLHttpRequest'
+					},
+					body: data.toString()
+				})
+					.then(function (response) {
+						if (response.ok) return response.json();
+						return response.text().then(function (body) {
+							var message = 'Kısayol işlemi tamamlanamadı (' + response.status + ').';
+							if (response.status === 400) message = 'Kısayol bilgileri doğrulanamadı. Sayfayı yenileyip tekrar deneyin.';
+							if (response.status === 401 || response.status === 403) message = 'Bu işlem için oturum veya yetki doğrulanamadı.';
+							throw new Error(message);
+						});
+					})
+					.then(function (result) { applyState(result.isAdded); })
+					.catch(function (error) {
+						if (label) label.textContent = error.message || 'Tekrar deneyin';
+						button.title = error.message || 'Kısayol işlemi tamamlanamadı.';
+					})
+					.finally(function () { button.disabled = false; });
+			});
+		})();
+	</script>
 	<!--end::Global Theme Bundle-->
 	<!--begin::Page Scripts(used by this page)-->
 	@await RenderSectionAsync("JSSection", false)
+	@await RenderSectionAsync("Scripts", false)
 	@await RenderSectionAsync("ModalSection", false)
 	<div class="modal fade" id="resimModal" tabindex="-1">
 		<div class="modal-dialog modal-xl">

@@ -1,0 +1,85 @@
+@model Ekomers.Models.ViewModels.Production.MaterialReferenceCostImportPreviewVM
+@{
+    ViewData["Title"] = "Maliyet Aktarım Ön İzlemesi";
+}
+
+<div class="card card-custom mb-6">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">Toplu Maliyet Ön İzlemesi
+                <span class="d-block text-muted pt-2 font-size-sm">@Model.FileName · @Model.ValidFrom.ToString("dd.MM.yyyy") tarihinden itibaren</span>
+            </h3>
+        </div>
+        <div class="card-toolbar"><a asp-action="ExcelAktar" class="btn btn-light">Dosyayı Değiştir</a></div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3"><div class="alert alert-light-success mb-0"><strong>@Model.ReadyCount</strong> satır aktarıma hazır</div></div>
+            <div class="col-md-4 mb-3"><div class="alert alert-light-warning mb-0"><strong>@Model.ReviewCount</strong> satır çakışmalı; kontrol edilerek seçilebilir</div></div>
+            <div class="col-md-4 mb-3"><div class="alert alert-light-danger mb-0"><strong>@Model.SkippedCount</strong> satır eşleşmedi ve aktarılamaz</div></div>
+        </div>
+        <div class="alert alert-light-primary mb-0">Seçili satırlar stok oluşturmaz; her malzeme için tarihsel bir referans maliyet versiyonu oluşturur. Çakışmalı bir satırı aktarmak için maliyeti kontrol edip kutuyu işaretleyebilirsiniz.</div>
+    </div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-body pt-4">
+        <form asp-action="ExcelKaydet" method="post" id="importForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="FileName" value="@Model.FileName" />
+            <input type="hidden" name="ValidFrom" value="@Model.ValidFrom.ToString("yyyy-MM-dd")" />
+            <input type="hidden" name="Notes" value="@Model.Notes" />
+            <input type="hidden" name="Payload" id="payload" value="@Model.Payload" />
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom align-middle">
+                    <thead><tr><th>Al</th><th>Malzeme</th><th>Kaynak</th><th>Excel Değeri</th><th>Kaydedilecek Birim Maliyet</th><th>Kontrol</th></tr></thead>
+                    <tbody>
+                    @for (var i = 0; i < Model.Rows.Count; i++)
+                    {
+                        var row = Model.Rows[i];
+                        <tr class="@(row.CanImport ? (row.HasConflict ? "table-warning" : "") : "table-danger")">
+                            <td>
+                                <input type="checkbox" class="import-select" data-index="@i" checked="@row.Selected" disabled="@(!row.CanImport)" />
+                            </td>
+                            <td><strong>@row.MaterialCode</strong><span class="d-block text-muted">@row.MaterialName</span><span class="d-block text-muted font-size-sm">@row.MaterialType</span></td>
+                            <td>@row.SourceSheet · satır @row.SourceRow@if (!string.IsNullOrWhiteSpace(row.ProductName)) { <span class="d-block text-muted">Ürün: @row.ProductName</span> }</td>
+                            <td>@row.ExcelValueTry.ToString("N6") TRY</td>
+                            <td>
+                                @if (row.CanImport)
+                                {
+                                    <div class="input-group" style="min-width:220px">
+                                        <input type="text" class="form-control import-cost" data-index="@i" value="@row.UnitCostTry.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)" inputmode="decimal" />
+                                        <div class="input-group-append"><span class="input-group-text">TRY / @row.Unit</span></div>
+                                    </div>
+                                }
+                                else { <span>-</span> }
+                            </td>
+                            <td><span class="@(row.CanImport ? (row.HasConflict ? "text-warning" : "text-success") : "text-danger")">@row.Message</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-right mt-5"><button type="submit" class="btn btn-primary">Seçilen Maliyetleri Kaydet</button></div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    const payload = document.getElementById('payload');
+    const form = document.getElementById('importForm');
+    if (!payload || !form) return;
+    let rows = JSON.parse(payload.value);
+    document.querySelectorAll('.import-select').forEach(function (input) {
+        input.addEventListener('change', function () { rows[Number(input.dataset.index)].Selected = input.checked; });
+    });
+    document.querySelectorAll('.import-cost').forEach(function (input) {
+        input.addEventListener('input', function () {
+            const value = Number(input.value.replace(',', '.'));
+            rows[Number(input.dataset.index)].UnitCostTry = Number.isFinite(value) ? value : 0;
+        });
+    });
+    form.addEventListener('submit', function () { payload.value = JSON.stringify(rows); });
+})();
+</script>

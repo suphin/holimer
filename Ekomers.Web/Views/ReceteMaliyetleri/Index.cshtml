@@ -1,0 +1,553 @@
+@using System.Globalization
+@using Ekomers.Models.Enums
+@model Ekomers.Models.ViewModels.Production.RecipeCostCalculationVM
+@{
+    ViewData["Title"] = "Reçete Maliyet Hesabı";
+    var invariant = CultureInfo.InvariantCulture;
+    var costReturnUrl = Url.Action("Index", "ReceteMaliyetleri") ?? "/ReceteMaliyetleri";
+}
+
+<style>
+    .recipe-cost-summary { display:grid; grid-template-columns:repeat(4,minmax(170px,1fr)); gap:14px; }
+    .recipe-cost-controls { display:grid; grid-template-columns:1fr 1fr 1fr 1.35fr .65fr; gap:20px; align-items:start; }
+    .recipe-cost-controls label { display:block; min-height:21px; margin-bottom:8px; }
+    .recipe-cost-controls .control-action { padding-top:29px; }
+    .recipe-cost-controls .form-text { min-height:36px; }
+    .recipe-cost-summary .summary-box { border:1px solid #e8ecf2; border-radius:10px; padding:15px 17px; background:#fff; }
+    .recipe-cost-summary .summary-label { display:block; color:#9aa1b2; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
+    .recipe-cost-summary .summary-value { color:#26304a; font-size:20px; font-weight:600; }
+    .recipe-cost-table { border-collapse:separate; border-spacing:0 10px; }
+    .recipe-cost-table thead th { border:0; white-space:nowrap; }
+    .recipe-cost-table tbody tr { box-shadow:0 2px 10px rgba(38,48,74,.055); }
+    .recipe-cost-table tbody td { background:#fff; border-top:1px solid #edf0f5; border-bottom:1px solid #edf0f5; vertical-align:middle; padding-top:15px; padding-bottom:15px; }
+    .recipe-cost-table tbody td:first-child { border-left:1px solid #edf0f5; border-radius:9px 0 0 9px; }
+    .recipe-cost-table tbody td:last-child { border-right:1px solid #edf0f5; border-radius:0 9px 9px 0; }
+    .recipe-cost-table .quantity-input { min-width:135px; }
+    .recipe-cost-equation { min-width:335px; display:flex; align-items:center; flex-wrap:wrap; gap:7px; color:#737b91; }
+    .recipe-cost-equation strong { color:#26304a; }
+    .recipe-cost-equation .equation-total { color:#1bc5bd; font-size:15px; }
+    .recipe-cost-breakdown { min-width:210px; }
+    .recipe-cost-breakdown span { display:block; }
+    .recipe-cost-warning { cursor:pointer; border:0; }
+    .recipe-detail-trigger { display:block; width:100%; padding:0; border:0; background:transparent; color:inherit; text-align:left; }
+    .recipe-detail-trigger:hover strong, .recipe-detail-trigger:focus strong { color:#3699ff; }
+    .recipe-detail-trigger:focus { outline:0; }
+    .recipe-detail-hint { color:#3699ff; font-size:11px; font-weight:500; }
+    .recipe-detail-summary { display:grid; grid-template-columns:repeat(4,minmax(145px,1fr)); gap:12px; }
+    .recipe-detail-summary > div { border:1px solid #e8ecf2; border-radius:8px; padding:12px 14px; }
+    .recipe-detail-summary span { display:block; color:#9aa1b2; font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+    .recipe-detail-summary strong { display:block; margin-top:4px; color:#26304a; }
+    @@media (max-width:991.98px) {
+        .recipe-cost-controls { grid-template-columns:repeat(2,minmax(180px,1fr)); }
+        .recipe-cost-summary { grid-template-columns:repeat(2,minmax(150px,1fr)); }
+    }
+    @@media (max-width:575.98px) {
+        .recipe-cost-controls, .recipe-cost-summary { grid-template-columns:1fr; }
+        .recipe-cost-controls .control-action { padding-top:0; }
+    }
+</style>
+
+<form asp-action="Kaydet" method="post" id="recipeCostForm" novalidate>
+@Html.AntiForgeryToken()
+@if (TempData["error"] != null)
+{
+    <div class="alert alert-light-danger mb-6" role="alert">
+        <strong>Kayıt yapılamadı.</strong> @TempData["error"]
+    </div>
+}
+@if (TempData["success"] != null)
+{
+    <div class="alert alert-light-success mb-6" role="alert">@TempData["success"]</div>
+}
+<div id="saveValidationAlert" class="alert alert-light-danger mb-6 d-none" role="alert"></div>
+<div class="card card-custom mb-6">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Reçete Maliyet Hesabı
+                <span class="d-block text-muted pt-2 font-size-sm">Tüm reçeteler için üretim miktarı ve genel gider simülasyonu</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <a asp-controller="MaterialReferenceCost" asp-action="ExcelAktar" class="btn btn-light-primary mr-3">Excel'den Maliyet Al</a>
+            <a asp-controller="MaterialReferenceCost" asp-action="Index" class="btn btn-light-primary mr-3">Referans Maliyetler</a>
+            <a asp-action="BirimDonusumleri" class="btn btn-light-primary mr-3">Birim Dönüşümleri</a>
+            <a asp-action="KayitliHesaplar" class="btn btn-light-primary mr-3">Kayıtlı Hesaplar</a>
+            <span class="label label-light-success label-inline mr-3">Otomatik hesaplama</span>
+            <span class="text-muted font-size-sm">Maliyet tarihi: @Model.CalculationDate.ToString("dd.MM.yyyy HH:mm")</span>
+            <button type="submit" id="saveCalculationButton" class="btn btn-primary ml-3">Hesabı Kaydet</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light-primary mb-7">
+            Reçete kalemlerinde önce transferler hariç son maliyetli gerçek depo girişi, bu yoksa tarihine göre geçerli referans maliyeti kullanılır; planlanan fire hesaba dahildir. Referans maliyet stok oluşturmaz. Sabit ve değişken giderler girilen toplam üretim miktarına göre dağıtılır ve hesap otomatik yenilenir.
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <label for="scenarioName" class="font-weight-bold">Çalışma Adı</label>
+                <input id="scenarioName" name="Name" value="@Model.ScenarioName" class="form-control form-control-lg" maxlength="250" required />
+                <span class="form-text text-muted">Kaydedilen maliyet çalışması bu adla listelenir.</span>
+            </div>
+        </div>
+        <div class="recipe-cost-controls">
+            <div>
+                <label for="fixedCost" class="font-weight-bold">Sabit Gider (TRY)</label>
+                <input id="fixedCost" name="FixedCost" type="text" inputmode="decimal" class="form-control form-control-lg cost-input" placeholder="0,00" autocomplete="off" />
+                <span class="form-text text-muted">Kira, amortisman vb. toplam dönem/parti gideri</span>
+            </div>
+            <div>
+                <label for="variableCost" class="font-weight-bold">Değişken Gider (TRY)</label>
+                <input id="variableCost" name="VariableCost" type="text" inputmode="decimal" class="form-control form-control-lg cost-input" placeholder="0,00" autocomplete="off" />
+                <span class="form-text text-muted">Enerji, ek işçilik vb. toplam gider</span>
+            </div>
+            <div>
+                <label for="defaultQuantity" class="font-weight-bold">Varsayılan Üretim Miktarı</label>
+                <input id="defaultQuantity" name="DefaultProductionQuantity" type="text" inputmode="decimal" class="form-control form-control-lg" placeholder="0" autocomplete="off" />
+                <span class="form-text text-muted">Girilen miktar listedeki bütün ürünlere uygulanır</span>
+            </div>
+            <div>
+                <label for="recipeSearch" class="font-weight-bold">Listede Ara</label>
+                <input id="recipeSearch" type="search" class="form-control form-control-lg" placeholder="Ürün veya reçete kodu/adı..." autocomplete="off" />
+                <span class="form-text text-muted">Ürün kodu, ürün adı veya reçete koduyla arayın</span>
+            </div>
+            <div class="control-action">
+                <button id="clearCalculation" type="button" class="btn btn-light btn-lg btn-block">Temizle</button>
+            </div>
+        </div>
+
+        <div class="recipe-cost-summary mt-2">
+            <div class="summary-box"><span class="summary-label">Toplam Üretim</span><span id="totalProduction" class="summary-value">0</span></div>
+            <div class="summary-box"><span class="summary-label">Reçete Maliyeti</span><span id="totalRecipeCost" class="summary-value">₺0,00</span></div>
+            <div class="summary-box"><span class="summary-label">Dağıtılan Genel Gider</span><span id="totalAllocatedCost" class="summary-value">₺0,00</span></div>
+            <div class="summary-box"><span class="summary-label">Toplam Gider</span><span id="grandTotalCost" class="summary-value text-primary">₺0,00</span></div>
+        </div>
+
+        <div id="allocationNote" class="text-muted mt-4">Üretim miktarı girildiğinde gider payları hesaplanır.</div>
+    </div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header py-3">
+        <div class="card-title">
+            <h3 class="card-label">Ürünler (@Model.Rows.Count)</h3>
+        </div>
+    </div>
+    <div class="card-body pt-3">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="alert alert-light-warning mb-0">Maliyet hesabına alınabilecek reçete bulunamadı.</div>
+        }
+        else
+        {
+            @if (Model.MissingCostProductCount > 0)
+            {
+                <div class="alert alert-light-warning">
+                    <strong>@Model.MissingCostProductCount ürünün</strong> en az bir reçete kaleminde gerçek depo giriş maliyeti, referans maliyet veya eski maliyet kartı bulunamadı. Bu satırların hesapları eksik maliyet üzerinden gösterilir.
+                </div>
+            }
+            <div class="table-responsive">
+                <table class="table recipe-cost-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Ürün / Reçete</th>
+                            <th>Üretim Miktarı</th>
+                            <th>Birim Reçete Maliyeti</th>
+                            <th>Toplam Maliyet Dağılımı</th>
+                            <th>Toplam Birim Maliyet</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @for (var rowIndex = 0; rowIndex < Model.Rows.Count; rowIndex++)
+                    {
+                        var row = Model.Rows[rowIndex];
+                        var searchText = $"{row.ProductCode} {row.ProductName} {row.RecipeCode}".ToLowerInvariant();
+                        <tr class="recipe-row"
+                            data-version-id="@row.RecipeVersionId"
+                            data-search="@searchText"
+                            data-raw-unit-cost="@row.RawMaterialUnitCost.ToString(invariant)"
+                            data-packaging-unit-cost="@row.PackagingUnitCost.ToString(invariant)"
+                            data-recipe-unit-cost="@row.RecipeUnitCost.ToString(invariant)">
+                            <td>
+                                <button type="button" class="recipe-detail-trigger"
+                                        data-toggle="modal" data-target="#recipeCostDetailModal-@row.RecipeVersionId"
+                                        aria-label="@row.ProductCode reçete maliyet detayını göster">
+                                    <strong>@row.ProductCode</strong>
+                                    <span class="d-block text-dark-75">@row.ProductName</span>
+                                    <span class="d-block text-muted font-size-sm">@row.RecipeCode · v@(row.VersionNumber) · @row.RecipeStatus.ToTurkish() · Baz: @row.BaseQuantity.ToString("0.######") @row.ProductionUnit</span>
+                                    <span class="d-block recipe-detail-hint mt-1">Malzeme ve fiyat detayını göster</span>
+                                </button>
+                                @if (row.MissingCostCount > 0)
+                                {
+                                    <button type="button" class="label label-light-warning label-inline mt-2 recipe-cost-warning"
+                                            data-toggle="modal" data-target="#missingCostModal-@row.RecipeVersionId">
+                                        @row.MissingCostCount eksik maliyet · Detayı gör
+                                    </button>
+                                }
+                            </td>
+                            <td>
+                                <div class="input-group quantity-input">
+                                    <input type="hidden" name="Lines[@rowIndex].RecipeVersionId" value="@row.RecipeVersionId" />
+                                    <input type="text" name="Lines[@rowIndex].ProductionQuantity" inputmode="decimal" class="form-control production-quantity" placeholder="0" autocomplete="off" aria-label="@row.ProductCode üretim miktarı" />
+                                    <div class="input-group-append"><span class="input-group-text">@row.ProductionUnit</span></div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="recipe-cost-breakdown">
+                                    <span>Hammadde: <strong>@row.RawMaterialUnitCost.ToString("N4") TRY</strong> <small class="text-muted">(@row.RawMaterialCount kalem)</small></span>
+                                    <span>Ambalaj: <strong>@row.PackagingUnitCost.ToString("N4") TRY</strong> <small class="text-muted">(@row.PackagingCount kalem)</small></span>
+                                    <span class="mt-1">Toplam: <strong>@row.RecipeUnitCost.ToString("N4") TRY</strong></span>
+                                    <span class="text-muted font-size-xs mt-1">Kaynak: @row.StockCostItemCount gerçek stok · @row.ReferenceCostItemCount referans @if (row.LegacyCostItemCount > 0) { <text> · @row.LegacyCostItemCount eski kart</text> }</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="recipe-cost-equation">
+                                    <span class="row-material-total">₺0,00</span>
+                                    <span>+</span>
+                                    <span class="row-variable-share">₺0,00</span>
+                                    <span>+</span>
+                                    <span class="row-fixed-share">₺0,00</span>
+                                    <span>=</span>
+                                    <strong class="row-total equation-total">₺0,00</strong>
+                                </div>
+                                <span class="d-block text-muted font-size-xs mt-1">Reçete + değişken gider + sabit gider</span>
+                            </td>
+                            <td><strong class="row-unit-total">₺@row.RecipeUnitCost.ToString("N4")</strong><span class="d-block text-muted">/@row.ProductionUnit</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div id="noSearchResult" class="alert alert-light-warning mt-5 mb-0" style="display:none">Aramayla eşleşen ürün bulunamadı.</div>
+
+            @foreach (var row in Model.Rows)
+            {
+                var baseRecipeCost = row.CostItems.Sum(x => x.ItemCost);
+                <div class="modal fade" id="recipeCostDetailModal-@row.RecipeVersionId" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <div>
+                                    <h5 class="modal-title">Reçete Maliyet Detayı</h5>
+                                    <span class="text-muted">@row.ProductCode - @row.ProductName · @row.RecipeCode v@(row.VersionNumber)</span>
+                                </div>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-light-primary">
+                                    @Model.CalculationDate.ToString("dd.MM.yyyy HH:mm") anındaki maliyet kaynakları gösteriliyor. Fireli reçete miktarı, fiyat kaynağının birimine çevrilerek kullanılan birim fiyatla çarpılır.
+                                </div>
+                                <div class="recipe-detail-summary mb-5">
+                                    <div><span>Baz reçete</span><strong>@row.BaseQuantity.ToString("N6") @row.ProductionUnit</strong></div>
+                                    <div><span>Baz reçete maliyeti</span><strong>@baseRecipeCost.ToString("N4") TRY</strong></div>
+                                    <div><span>Hammadde / Ambalaj</span><strong>@row.RawMaterialUnitCost.ToString("N4") / @row.PackagingUnitCost.ToString("N4") TRY</strong></div>
+                                    <div><span>Toplam birim maliyet</span><strong>@row.RecipeUnitCost.ToString("N4") TRY / @row.ProductionUnit</strong></div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-separate table-head-custom mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Malzeme</th>
+                                                <th>Reçete / Fire</th>
+                                                <th>Fiyatlandırılan Miktar</th>
+                                                <th>Kullanılan Birim Fiyat</th>
+                                                <th>Kaynak</th>
+                                                <th class="text-right">Maliyet Etkisi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        @foreach (var item in row.CostItems)
+                                        {
+                                            <tr class="@(!item.IncludedInCalculation ? "table-warning" : string.Empty)">
+                                                <td>
+                                                    <strong>@item.MaterialCode</strong>
+                                                    <span class="d-block text-muted">@item.MaterialName</span>
+                                                    <span class="label label-light-primary label-inline mt-1">@item.MaterialType</span>
+                                                </td>
+                                                <td>
+                                                    <span class="d-block">@item.RecipeQuantity.ToString("N6") @item.RecipeUnit</span>
+                                                    <small class="d-block text-muted">%@item.PlannedWasteRate.ToString("N2") fire → @item.CostQuantity.ToString("N6") @item.RecipeUnit</small>
+                                                </td>
+                                                <td>
+                                                    @if (item.PricedQuantity.HasValue)
+                                                    {
+                                                        <strong>@item.PricedQuantity.Value.ToString("N6") @item.CostUnit</strong>
+                                                        @if (!string.Equals(item.RecipeUnit, item.CostUnit, StringComparison.OrdinalIgnoreCase))
+                                                        {
+                                                            <small class="d-block text-muted">Birim dönüşümü uygulandı</small>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-danger">Fiyatlandırılamadı</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (item.UnitCostTry.HasValue)
+                                                    {
+                                                        <strong>@item.UnitCostTry.Value.ToString("N6") TRY</strong>
+                                                        <small class="d-block text-muted">/@item.CostUnit</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-danger">Maliyet yok</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <span class="label @(item.IncludedInCalculation ? "label-light-success" : "label-light-warning") label-inline">@item.CostSource</span>
+                                                    @if (!string.IsNullOrWhiteSpace(item.CostSourceDetail))
+                                                    {
+                                                        <small class="d-block text-muted mt-1">@item.CostSourceDetail</small>
+                                                    }
+                                                    @if (!string.IsNullOrWhiteSpace(item.Reason))
+                                                    {
+                                                        <small class="d-block text-danger mt-1">@item.Reason</small>
+                                                    }
+                                                </td>
+                                                <td class="text-right">
+                                                    <strong>@item.ItemCost.ToString("N4") TRY</strong>
+                                                    <small class="d-block text-muted">Birim ürüne: @item.ProductUnitCostContribution.ToString("N4") TRY</small>
+                                                </td>
+                                            </tr>
+                                        }
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="5" class="text-right">Baz reçete toplamı</th>
+                                                <th class="text-right">@baseRecipeCost.ToString("N4") TRY</th>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="5" class="text-right">Ürün birim maliyeti</th>
+                                                <th class="text-right text-primary">@row.RecipeUnitCost.ToString("N4") TRY / @row.ProductionUnit</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-dismiss="modal">Kapat</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @foreach (var row in Model.Rows.Where(x => x.MissingCostCount > 0))
+            {
+                <div class="modal fade" id="missingCostModal-@row.RecipeVersionId" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <div>
+                                    <h5 class="modal-title">Eksik Maliyet Detayı</h5>
+                                    <span class="text-muted">@row.ProductCode - @row.ProductName · @row.RecipeCode v@(row.VersionNumber)</span>
+                                </div>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-light-warning">
+                                    Aşağıdaki kalemler ürün maliyetine dahil edilmedi. Fiziksel stok oluşturmadan değer vermek için referans maliyeti girebilir; malzeme gerçekten geldiyse maliyetli depo girişi kullanabilirsiniz.
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-separate table-head-custom mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Malzeme</th>
+                                                <th>Tür</th>
+                                                <th>Reçete Miktarı</th>
+                                                <th>Fire</th>
+                                                <th>Maliyete Esas Miktar</th>
+                                                <th>Neden / İşlem</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        @foreach (var missing in row.MissingCosts)
+                                        {
+                                            <tr>
+                                                <td><strong>@missing.MaterialCode</strong><span class="d-block text-muted">@missing.MaterialName</span></td>
+                                                <td>@missing.MaterialType</td>
+                                                <td>@missing.RecipeQuantity.ToString("N6") @missing.Unit</td>
+                                                <td>%@missing.PlannedWasteRate.ToString("N2")</td>
+                                                <td><strong>@missing.CostQuantity.ToString("N6") @missing.Unit</strong></td>
+                                                <td>
+                                                    <span class="d-block text-danger mb-2">@missing.Reason</span>
+                                                    <a asp-controller="MaterialReferenceCost" asp-action="Yeni"
+                                                       asp-route-materialId="@missing.MaterialId"
+                                                       asp-route-returnUrl="@costReturnUrl"
+                                                       class="btn btn-sm btn-primary mr-2">Referans Maliyeti Gir</a>
+                                                    <a asp-controller="ProductionInventory" asp-action="Yeni"
+                                                       asp-route-type="@PrdInventoryDocumentType.Opening"
+                                                       asp-route-materialId="@missing.MaterialId"
+                                                       class="btn btn-sm btn-light-primary">Gerçek Stok Girişi Aç</a>
+                                                </td>
+                                            </tr>
+                                        }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-dismiss="modal">Kapat</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+</form>
+
+<script>
+(function () {
+    'use strict';
+    const fixedInput = document.getElementById('fixedCost');
+    const variableInput = document.getElementById('variableCost');
+    const defaultQuantityInput = document.getElementById('defaultQuantity');
+    const scenarioNameInput = document.getElementById('scenarioName');
+    const searchInput = document.getElementById('recipeSearch');
+    const form = document.getElementById('recipeCostForm');
+    const saveButton = document.getElementById('saveCalculationButton');
+    const saveValidationAlert = document.getElementById('saveValidationAlert');
+    const rows = Array.from(document.querySelectorAll('.recipe-row'));
+    if (!fixedInput || !variableInput) return;
+
+    const money = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const unitMoney = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 4, maximumFractionDigits: 4 });
+    const quantityFormat = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 6 });
+    const draftKey = 'recipe-cost-calculation-draft-v1';
+
+    function numberOf(value) {
+        let text = (value || '').toString().trim().replace(/\s/g, '');
+        if (!text) return 0;
+        const comma = text.lastIndexOf(',');
+        const dot = text.lastIndexOf('.');
+        if (comma >= 0 && dot >= 0) {
+            text = comma > dot ? text.replace(/\./g, '').replace(',', '.') : text.replace(/,/g, '');
+        } else if (comma >= 0) {
+            text = text.replace(',', '.');
+        }
+        const valueNumber = Number(text);
+        return Number.isFinite(valueNumber) && valueNumber > 0 ? valueNumber : 0;
+    }
+
+    function recalculate() {
+        const fixedCost = numberOf(fixedInput.value);
+        const variableCost = numberOf(variableInput.value);
+        const quantities = rows.map(row => numberOf(row.querySelector('.production-quantity').value));
+        const totalQuantity = quantities.reduce((sum, value) => sum + value, 0);
+        let totalRecipe = 0;
+
+        rows.forEach((row, index) => {
+            const quantity = quantities[index];
+            const recipeUnitCost = Number(row.dataset.recipeUnitCost || 0);
+            const materialTotal = recipeUnitCost * quantity;
+            const ratio = totalQuantity > 0 ? quantity / totalQuantity : 0;
+            const variableShare = variableCost * ratio;
+            const fixedShare = fixedCost * ratio;
+            const total = materialTotal + variableShare + fixedShare;
+            const totalUnit = quantity > 0 ? total / quantity : recipeUnitCost;
+            totalRecipe += materialTotal;
+
+            row.querySelector('.row-material-total').textContent = money.format(materialTotal);
+            row.querySelector('.row-variable-share').textContent = money.format(variableShare);
+            row.querySelector('.row-fixed-share').textContent = money.format(fixedShare);
+            row.querySelector('.row-total').textContent = money.format(total);
+            row.querySelector('.row-unit-total').textContent = unitMoney.format(totalUnit);
+        });
+
+        const allocated = totalQuantity > 0 ? fixedCost + variableCost : 0;
+        document.getElementById('totalProduction').textContent = quantityFormat.format(totalQuantity);
+        document.getElementById('totalRecipeCost').textContent = money.format(totalRecipe);
+        document.getElementById('totalAllocatedCost').textContent = money.format(allocated);
+        document.getElementById('grandTotalCost').textContent = money.format(totalRecipe + allocated);
+        document.getElementById('allocationNote').textContent = totalQuantity > 0
+            ? 'Birim başına dağıtım: ' + money.format(variableCost / totalQuantity) + ' değişken + ' + money.format(fixedCost / totalQuantity) + ' sabit gider.'
+            : 'Üretim miktarı girildiğinde gider payları hesaplanır.';
+        saveDraft();
+    }
+
+    function saveDraft() {
+        const quantities = {};
+        rows.forEach(row => quantities[row.dataset.versionId] = row.querySelector('.production-quantity').value);
+        localStorage.setItem(draftKey, JSON.stringify({
+            fixedCost: fixedInput.value,
+            variableCost: variableInput.value,
+            defaultQuantity: defaultQuantityInput.value,
+            scenarioName: scenarioNameInput.value,
+            quantities: quantities
+        }));
+    }
+
+    function restoreDraft() {
+        try {
+            const draft = JSON.parse(localStorage.getItem(draftKey) || 'null');
+            if (!draft) return;
+            fixedInput.value = draft.fixedCost || '';
+            variableInput.value = draft.variableCost || '';
+            defaultQuantityInput.value = draft.defaultQuantity || '';
+            if (draft.scenarioName) scenarioNameInput.value = draft.scenarioName;
+            rows.forEach(row => {
+                const saved = draft.quantities && draft.quantities[row.dataset.versionId];
+                if (saved !== undefined) row.querySelector('.production-quantity').value = saved;
+            });
+        } catch (_) {
+            localStorage.removeItem(draftKey);
+        }
+    }
+
+    function filterRows() {
+        const query = (searchInput.value || '').trim().toLocaleLowerCase('tr-TR');
+        let visible = 0;
+        rows.forEach(row => {
+            const matches = !query || (row.dataset.search || '').toLocaleLowerCase('tr-TR').includes(query);
+            row.style.display = matches ? '' : 'none';
+            if (matches) visible++;
+        });
+        const empty = document.getElementById('noSearchResult');
+        if (empty) empty.style.display = visible === 0 ? '' : 'none';
+    }
+
+    document.querySelectorAll('.cost-input, .production-quantity').forEach(input => input.addEventListener('input', recalculate));
+    scenarioNameInput.addEventListener('input', saveDraft);
+    defaultQuantityInput.addEventListener('input', function () {
+        rows.forEach(row => row.querySelector('.production-quantity').value = defaultQuantityInput.value);
+        recalculate();
+    });
+    searchInput.addEventListener('input', filterRows);
+    document.getElementById('clearCalculation').addEventListener('click', function () {
+        fixedInput.value = '';
+        variableInput.value = '';
+        defaultQuantityInput.value = '';
+        searchInput.value = '';
+        rows.forEach(row => row.querySelector('.production-quantity').value = '');
+        localStorage.removeItem(draftKey);
+        filterRows();
+        recalculate();
+    });
+    form.addEventListener('submit', function (event) {
+        const messages = [];
+        if (!(scenarioNameInput.value || '').trim()) messages.push('Maliyet çalışması için bir çalışma adı giriniz.');
+        const hasProductionQuantity = rows.some(row => numberOf(row.querySelector('.production-quantity').value) > 0);
+        if (!hasProductionQuantity) messages.push('Kaydetmek için en az bir ürünün üretim miktarını sıfırdan büyük giriniz.');
+        if (messages.length > 0) {
+            event.preventDefault();
+            saveValidationAlert.innerHTML = '<strong>Kayıt yapılamadı.</strong><br>' + messages.join('<br>');
+            saveValidationAlert.classList.remove('d-none');
+            saveValidationAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (!(scenarioNameInput.value || '').trim()) scenarioNameInput.focus();
+            return;
+        }
+
+        saveValidationAlert.classList.add('d-none');
+        if (!(fixedInput.value || '').trim()) fixedInput.value = '0';
+        if (!(variableInput.value || '').trim()) variableInput.value = '0';
+        if (!(defaultQuantityInput.value || '').trim()) defaultQuantityInput.value = '0';
+        saveDraft();
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<span class="spinner spinner-white mr-3"></span>Kaydediliyor...';
+    });
+    restoreDraft();
+    recalculate();
+})();
+</script>

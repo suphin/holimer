@@ -12,7 +12,7 @@
     </div>
     @if (Model.Versions.Count > 0)
     {
-        <div class="card-body py-4"><div class="d-flex flex-wrap align-items-center"><strong class="mr-4">Versiyonlar:</strong>@foreach(var version in Model.Versions){var active=version.Id==Model.SelectedSetId;<a asp-action="Detay" asp-route-materialId="@Model.MaterialId" asp-route-setId="@version.Id" class="btn btn-sm @(active ? "btn-primary" : "btn-light") mr-2 mb-2">v@version.VersionNumber · @version.Status.ToTurkish() · @version.ItemCount madde</a>}</div></div>
+        <div class="card-body py-4"><div class="d-flex flex-wrap align-items-center"><strong class="mr-4">Versiyonlar:</strong>@foreach(var version in Model.Versions){var active=version.Id==Model.SelectedSetId;<a asp-action="Detay" asp-route-materialId="@Model.MaterialId" asp-route-setId="@version.Id" class="btn btn-sm @(active ? "btn-primary" : "btn-light") mr-2 mb-2">v@(version.VersionNumber) · @version.Status.ToTurkish() · @version.ItemCount madde</a>}</div></div>
     }
 </div>
 
@@ -25,10 +25,10 @@ else
     <form asp-action="BaslikKaydet" method="post">
         <input asp-for="Set.Id" name="Id" type="hidden"/><input asp-for="Set.MaterialId" name="MaterialId" type="hidden"/>
         <div class="card card-custom mb-5">
-            <div class="card-header"><div class="card-title"><h3 class="card-label">@Model.Set.SpecificationCode · v@Model.Set.VersionNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.Set.Status.ToTurkish()</span></h3></div><div class="card-toolbar"><span class="label @(Model.Set.Status == Ekomers.Models.Enums.PrdSpecificationSetStatus.Active ? "label-light-success" : Model.Set.Status == Ekomers.Models.Enums.PrdSpecificationSetStatus.Draft ? "label-light-primary" : "label-light") label-inline">@Model.Set.Status.ToTurkish()</span></div></div>
+            <div class="card-header"><div class="card-title"><h3 class="card-label">@Model.Set.SpecificationCode · v@(Model.Set.VersionNumber)<span class="d-block text-muted pt-2 font-size-sm">@Model.Set.Status.ToTurkish()</span></h3></div><div class="card-toolbar"><span class="label @(Model.Set.Status == Ekomers.Models.Enums.PrdSpecificationSetStatus.Active ? "label-light-success" : Model.Set.Status == Ekomers.Models.Enums.PrdSpecificationSetStatus.Draft ? "label-light-primary" : "label-light") label-inline">@Model.Set.Status.ToTurkish()</span></div></div>
             <div class="card-body"><div class="row">
                 <div class="col-md-3 form-group"><label asp-for="Set.SpecificationCode"></label><input asp-for="Set.SpecificationCode" name="SpecificationCode" class="form-control" readonly="@(!isDraft)"/></div>
-                <div class="col-md-2 form-group"><label>Versiyon</label><input value="v@Model.Set.VersionNumber" class="form-control" readonly/></div>
+                <div class="col-md-2 form-group"><label>Versiyon</label><input value="v@(Model.Set.VersionNumber)" class="form-control" readonly/></div>
                 <div class="col-md-3 form-group"><label asp-for="Set.ValidFrom"></label><input asp-for="Set.ValidFrom" name="ValidFrom" type="date" class="form-control" readonly="@(!isDraft)"/></div>
                 <div class="col-md-3 form-group"><label asp-for="Set.ValidTo"></label><input asp-for="Set.ValidTo" name="ValidTo" type="date" class="form-control" readonly="@(!isDraft)"/></div>
                 <div class="col-12 form-group"><label asp-for="Set.Notes"></label><textarea asp-for="Set.Notes" name="Notes" class="form-control" rows="2" readonly="@(!isDraft)"></textarea></div>

@@ -9,6 +9,19 @@ public class PrdUnit : BaseEntity
     public string Name { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Bir kaynak birimin kaç hedef birime karşılık geldiğini tanımlar.
+/// MaterialId boşsa genel, doluysa yalnızca ilgili malzeme için geçerlidir.
+/// </summary>
+public class PrdUnitConversion : BaseEntity
+{
+    public int? MaterialId { get; set; }
+    public int FromUnitId { get; set; }
+    public int ToUnitId { get; set; }
+    public decimal Factor { get; set; }
+    public string? Description { get; set; }
+}
+
 public class PrdMaterial : BaseEntity
 {
     public string Code { get; set; } = string.Empty;
@@ -24,6 +37,43 @@ public class PrdMaterial : BaseEntity
     public PrdQualityControlRequirement QualityControlRequirement { get; set; } = PrdQualityControlRequirement.NotRequired;
     public decimal? CriticalQuantity { get; set; }
     public string? Description { get; set; }
+}
+
+/// <summary>
+/// Fiziksel stok hareketi oluşturmadan reçete maliyetlendirmesinde kullanılacak
+/// tarihsel malzeme birim maliyetidir.
+/// </summary>
+public class PrdMaterialReferenceCost : BaseEntity
+{
+    public int MaterialId { get; set; }
+    public int VersionNumber { get; set; }
+    public int UnitId { get; set; }
+    public decimal UnitCost { get; set; }
+    public string CurrencyCode { get; set; } = "TRY";
+    public decimal ExchangeRate { get; set; } = 1m;
+    public decimal UnitCostTry { get; set; }
+    public DateTime ValidFrom { get; set; }
+    public DateTime? ValidTo { get; set; }
+    public PrdMaterialReferenceCostSource Source { get; set; } = PrdMaterialReferenceCostSource.Manual;
+    public int? ImportBatchId { get; set; }
+    public string? SourceSheet { get; set; }
+    public int? SourceRow { get; set; }
+    public string? Notes { get; set; }
+}
+
+/// <summary>
+/// Excel'den alınan referans maliyetlerinin toplu aktarım başlığıdır.
+/// Satırlar sonradan yeni maliyet versiyonu oluşturularak düzeltilebilir.
+/// </summary>
+public class PrdMaterialReferenceCostImportBatch : BaseEntity
+{
+    public string BatchNumber { get; set; } = string.Empty;
+    public string FileName { get; set; } = string.Empty;
+    public DateTime ValidFrom { get; set; }
+    public int ImportedCount { get; set; }
+    public int ReviewCount { get; set; }
+    public int SkippedCount { get; set; }
+    public string? Notes { get; set; }
 }
 
 public class PrdMaterialSpecificationSet : BaseEntity
@@ -187,6 +237,36 @@ public class PrdRecipeItem : BaseEntity
     public string? Notes { get; set; }
 }
 
+public class PrdRecipeCostScenario : BaseEntity
+{
+    public string ScenarioNumber { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public DateTime CalculationDate { get; set; }
+    public decimal DefaultProductionQuantity { get; set; }
+    public decimal FixedCost { get; set; }
+    public decimal VariableCost { get; set; }
+    public decimal TotalProductionQuantity { get; set; }
+    public decimal TotalRecipeCost { get; set; }
+    public decimal TotalCost { get; set; }
+}
+
+public class PrdRecipeCostScenarioLine : BaseEntity
+{
+    public int ScenarioId { get; set; }
+    public int RecipeVersionId { get; set; }
+    public string ProductCode { get; set; } = string.Empty;
+    public string ProductName { get; set; } = string.Empty;
+    public string ProductionUnit { get; set; } = string.Empty;
+    public decimal ProductionQuantity { get; set; }
+    public decimal RawMaterialUnitCost { get; set; }
+    public decimal PackagingUnitCost { get; set; }
+    public decimal RecipeMaterialCost { get; set; }
+    public decimal VariableCostShare { get; set; }
+    public decimal FixedCostShare { get; set; }
+    public decimal TotalCost { get; set; }
+    public decimal TotalUnitCost { get; set; }
+}
+
 public class PrdRecipeHistory : BaseEntity
 {
     public int RecipeId { get; set; }
@@ -207,6 +287,9 @@ public class PrdProductionPlanHeader : BaseEntity
     public DateTime? CalculatedDate { get; set; }
     public DateTime? LockedDate { get; set; }
     public string? LockedUserId { get; set; }
+    public int? PurchaseRequestId { get; set; }
+    public string? PurchaseRequestNumber { get; set; }
+    public DateTime? PurchaseRequestCreatedDate { get; set; }
     public string? Notes { get; set; }
 }
 
@@ -239,6 +322,43 @@ public class PrdProductionPlanRequirement : BaseEntity
     public decimal AvailableStockQuantity { get; set; }
     public decimal ShortageQuantity { get; set; }
     public DateTime CalculationDate { get; set; }
+}
+
+public class PrdCustomerOrder : BaseEntity
+{
+    public string OrderNumber { get; set; } = string.Empty;
+    public string? ExternalOrderNumber { get; set; }
+    public string? CustomerCode { get; set; }
+    public string CustomerName { get; set; } = string.Empty;
+    public DateTime OrderDate { get; set; }
+    public DateTime RequestedDeliveryDate { get; set; }
+    public PrdCustomerOrderPriority Priority { get; set; } = PrdCustomerOrderPriority.Normal;
+    public PrdCustomerOrderStatus Status { get; set; } = PrdCustomerOrderStatus.Draft;
+    public string? Notes { get; set; }
+    public DateTime? SubmittedDate { get; set; }
+    public string? SubmittedUserId { get; set; }
+    public DateTime? CancelledDate { get; set; }
+    public string? CancelledUserId { get; set; }
+    public string? CancellationReason { get; set; }
+}
+
+public class PrdCustomerOrderLine : BaseEntity
+{
+    public int CustomerOrderId { get; set; }
+    public int Sequence { get; set; }
+    public int ProductMaterialId { get; set; }
+    public int UnitId { get; set; }
+    public decimal OrderedQuantity { get; set; }
+    public decimal CancelledQuantity { get; set; }
+    public DateTime? RequestedDeliveryDate { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class PrdProductionPlanOrderAllocation : BaseEntity
+{
+    public int CustomerOrderLineId { get; set; }
+    public int ProductionPlanId { get; set; }
+    public decimal PlannedQuantity { get; set; }
 }
 
 public class PrdProductionOrder : BaseEntity

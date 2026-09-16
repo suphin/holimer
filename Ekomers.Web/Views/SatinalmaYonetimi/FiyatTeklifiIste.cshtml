@@ -1,0 +1,246 @@
+@model Ekomers.Models.ViewModels.Purchasing.PriceRequestEmailComposeVM
+@using System.Text.Json
+@{ 
+    ViewData["Title"] = "Tedarikçiden Fiyat İste";
+    var templatesJson = JsonSerializer.Serialize(Model.Templates);
+    var suppliersJson = JsonSerializer.Serialize(Model.SupplierOptions);
+    var linesJson = JsonSerializer.Serialize(Model.Lines);
+}
+
+<style>
+    .price-request-lines-wrap {
+        overflow-x: auto;
+        padding: 0 1.75rem 1.25rem;
+    }
+
+    .price-request-lines {
+        width: 100%;
+        min-width: 850px;
+        table-layout: fixed;
+    }
+
+    .price-request-lines th,
+    .price-request-lines td {
+        padding: 1rem .75rem !important;
+        vertical-align: middle !important;
+    }
+
+    .price-request-lines th {
+        white-space: nowrap;
+    }
+
+    .price-request-lines .request-number,
+    .price-request-lines .quantity,
+    .price-request-lines .needed-date {
+        white-space: nowrap;
+    }
+
+    .price-request-lines .material-code {
+        color: #181c32;
+        font-weight: 600;
+    }
+
+    .price-request-lines .material-name {
+        margin-top: .25rem;
+        line-height: 1.35;
+    }
+
+    .supplier-select-field .select2-container {
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    .supplier-select-field .select2-selection__rendered {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .select2-results__option {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+</style>
+
+<form asp-action="FiyatTeklifiGonder" method="post" id="price-request-form">
+    @Html.AntiForgeryToken()
+    @foreach (var lineId in Model.RequestLineIds)
+    {
+        <input type="hidden" name="RequestLineIds" value="@lineId" />
+    }
+
+    <div class="card card-custom mb-6">
+        <div class="card-header flex-wrap border-0 pt-6 pb-0">
+            <div class="card-title">
+                <h3 class="card-label">
+                    Tedarikçiden Fiyat İste
+                    <span class="d-block text-muted pt-2 font-size-sm">Seçilen talepleri hazır e-posta taslağıyla tedarikçiye gönderin</span>
+                </h3>
+            </div>
+            <div class="card-toolbar">
+                <a asp-action="MailTaslaklari" class="btn btn-light-primary mr-2">E-posta Taslakları</a>
+                <a asp-action="TeklifTalepleri" class="btn btn-light mr-2">Vazgeç</a>
+                <button type="submit" class="btn btn-primary">Fiyat İsteğini Gönder</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+            <div class="row">
+                <div class="col-lg-5 form-group supplier-select-field">
+                    <label asp-for="SupplierId">Tedarikçi</label>
+                    <select asp-for="SupplierId" asp-items="Model.Suppliers" class="form-control kt_select2" id="supplier-select" data-live-search="true">
+                        <option value="">Tedarikçi seçiniz</option>
+                    </select>
+                    <span asp-validation-for="SupplierId" class="text-danger"></span>
+                    <small id="recipient-email" class="form-text text-muted">Alıcı e-posta adresi tedarikçi kartından alınır.</small>
+                </div>
+                <div class="col-lg-4 form-group">
+                    <label asp-for="TemplateId">E-posta Taslağı</label>
+                    <select asp-for="TemplateId" class="form-control" id="template-select">
+                        @foreach (var template in Model.Templates)
+                        {
+                            <option value="@template.Id">@template.Name@(template.IsDefault ? " (Varsayılan)" : string.Empty)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="TemplateId" class="text-danger"></span>
+                </div>
+                <div class="col-lg-3 form-group">
+                    <label asp-for="ResponseDeadline">Son Cevap Tarihi</label>
+                    <input asp-for="ResponseDeadline" type="date" class="form-control" id="response-deadline" />
+                    <span asp-validation-for="ResponseDeadline" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="alert alert-light-primary">
+                <div class="row">
+                    <div class="col-md-4"><strong>Gönderen:</strong> @Model.SenderName</div>
+                    <div class="col-md-4"><strong>E-posta:</strong> @(string.IsNullOrWhiteSpace(Model.SenderEmail) ? "Tanımlı değil" : Model.SenderEmail)</div>
+                    <div class="col-md-4"><strong>Kullanıcı hesabı:</strong> @Model.SenderAccount</div>
+                </div>
+                <small class="d-block mt-2 text-muted">Bu bilgiler gönderilen e-postanın imza bölümünde yer alır. Gerçek gönderici adresi sistemin SMTP hesabıdır.</small>
+            </div>
+
+            <div class="form-group mb-0">
+                <label asp-for="AdditionalNote">Ek Not</label>
+                <textarea asp-for="AdditionalNote" class="form-control" rows="3" id="additional-note" placeholder="Tedarikçiye iletilecek ek bilgi varsa yazınız"></textarea>
+                <span asp-validation-for="AdditionalNote" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-custom mb-6">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Talep Kalemleri (@Model.Lines.Count)</h3></div></div>
+        <div class="card-body p-0">
+            <div class="price-request-lines-wrap">
+                <table class="table table-separate table-head-custom mb-0 price-request-lines">
+                    <colgroup>
+                        <col style="width: 260px" />
+                        <col />
+                        <col style="width: 230px" />
+                        <col style="width: 170px" />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Talep No</th>
+                            <th>Malzeme</th>
+                            <th class="text-right">İstenen Miktar</th>
+                            <th class="text-center">İhtiyaç Tarihi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in Model.Lines)
+                        {
+                            <tr>
+                                <td class="request-number font-weight-medium">@line.RequestNumber</td>
+                                <td>
+                                    <span class="d-block material-code">@line.MaterialCode</span>
+                                    <span class="d-block text-muted material-name">@line.MaterialName</span>
+                                </td>
+                                <td class="text-right quantity font-weight-medium">@line.Quantity.ToString("N4") @line.Unit</td>
+                                <td class="text-center needed-date">@(line.NeededDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-custom">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">E-posta Önizleme</h3></div></div>
+        <div class="card-body">
+            <h5 id="preview-subject">@Model.PreviewSubject</h5>
+            <hr />
+            <div id="preview-body">@Html.Raw(Model.PreviewBodyHtml)</div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        (() => {
+            const templates = @Html.Raw(templatesJson);
+            const suppliers = @Html.Raw(suppliersJson);
+            const lines = @Html.Raw(linesJson);
+            const sender = {
+                name: @Html.Raw(JsonSerializer.Serialize(Model.SenderName)),
+                email: @Html.Raw(JsonSerializer.Serialize(Model.SenderEmail)),
+                account: @Html.Raw(JsonSerializer.Serialize(Model.SenderAccount))
+            };
+            const supplierSelect = document.getElementById('supplier-select');
+            const templateSelect = document.getElementById('template-select');
+            const deadline = document.getElementById('response-deadline');
+            const note = document.getElementById('additional-note');
+            const subject = document.getElementById('preview-subject');
+            const body = document.getElementById('preview-body');
+            const recipient = document.getElementById('recipient-email');
+
+            const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            const fmt = value => Number(value).toLocaleString('tr-TR', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+            const requestNumbers = [...new Set(lines.map(x => x.RequestNumber))].join(', ');
+            const table = `<table style="width:100%;border-collapse:collapse"><thead><tr><th style="border:1px solid #ddd;padding:8px;text-align:left">Talep</th><th style="border:1px solid #ddd;padding:8px;text-align:left">Malzeme</th><th style="border:1px solid #ddd;padding:8px;text-align:right">Miktar</th><th style="border:1px solid #ddd;padding:8px">Birim Fiyat</th><th style="border:1px solid #ddd;padding:8px">Teslim Süresi</th></tr></thead><tbody>${lines.map(x => `<tr><td style="border:1px solid #ddd;padding:8px">${esc(x.RequestNumber)}</td><td style="border:1px solid #ddd;padding:8px">${esc(x.MaterialCode)} - ${esc(x.MaterialName)}</td><td style="border:1px solid #ddd;padding:8px;text-align:right">${fmt(x.Quantity)} ${esc(x.Unit)}</td><td style="border:1px solid #ddd;padding:8px"></td><td style="border:1px solid #ddd;padding:8px"></td></tr>`).join('')}</tbody></table>`;
+
+            const render = () => {
+                const template = templates.find(x => x.Id === Number(templateSelect.value));
+                const supplier = suppliers.find(x => x.Id === Number(supplierSelect.value));
+                recipient.textContent = supplier?.Email ? `Alıcı: ${supplier.Email}` : 'Alıcı e-posta adresi tedarikçi kartından alınır.';
+                if (!template) return;
+                const deadlineText = deadline.value ? new Date(`${deadline.value}T00:00:00`).toLocaleDateString('tr-TR') : '-';
+                const replacements = {
+                    '{TEDARIKCI_ADI}': esc(supplier?.Name || 'Tedarikçi'),
+                    '{TALEP_NUMARALARI}': esc(requestNumbers),
+                    '{TALEP_TABLOSU}': table,
+                    '{SON_TARIH}': esc(deadlineText),
+                    '{EK_NOT}': note.value.trim() ? `<p><strong>Ek not:</strong> ${esc(note.value).replace(/\n/g, '<br>')}</p>` : '',
+                    '{GONDEREN_AD_SOYAD}': esc(sender.name),
+                    '{GONDEREN_EPOSTA}': esc(sender.email),
+                    '{KULLANICI_HESABI}': esc(sender.account)
+                };
+                let renderedSubject = template.SubjectTemplate;
+                let renderedBody = template.BodyTemplate;
+                Object.entries(replacements).forEach(([token, value]) => {
+                    renderedSubject = renderedSubject.split(token).join(value.replace(/<[^>]*>/g, ''));
+                    renderedBody = renderedBody.split(token).join(value);
+                });
+                subject.textContent = renderedSubject;
+                body.innerHTML = renderedBody;
+            };
+
+            supplierSelect.addEventListener('change', render);
+            templateSelect.addEventListener('change', render);
+            deadline.addEventListener('change', render);
+            note.addEventListener('input', render);
+            if (window.jQuery && jQuery.fn.select2) {
+                jQuery(supplierSelect)
+                    .select2({
+                        width: '100%',
+                        placeholder: 'Tedarikçi kodu, adı veya e-posta ile arayın',
+                        allowClear: true
+                    })
+                    .on('select2:select select2:clear', render);
+            }
+            render();
+        })();
+    </script>
+}

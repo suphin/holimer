@@ -1,0 +1,33 @@
+@model Ekomers.Models.ViewModels.Production.MaterialReferenceCostImportBatchDetailVM
+@{
+    ViewData["Title"] = "Toplu Maliyet Aktarım Detayı";
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+
+<div class="card card-custom mb-6">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">@Model.BatchNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.FileName</span></h3></div>
+        <div class="card-toolbar"><a asp-action="TopluAktarimlar" class="btn btn-light">Aktarımlara Dön</a></div>
+    </div>
+    <div class="card-body">
+        <div class="row"><div class="col-md-3"><strong>Geçerlilik</strong><span class="d-block">@Model.ValidFrom.ToString("dd.MM.yyyy")</span></div><div class="col-md-3"><strong>Alınan</strong><span class="d-block text-success">@Model.ImportedCount kayıt</span></div><div class="col-md-3"><strong>Kontrol / Atlanan</strong><span class="d-block">@Model.ReviewCount / @Model.SkippedCount</span></div><div class="col-md-3"><strong>Kayıt</strong><span class="d-block">@Model.CreateDate?.ToString("dd.MM.yyyy HH:mm") · @Model.CreatedUser</span></div></div>
+        @if (!string.IsNullOrWhiteSpace(Model.Notes)) { <div class="text-muted mt-4">@Model.Notes</div> }
+    </div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header py-3"><div class="card-title"><h3 class="card-label">Aktarılan Maliyetler (@Model.Rows.Count)</h3></div></div>
+    <div class="card-body">
+        <div class="alert alert-light-primary">Aktarım kaydı değiştirilmez. <strong>Düzelt / Yeni Versiyon</strong> işlemi eski değeri ve kaynağını koruyarak yeni bir maliyet versiyonu oluşturur.</div>
+        <div class="table-responsive"><table class="table table-separate table-head-custom">
+            <thead><tr><th>Malzeme</th><th>Kaynak</th><th>Maliyet</th><th>Versiyon / Geçerlilik</th><th>İşlem</th></tr></thead>
+            <tbody>@foreach (var row in Model.Rows) { <tr>
+                <td><strong>@row.MaterialCode</strong><span class="d-block text-muted">@row.MaterialName</span></td>
+                <td>@row.SourceSheet · satır @row.SourceRow</td>
+                <td><strong>@row.UnitCostTry.ToString("N6") TRY / @row.Unit</strong></td>
+                <td>v@(row.VersionNumber) · @row.ValidFrom.ToString("dd.MM.yyyy")<span class="d-block text-muted">@(row.ValidTo?.ToString("dd.MM.yyyy") ?? "Devam ediyor")</span></td>
+                <td><a asp-action="Yeni" asp-route-materialId="@row.MaterialId" asp-route-returnUrl="@returnUrl" class="btn btn-sm btn-primary">Düzelt / Yeni Versiyon</a><a asp-action="Detay" asp-route-materialId="@row.MaterialId" class="btn btn-sm btn-light-primary ml-1">Tüm Geçmiş</a></td>
+            </tr> }</tbody>
+        </table></div>
+    </div>
+</div>

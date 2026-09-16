@@ -1,0 +1,116 @@
+@model Ekomers.Models.ViewModels.PersonalPlannerVM
+@using Ekomers.Models.Enums
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Notlarım ve Takvimim";
+    string PriorityText(PersonalWorkItemPriority value) => value switch { PersonalWorkItemPriority.Low => "Düşük", PersonalWorkItemPriority.High => "Yüksek", PersonalWorkItemPriority.Urgent => "Acil", _ => "Normal" };
+    string PriorityClass(PersonalWorkItemPriority value) => value switch { PersonalWorkItemPriority.Low => "label-light-info", PersonalWorkItemPriority.High => "label-light-warning", PersonalWorkItemPriority.Urgent => "label-light-danger", _ => "label-light-primary" };
+    var calendarJson = JsonSerializer.Serialize(Model.CalendarEvents, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+}
+
+@section CSSection {
+    <link href="~/assets1/plugins/custom/fullcalendar/fullcalendar.bundle.css" rel="stylesheet" type="text/css" />
+    <style>
+        .planner-stat { border: 0; border-radius: 16px; box-shadow: 0 8px 24px rgba(31,45,61,.06); }
+        .planner-stat .display-4 { font-size: 2rem; font-weight: 600; }
+        .planner-note { border: 1px solid #edf0f5; border-left: 4px solid #8950fc; border-radius: 12px; transition: .2s ease; }
+        .planner-note:hover { box-shadow: 0 8px 22px rgba(31,45,61,.08); transform: translateY(-1px); }
+        .planner-task-completed { opacity: .62; }
+        .planner-task-completed .task-title { text-decoration: line-through; }
+        #personalCalendar { min-height: 650px; }
+        #personalCalendar .fc-toolbar h2 { font-size: 1.25rem; font-weight: 600; }
+        #personalCalendar .fc-event { cursor: pointer; border-radius: 5px; padding: 2px 4px; }
+        .planner-empty { padding: 3rem 1rem; text-align: center; color: #b5b5c3; }
+    </style>
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-6">
+    <div><h2 class="font-weight-bolder mb-1">Notlarım ve Takvimim</h2><span class="text-muted">Kişisel notlarınızı ve zamanlanmış görevlerinizi tek yerde yönetin.</span></div>
+    <div class="mt-3 mt-md-0"><button type="button" class="btn btn-light-primary mr-2" id="newNote"><i class="la la-sticky-note"></i> Yeni Not</button><button type="button" class="btn btn-primary" id="newTask"><i class="la la-calendar-plus"></i> Yeni Görev</button></div>
+</div>
+
+<div class="row mb-6">
+    <div class="col-6 col-xl-3 mb-4"><div class="card planner-stat h-100"><div class="card-body"><span class="text-muted font-weight-bold">Açık Görev</span><div class="display-4 text-primary mt-2">@Model.OpenTaskCount</div></div></div></div>
+    <div class="col-6 col-xl-3 mb-4"><div class="card planner-stat h-100"><div class="card-body"><span class="text-muted font-weight-bold">Bugün</span><div class="display-4 text-info mt-2">@Model.TodayTaskCount</div></div></div></div>
+    <div class="col-6 col-xl-3 mb-4"><div class="card planner-stat h-100"><div class="card-body"><span class="text-muted font-weight-bold">Geciken</span><div class="display-4 text-danger mt-2">@Model.OverdueTaskCount</div></div></div></div>
+    <div class="col-6 col-xl-3 mb-4"><div class="card planner-stat h-100"><div class="card-body"><span class="text-muted font-weight-bold">Notlarım</span><div class="display-4 text-success mt-2">@Model.NoteCount</div></div></div></div>
+</div>
+
+<div class="card card-custom mb-6"><div class="card-body py-4"><form method="get" class="row align-items-end">
+    <div class="col-lg-6 form-group mb-lg-0"><label>Not veya görev ara</label><input name="search" value="@Model.Search" class="form-control" placeholder="Başlık ya da içerik..." /></div>
+    <div class="col-lg-3 form-group mb-lg-0"><label>Durum</label><select name="status" class="form-control"><option value="">Tüm durumlar</option><option value="0" selected="@(Model.Status == PersonalWorkItemStatus.Open)">Açık</option><option value="1" selected="@(Model.Status == PersonalWorkItemStatus.Completed)">Tamamlandı</option><option value="2" selected="@(Model.Status == PersonalWorkItemStatus.Cancelled)">İptal</option></select></div>
+    <div class="col-lg-3"><button class="btn btn-primary mr-2">Filtrele</button><a asp-action="Index" class="btn btn-light">Temizle</a></div>
+</form></div></div>
+
+<div class="row">
+    <div class="col-xl-8 mb-6"><div class="card card-custom h-100"><div class="card-header"><div class="card-title"><h3 class="card-label">Görev Takvimi<span class="d-block text-muted pt-2 font-size-sm">Bir güne tıklayarak hızlı görev ekleyebilirsiniz</span></h3></div></div><div class="card-body"><div id="personalCalendar"></div></div></div></div>
+    <div class="col-xl-4 mb-6"><div class="card card-custom h-100"><div class="card-header"><div class="card-title"><h3 class="card-label">Görevler</h3></div></div><div class="card-body px-4">
+        @if (Model.Tasks.Count == 0) { <div class="planner-empty"><i class="la la-calendar-check icon-3x d-block mb-3"></i>Gösterilecek görev bulunmuyor.</div> }
+        @foreach (var item in Model.Tasks)
+        {
+            <div class="border rounded p-4 mb-3 @(item.Status == PersonalWorkItemStatus.Completed ? "planner-task-completed" : "")">
+                <div class="d-flex justify-content-between align-items-start"><div class="pr-3"><strong class="task-title d-block">@item.Title</strong><span class="text-muted font-size-sm">@(item.StartAt?.ToString(item.IsAllDay ? "dd.MM.yyyy" : "dd.MM.yyyy HH:mm") ?? "Zaman yok")</span></div><span class="label @PriorityClass(item.Priority) label-inline">@PriorityText(item.Priority)</span></div>
+                @if (!string.IsNullOrWhiteSpace(item.Content)) { <div class="text-muted mt-2">@item.Content</div> }
+                @if (item.IsOverdue) { <div class="text-danger font-size-sm mt-2"><i class="la la-exclamation-circle"></i> Gecikti</div> }
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="button" class="btn btn-xs btn-light-primary mr-2 edit-item" data-id="@item.Id" data-type="1" data-title="@item.Title" data-content="@item.Content" data-start="@item.StartAt?.ToString("yyyy-MM-ddTHH:mm")" data-end="@item.EndAt?.ToString("yyyy-MM-ddTHH:mm")" data-all-day="@item.IsAllDay.ToString().ToLowerInvariant()" data-priority="@((int)item.Priority)">Düzenle</button>
+                    <form asp-action="Tamamla" method="post" class="d-inline mr-2"><input type="hidden" name="id" value="@item.Id" /><button class="btn btn-xs @(item.Status == PersonalWorkItemStatus.Completed ? "btn-light-warning" : "btn-light-success")">@(item.Status == PersonalWorkItemStatus.Completed ? "Yeniden Aç" : "Tamamla")</button></form>
+                    <form asp-action="Sil" method="post" class="d-inline" onsubmit="return confirm('Bu görev silinsin mi?');"><input type="hidden" name="id" value="@item.Id" /><button class="btn btn-xs btn-light-danger">Sil</button></form>
+                </div>
+            </div>
+        }
+    </div></div></div>
+</div>
+
+<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Kişisel Notlarım (@Model.Notes.Count)</h3></div></div><div class="card-body">
+    @if (Model.Notes.Count == 0) { <div class="planner-empty"><i class="la la-sticky-note icon-3x d-block mb-3"></i>Henüz kişisel not eklenmedi.</div> }
+    else
+    {
+        <div class="row">@foreach (var item in Model.Notes)
+        {
+            <div class="col-md-6 col-xl-4 mb-4"><div class="planner-note h-100 p-5 d-flex flex-column">
+                <div class="d-flex justify-content-between"><strong>@item.Title</strong><span class="label @PriorityClass(item.Priority) label-inline">@PriorityText(item.Priority)</span></div>
+                <div class="text-muted mt-3 flex-grow-1" style="white-space:pre-line">@(item.Content ?? "İçerik yok")</div>
+                <div class="d-flex justify-content-between align-items-center mt-4"><small class="text-muted">@(item.UpdatedAt?.ToString("dd.MM.yyyy HH:mm"))</small><div><button type="button" class="btn btn-xs btn-light-primary mr-2 edit-item" data-id="@item.Id" data-type="0" data-title="@item.Title" data-content="@item.Content" data-priority="@((int)item.Priority)">Düzenle</button><form asp-action="Sil" method="post" class="d-inline" onsubmit="return confirm('Bu not silinsin mi?');"><input type="hidden" name="id" value="@item.Id" /><button class="btn btn-xs btn-light-danger">Sil</button></form></div></div>
+            </div></div>
+        }</div>
+    }
+</div></div>
+
+<div class="modal fade" id="workItemModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><form asp-action="Kaydet" method="post" id="workItemForm">
+    <div class="modal-header"><h5 class="modal-title" id="workItemModalTitle">Yeni Kayıt</h5><button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button></div>
+    <div class="modal-body">
+        <input type="hidden" name="Id" id="itemId" /><input type="hidden" name="ItemType" id="itemType" value="1" />
+        <div class="form-group"><label>Başlık</label><input name="Title" id="itemTitle" class="form-control" maxlength="200" required /></div>
+        <div class="form-group"><label>İçerik / Açıklama</label><textarea name="Content" id="itemContent" class="form-control" rows="5" maxlength="4000"></textarea></div>
+        <div id="scheduleFields"><div class="row"><div class="col-md-6 form-group"><label>Başlangıç</label><input name="StartAt" id="itemStart" type="datetime-local" class="form-control" /></div><div class="col-md-6 form-group"><label>Bitiş</label><input name="EndAt" id="itemEnd" type="datetime-local" class="form-control" /></div></div><label class="checkbox mb-5"><input name="IsAllDay" id="itemAllDay" type="checkbox" value="true" /><span></span>Tüm gün</label></div>
+        <div class="form-group mb-0"><label>Öncelik</label><select name="Priority" id="itemPriority" class="form-control"><option value="0">Düşük</option><option value="1" selected>Normal</option><option value="2">Yüksek</option><option value="3">Acil</option></select></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-light" data-dismiss="modal">Vazgeç</button><button class="btn btn-primary">Kaydet</button></div>
+</form></div></div></div>
+
+@section JSSection {
+    <script src="~/assets1/plugins/custom/fullcalendar/fullcalendar.bundle.js"></script>
+    <script>
+    (function () {
+        var modal = $('#workItemModal');
+        var scheduleFields = document.getElementById('scheduleFields');
+        var events = @Html.Raw(calendarJson);
+        function setType(type) { document.getElementById('itemType').value = type; scheduleFields.style.display = type === 1 ? '' : 'none'; document.getElementById('itemStart').required = type === 1; document.getElementById('workItemModalTitle').textContent = type === 1 ? 'Görev' : 'Kişisel Not'; }
+        function resetForm(type) { document.getElementById('workItemForm').reset(); document.getElementById('itemId').value = ''; document.getElementById('itemPriority').value = '1'; setType(type); }
+        function openEditor(data) { resetForm(Number(data.type)); document.getElementById('itemId').value = data.id || ''; document.getElementById('itemTitle').value = data.title || ''; document.getElementById('itemContent').value = data.content || ''; document.getElementById('itemStart').value = data.start || ''; document.getElementById('itemEnd').value = data.end || ''; document.getElementById('itemAllDay').checked = data.allDay === true || data.allDay === 'true'; document.getElementById('itemPriority').value = data.priority == null ? '1' : String(data.priority); modal.modal('show'); }
+        function localInput(date) { if (!date) return ''; var value = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString(); return value.slice(0, 16); }
+        document.getElementById('newNote').addEventListener('click', function () { resetForm(0); modal.modal('show'); });
+        document.getElementById('newTask').addEventListener('click', function () { resetForm(1); document.getElementById('itemStart').value = localInput(new Date()); modal.modal('show'); });
+        document.querySelectorAll('.edit-item').forEach(function (button) { button.addEventListener('click', function () { openEditor(button.dataset); }); });
+        var calendar = new FullCalendar.Calendar(document.getElementById('personalCalendar'), {
+            plugins: ['bootstrap', 'interaction', 'dayGrid', 'timeGrid', 'list'], themeSystem: 'bootstrap', locale: 'tr',
+            header: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' }, buttonText: { today: 'Bugün', month: 'Ay', week: 'Hafta', list: 'Liste' },
+            defaultView: 'dayGridMonth', firstDay: 1, height: 'auto', eventLimit: true, navLinks: true, events: events,
+            dateClick: function (info) { resetForm(1); document.getElementById('itemStart').value = info.dateStr.length === 10 ? info.dateStr + 'T09:00' : localInput(info.date); document.getElementById('itemAllDay').checked = info.allDay; modal.modal('show'); },
+            eventClick: function (info) { var e = info.event; openEditor({ id: e.id, type: 1, title: e.title, content: e.extendedProps.description, start: localInput(e.start), end: localInput(e.end), allDay: e.allDay, priority: e.extendedProps.priority }); }
+        });
+        calendar.render();
+    })();
+    </script>
+}

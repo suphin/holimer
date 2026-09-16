@@ -1,0 +1,76 @@
+@model Ekomers.Models.ViewModels.Production.RecipeCostScenarioDetailVM
+@{
+    ViewData["Title"] = "Maliyet Çalışması Detayı";
+}
+
+<div class="card card-custom mb-6">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                @Model.Name
+                <span class="d-block text-muted pt-2 font-size-sm">@Model.ScenarioNumber · @Model.CalculationDate.ToString("dd.MM.yyyy HH:mm")</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <a asp-action="KayitExcel" asp-route-id="@Model.Id" class="btn btn-light-success mr-3"><i class="flaticon2-download"></i> Excel'e Aktar</a>
+            <a asp-action="KayitliHesaplar" class="btn btn-light mr-3">Kayıtlı Hesaplara Dön</a>
+            <a asp-action="Index" class="btn btn-primary">Yeni Hesaplama</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Ürün Sayısı</span><strong>@Model.LineCount</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Toplam Üretim</span><strong>@Model.TotalProductionQuantity.ToString("N6")</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Reçete Maliyeti</span><strong>@Model.TotalRecipeCost.ToString("N2") TRY</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Değişken Gider</span><strong>@Model.VariableCost.ToString("N2") TRY</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Sabit Gider</span><strong>@Model.FixedCost.ToString("N2") TRY</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Toplam Gider</span><strong class="text-primary">@Model.TotalCost.ToString("N2") TRY</strong></div>
+        </div>
+        <div class="text-muted font-size-sm">Varsayılan miktar: @Model.DefaultProductionQuantity.ToString("N6") · Kaydeden: @Model.CreatedUser</div>
+    </div>
+</div>
+
+<script>
+    localStorage.removeItem('recipe-cost-calculation-draft-v1');
+</script>
+
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Ürün Maliyetleri (@Model.Lines.Count)</h3></div></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-separate table-head-custom">
+                <thead>
+                    <tr>
+                        <th>Ürün</th>
+                        <th>Üretim</th>
+                        <th>Birim Reçete Maliyeti</th>
+                        <th>Reçete Toplamı</th>
+                        <th>Değişken Gider Payı</th>
+                        <th>Sabit Gider Payı</th>
+                        <th>Toplam</th>
+                        <th>Birim Toplam</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var line in Model.Lines)
+                {
+                    <tr>
+                        <td><strong>@line.ProductCode</strong><span class="d-block text-muted">@line.ProductName</span></td>
+                        <td>@line.ProductionQuantity.ToString("N6") @line.ProductionUnit</td>
+                        <td>
+                            <span class="d-block">Hammadde: @line.RawMaterialUnitCost.ToString("N4") TRY</span>
+                            <span class="d-block">Ambalaj: @line.PackagingUnitCost.ToString("N4") TRY</span>
+                            <strong>@((line.RawMaterialUnitCost + line.PackagingUnitCost).ToString("N4")) TRY</strong>
+                        </td>
+                        <td>@line.RecipeMaterialCost.ToString("N2") TRY</td>
+                        <td>@line.VariableCostShare.ToString("N2") TRY</td>
+                        <td>@line.FixedCostShare.ToString("N2") TRY</td>
+                        <td><strong>@line.TotalCost.ToString("N2") TRY</strong></td>
+                        <td><strong>@line.TotalUnitCost.ToString("N4") TRY</strong><span class="d-block text-muted">/@line.ProductionUnit</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,324 @@
+@model Ekomers.Models.ViewModels.Production.WarehouseCountVM
+@{
+    ViewData["Title"] = "Depo Sayımı";
+}
+
+<div class="card card-custom gutter-b">
+    <div class="card-header">
+        <div class="card-title">
+            <div>
+                <h3 class="card-label mb-1">@(Model.IsCorrection ? "Depo Sayımı Düzeltmesi" : "Depo Sayımı")</h3>
+                <span class="text-muted">
+                    @if (Model.IsCorrection) { <text>@Model.SourceDocumentNumber numaralı sayımdaki ürünler için düzeltme girin.</text> }
+                    else { <text>Yalnızca sayacağınız ürünleri seçip geçici listeye ekleyin.</text> }
+                </span>
+            </div>
+        </div>
+        <div class="card-toolbar">
+            <a asp-controller="ProductionInventory" asp-action="Index" class="btn btn-light-primary">Stok Hareketleri</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row align-items-end">
+            @if (Model.IsCorrection)
+            {
+                <input type="hidden" name="sourceDocumentId" value="@Model.SourceDocumentId" />
+            }
+            <div class="col-lg-6 mb-3">
+                <label class="form-label font-weight-bold">Sayılacak depo</label>
+                @if (Model.IsCorrection)
+                {
+                    <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
+                    <select class="form-control" asp-items="Model.Warehouses" disabled></select>
+                }
+                else
+                {
+                    <select name="warehouseId" class="form-control" asp-items="Model.Warehouses" onchange="this.form.submit()"></select>
+                }
+            </div>
+        </form>
+
+        @if (Model.IsCorrection)
+        {
+            <div class="alert alert-light-warning mb-4">
+                Önceki sayım ve hareketleri değiştirilmeyecek. Burada yaptığınız değişiklik, önceki belgeye bağlı yeni bir sayım düzeltmesi olarak kaydedilecek.
+            </div>
+        }
+        <div class="alert alert-light-info mb-0">
+            <strong>Ekle, güncelle ve kaldır</strong> işlemleri yalnızca oturumdaki geçici sayım listesini değiştirir; stok hareketi oluşturmaz.
+            Liste sayfa yenilendiğinde korunur ve yalnızca <strong>Sayımı Stoka İşle</strong> ile sonuçlandırılır.
+        </div>
+    </div>
+</div>
+
+@if (Model.WarehouseId == 0)
+{
+    <div class="alert alert-light-warning">Aktif üretim deposu bulunamadı.</div>
+}
+else
+{
+    <div class="card card-custom gutter-b">
+        <div class="card-header">
+            <div class="card-title"><h3 class="card-label">Ürün Ekle</h3></div>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-action="AddItem" class="row align-items-end">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
+                <input type="hidden" name="sourceDocumentId" value="@Model.SourceDocumentId" />
+                <div class="col-lg-7 mb-3">
+                    <label class="form-label font-weight-bold">Ürün</label>
+                    <select id="warehouseCountMaterial" name="materialId" class="form-control" required>
+                        <option value="">Ürün kodu veya adıyla arayın</option>
+                    </select>
+                </div>
+                <div class="col-lg-3 mb-3">
+                    <label class="form-label font-weight-bold">Sayım stoku</label>
+                    <input type="text" name="countedQuantity" inputmode="decimal" autocomplete="off"
+                           class="form-control" placeholder="0" required />
+                </div>
+                <div class="col-lg-2 mb-3">
+                    <button type="submit" class="btn btn-primary btn-block">Listeye Ekle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <form method="post" asp-action="Save" id="warehouseCountForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="WarehouseId" />
+        <input type="hidden" asp-for="SourceDocumentId" />
+
+        <div class="card card-custom gutter-b">
+            <div class="card-header flex-wrap py-3">
+                <div class="card-title">
+                    <h3 class="card-label">@(Model.IsCorrection ? "Düzeltilecek Sayım" : "Geçici Sayım Listesi") <span class="text-muted">(@Model.Rows.Count ürün)</span></h3>
+                </div>
+                <div class="card-toolbar">
+                    <div class="mr-4">
+                        <label class="form-label mb-1">Sayım tarihi</label>
+                        <input asp-for="CountDate" type="date" class="form-control" max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div style="min-width:320px">
+                        <label class="form-label mb-1">Sayım notu</label>
+                        <input asp-for="Notes" class="form-control" placeholder="Tutanak, açıklama veya sayım ekibi" maxlength="500" />
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.Rows.Count == 0)
+                {
+                    <div class="p-8 text-center text-muted">Henüz geçici sayım listesine ürün eklenmedi.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="pl-6">Ürün</th>
+                                    <th>Tür</th>
+                                    <th class="text-right">Şimdiki stok</th>
+                                    <th class="text-right">Rezerve</th>
+                                    <th class="text-right">Kritik stok</th>
+                                    <th style="min-width:230px">Sayım stoku</th>
+                                    <th>Oluşacak fark</th>
+                                    <th class="pr-6 text-right">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @for (var i = 0; i < Model.Rows.Count; i++)
+                            {
+                                var row = Model.Rows[i];
+                                var isCritical = row.CriticalQuantity.HasValue && row.CurrentQuantity <= row.CriticalQuantity.Value;
+                                <tr class="count-row @(row.StockChanged ? "table-warning" : null)">
+                                    <td class="pl-6">
+                                        <input type="hidden" name="Rows[@i].MaterialId" value="@row.MaterialId" />
+                                        <input type="hidden" name="Rows[@i].MaterialCode" value="@row.MaterialCode" />
+                                        <input type="hidden" name="Rows[@i].SnapshotQuantity" value="@row.SnapshotQuantity" />
+                                        <div class="font-weight-bold">@row.MaterialCode</div>
+                                        <div class="text-muted">@row.MaterialName</div>
+                                        @if (row.StockChanged)
+                                        {
+                                            <span class="label label-light-warning label-inline mt-2">Stok listeye eklendikten sonra değişti</span>
+                                        }
+                                    </td>
+                                    <td><span class="label label-light label-inline">@row.MaterialType</span></td>
+                                    <td class="text-right text-nowrap">
+                                        <strong class="@(isCritical ? "text-danger" : "")">@row.CurrentQuantity.ToString("N6")</strong>
+                                        <span class="text-muted">@row.Unit</span>
+                                    </td>
+                                    <td class="text-right text-nowrap">@row.ReservedQuantity.ToString("N6") <span class="text-muted">@row.Unit</span></td>
+                                    <td class="text-right text-nowrap">
+                                        @if (row.CriticalQuantity.HasValue)
+                                        {
+                                            <span class="@(isCritical ? "text-danger font-weight-bold" : "")">@row.CriticalQuantity.Value.ToString("N6") @row.Unit</span>
+                                            @if (isCritical) { <span class="label label-light-danger label-inline ml-2">Kritik</span> }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Tanımsız</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="input-group mr-2">
+                                                <input type="text" inputmode="decimal" autocomplete="off"
+                                                       name="Rows[@i].CountedQuantity" value="@row.CountedQuantity"
+                                                       class="form-control count-input" data-current="@row.SnapshotQuantity"
+                                                       placeholder="Sayılmadı" aria-label="@row.MaterialCode sayım stoku" />
+                                                <div class="input-group-append"><span class="input-group-text">@row.Unit</span></div>
+                                            </div>
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-light-primary update-item-button"
+                                                    name="materialId"
+                                                    value="@row.MaterialId"
+                                                    formaction="@Url.Action("UpdateItem")"
+                                                    formmethod="post">Güncelle</button>
+                                        </div>
+                                    </td>
+                                    <td><span class="difference text-muted">—</span></td>
+                                    <td class="pr-6 text-right">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-light-danger remove-item-button"
+                                                name="materialId"
+                                                value="@row.MaterialId"
+                                                formaction="@Url.Action("RemoveItem")"
+                                                formmethod="post"
+                                                formnovalidate>Kaldır</button>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+            <div class="card-footer d-flex flex-wrap justify-content-between align-items-center">
+                <div>
+                    <button type="submit"
+                            class="btn btn-light-danger clear-list-button"
+                            formaction="@Url.Action("Clear")"
+                            formmethod="post"
+                            formnovalidate
+                            @(Model.Rows.Count == 0 ? "disabled" : null)>Listeyi Temizle</button>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span id="enteredCount" class="text-muted mr-4">@Model.Rows.Count ürün sayım listesinde</span>
+                    <button type="submit" class="btn btn-success" @(Model.Rows.Count == 0 ? "disabled" : null)>@(Model.IsCorrection ? "Sayım Düzeltmesini İşle" : "Sayımı Stoka İşle")</button>
+                </div>
+            </div>
+        </div>
+    </form>
+}
+
+@section JSSection {
+<script>
+    (function () {
+        if (window.jQuery && jQuery.fn.select2) {
+            $(function () {
+                $('#warehouseCountMaterial').select2({
+                    width: '100%',
+                    placeholder: 'Ürün kodu veya adıyla arayın',
+                    allowClear: true,
+                    minimumInputLength: 0,
+                    ajax: {
+                        url: '@Url.Action("SearchMaterials")',
+                        type: 'GET',
+                        dataType: 'json',
+                        delay: 250,
+                        cache: true,
+                        data: function (params) {
+                            return {
+                                term: params.term || '',
+                                page: params.page || 1,
+                                sourceDocumentId: @(Model.SourceDocumentId.HasValue ? Model.SourceDocumentId.Value.ToString() : "null")
+                            };
+                        },
+                        processResults: function (data) {
+                            return data;
+                        }
+                    }
+                });
+            });
+        }
+
+        var inputs = Array.prototype.slice.call(document.querySelectorAll('.count-input'));
+        var enteredCount = document.getElementById('enteredCount');
+
+        function number(value) {
+            if (!value) return null;
+            var normalized = value.trim().replace(/\s/g, '');
+            if (normalized.indexOf(',') >= 0 && normalized.indexOf('.') >= 0) {
+                normalized = normalized.lastIndexOf(',') > normalized.lastIndexOf('.')
+                    ? normalized.replace(/\./g, '').replace(',', '.')
+                    : normalized.replace(/,/g, '');
+            } else {
+                normalized = normalized.replace(',', '.');
+            }
+            var parsed = Number(normalized);
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+
+        function refresh() {
+            var entered = 0;
+            inputs.forEach(function (input) {
+                var badge = input.closest('tr').querySelector('.difference');
+                if (!input.value.trim()) {
+                    badge.className = 'difference text-muted';
+                    badge.textContent = '—';
+                    return;
+                }
+                entered++;
+                var counted = number(input.value);
+                var current = number(input.dataset.current);
+                if (counted === null || counted < 0) {
+                    badge.className = 'difference text-danger font-weight-bold';
+                    badge.textContent = 'Geçersiz';
+                    return;
+                }
+                var difference = counted - current;
+                if (Math.abs(difference) < 0.0000001) {
+                    badge.className = 'difference text-success font-weight-bold';
+                    badge.textContent = 'Fark yok';
+                } else if (difference > 0) {
+                    badge.className = 'difference text-primary font-weight-bold';
+                    badge.textContent = 'Sayım Fazlası +' + difference.toLocaleString('tr-TR', { maximumFractionDigits: 6 });
+                } else {
+                    badge.className = 'difference text-danger font-weight-bold';
+                    badge.textContent = 'Sayım Eksiği ' + difference.toLocaleString('tr-TR', { maximumFractionDigits: 6 });
+                }
+            });
+            if (enteredCount) enteredCount.textContent = entered + ' ürün sayıldı';
+        }
+
+        inputs.forEach(function (input) { input.addEventListener('input', refresh); });
+        refresh();
+
+        var form = document.getElementById('warehouseCountForm');
+        if (form) {
+            form.addEventListener('submit', function (event) {
+                var submitter = event.submitter;
+                if (submitter && submitter.classList.contains('update-item-button')) return;
+                if (submitter && submitter.classList.contains('remove-item-button')) {
+                    if (!confirm('Ürün geçici sayım listesinden kaldırılsın mı?')) event.preventDefault();
+                    return;
+                }
+                if (submitter && submitter.classList.contains('clear-list-button')) {
+                    if (!confirm('Geçici sayım listesinin tamamı temizlensin mi?')) event.preventDefault();
+                    return;
+                }
+                var entered = inputs.filter(function (x) { return x.value.trim(); }).length;
+                if (!entered) {
+                    event.preventDefault();
+                    alert('En az bir ürün için sayım stoku giriniz.');
+                    return;
+                }
+                if (!confirm(entered + ' ürünün sayım farkları stok hareketi olarak işlenecek. Devam edilsin mi?')) {
+                    event.preventDefault();
+                }
+            });
+        }
+    })();
+</script>
+}

@@ -1,4 +1,5 @@
 using Ekomers.Models.Enums;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
 
 namespace Ekomers.Models.ViewModels.Purchasing;
@@ -48,6 +49,9 @@ public sealed class QualityInspectionDetailVM
     public DateTime? DecisionDate { get; set; }
     public string? DecisionUserId { get; set; }
     public string? DecisionNote { get; set; }
+    public string? DispositionDocumentNumber { get; set; }
+    public string? DispositionText { get; set; }
+    public DateTime? DispositionDate { get; set; }
     public QualityInspectionFormVM Form { get; set; } = new();
     public List<QualityInspectionSpecificationResultVM> SpecificationResults { get; set; } = [];
 }
@@ -127,4 +131,47 @@ public sealed class QualityInspectionDecisionVM
     public int Id { get; set; }
     public PrdQualityControlStatus Decision { get; set; }
     [StringLength(1000), Display(Name = "Karar Notu")] public string? DecisionNote { get; set; }
+}
+
+public sealed class QualityStockDispositionListVM
+{
+    public string Search { get; set; } = string.Empty;
+    public string Status { get; set; } = "pending";
+    public int PendingCount { get; set; }
+    public int CompletedCount { get; set; }
+    public List<SelectListItem> UsableWarehouses { get; set; } = [];
+    public List<SelectListItem> ScrapWarehouses { get; set; } = [];
+    public List<QualityStockDispositionRowVM> Rows { get; set; } = [];
+}
+
+public sealed class QualityStockDispositionRowVM
+{
+    public int InspectionId { get; set; }
+    public string InspectionNumber { get; set; } = string.Empty;
+    public int GoodsReceiptId { get; set; }
+    public string ReceiptNumber { get; set; } = string.Empty;
+    public string SupplierCode { get; set; } = string.Empty;
+    public string SupplierName { get; set; } = string.Empty;
+    public string MaterialCode { get; set; } = string.Empty;
+    public string MaterialName { get; set; } = string.Empty;
+    public string LotNumber { get; set; } = string.Empty;
+    public decimal Quantity { get; set; }
+    public string Unit { get; set; } = string.Empty;
+    public string SourceWarehouse { get; set; } = string.Empty;
+    public PrdQualityControlStatus QualityStatus { get; set; }
+    public DateTime? DecisionDate { get; set; }
+    public string? DecisionNote { get; set; }
+    public bool IsCompleted { get; set; }
+    public PurQualityDispositionAction? DispositionAction { get; set; }
+    public string? DispositionDocumentNumber { get; set; }
+    public DateTime? DispositionDate { get; set; }
+    public string? TargetWarehouse { get; set; }
+}
+
+public sealed class QualityStockDispositionFormVM
+{
+    public int InspectionId { get; set; }
+    public PurQualityDispositionAction Action { get; set; }
+    public int? TargetWarehouseId { get; set; }
+    [StringLength(1000)] public string? Notes { get; set; }
 }

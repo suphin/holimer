@@ -26,6 +26,9 @@ public sealed class ProductionPlanListVM
     public int ProductCount { get; set; }
     public int RequirementCount { get; set; }
     public decimal TotalShortageQuantity { get; set; }
+    public int? PurchaseRequestId { get; set; }
+    public string? PurchaseRequestNumber { get; set; }
+    public DateTime? PurchaseRequestCreatedDate { get; set; }
     public string? Notes { get; set; }
 }
 
@@ -69,6 +72,8 @@ public sealed class ProductionPlanningLineVM
     public int VersionNumber { get; set; }
     public decimal Quantity { get; set; }
     public string Unit { get; set; } = string.Empty;
+    public int OrderSourceCount { get; set; }
+    public decimal OrderSourceQuantity { get; set; }
 }
 
 public sealed class ProductionRequirementLineVM
@@ -91,5 +96,12 @@ public sealed class ProductionRequirementLineVM
 public sealed class ProductionPlanningSessionItem
 {
     public int RecipeVersionId { get; set; }
+    public decimal Quantity { get; set; }
+    public List<ProductionPlanningOrderSourceSessionItem> OrderSources { get; set; } = [];
+}
+
+public sealed class ProductionPlanningOrderSourceSessionItem
+{
+    public int CustomerOrderLineId { get; set; }
     public decimal Quantity { get; set; }
 }

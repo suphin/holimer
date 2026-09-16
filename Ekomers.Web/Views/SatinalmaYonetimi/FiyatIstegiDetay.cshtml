@@ -1,0 +1,33 @@
+@model Ekomers.Models.Entity.Purchasing.PurPriceRequestEmail
+@using Ekomers.Models.Enums
+@{
+    ViewData["Title"] = "Fiyat İsteği Detayı";
+    var supplierName = ViewBag.SupplierName as string ?? "-";
+    var lineCount = (int)(ViewBag.LineCount ?? 0);
+    var statusClass = Model.Status == PurPriceRequestEmailStatus.Sent ? "label-light-success" : Model.Status == PurPriceRequestEmailStatus.Failed ? "label-light-danger" : "label-light-warning";
+    var statusText = Model.Status == PurPriceRequestEmailStatus.Sent ? "Gönderildi" : Model.Status == PurPriceRequestEmailStatus.Failed ? "Gönderilemedi" : "Taslak";
+}
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap border-0 pt-6 pb-0">
+        <div class="card-title"><h3 class="card-label">@Model.ReferenceNumber<span class="d-block text-muted pt-2 font-size-sm">Fiyat isteği gönderim kaydı</span></h3></div>
+        <div class="card-toolbar"><a asp-action="FiyatIstekleri" class="btn btn-light">Listeye Dön</a></div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-6">
+            <div class="col-md-4 mb-3"><span class="text-muted d-block">Tedarikçi</span><strong>@supplierName</strong><span class="d-block">@Model.RecipientEmail</span></div>
+            <div class="col-md-3 mb-3"><span class="text-muted d-block">Gönderen</span><strong>@Model.SenderName</strong><span class="d-block">@Model.SenderEmail</span><span class="d-block text-muted">Hesap: @Model.SenderAccount</span></div>
+            <div class="col-md-2 mb-3"><span class="text-muted d-block">Talep Kalemi</span><strong>@lineCount</strong></div>
+            <div class="col-md-3 mb-3"><span class="text-muted d-block">Durum</span><span class="label label-lg @statusClass label-inline">@statusText</span><span class="d-block mt-2">@(Model.SentDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</span></div>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="alert alert-light-danger">@Model.ErrorMessage</div>
+        }
+        <div class="border rounded p-6">
+            <h5>@Model.Subject</h5>
+            <hr />
+            @Html.Raw(Model.BodyHtml)
+        </div>
+    </div>
+</div>

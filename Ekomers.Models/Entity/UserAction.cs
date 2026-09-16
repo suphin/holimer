@@ -46,7 +46,9 @@ namespace Ekomers.Models.Entity
 	{
 		public string? UserID { get; set; }
 		public int? UserShortCutFieldID { get; set; }
-		 
+		public string? PageTitle { get; set; }
+		public string? PageUrl { get; set; }
+		public int SortOrder { get; set; }
 
 	}
 }

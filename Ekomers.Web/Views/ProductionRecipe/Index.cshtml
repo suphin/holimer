@@ -1,9 +1,36 @@
 @model IReadOnlyList<Ekomers.Models.ViewModels.Production.ProductionRecipeListVM>
-@{ ViewData["Title"] = "Yeni Üretim Reçeteleri"; }
+@{
+    ViewData["Title"] = "Yeni Üretim Reçeteleri";
+    var canCreateRecipeVersion = User.IsInRole("Admin") || User.HasClaim("Authorize", "ReceteVersiyonOlustur");
+    var search = ViewBag.Search as string;
+}
 <div class="card card-custom">
-    <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Reçeteler<span class="d-block text-muted pt-2 font-size-sm">Bağımsız Prd reçete ve versiyonları</span></h3></div><div class="card-toolbar"><a asp-action="Import" class="btn btn-light-primary mr-2">Excel'den Aktar</a><a asp-action="Create" class="btn btn-primary">Yeni Reçete</a></div></div>
+    <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Reçeteler<span class="d-block text-muted pt-2 font-size-sm">Bağımsız Prd reçete ve versiyonları</span></h3></div>@if (canCreateRecipeVersion) { <div class="card-toolbar"><a asp-action="Import" class="btn btn-light-primary mr-2">Excel'den Aktar</a><a asp-action="Create" class="btn btn-primary">Yeni Reçete</a></div> }</div>
     <div class="card-body">
-        @if (Model.Count == 0) { <div class="alert alert-light-primary mb-0">Henüz yeni üretim reçetesi yok. Önce Prd malzeme ve birim kartlarının aktarılması gerekir.</div> }
+        <form asp-action="Index" method="get" class="mb-7">
+            <div class="input-group input-group-lg">
+                <input type="search" name="search" value="@search" class="form-control" placeholder="Reçete kodu, reçete adı veya ürün ara..." aria-label="Reçetelerde ara" />
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary">Ara</button>
+                    @if (!string.IsNullOrWhiteSpace(search))
+                    {
+                        <a asp-action="Index" class="btn btn-light">Temizle</a>
+                    }
+                </div>
+            </div>
+        </form>
+
+        @if (Model.Count == 0)
+        {
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                <div class="alert alert-light-warning mb-0"><strong>“@search”</strong> aramasıyla eşleşen reçete bulunamadı.</div>
+            }
+            else
+            {
+                <div class="alert alert-light-primary mb-0">Henüz yeni üretim reçetesi yok. Önce Prd malzeme ve birim kartlarının aktarılması gerekir.</div>
+            }
+        }
         else { <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Kod / Ad</th><th>Ürün</th><th>Versiyon</th><th>Baz</th><th>Kalem</th><th>Geçerlilik</th><th>Durum</th></tr></thead><tbody>
         @foreach (var item in Model) { <tr><td><a asp-action="Details" asp-route-id="@item.RecipeVersionId"><strong>@item.Code</strong></a><span class="d-block text-muted">@item.Name</span></td><td>@item.Product</td><td>v@(item.VersionNumber)</td><td>@item.BaseQuantity.ToString("0.######") @item.Unit</td><td>@item.ItemCount</td><td>@item.ValidFrom?.ToString("dd.MM.yyyy") - @item.ValidTo?.ToString("dd.MM.yyyy")</td><td>@item.Status.ToTurkish()</td></tr> }
         </tbody></table></div> }

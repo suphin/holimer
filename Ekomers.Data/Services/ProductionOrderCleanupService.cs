@@ -13,6 +13,7 @@ public interface IProductionOrderCleanupService
     Task<ProductionOrderCleanupIndexVM> GetOrdersAsync(string? search, PrdProductionOrderStatus? status, CancellationToken ct);
     Task<ProductionOrderCleanupDetailVM?> GetPreviewAsync(int orderId, CancellationToken ct);
     Task<ProductionOrderCleanupResult> DeleteAsync(int orderId, string? confirmationOrderNumber, string? reason, bool confirmStockRollback, string? userName, CancellationToken ct);
+    Task<ProductionOrderCleanupResult> DeletePlanAsync(int planHeaderId, string? confirmationPlanNumber, string? reason, bool confirmCascadeDelete, string? userName, CancellationToken ct);
 }
 
 public sealed class ProductionOrderCleanupService : IProductionOrderCleanupService
@@ -230,6 +231,127 @@ public sealed class ProductionOrderCleanupService : IProductionOrderCleanupServi
         await _context.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return ProductionOrderCleanupResult.Success($"{order.OrderNumber} silindi. {activeDependentCount} bağlı kayıt kapatıldı; {activeMovementCount} stok hareketi bakiyeden çıkarıldı.");
+    }
+
+    public async Task<ProductionOrderCleanupResult> DeletePlanAsync(int planHeaderId, string? confirmationPlanNumber, string? reason, bool confirmCascadeDelete, string? userName, CancellationToken ct)
+    {
+        reason = reason?.Trim();
+        if (string.IsNullOrWhiteSpace(reason) || reason.Length < 5 || reason.Length > 500)
+            return ProductionOrderCleanupResult.Failure("Silme nedeni 5-500 karakter olmalıdır.");
+        if (!confirmCascadeDelete)
+            return ProductionOrderCleanupResult.Failure("Planın ve tüm bağlı üretim kayıtlarının silineceğini onaylamalısınız.");
+
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        var header = await _context.PrdProductionPlanHeaders
+            .FirstOrDefaultAsync(x => x.ID == planHeaderId && x.IsDelete != true, ct);
+        if (header == null)
+            return ProductionOrderCleanupResult.Failure("Üretim planı bulunamadı veya daha önce silinmiş.");
+        if (!string.Equals(header.PlanNumber.Trim(), confirmationPlanNumber?.Trim(), StringComparison.OrdinalIgnoreCase))
+            return ProductionOrderCleanupResult.Failure("Yazdığınız üretim planı numarası kayıtla eşleşmiyor.");
+
+        var plans = await _context.PrdProductionPlans
+            .Where(x => x.ProductionPlanHeaderId == header.ID).ToListAsync(ct);
+        var planIds = plans.Select(x => x.ID).ToList();
+        var orders = await _context.PrdProductionOrders
+            .Where(x => planIds.Contains(x.ProductionPlanId) && x.IsDelete != true).ToListAsync(ct);
+        var requirements = await _context.PrdProductionPlanRequirements
+            .Where(x => x.ProductionPlanHeaderId == header.ID).ToListAsync(ct);
+        var allocations = await _context.PrdProductionPlanOrderAllocations
+            .Where(x => planIds.Contains(x.ProductionPlanId)).ToListAsync(ct);
+        var customerOrderLineIds = allocations.Select(x => x.CustomerOrderLineId).Distinct().ToList();
+        var customerOrderLines = await _context.PrdCustomerOrderLines
+            .Where(x => customerOrderLineIds.Contains(x.ID) && x.IsDelete != true).ToListAsync(ct);
+        var customerOrderIds = customerOrderLines.Select(x => x.CustomerOrderId).Distinct().ToList();
+        var customerOrders = await _context.PrdCustomerOrders
+            .Where(x => customerOrderIds.Contains(x.ID) && x.IsDelete != true && x.Status != PrdCustomerOrderStatus.Cancelled).ToListAsync(ct);
+        var remainingAllocations = await _context.PrdProductionPlanOrderAllocations.AsNoTracking()
+            .Where(x => customerOrderLineIds.Contains(x.CustomerOrderLineId) && !planIds.Contains(x.ProductionPlanId) && x.IsDelete != true)
+            .GroupBy(x => x.CustomerOrderLineId).Select(x => new { LineId = x.Key, Quantity = x.Sum(a => a.PlannedQuantity) })
+            .ToDictionaryAsync(x => x.LineId, x => x.Quantity, ct);
+
+        var now = DateTime.Now;
+        var actor = string.IsNullOrWhiteSpace(userName) ? "Admin" : userName.Trim();
+        var activeDependentCount = 0;
+        var activeMovementCount = 0;
+
+        foreach (var order in orders)
+        {
+            var graph = await LoadGraphAsync(order.ID, ct);
+            activeDependentCount += CountActiveDependencies(graph);
+            activeMovementCount += graph.ActiveMovements.Count;
+
+            MarkDeleted(graph.TaskLots, now, actor);
+            MarkDeleted(graph.TaskItems, now, actor);
+            MarkDeleted(graph.Tasks, now, actor);
+            foreach (var task in graph.Tasks)
+                task.Status = PrdWarehouseTaskStatus.Cancelled;
+
+            MarkDeleted(graph.Reservations, now, actor);
+            foreach (var reservation in graph.Reservations)
+                reservation.Status = PrdReservationStatus.Cancelled;
+
+            MarkDeleted(graph.Actuals, now, actor);
+            MarkDeleted(graph.Results, now, actor);
+            MarkDeleted(graph.StockMovements, now, actor);
+            MarkDeleted(graph.InventoryDocumentLines, now, actor);
+            MarkDeleted(graph.InventoryDocuments, now, actor);
+            foreach (var document in graph.InventoryDocuments)
+                document.Status = PrdInventoryDocumentStatus.Cancelled;
+
+            MarkDeleted(graph.Requirements, now, actor);
+            MarkDeleted([order], now, actor);
+            order.Status = PrdProductionOrderStatus.Cancelled;
+        }
+
+        MarkDeleted(requirements, now, actor);
+        MarkDeleted(allocations, now, actor);
+        foreach (var customerOrder in customerOrders)
+        {
+            var orderLines = customerOrderLines.Where(x => x.CustomerOrderId == customerOrder.ID).ToList();
+            var orderedQuantity = orderLines.Sum(x => x.OrderedQuantity - x.CancelledQuantity);
+            var plannedQuantity = orderLines.Sum(x => remainingAllocations.GetValueOrDefault(x.ID));
+            customerOrder.Status = plannedQuantity <= 0 ? PrdCustomerOrderStatus.ReadyForPlanning
+                : plannedQuantity < orderedQuantity ? PrdCustomerOrderStatus.PartiallyPlanned : PrdCustomerOrderStatus.Planned;
+            customerOrder.UpdateDate = now;
+            customerOrder.UpdateUserID = actor;
+        }
+        MarkDeleted(plans, now, actor);
+        foreach (var plan in plans)
+        {
+            plan.Status = PrdProductionPlanStatus.Cancelled;
+            plan.IsConvertedToOrder = false;
+        }
+
+        MarkDeleted([header], now, actor);
+        header.Status = PrdProductionPlanHeaderStatus.Cancelled;
+        header.LockedDate = null;
+        header.LockedUserId = null;
+
+        var auditPayload = JsonSerializer.Serialize(new
+        {
+            ProductionPlanHeaderId = header.ID,
+            header.PlanNumber,
+            Reason = reason,
+            DeletedPlanLineCount = plans.Count(x => x.IsDelete == true),
+            DeletedPlanRequirementCount = requirements.Count(x => x.IsDelete == true),
+            DeletedProductionOrderCount = orders.Count,
+            ActiveDependentRecordCount = activeDependentCount,
+            CancelledStockMovementCount = activeMovementCount,
+            DeletedAt = now
+        });
+        _context.UserActivityLog.Add(new UserActivityLog
+        {
+            DateTime = now,
+            UserName = Limit(actor, 100),
+            ControllerName = "UretimYonetimi",
+            ActionName = "PlanSil",
+            Parameters = Limit(auditPayload, 4096),
+            Info = "ProductionPlanCascadeSoftDelete"
+        });
+
+        await _context.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return ProductionOrderCleanupResult.Success($"{header.PlanNumber} silindi. {orders.Count} üretim emri ve {activeDependentCount} bağlı kayıt kapatıldı; {activeMovementCount} stok hareketi bakiyeden çıkarıldı.");
     }
 
     private async Task<ProductionOrderGraph> LoadGraphAsync(int orderId, CancellationToken ct)

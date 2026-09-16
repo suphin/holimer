@@ -1,0 +1,260 @@
+@model Ekomers.Models.ViewModels.Purchasing.LogoPurchaseInvoiceQueryVM
+@{
+    ViewData["Title"] = "Logo Satınalma Faturaları";
+}
+
+<div class="card card-custom mb-6">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Logo Satınalma Faturaları
+                <span class="d-block text-muted pt-2 font-size-sm">Ürünün geçtiği satınalma faturalarını Logo üzerinden sorgulayın</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <span class="label label-light-info label-inline">Salt okunur Logo verisi</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="Index">
+            <input type="hidden" name="run" value="true" />
+            <div class="row align-items-end">
+                <div class="col-xl-4 col-lg-6 mb-4">
+                    <label class="font-weight-bold" for="productSearch">Ürün Kodu veya Adı</label>
+                    <input id="productSearch" name="productSearch" value="@Model.ProductSearch" class="form-control" placeholder="Örn. 150HM.01 veya kakao..." autofocus />
+                    <span class="form-text text-muted">Kod ve açıklama içinde arama yapar.</span>
+                </div>
+                <div class="col-xl-2 col-lg-3 mb-4">
+                    <label class="font-weight-bold" for="invoiceNumber">Fatura Numarası</label>
+                    <input id="invoiceNumber" name="invoiceNumber" value="@Model.InvoiceNumber" class="form-control" placeholder="Fatura / belge no" />
+               <span class="form-text text-muted">&nbsp;</span>
+                </div>
+                <div class="col-xl-3 col-lg-3 mb-4">
+                    <label class="font-weight-bold" for="supplierSearch">Tedarikçi</label>
+                    <input id="supplierSearch" name="supplierSearch" value="@Model.SupplierSearch" class="form-control" placeholder="Cari kod veya unvan" />
+               <span class="form-text text-muted">&nbsp;</span>
+                </div>
+                <div class="col-xl-3 col-lg-6 mb-4">
+                    <div class="row">
+                        <div class="col-6">
+                            <label class="font-weight-bold" for="startDate">Başlangıç</label>
+                            <input id="startDate" name="startDate" type="date" value="@Model.StartDate?.ToString("yyyy-MM-dd")" class="form-control" />
+                       <span class="form-text text-muted">&nbsp;</span>
+                        </div>
+                        <div class="col-6">
+                            <label class="font-weight-bold" for="endDate">Bitiş</label>
+                            <input id="endDate" name="endDate" type="date" value="@Model.EndDate?.ToString("yyyy-MM-dd")" class="form-control" />
+                       <span class="form-text text-muted">&nbsp;</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end">
+                <a asp-action="Index" class="btn btn-light mr-2">Temizle</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="flaticon2-search-1"></i> Faturaları Sorgula
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-light-danger">@Model.Error</div>
+}
+
+<div class="card card-custom">
+    <div class="card-header py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                Sorgu Sonuçları
+                @if (Model.HasSearched && string.IsNullOrWhiteSpace(Model.Error))
+                {
+                    <span class="d-block text-muted pt-2 font-size-sm">@Model.TotalCount satınalma faturası bulundu</span>
+                }
+            </h3>
+        </div>
+    </div>
+    <div class="card-body pt-4">
+        @if (!Model.HasSearched)
+        {
+            <div class="alert alert-light-primary mb-0">
+                Logo sorgusu sayfa açılırken otomatik çalıştırılmaz. Ürün kodunu veya adını yazıp <strong>Faturaları Sorgula</strong> düğmesine basın.
+            </div>
+        }
+        else if (string.IsNullOrWhiteSpace(Model.Error) && Model.Rows.Count == 0)
+        {
+            <div class="alert alert-light-warning mb-0">Seçilen filtrelere uyan satınalma faturası bulunamadı.</div>
+        }
+        else if (Model.Rows.Count > 0)
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom table-checkable align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tarih / Fatura</th>
+                            <th>Tedarikçi</th>
+                            <th>e-Belge</th>
+                            <th>Eşleşen Ürün</th>
+                            <th>Eşleşen Net</th>
+                            <th>Fatura Net Toplamı</th>
+                            <th class="text-right">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@row.InvoiceNumber</strong>
+                                <span class="d-block text-muted">@row.InvoiceDate.ToString("dd.MM.yyyy")</span>
+                                @if (!string.IsNullOrWhiteSpace(row.DocumentNumber))
+                                {
+                                    <span class="d-block text-muted font-size-sm">Belge: @row.DocumentNumber</span>
+                                }
+                            </td>
+                            <td>
+                                <strong>@row.SupplierName</strong>
+                                <span class="d-block text-muted">@row.SupplierCode</span>
+                            </td>
+                            <td>
+                                @if (row.IsEInvoice)
+                                {
+                                    <span class="label label-light-success label-inline mb-1">e-Fatura</span>
+                                }
+                                else
+                                {
+                                    <span class="label label-light-secondary label-inline mb-1">Elektronik değil</span>
+                                }
+                                <span class="d-block text-muted font-size-sm">@(string.IsNullOrWhiteSpace(row.GibStatus) ? "Durum bilgisi yok" : row.GibStatus)</span>
+                            </td>
+                            <td>
+                                <strong>@row.MatchedProductCount ürün</strong>
+                                <span class="d-block text-muted">@row.MatchedLineCount satır</span>
+                            </td>
+                            <td><strong>@row.MatchedNetTry.ToString("N2") TRY</strong></td>
+                            <td><strong>@row.InvoiceNetTotalTry.ToString("N2") TRY</strong></td>
+                            <td class="text-right">
+                                <button type="button"
+                                        class="btn btn-sm btn-light-primary js-logo-invoice-detail"
+                                        data-url="@Url.Action("Detay", new { invoiceNumber = row.InvoiceNumber, invoiceDate = row.InvoiceDate.ToString("yyyy-MM-dd"), supplierCode = row.SupplierCode })">
+                                    Detay
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.PageCount > 1)
+            {
+                <div class="d-flex flex-wrap justify-content-between align-items-center mt-5">
+                    <span class="text-muted mb-2">Sayfa @Model.Page / @Model.PageCount · toplam @Model.TotalCount fatura</span>
+                    <div class="mb-2">
+                        @if (Model.Page > 1)
+                        {
+                            <a class="btn btn-light-primary mr-2"
+                               asp-action="Index" asp-route-run="true"
+                               asp-route-productSearch="@Model.ProductSearch" asp-route-invoiceNumber="@Model.InvoiceNumber"
+                               asp-route-supplierSearch="@Model.SupplierSearch"
+                               asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")"
+                               asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize">Önceki</a>
+                        }
+                        @if (Model.Page < Model.PageCount)
+                        {
+                            <a class="btn btn-light-primary"
+                               asp-action="Index" asp-route-run="true"
+                               asp-route-productSearch="@Model.ProductSearch" asp-route-invoiceNumber="@Model.InvoiceNumber"
+                               asp-route-supplierSearch="@Model.SupplierSearch"
+                               asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")"
+                               asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize">Sonraki</a>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="logoPurchaseInvoiceModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Satınalma Faturası Detayı</h5>
+                <button type="button" class="btn btn-sm btn-icon btn-light-danger" data-dismiss="modal" aria-label="Kapat">
+                    <span aria-hidden="true" class="font-size-h3 line-height-sm">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="logoPurchaseInvoiceDetail"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="eLogoInvoicePdfModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title">eLogo Fatura Görseli</h5>
+                    <span id="eLogoInvoicePdfTitle" class="text-muted font-size-sm"></span>
+                </div>
+                <div class="d-flex align-items-center">
+                    <a id="eLogoInvoicePdfNewTab" href="#" target="_blank" rel="noopener" class="btn btn-sm btn-light-primary mr-2">Yeni Sekmede Aç</a>
+                    <button type="button" class="btn btn-sm btn-icon btn-light-danger" data-dismiss="modal" aria-label="Kapat">
+                        <span aria-hidden="true" class="font-size-h3 line-height-sm">&times;</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="eLogoInvoicePdfFrame" title="eLogo fatura görseli" class="w-100 border-0 d-block" style="height:80vh"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var container = document.getElementById('logoPurchaseInvoiceDetail');
+        document.addEventListener('click', async function (event) {
+            var pdfButton = event.target.closest('.js-logo-invoice-pdf');
+            if (pdfButton) {
+                var pdfFrame = document.getElementById('eLogoInvoicePdfFrame');
+                var newTabLink = document.getElementById('eLogoInvoicePdfNewTab');
+                var pdfTitle = document.getElementById('eLogoInvoicePdfTitle');
+                if (!pdfFrame || !newTabLink || !pdfTitle) return;
+                pdfButton.disabled = true;
+                pdfButton.innerHTML = '<span class="spinner spinner-white mr-3"></span>eLogo\'dan yükleniyor...';
+                newTabLink.href = pdfButton.dataset.url;
+                pdfTitle.textContent = pdfButton.dataset.title || '';
+                pdfFrame.src = pdfButton.dataset.url;
+                $('#eLogoInvoicePdfModal').modal({ backdrop: 'static', keyboard: false, show: true });
+                pdfFrame.addEventListener('load', function () {
+                    pdfButton.disabled = false;
+                    pdfButton.innerHTML = '<i class="flaticon2-document"></i> Fatura Görselini Göster';
+                }, { once: true });
+                return;
+            }
+
+            var button = event.target.closest('.js-logo-invoice-detail');
+            if (!button) return;
+
+            container.innerHTML = '<div class="text-center text-muted py-10"><span class="spinner spinner-primary mr-4"></span>Fatura detayı Logo\'dan yükleniyor...</div>';
+            $('#logoPurchaseInvoiceModal').modal({ backdrop: 'static', keyboard: false, show: true });
+            try {
+                var response = await fetch(button.dataset.url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                container.innerHTML = await response.text();
+            } catch (error) {
+                container.innerHTML = '<div class="alert alert-light-danger mb-0">Fatura detayı yüklenemedi. Lütfen tekrar deneyin.</div>';
+            }
+        });
+
+        $('#eLogoInvoicePdfModal').on('hidden.bs.modal', function () {
+            document.getElementById('eLogoInvoicePdfFrame').src = 'about:blank';
+            document.getElementById('eLogoInvoicePdfNewTab').href = '#';
+            if ($('#logoPurchaseInvoiceModal').hasClass('show')) document.body.classList.add('modal-open');
+        });
+    });
+</script>

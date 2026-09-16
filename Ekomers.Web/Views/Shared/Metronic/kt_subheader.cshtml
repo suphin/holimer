@@ -74,8 +74,19 @@
 		</div>
 		<!--end::Info-->
 		<!--begin::Toolbar-->
-		@{
-			// await Html.RenderPartialAsync("metronic/kt_subheader_toolbar");
+		@if (!(string.Equals(controllerName, "Home", StringComparison.OrdinalIgnoreCase)
+			&& string.Equals(actionName, "Member", StringComparison.OrdinalIgnoreCase)))
+		{
+			<form id="portal-shortcut-form"
+				  class="ml-3"
+				  data-page-url="@(Context.Request.Path.ToString() + Context.Request.QueryString.ToString())"
+				  data-page-title="@(ViewData["Title"]?.ToString() ?? controllerName + " / " + actionName)">
+				@Html.AntiForgeryToken()
+				<button type="button" id="portal-shortcut-toggle" class="btn btn-sm btn-light-primary font-weight-bold" title="Bu sayfayı ana sayfaya ekle">
+					<span id="portal-shortcut-icon" class="mr-1" aria-hidden="true">☆</span>
+					<span id="portal-shortcut-label">Kısayola ekle</span>
+				</button>
+			</form>
 		}
 		<!--end::Toolbar-->
 	</div>

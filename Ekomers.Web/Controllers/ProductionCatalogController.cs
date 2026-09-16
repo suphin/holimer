@@ -85,8 +85,20 @@ public sealed class ProductionCatalogController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task FillUnits(ProductionCatalogEditVM model,CancellationToken ct) =>
-        model.Units=await _context.PrdUnits.AsNoTracking().Where(x=>x.IsDelete!=true&&x.IsActive!=false).OrderBy(x=>x.Name).Select(x=>new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(x.Name,x.ID.ToString())).ToListAsync(ct);
+    private async Task FillUnits(ProductionCatalogEditVM model,CancellationToken ct)
+    {
+        var units = await _context.PrdUnits.AsNoTracking().Where(x=>x.IsDelete!=true&&x.IsActive!=false).ToListAsync(ct);
+        model.Units = units
+            .GroupBy(x => ProductionUnitNormalizer.CanonicalCode(x.Code, x.Name), StringComparer.OrdinalIgnoreCase)
+            .Select(group =>
+            {
+                var unit = group.FirstOrDefault(x => x.ID == model.UnitId)
+                    ?? group.OrderByDescending(x => x.Code.Equals(group.Key, StringComparison.OrdinalIgnoreCase)).ThenBy(x => x.ID).First();
+                return new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(ProductionUnitNormalizer.DisplayName(group.Key, unit.Name), unit.ID.ToString());
+            })
+            .OrderBy(x => x.Text)
+            .ToList();
+    }
 
     private static bool TryParseDecimal(string? value,out decimal result)
     {

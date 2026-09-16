@@ -1,7 +1,10 @@
 using Ekomers.Data;
+using Ekomers.Data.Services;
 using Ekomers.Models.Entity.Production;
+using Ekomers.Models.Entity.Purchasing;
 using Ekomers.Models.Enums;
 using Ekomers.Models.ViewModels.Production;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +22,12 @@ public sealed class UretimYonetimiController : Controller
     private const string EditingPlanHeaderSessionKey="PrdEditingPlanHeaderId";
     private static readonly bool LegacyStockImportEnabled=true;
     private readonly ApplicationDbContext _context;
-    public UretimYonetimiController(ApplicationDbContext context)=>_context=context;
+    private readonly IProductionOrderCleanupService _productionOrderCleanupService;
+    public UretimYonetimiController(ApplicationDbContext context,IProductionOrderCleanupService productionOrderCleanupService)
+    {
+        _context=context;
+        _productionOrderCleanupService=productionOrderCleanupService;
+    }
 
     public IActionResult Dashboard() => ModulSayfasi("Üretim Paneli", "Üretim sürecinin genel görünümü bu ekranda yer alacak.");
 
@@ -72,9 +80,101 @@ public sealed class UretimYonetimiController : Controller
     public async Task<IActionResult> Stoklar(string? code,string? name,int? warehouseId,CancellationToken ct)
     {
         ViewBag.Modul="YeniUretim";
+        return View(await BuildStockReportModel(code,name,warehouseId,true,ct));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> StoklariExcelAktar(string? code,string? name,int? warehouseId,CancellationToken ct)
+    {
+        var model=await BuildStockReportModel(code,name,warehouseId,true,ct);
+        using var workbook=new XLWorkbook();
+
+        var summarySheet=workbook.Worksheets.Add("Özet");
+        summarySheet.Cell("A1").Value="Malzeme Stok Durumu";
+        summarySheet.Range("A1:D1").Merge().Style.Font.SetBold().Font.SetFontSize(16);
+        summarySheet.Cell("A2").Value="Rapor tarihi";summarySheet.Cell("B2").Value=DateTime.Now;summarySheet.Cell("B2").Style.DateFormat.Format="dd.MM.yyyy HH:mm";
+        summarySheet.Cell("A3").Value="Malzeme kodu filtresi";summarySheet.Cell("B3").Value=string.IsNullOrWhiteSpace(model.Code)?"Tümü":model.Code;
+        summarySheet.Cell("A4").Value="Malzeme adı filtresi";summarySheet.Cell("B4").Value=string.IsNullOrWhiteSpace(model.Name)?"Tümü":model.Name;
+        var selectedWarehouse=warehouseId.HasValue?model.Warehouses.FirstOrDefault(x=>x.Value==warehouseId.Value.ToString())?.Text:null;
+        summarySheet.Cell("A5").Value="Depo filtresi";summarySheet.Cell("B5").Value=warehouseId.HasValue?selectedWarehouse??"Bulunamadı":"Tümü";
+        summarySheet.Cell("A7").Value="Malzeme çeşidi";summarySheet.Cell("B7").Value=model.MaterialCount;
+        summarySheet.Cell("A8").Value="Stok maliyeti (TRY)";summarySheet.Cell("B8").Value=model.TotalStockValue;
+        summarySheet.Cell("A9").Value="Toplam giriş";summarySheet.Cell("B9").Value=model.TotalIncoming;
+        summarySheet.Cell("A10").Value="Toplam çıkış";summarySheet.Cell("B10").Value=model.TotalOutgoing;
+        summarySheet.Cell("A11").Value="Kritik stok malzemesi";summarySheet.Cell("B11").Value=model.CriticalMaterialCount;
+        summarySheet.Range("A7:A11").Style.Font.SetBold();
+        summarySheet.Range("B8:B10").Style.NumberFormat.Format="#,##0.00";
+        var summaryRow=13;
+        summarySheet.Cell(summaryRow,1).Value="Birim";summarySheet.Cell(summaryRow,2).Value="Toplam bakiye";
+        StyleExcelHeader(summarySheet.Range(summaryRow,1,summaryRow,2));
+        foreach(var unitSummary in model.UnitSummaries)
+        {
+            summaryRow++;summarySheet.Cell(summaryRow,1).Value=unitSummary.Unit;summarySheet.Cell(summaryRow,2).Value=unitSummary.Quantity;
+        }
+        if(summaryRow>13)summarySheet.Range(14,2,summaryRow,2).Style.NumberFormat.Format="#,##0.######";
+        summarySheet.Columns().AdjustToContents();
+
+        var stockSheet=workbook.Worksheets.Add("Stok Durumu");
+        var stockHeaders=new[]{"Depo Kodu","Depo Adı","Malzeme Kodu","Malzeme Adı","Birim","Giren","Çıkan","Kalan","Birim Maliyet (TRY)","Toplam Maliyet (TRY)","Kritik Miktar","Kritik Stok"};
+        for(var column=0;column<stockHeaders.Length;column++)stockSheet.Cell(1,column+1).Value=stockHeaders[column];
+        StyleExcelHeader(stockSheet.Range(1,1,1,stockHeaders.Length));
+        var stockRow=1;
+        foreach(var item in model.Items)
+        {
+            stockRow++;
+            stockSheet.Cell(stockRow,1).Value=item.WarehouseCode;stockSheet.Cell(stockRow,2).Value=item.WarehouseName;
+            stockSheet.Cell(stockRow,3).Value=item.MaterialCode;stockSheet.Cell(stockRow,4).Value=item.MaterialName;stockSheet.Cell(stockRow,5).Value=item.Unit;
+            stockSheet.Cell(stockRow,6).Value=item.IncomingQuantity;stockSheet.Cell(stockRow,7).Value=item.OutgoingQuantity;stockSheet.Cell(stockRow,8).Value=item.RemainingQuantity;
+            stockSheet.Cell(stockRow,9).Value=item.UnitCost;stockSheet.Cell(stockRow,10).Value=item.TotalCost;
+            if(item.CriticalQuantity.HasValue)stockSheet.Cell(stockRow,11).Value=item.CriticalQuantity.Value;
+            stockSheet.Cell(stockRow,12).Value=item.IsCritical?"Evet":"Hayır";
+            if(item.IsCritical)stockSheet.Range(stockRow,1,stockRow,stockHeaders.Length).Style.Fill.BackgroundColor=XLColor.LightPink;
+        }
+        if(stockRow>1)
+        {
+            stockSheet.Range(2,6,stockRow,8).Style.NumberFormat.Format="#,##0.######";
+            stockSheet.Range(2,9,stockRow,9).Style.NumberFormat.Format="#,##0.000000";
+            stockSheet.Range(2,10,stockRow,10).Style.NumberFormat.Format="#,##0.00";
+            stockSheet.Range(2,11,stockRow,11).Style.NumberFormat.Format="#,##0.######";
+            stockSheet.Range(1,1,stockRow,stockHeaders.Length).CreateTable();
+        }
+        stockSheet.SheetView.FreezeRows(1);stockSheet.Columns().AdjustToContents();
+
+        var lotSheet=workbook.Worksheets.Add("Lot Detayı");
+        var lotHeaders=new[]{"Depo Kodu","Depo Adı","Malzeme Kodu","Malzeme Adı","Lot","Son Kullanma Tarihi","Birim","Bakiye","Birim Maliyet (TRY)","Stok Değeri (TRY)","Durum"};
+        for(var column=0;column<lotHeaders.Length;column++)lotSheet.Cell(1,column+1).Value=lotHeaders[column];
+        StyleExcelHeader(lotSheet.Range(1,1,1,lotHeaders.Length));
+        var lotRow=1;
+        foreach(var item in model.Lots)
+        {
+            lotRow++;
+            var expired=item.ExpirationDate.HasValue&&item.ExpirationDate.Value.Date<DateTime.Today;
+            lotSheet.Cell(lotRow,1).Value=item.WarehouseCode;lotSheet.Cell(lotRow,2).Value=item.WarehouseName;
+            lotSheet.Cell(lotRow,3).Value=item.MaterialCode;lotSheet.Cell(lotRow,4).Value=item.MaterialName;lotSheet.Cell(lotRow,5).Value=item.LotNumber;
+            if(item.ExpirationDate.HasValue)lotSheet.Cell(lotRow,6).Value=item.ExpirationDate.Value;
+            lotSheet.Cell(lotRow,7).Value=item.Unit;lotSheet.Cell(lotRow,8).Value=item.Quantity;lotSheet.Cell(lotRow,9).Value=item.UnitCost;lotSheet.Cell(lotRow,10).Value=item.TotalCost;
+            lotSheet.Cell(lotRow,11).Value=expired?"Süresi Geçmiş":"Geçerli";
+            if(expired)lotSheet.Range(lotRow,1,lotRow,lotHeaders.Length).Style.Fill.BackgroundColor=XLColor.LightPink;
+        }
+        if(lotRow>1)
+        {
+            lotSheet.Range(2,6,lotRow,6).Style.DateFormat.Format="dd.MM.yyyy";
+            lotSheet.Range(2,8,lotRow,8).Style.NumberFormat.Format="#,##0.######";
+            lotSheet.Range(2,9,lotRow,9).Style.NumberFormat.Format="#,##0.000000";
+            lotSheet.Range(2,10,lotRow,10).Style.NumberFormat.Format="#,##0.00";
+            lotSheet.Range(1,1,lotRow,lotHeaders.Length).CreateTable();
+        }
+        lotSheet.SheetView.FreezeRows(1);lotSheet.Columns().AdjustToContents();
+
+        using var stream=new MemoryStream();workbook.SaveAs(stream);
+        return File(stream.ToArray(),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",$"uretim-stoklari-{DateTime.Now:yyyyMMdd-HHmm}.xlsx");
+    }
+
+    private async Task<ProductionStockReportVM> BuildStockReportModel(string? code,string? name,int? warehouseId,bool includeWarehouseOptions,CancellationToken ct)
+    {
         code=code?.Trim();name=name?.Trim();
         var model=new ProductionStockReportVM{Code=code,Name=name,WarehouseId=warehouseId};
-        model.Warehouses=await _context.PrdWarehouses.AsNoTracking().Where(x=>x.IsDelete!=true&&x.IsActive!=false).OrderBy(x=>x.Type).ThenBy(x=>x.Code).Select(x=>new SelectListItem(x.Code+" - "+x.Name,x.ID.ToString())).ToListAsync(ct);
+        if(includeWarehouseOptions)model.Warehouses=await _context.PrdWarehouses.AsNoTracking().Where(x=>x.IsDelete!=true&&x.IsActive!=false).OrderBy(x=>x.Type).ThenBy(x=>x.Code).Select(x=>new SelectListItem(x.Code+" - "+x.Name,x.ID.ToString())).ToListAsync(ct);
         var rows=await(from movement in _context.PrdStockMovements.AsNoTracking()
                        join material in _context.PrdMaterials.AsNoTracking() on movement.MaterialId equals material.ID
                        join warehouse in _context.PrdWarehouses.AsNoTracking() on movement.WarehouseId equals warehouse.ID
@@ -93,7 +193,14 @@ public sealed class UretimYonetimiController : Controller
         }).Where(x=>x.RemainingQuantity!=0).OrderBy(x=>x.WarehouseCode).ThenBy(x=>x.MaterialCode).ToList();
         model.UnitSummaries=model.Items.GroupBy(x=>x.Unit).Select(g=>new ProductionStockUnitSummaryVM{Unit=g.Key,Quantity=g.Sum(x=>x.RemainingQuantity)}).OrderBy(x=>x.Unit).ToList();
         model.Lots=rows.GroupBy(x=>new{x.MaterialId,x.MaterialCode,x.MaterialName,x.WarehouseCode,x.WarehouseName,x.LotNumber,x.ExpirationDate,x.Unit}).Select(g=>{var quantity=g.Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity);var totalCost=g.Sum(x=>x.Direction==PrdStockDirection.In?x.TotalCost:-x.TotalCost);return new ProductionStockBalanceVM{MaterialId=g.Key.MaterialId,MaterialCode=g.Key.MaterialCode,MaterialName=g.Key.MaterialName,WarehouseCode=g.Key.WarehouseCode,WarehouseName=g.Key.WarehouseName,LotNumber=g.Key.LotNumber,ExpirationDate=g.Key.ExpirationDate,Unit=g.Key.Unit,Quantity=quantity,TotalCost=totalCost,UnitCost=quantity==0?0:totalCost/quantity};}).Where(x=>x.Quantity!=0).OrderBy(x=>x.WarehouseCode).ThenBy(x=>x.MaterialCode).ThenBy(x=>x.ExpirationDate).ToList();
-        return View(model);
+        return model;
+    }
+
+    private static void StyleExcelHeader(IXLRange range)
+    {
+        range.Style.Font.SetBold().Font.SetFontColor(XLColor.White);
+        range.Style.Fill.SetBackgroundColor(XLColor.FromHtml("#3699FF"));
+        range.Style.Alignment.SetVertical(XLAlignmentVerticalValues.Center);
     }
 
     [HttpGet,Authorize(Roles="Admin")]
@@ -179,14 +286,16 @@ public sealed class UretimYonetimiController : Controller
         if(!targetProductionDate.HasValue){TempData["error"]="Hedef üretim tarihi seçilmelidir.";return RedirectToAction(nameof(Planlama));}
         var model=await BuildPlanningModel(list,ct);
         if(model.Plans.Count!=list.Count||await _context.PrdRecipeVersions.CountAsync(x=>list.Select(s=>s.RecipeVersionId).Contains(x.ID)&&x.Status==PrdRecipeStatus.Active&&x.IsDelete!=true,ct)!=list.Count){TempData["error"]="Plan içindeki reçetelerden biri artık aktif değil. Planı kontrol edip tekrar deneyiniz.";return RedirectToAction(nameof(Planlama));}
+        var sourceValidationError=await ValidatePlanningOrderSourcesAsync(list,ct);if(sourceValidationError!=null){TempData["error"]=sourceValidationError;return RedirectToAction(nameof(Planlama));}
         var now=DateTime.Now;var user=User.Identity?.Name;var prefix=$"UP-{now:yyyyMMddHHmmssfff}";
         await using var transaction=await _context.Database.BeginTransactionAsync(ct);
         PrdProductionPlanHeader header;
         if(int.TryParse(HttpContext.Session.GetString(EditingPlanHeaderSessionKey),out var editingHeaderId))
         {
             header=await _context.PrdProductionPlanHeaders.FirstOrDefaultAsync(x=>x.ID==editingHeaderId&&x.Status==PrdProductionPlanHeaderStatus.Draft&&x.IsDelete!=true,ct)??throw new InvalidOperationException("Düzenlenen taslak plan bulunamadı.");
-            prefix=header.PlanNumber;var oldLines=await _context.PrdProductionPlans.Where(x=>x.ProductionPlanHeaderId==header.ID&&x.IsDelete!=true).ToListAsync(ct);var oldRequirements=await _context.PrdProductionPlanRequirements.Where(x=>x.ProductionPlanHeaderId==header.ID).ToListAsync(ct);
+            prefix=header.PlanNumber;var oldLines=await _context.PrdProductionPlans.Where(x=>x.ProductionPlanHeaderId==header.ID&&x.IsDelete!=true).ToListAsync(ct);var oldLineIds=oldLines.Select(x=>x.ID).ToList();var oldAllocations=await _context.PrdProductionPlanOrderAllocations.Where(x=>oldLineIds.Contains(x.ProductionPlanId)&&x.IsDelete!=true).ToListAsync(ct);var oldRequirements=await _context.PrdProductionPlanRequirements.Where(x=>x.ProductionPlanHeaderId==header.ID).ToListAsync(ct);
             foreach(var old in oldLines){old.IsDelete=true;old.IsActive=false;old.DeleteDate=now;old.DeleteUserID=user;}_context.PrdProductionPlanRequirements.RemoveRange(oldRequirements);
+            foreach(var allocation in oldAllocations){allocation.IsDelete=true;allocation.IsActive=false;allocation.DeleteDate=now;allocation.DeleteUserID=user;}
             header.TargetProductionDate=targetProductionDate.Value.Date;header.Status=PrdProductionPlanHeaderStatus.Locked;header.CalculatedDate=now;header.LockedDate=now;header.LockedUserId=user;header.Notes=notes?.Trim();header.UpdateDate=now;header.UpdateUserID=user;
         }
         else
@@ -194,18 +303,317 @@ public sealed class UretimYonetimiController : Controller
             header=new PrdProductionPlanHeader{PlanNumber=prefix,PlanDate=now,TargetProductionDate=targetProductionDate.Value.Date,Status=PrdProductionPlanHeaderStatus.Locked,CalculatedDate=now,LockedDate=now,LockedUserId=user,Notes=notes?.Trim(),IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};
             _context.PrdProductionPlanHeaders.Add(header);await _context.SaveChangesAsync(ct);
         }
-        var lineSuffix=now.ToString("HHmmssfff");
-        for(var i=0;i<model.Plans.Count;i++){var line=model.Plans[i];_context.PrdProductionPlans.Add(new PrdProductionPlan{ProductionPlanHeaderId=header.ID,PlanNumber=$"{prefix}-{lineSuffix}-{i+1:00}",RecipeVersionId=line.RecipeVersionId,ProductMaterialId=line.ProductMaterialId,PlannedQuantity=line.Quantity,UnitId=line.UnitId,PlannedProductionDate=targetProductionDate.Value.Date,BatchNumber=string.Empty,Status=PrdProductionPlanStatus.Approved,IsConvertedToOrder=false,Notes=notes?.Trim(),IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user});}
+        var lineSuffix=now.ToString("HHmmssfff");var newPlanLines=new List<PrdProductionPlan>();
+        for(var i=0;i<model.Plans.Count;i++){var line=model.Plans[i];var planLine=new PrdProductionPlan{ProductionPlanHeaderId=header.ID,PlanNumber=$"{prefix}-{lineSuffix}-{i+1:00}",RecipeVersionId=line.RecipeVersionId,ProductMaterialId=line.ProductMaterialId,PlannedQuantity=line.Quantity,UnitId=line.UnitId,PlannedProductionDate=targetProductionDate.Value.Date,BatchNumber=string.Empty,Status=PrdProductionPlanStatus.Approved,IsConvertedToOrder=false,Notes=notes?.Trim(),IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};newPlanLines.Add(planLine);_context.PrdProductionPlans.Add(planLine);}
         _context.PrdProductionPlanRequirements.AddRange(model.Requirements.Select(x=>new PrdProductionPlanRequirement{ProductionPlanHeaderId=header.ID,MaterialId=x.MaterialId,UnitId=x.UnitId,TheoreticalQuantity=x.TheoreticalQuantity,PlannedWasteQuantity=x.PlannedWasteQuantity,TotalRequiredQuantity=x.RequiredQuantity,PhysicalStockQuantity=x.PhysicalStockQuantity,ReservedQuantity=x.ReservedQuantity,AvailableStockQuantity=x.AvailableStockQuantity,ShortageQuantity=x.ShortageQuantity,CalculationDate=now,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user}));
-        await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);HttpContext.Session.Remove(PlanningSessionKey);HttpContext.Session.Remove(EditingPlanHeaderSessionKey);TempData["success"]=$"{prefix} numaralı plan kilitlendi. {model.Plans.Count} ürün satırı kaydedildi; üretim emri henüz oluşturulmadı.";return RedirectToAction(nameof(PlanDetay),new{id=header.ID});
+        await _context.SaveChangesAsync(ct);
+        for(var i=0;i<newPlanLines.Count;i++){var sessionItem=list.First(x=>x.RecipeVersionId==model.Plans[i].RecipeVersionId);foreach(var source in sessionItem.OrderSources.Where(x=>x.Quantity>0)){_context.PrdProductionPlanOrderAllocations.Add(new PrdProductionPlanOrderAllocation{CustomerOrderLineId=source.CustomerOrderLineId,ProductionPlanId=newPlanLines[i].ID,PlannedQuantity=source.Quantity,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user});}}
+        await _context.SaveChangesAsync(ct);var sourceLineIds=list.SelectMany(x=>x.OrderSources).Select(x=>x.CustomerOrderLineId).Distinct().ToList();var orderIds=await _context.PrdCustomerOrderLines.AsNoTracking().Where(x=>sourceLineIds.Contains(x.ID)).Select(x=>x.CustomerOrderId).Distinct().ToListAsync(ct);await RefreshCustomerOrderStatusesAsync(orderIds,now,user,ct);await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);HttpContext.Session.Remove(PlanningSessionKey);HttpContext.Session.Remove(EditingPlanHeaderSessionKey);TempData["success"]=$"{prefix} numaralı plan kilitlendi. {model.Plans.Count} ürün satırı kaydedildi; üretim emri henüz oluşturulmadı.";return RedirectToAction(nameof(PlanDetay),new{id=header.ID});
     }
 
     [HttpGet]
     public async Task<IActionResult> Planlar(CancellationToken ct)
     {
         ViewBag.Modul="YeniUretim";
-        var model=await _context.PrdProductionPlanHeaders.AsNoTracking().Where(x=>x.IsDelete!=true).OrderByDescending(x=>x.PlanDate).Select(x=>new ProductionPlanListVM{Id=x.ID,PlanNumber=x.PlanNumber,PlanDate=x.PlanDate,TargetProductionDate=x.TargetProductionDate,Status=x.Status,ProductCount=_context.PrdProductionPlans.Count(p=>p.ProductionPlanHeaderId==x.ID&&p.IsDelete!=true),RequirementCount=_context.PrdProductionPlanRequirements.Count(r=>r.ProductionPlanHeaderId==x.ID&&r.IsDelete!=true),TotalShortageQuantity=_context.PrdProductionPlanRequirements.Where(r=>r.ProductionPlanHeaderId==x.ID&&r.IsDelete!=true).Sum(r=>(decimal?)r.ShortageQuantity)??0,Notes=x.Notes}).ToListAsync(ct);
+        var model=await _context.PrdProductionPlanHeaders.AsNoTracking().Where(x=>x.IsDelete!=true).OrderByDescending(x=>x.PlanDate).Select(x=>new ProductionPlanListVM{Id=x.ID,PlanNumber=x.PlanNumber,PlanDate=x.PlanDate,TargetProductionDate=x.TargetProductionDate,Status=x.Status,ProductCount=_context.PrdProductionPlans.Count(p=>p.ProductionPlanHeaderId==x.ID&&p.IsDelete!=true),RequirementCount=_context.PrdProductionPlanRequirements.Count(r=>r.ProductionPlanHeaderId==x.ID&&r.IsDelete!=true),TotalShortageQuantity=_context.PrdProductionPlanRequirements.Where(r=>r.ProductionPlanHeaderId==x.ID&&r.IsDelete!=true).Sum(r=>(decimal?)r.ShortageQuantity)??0,PurchaseRequestId=x.PurchaseRequestId,PurchaseRequestNumber=x.PurchaseRequestNumber,PurchaseRequestCreatedDate=x.PurchaseRequestCreatedDate,Notes=x.Notes}).ToListAsync(ct);
+        var legacyRequests=await FindLegacyProductionPlanRequestsAsync(model.Where(x=>!x.PurchaseRequestId.HasValue).Select(x=>x.PlanNumber),ct);
+        foreach(var plan in model.Where(x=>!x.PurchaseRequestId.HasValue))
+        {
+            if(!legacyRequests.TryGetValue(plan.PlanNumber,out var legacyRequest))continue;
+            plan.PurchaseRequestId=legacyRequest.RequestId;
+            plan.PurchaseRequestNumber=legacyRequest.RequestNumber;
+            plan.PurchaseRequestCreatedDate=legacyRequest.CreatedDate;
+        }
         return View(model);
+    }
+
+    [HttpPost,ValidateAntiForgeryToken]
+    public async Task<IActionResult> EksikHammaddelerIcinSatinalmaTalebi(List<int>? planIds,CancellationToken ct)
+    {
+        var selectedIds=planIds?.Where(x=>x>0).Distinct().ToList()??[];
+        if(selectedIds.Count==0)
+        {
+            TempData["error"]="Satınalma talebi oluşturmak için en az bir üretim planı seçiniz.";
+            return RedirectToAction(nameof(Planlar));
+        }
+
+        var plans=await _context.PrdProductionPlanHeaders.AsNoTracking()
+            .Where(x=>selectedIds.Contains(x.ID)&&x.IsDelete!=true&&x.Status!=PrdProductionPlanHeaderStatus.Cancelled)
+            .OrderBy(x=>x.TargetProductionDate)
+            .Select(x=>new{x.ID,x.PlanNumber,x.TargetProductionDate,x.PurchaseRequestId,x.PurchaseRequestNumber})
+            .ToListAsync(ct);
+        if(plans.Count!=selectedIds.Count)
+        {
+            TempData["error"]="Seçilen planlardan biri bulunamadı, silinmiş veya iptal edilmiş. Listeyi yenileyip tekrar deneyiniz.";
+            return RedirectToAction(nameof(Planlar));
+        }
+
+        var alreadyRequestedLabels=plans.Where(x=>x.PurchaseRequestId.HasValue)
+            .Select(x=>$"{x.PlanNumber} ({x.PurchaseRequestNumber??"talep mevcut"})")
+            .ToList();
+        var legacyRequests=await FindLegacyProductionPlanRequestsAsync(plans.Where(x=>!x.PurchaseRequestId.HasValue).Select(x=>x.PlanNumber),ct);
+        alreadyRequestedLabels.AddRange(plans
+            .Where(x=>!x.PurchaseRequestId.HasValue&&legacyRequests.ContainsKey(x.PlanNumber))
+            .Select(x=>$"{x.PlanNumber} ({legacyRequests[x.PlanNumber].RequestNumber})"));
+        if(alreadyRequestedLabels.Count>0)
+        {
+            var labels=string.Join(", ",alreadyRequestedLabels);
+            TempData["error"]=$"Bu üretim planları için daha önce satınalma talebi oluşturulmuş: {labels}. Aynı plan tekrar talebe dönüştürülemez.";
+            return RedirectToAction(nameof(Planlar));
+        }
+
+        var requirementRows=await(
+            from requirement in _context.PrdProductionPlanRequirements.AsNoTracking()
+            join material in _context.PrdMaterials.AsNoTracking() on requirement.MaterialId equals material.ID
+            join requirementUnit in _context.PrdUnits.AsNoTracking() on requirement.UnitId equals requirementUnit.ID
+            join baseUnit in _context.PrdUnits.AsNoTracking() on material.UnitId equals baseUnit.ID
+            where selectedIds.Contains(requirement.ProductionPlanHeaderId)
+                && requirement.IsDelete!=true
+                && requirement.ShortageQuantity>0
+                && material.IsDelete!=true
+                && material.IsActive!=false
+                && (material.Type==PrdMaterialType.RawMaterial
+                    || material.Type==PrdMaterialType.Packaging
+                    || material.Type==PrdMaterialType.Other)
+            select new
+            {
+                material.ID,
+                material.Code,
+                material.Name,
+                BaseUnitId=baseUnit.ID,
+                BaseUnitCode=baseUnit.Code,
+                BaseUnitName=baseUnit.Name,
+                RequirementUnitId=requirementUnit.ID,
+                RequirementUnitCode=requirementUnit.Code,
+                RequirementUnitName=requirementUnit.Name,
+                requirement.ShortageQuantity
+            }).ToListAsync(ct);
+
+        if(requirementRows.Count==0)
+        {
+            TempData["error"]="Seçilen planlarda satınalma talebine aktarılacak eksik malzeme bulunamadı.";
+            return RedirectToAction(nameof(Planlar));
+        }
+
+        var convertedShortages=requirementRows.Select(x=>new
+        {
+            Row=x,
+            Quantity=ConvertProductionQuantity(x.ShortageQuantity,x.RequirementUnitId,x.RequirementUnitCode,x.RequirementUnitName,x.BaseUnitId,x.BaseUnitCode,x.BaseUnitName)
+        }).ToList();
+        var conversionFailures=convertedShortages.Where(x=>x.Row.ShortageQuantity>0&&x.Quantity<=0).Select(x=>x.Row.Code).Distinct().ToList();
+        if(conversionFailures.Count>0)
+        {
+            TempData["error"]=$"Satınalma talebi oluşturulamadı. Ana birime dönüşümü eksik malzemeler: {string.Join(", ",conversionFailures.Take(8))}{(conversionFailures.Count>8?" …":"")}.";
+            return RedirectToAction(nameof(Planlar));
+        }
+
+        var shortages=convertedShortages
+            .GroupBy(x=>new{x.Row.ID,x.Row.Code,x.Row.Name,x.Row.BaseUnitId,x.Row.BaseUnitCode,x.Row.BaseUnitName})
+            .Select(g=>new
+            {
+                MaterialId=g.Key.ID,
+                g.Key.Code,
+                g.Key.Name,
+                UnitId=g.Key.BaseUnitId,
+                UnitCode=g.Key.BaseUnitCode,
+                UnitName=g.Key.BaseUnitName,
+                Quantity=g.Sum(x=>x.Quantity)
+            })
+            .OrderBy(x=>x.Code)
+            .ToList();
+
+        var materialIds=shortages.Select(x=>x.MaterialId).ToList();
+        var openRequestRows=await(
+            from line in _context.PurPurchaseRequestLines.AsNoTracking()
+            join requestHeader in _context.PurPurchaseRequests.AsNoTracking() on line.PurchaseRequestId equals requestHeader.ID
+            join unit in _context.PrdUnits.AsNoTracking() on line.UnitId equals unit.ID
+            join material in _context.PrdMaterials.AsNoTracking() on line.MaterialId equals material.ID
+            join baseUnit in _context.PrdUnits.AsNoTracking() on material.UnitId equals baseUnit.ID
+            where materialIds.Contains(line.MaterialId)
+                && line.IsDelete!=true
+                && requestHeader.IsDelete!=true
+                && line.Status!=PurPurchaseRequestLineStatus.Rejected
+                && line.Status!=PurPurchaseRequestLineStatus.Cancelled
+                && line.Status!=PurPurchaseRequestLineStatus.Closed
+                && requestHeader.Status!=PurPurchaseRequestStatus.Rejected
+                && requestHeader.Status!=PurPurchaseRequestStatus.Cancelled
+            select new
+            {
+                LineId=line.ID,
+                line.MaterialId,
+                line.UnitId,
+                UnitCode=unit.Code,
+                UnitName=unit.Name,
+                BaseUnitId=baseUnit.ID,
+                BaseUnitCode=baseUnit.Code,
+                BaseUnitName=baseUnit.Name,
+                line.RequestedQuantity,
+                line.ApprovedQuantity,
+                line.Status
+            }).ToListAsync(ct);
+
+        var orderedLineIds=openRequestRows.Where(x=>x.Status==PurPurchaseRequestLineStatus.Ordered).Select(x=>x.LineId).ToList();
+        var orderedRemaining=orderedLineIds.Count==0
+            ? new Dictionary<int,decimal>()
+            : await(
+                from orderLine in _context.PurPurchaseOrderLines.AsNoTracking()
+                join order in _context.PurPurchaseOrders.AsNoTracking() on orderLine.PurchaseOrderId equals order.ID
+                where orderedLineIds.Contains(orderLine.PurchaseRequestLineId)
+                    && orderLine.IsDelete!=true
+                    && order.IsDelete!=true
+                    && orderLine.Status!=PurPurchaseOrderLineStatus.Cancelled
+                    && order.Status!=PurPurchaseOrderStatus.Cancelled
+                group orderLine by orderLine.PurchaseRequestLineId into g
+                select new{LineId=g.Key,Quantity=g.Sum(x=>x.OrderedQuantity-x.ReceivedQuantity)})
+                .ToDictionaryAsync(x=>x.LineId,x=>Math.Max(0,x.Quantity),ct);
+
+        var outstandingByMaterial=openRequestRows
+            .Select(x=>
+            {
+                var sourceQuantity=x.Status==PurPurchaseRequestLineStatus.Ordered
+                    ? (orderedRemaining.TryGetValue(x.LineId,out var remaining)?remaining:0)
+                    : x.Status is PurPurchaseRequestLineStatus.Approved or PurPurchaseRequestLineStatus.InQuotation
+                        ? (x.ApprovedQuantity>0?x.ApprovedQuantity:x.RequestedQuantity)
+                        : x.RequestedQuantity;
+                var baseQuantity=ConvertProductionQuantity(sourceQuantity,x.UnitId,x.UnitCode,x.UnitName,x.BaseUnitId,x.BaseUnitCode,x.BaseUnitName);
+                return new{x.MaterialId,Quantity=Math.Max(0,baseQuantity)};
+            })
+            .GroupBy(x=>x.MaterialId)
+            .ToDictionary(g=>g.Key,g=>g.Sum(x=>x.Quantity));
+
+        var requestLines=shortages
+            .Select(x=>new
+            {
+                x.MaterialId,
+                x.Code,
+                x.Name,
+                x.UnitId,
+                x.UnitName,
+                GrossShortage=x.Quantity,
+                Outstanding=outstandingByMaterial.TryGetValue(x.MaterialId,out var outstanding)?outstanding:0,
+                Quantity=Math.Round(Math.Max(0,x.Quantity-(outstandingByMaterial.TryGetValue(x.MaterialId,out var pending)?pending:0)),6,MidpointRounding.AwayFromZero)
+            })
+            .Where(x=>x.Quantity>0)
+            .ToList();
+
+        if(requestLines.Count==0)
+        {
+            TempData["error"]="Seçilen planların eksik malzemeleri için açık satınalma talepleri veya siparişler zaten yeterli miktarı karşılıyor.";
+            return RedirectToAction(nameof(Planlar));
+        }
+
+        var now=DateTime.Now;
+        var user=User.Identity?.Name??"system";
+        var planNumbers=string.Join(", ",plans.Select(x=>x.PlanNumber));
+        var shortPlanNumbers=planNumbers.Length<=300?planNumbers:planNumbers[..297]+"…";
+        var neededDate=plans.Min(x=>x.TargetProductionDate).Date;
+        if(neededDate<DateTime.Today)neededDate=DateTime.Today;
+        var request=new PurPurchaseRequest
+        {
+            RequestNumber=$"ST-{now:yyyyMMddHHmmssfff}",
+            RequestDate=now.Date,
+            NeededDate=neededDate,
+            RequestedUserId=user,
+            Priority=PurPurchaseRequestPriority.Normal,
+            Status=PurPurchaseRequestStatus.Draft,
+            Notes=$"Üretim planlarından otomatik oluşturuldu: {shortPlanNumbers}. Eksikler malzeme bazında birleştirildi; açık satınalma miktarları düşüldü.",
+            IsActive=true,
+            IsDelete=false,
+            CreateDate=now,
+            CreateUserID=user
+        };
+
+        await using var transaction=await _context.Database.BeginTransactionAsync(ct);
+        _context.PurPurchaseRequests.Add(request);
+        await _context.SaveChangesAsync(ct);
+        for(var index=0;index<requestLines.Count;index++)
+        {
+            var line=requestLines[index];
+            var reason=$"{shortPlanNumbers} planlarının eksik malzeme ihtiyacı. Brüt eksik: {line.GrossShortage:0.######} {line.UnitName}; açık satınalma: {line.Outstanding:0.######} {line.UnitName}.";
+            if(reason.Length>500)reason=reason[..497]+"…";
+            _context.PurPurchaseRequestLines.Add(new PurPurchaseRequestLine
+            {
+                PurchaseRequestId=request.ID,
+                Sequence=index+1,
+                MaterialId=line.MaterialId,
+                UnitId=line.UnitId,
+                RequestedQuantity=line.Quantity,
+                ApprovedQuantity=0,
+                NeededDate=neededDate,
+                Status=PurPurchaseRequestLineStatus.Draft,
+                Source=PurPurchaseRequestSource.Mrp,
+                SourceReferenceType="ProductionPlanSelection",
+                SourceReferenceId=plans.Count==1?plans[0].ID:null,
+                Reason=reason,
+                IsActive=true,
+                IsDelete=false,
+                CreateDate=now,
+                CreateUserID=user
+            });
+        }
+        await _context.SaveChangesAsync(ct);
+
+        var markedPlanCount=await _context.PrdProductionPlanHeaders
+            .Where(x=>selectedIds.Contains(x.ID)&&x.IsDelete!=true&&!x.PurchaseRequestId.HasValue)
+            .ExecuteUpdateAsync(setters=>setters
+                .SetProperty(x=>x.PurchaseRequestId,request.ID)
+                .SetProperty(x=>x.PurchaseRequestNumber,request.RequestNumber)
+                .SetProperty(x=>x.PurchaseRequestCreatedDate,now)
+                .SetProperty(x=>x.UpdateDate,now)
+                .SetProperty(x=>x.UpdateUserID,user),ct);
+        if(markedPlanCount!=selectedIds.Count)
+        {
+            await transaction.RollbackAsync(ct);
+            TempData["error"]="Seçilen planlardan biri için başka bir işlemde satınalma talebi oluşturuldu. Mükerrer kayıt açılmadı; listeyi yenileyiniz.";
+            return RedirectToAction(nameof(Planlar));
+        }
+
+        await transaction.CommitAsync(ct);
+
+        TempData["success"]=$"{request.RequestNumber} numaralı taslak satınalma talebi {requestLines.Count} malzeme satırıyla oluşturuldu.";
+        if(User.IsInRole("Admin")||User.HasClaim("Modul","PURCHASING"))
+            return RedirectToAction("TalepDetay","SatinalmaYonetimi",new{id=request.ID});
+        return RedirectToAction(nameof(Planlar));
+    }
+
+    private async Task<Dictionary<string,(int RequestId,string RequestNumber,DateTime CreatedDate)>> FindLegacyProductionPlanRequestsAsync(IEnumerable<string> planNumbers,CancellationToken ct)
+    {
+        const string notePrefix="Üretim planlarından otomatik oluşturuldu: ";
+        const string noteSuffix=". Eksikler";
+        var requestedPlanNumbers=planNumbers.Where(x=>!string.IsNullOrWhiteSpace(x)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var result=new Dictionary<string,(int RequestId,string RequestNumber,DateTime CreatedDate)>(StringComparer.OrdinalIgnoreCase);
+        if(requestedPlanNumbers.Count==0)return result;
+
+        var legacyRows=await _context.PurPurchaseRequests.AsNoTracking()
+            .Where(x=>x.IsDelete!=true&&x.Notes!=null&&x.Notes.StartsWith(notePrefix)
+                &&_context.PurPurchaseRequestLines.Any(line=>line.PurchaseRequestId==x.ID&&line.IsDelete!=true
+                    &&line.Source==PurPurchaseRequestSource.Mrp&&line.SourceReferenceType=="ProductionPlanSelection"))
+            .OrderByDescending(x=>x.ID)
+            .Select(x=>new{x.ID,x.RequestNumber,x.RequestDate,x.CreateDate,x.Notes})
+            .ToListAsync(ct);
+
+        foreach(var row in legacyRows)
+        {
+            var suffixIndex=row.Notes!.IndexOf(noteSuffix,notePrefix.Length,StringComparison.Ordinal);
+            if(suffixIndex<0)continue;
+            var linkedPlanNumbers=row.Notes[notePrefix.Length..suffixIndex]
+                .Split(',',StringSplitOptions.TrimEntries|StringSplitOptions.RemoveEmptyEntries);
+            foreach(var planNumber in linkedPlanNumbers)
+            {
+                if(requestedPlanNumbers.Contains(planNumber)&&!result.ContainsKey(planNumber))
+                    result[planNumber]=(row.ID,row.RequestNumber,row.CreateDate??row.RequestDate);
+            }
+        }
+
+        return result;
+    }
+
+    [HttpPost,ValidateAntiForgeryToken,Authorize(Roles="Admin")]
+    public async Task<IActionResult> PlanSil(int id,string? confirmationPlanNumber,string? reason,bool confirmCascadeDelete,CancellationToken ct)
+    {
+        var result=await _productionOrderCleanupService.DeletePlanAsync(id,confirmationPlanNumber,reason,confirmCascadeDelete,User.Identity?.Name,ct);
+        TempData[result.Succeeded?"success":"error"]=result.Message;
+        return RedirectToAction(nameof(Planlar));
     }
 
     [HttpGet]
@@ -238,7 +646,7 @@ public sealed class UretimYonetimiController : Controller
     public async Task<IActionResult> TaslagiDuzenle(int id,CancellationToken ct)
     {
         var header=await _context.PrdProductionPlanHeaders.AsNoTracking().FirstOrDefaultAsync(x=>x.ID==id&&x.Status==PrdProductionPlanHeaderStatus.Draft&&x.IsDelete!=true,ct);if(header==null){TempData["error"]="Düzenlenebilir taslak plan bulunamadı.";return RedirectToAction(nameof(Planlar));}
-        var lines=await _context.PrdProductionPlans.AsNoTracking().Where(x=>x.ProductionPlanHeaderId==id&&x.IsDelete!=true).Select(x=>new ProductionPlanningSessionItem{RecipeVersionId=x.RecipeVersionId,Quantity=x.PlannedQuantity}).ToListAsync(ct);
+        var planLines=await _context.PrdProductionPlans.AsNoTracking().Where(x=>x.ProductionPlanHeaderId==id&&x.IsDelete!=true).ToListAsync(ct);var planLineIds=planLines.Select(x=>x.ID).ToList();var allocations=await _context.PrdProductionPlanOrderAllocations.AsNoTracking().Where(x=>planLineIds.Contains(x.ProductionPlanId)&&x.IsDelete!=true).ToListAsync(ct);var lines=planLines.Select(x=>new ProductionPlanningSessionItem{RecipeVersionId=x.RecipeVersionId,Quantity=x.PlannedQuantity,OrderSources=allocations.Where(a=>a.ProductionPlanId==x.ID).Select(a=>new ProductionPlanningOrderSourceSessionItem{CustomerOrderLineId=a.CustomerOrderLineId,Quantity=a.PlannedQuantity}).ToList()}).ToList();
         SavePlanningList(lines);HttpContext.Session.SetString(EditingPlanHeaderSessionKey,id.ToString());return RedirectToAction(nameof(Planlama));
     }
 
@@ -249,8 +657,8 @@ public sealed class UretimYonetimiController : Controller
         var lines=await _context.PrdProductionPlans.Where(x=>x.ProductionPlanHeaderId==id&&x.IsDelete!=true).ToListAsync(ct);
         var lineIds=lines.Select(x=>x.ID).ToList();
         if(lines.Any(x=>x.IsConvertedToOrder)||await _context.PrdProductionOrders.AnyAsync(x=>lineIds.Contains(x.ProductionPlanId)&&x.IsDelete!=true,ct)){TempData["error"]="Üretim emrine dönüşmüş plan iptal edilemez.";return RedirectToAction(nameof(PlanDetay),new{id});}
-        header.Status=PrdProductionPlanHeaderStatus.Cancelled;header.IsActive=false;header.UpdateDate=DateTime.Now;header.UpdateUserID=User.Identity?.Name;foreach(var line in lines){line.Status=PrdProductionPlanStatus.Cancelled;line.IsActive=false;}
-        await _context.SaveChangesAsync(ct);TempData["success"]="Üretim planı iptal edildi.";return RedirectToAction(nameof(PlanDetay),new{id});
+        var now=DateTime.Now;var actor=User.Identity?.Name;var allocations=await _context.PrdProductionPlanOrderAllocations.Where(x=>lineIds.Contains(x.ProductionPlanId)&&x.IsDelete!=true).ToListAsync(ct);var sourceLineIds=allocations.Select(x=>x.CustomerOrderLineId).Distinct().ToList();var orderIds=await _context.PrdCustomerOrderLines.AsNoTracking().Where(x=>sourceLineIds.Contains(x.ID)).Select(x=>x.CustomerOrderId).Distinct().ToListAsync(ct);header.Status=PrdProductionPlanHeaderStatus.Cancelled;header.IsActive=false;header.UpdateDate=now;header.UpdateUserID=actor;foreach(var line in lines){line.Status=PrdProductionPlanStatus.Cancelled;line.IsActive=false;}foreach(var allocation in allocations){allocation.IsDelete=true;allocation.IsActive=false;allocation.DeleteDate=now;allocation.DeleteUserID=actor;}await RefreshCustomerOrderStatusesAsync(orderIds,now,actor,ct);
+        await _context.SaveChangesAsync(ct);TempData["success"]="Üretim planı iptal edildi; bağlı sipariş miktarları yeniden planlama havuzuna açıldı.";return RedirectToAction(nameof(PlanDetay),new{id});
     }
     [HttpGet]
     public async Task<IActionResult> EmirOlustur(int planHeaderId,CancellationToken ct)
@@ -727,7 +1135,7 @@ public sealed class UretimYonetimiController : Controller
         if(selected.Count==0)return model;
         var ids=selected.Select(x=>x.RecipeVersionId).ToList();
         var data=await(from version in _context.PrdRecipeVersions.AsNoTracking() join recipe in _context.PrdRecipes.AsNoTracking() on version.RecipeId equals recipe.ID join product in _context.PrdMaterials.AsNoTracking() on recipe.ProductMaterialId equals product.ID join unit in _context.PrdUnits.AsNoTracking() on version.UnitId equals unit.ID where ids.Contains(version.ID)&&version.IsDelete!=true select new{Version=version,Recipe=recipe,Product=product,Unit=unit}).ToListAsync(ct);
-        model.Plans=data.Select(x=>new ProductionPlanningLineVM{RecipeVersionId=x.Version.ID,ProductMaterialId=x.Product.ID,UnitId=x.Version.UnitId,ProductCode=x.Product.Code,ProductName=x.Product.Name,VersionNumber=x.Version.VersionNumber,Quantity=selected.First(s=>s.RecipeVersionId==x.Version.ID).Quantity,Unit=x.Unit.Name}).ToList();
+        model.Plans=data.Select(x=>{var session=selected.First(s=>s.RecipeVersionId==x.Version.ID);return new ProductionPlanningLineVM{RecipeVersionId=x.Version.ID,ProductMaterialId=x.Product.ID,UnitId=x.Version.UnitId,ProductCode=x.Product.Code,ProductName=x.Product.Name,VersionNumber=x.Version.VersionNumber,Quantity=session.Quantity,Unit=x.Unit.Name,OrderSourceCount=session.OrderSources.Select(s=>s.CustomerOrderLineId).Distinct().Count(),OrderSourceQuantity=session.OrderSources.Sum(s=>s.Quantity)};}).ToList();
         var recipeItems=await(from item in _context.PrdRecipeItems.AsNoTracking() join material in _context.PrdMaterials.AsNoTracking() on item.MaterialId equals material.ID join unit in _context.PrdUnits.AsNoTracking() on item.UnitId equals unit.ID where ids.Contains(item.RecipeVersionId)&&item.IsDelete!=true&&material.IsDelete!=true select new{Item=item,Material=material,Unit=unit}).ToListAsync(ct);
         var requirements=recipeItems.Select(x=>{var theoretical=x.Item.Quantity/data.First(d=>d.Version.ID==x.Item.RecipeVersionId).Version.BaseQuantity*selected.First(s=>s.RecipeVersionId==x.Item.RecipeVersionId).Quantity;return new{x.Material,x.Unit,Theoretical=theoretical,Waste=theoretical*x.Item.PlannedWasteRate/100m};}).GroupBy(x=>new{x.Material.ID,x.Material.Code,MaterialName=x.Material.Name,x.Material.Type,UnitId=x.Unit.ID,UnitCode=x.Unit.Code,UnitName=x.Unit.Name}).Select(g=>new{g.Key,Theoretical=g.Sum(x=>x.Theoretical),Waste=g.Sum(x=>x.Waste),Required=g.Sum(x=>x.Theoretical+x.Waste)}).ToList();
         var materialIds=requirements.Select(x=>x.Key.ID).ToList();
@@ -856,5 +1264,33 @@ public sealed class UretimYonetimiController : Controller
         await ApplyCurrentStockAsync(model.CurrentRequirements,new[]{model.SourceWarehouseId,model.ProductionWarehouseId},ct);model.TotalShortageQuantity=model.CurrentRequirements.Sum(x=>x.ShortageQuantity);model.StockCalculationDate=DateTime.Now;
         if(postedLines!=null)foreach(var line in model.Lines){var posted=postedLines.FirstOrDefault(x=>x.ProductionPlanId==line.ProductionPlanId);if(posted!=null){line.BatchNumber=posted.BatchNumber;line.Notes=posted.Notes;}}
         return model;
+    }
+
+    private async Task<string?> ValidatePlanningOrderSourcesAsync(List<ProductionPlanningSessionItem> list,CancellationToken ct)
+    {
+        var sources=list.SelectMany(x=>x.OrderSources.Select(s=>new{x.RecipeVersionId,s.CustomerOrderLineId,s.Quantity})).Where(x=>x.Quantity>0).ToList();if(sources.Count==0)return null;
+        if(sources.Any(x=>x.Quantity<=0))return "Sipariş kaynak miktarı geçersiz.";
+        var lineIds=sources.Select(x=>x.CustomerOrderLineId).Distinct().ToList();var recipeIds=sources.Select(x=>x.RecipeVersionId).Distinct().ToList();
+        var productByRecipe=await(from version in _context.PrdRecipeVersions.AsNoTracking() join recipe in _context.PrdRecipes.AsNoTracking() on version.RecipeId equals recipe.ID where recipeIds.Contains(version.ID) select new{version.ID,recipe.ProductMaterialId}).ToDictionaryAsync(x=>x.ID,x=>x.ProductMaterialId,ct);
+        var orderLines=await(from line in _context.PrdCustomerOrderLines.AsNoTracking() join order in _context.PrdCustomerOrders.AsNoTracking() on line.CustomerOrderId equals order.ID where lineIds.Contains(line.ID)&&line.IsDelete!=true&&order.IsDelete!=true&&order.Status!=PrdCustomerOrderStatus.Cancelled&&order.Status!=PrdCustomerOrderStatus.Draft select new{Line=line,order.OrderNumber}).ToDictionaryAsync(x=>x.Line.ID,ct);
+        if(orderLines.Count!=lineIds.Count)return "Planlama kaynağındaki sipariş satırlarından biri artık kullanılabilir değil.";
+        int? editingHeaderId=int.TryParse(HttpContext.Session.GetString(EditingPlanHeaderSessionKey),out var parsedHeaderId)?parsedHeaderId:null;var allocationQuery=from allocation in _context.PrdProductionPlanOrderAllocations.AsNoTracking() join plan in _context.PrdProductionPlans.AsNoTracking() on allocation.ProductionPlanId equals plan.ID where lineIds.Contains(allocation.CustomerOrderLineId)&&allocation.IsDelete!=true&&plan.IsDelete!=true&&(!editingHeaderId.HasValue||plan.ProductionPlanHeaderId!=editingHeaderId.Value) select allocation;
+        var allocated=await allocationQuery.GroupBy(x=>x.CustomerOrderLineId).Select(x=>new{Id=x.Key,Quantity=x.Sum(a=>a.PlannedQuantity)}).ToDictionaryAsync(x=>x.Id,x=>x.Quantity,ct);
+        foreach(var sourceGroup in sources.GroupBy(x=>x.CustomerOrderLineId))
+        {
+            var row=orderLines[sourceGroup.Key];if(sourceGroup.Any(x=>!productByRecipe.TryGetValue(x.RecipeVersionId,out var productId)||productId!=row.Line.ProductMaterialId))return $"{row.OrderNumber} siparişindeki ürün ile seçilen reçete eşleşmiyor.";
+            var remaining=row.Line.OrderedQuantity-row.Line.CancelledQuantity-allocated.GetValueOrDefault(row.Line.ID);if(sourceGroup.Sum(x=>x.Quantity)>remaining)return $"{row.OrderNumber} siparişinde planlanmak istenen miktar kalan {Math.Max(0,remaining):0.######} miktarını aşıyor. Planlama havuzunu yenileyiniz.";
+        }
+        return null;
+    }
+
+    private async Task RefreshCustomerOrderStatusesAsync(IEnumerable<int> ids,DateTime now,string? actor,CancellationToken ct)
+    {
+        var orderIds=ids.Distinct().ToList();if(orderIds.Count==0)return;var orders=await _context.PrdCustomerOrders.Where(x=>orderIds.Contains(x.ID)&&x.IsDelete!=true&&x.Status!=PrdCustomerOrderStatus.Cancelled).ToListAsync(ct);
+        foreach(var order in orders)
+        {
+            var lineIds=await _context.PrdCustomerOrderLines.Where(x=>x.CustomerOrderId==order.ID&&x.IsDelete!=true).Select(x=>x.ID).ToListAsync(ct);var total=await _context.PrdCustomerOrderLines.Where(x=>lineIds.Contains(x.ID)).SumAsync(x=>(decimal?)(x.OrderedQuantity-x.CancelledQuantity),ct)??0;var planned=await _context.PrdProductionPlanOrderAllocations.Where(x=>lineIds.Contains(x.CustomerOrderLineId)&&x.IsDelete!=true).SumAsync(x=>(decimal?)x.PlannedQuantity,ct)??0;
+            order.Status=planned<=0?PrdCustomerOrderStatus.ReadyForPlanning:planned<total?PrdCustomerOrderStatus.PartiallyPlanned:PrdCustomerOrderStatus.Planned;order.UpdateDate=now;order.UpdateUserID=actor;
+        }
     }
 }

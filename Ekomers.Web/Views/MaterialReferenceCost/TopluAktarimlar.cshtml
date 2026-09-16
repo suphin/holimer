@@ -1,0 +1,27 @@
+@model List<Ekomers.Models.ViewModels.Production.MaterialReferenceCostImportBatchListRowVM>
+@{
+    ViewData["Title"] = "Toplu Maliyet Aktarımları";
+}
+
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">Toplu Maliyet Aktarımları<span class="d-block text-muted pt-2 font-size-sm">Excel'den alınan kayıtların parti geçmişi</span></h3></div>
+        <div class="card-toolbar"><a asp-action="ExcelAktar" class="btn btn-primary mr-2">Yeni Aktarım</a><a asp-action="Index" class="btn btn-light">Maliyetlere Dön</a></div>
+    </div>
+    <div class="card-body">
+        @if (Model.Count == 0) { <div class="alert alert-light-primary mb-0">Henüz toplu aktarım yapılmadı.</div> }
+        else
+        {
+            <div class="table-responsive"><table class="table table-separate table-head-custom">
+                <thead><tr><th>Aktarım</th><th>Dosya</th><th>Geçerlilik</th><th>Sonuç</th><th>Kayıt</th><th></th></tr></thead>
+                <tbody>@foreach (var row in Model) { <tr>
+                    <td><strong>@row.BatchNumber</strong><span class="d-block text-muted">@(row.Notes ?? "-")</span></td>
+                    <td>@row.FileName</td><td>@row.ValidFrom.ToString("dd.MM.yyyy")</td>
+                    <td><span class="text-success">@row.ImportedCount alındı</span><span class="d-block text-warning">@row.ReviewCount kontrol</span><span class="d-block text-muted">@row.SkippedCount atlandı</span></td>
+                    <td>@row.CreateDate?.ToString("dd.MM.yyyy HH:mm")<span class="d-block text-muted">@row.CreatedUser</span></td>
+                    <td><a asp-action="TopluAktarimDetay" asp-route-id="@row.Id" class="btn btn-sm btn-light-primary">Detay / Düzelt</a></td>
+                </tr> }</tbody>
+            </table></div>
+        }
+    </div>
+</div>

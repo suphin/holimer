@@ -4,7 +4,7 @@
 }
 
 <div class="card card-custom">
-    <div class="card-header"><div class="card-title"><h3 class="card-label">@ViewData["Title"]<span class="d-block text-muted pt-2 font-size-sm">Spesifikasyon v@ViewBag.VersionNumber</span></h3></div></div>
+    <div class="card-header"><div class="card-title"><h3 class="card-label">@ViewData["Title"]<span class="d-block text-muted pt-2 font-size-sm">Spesifikasyon v@(ViewBag.VersionNumber)</span></h3></div></div>
     <form asp-action="MaddeDuzenle" method="post">
         <input asp-for="Id" type="hidden"/><input asp-for="SpecificationSetId" type="hidden"/>
         <div class="card-body"><div asp-validation-summary="ModelOnly" class="text-danger"></div>

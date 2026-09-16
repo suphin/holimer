@@ -22,14 +22,22 @@ public sealed class ProductionCatalogSyncService
         var now = DateTime.Now;
         var oldUnits = await _context.MalzemeBirim.AsNoTracking().Where(x => x.IsDelete != true).ToListAsync(cancellationToken);
         var productionUnits = await _context.PrdUnits.ToListAsync(cancellationToken);
-        var unitByCode = productionUnits.ToDictionary(x => Normalize(x.Code), StringComparer.OrdinalIgnoreCase);
+        var unitByCode = productionUnits
+            .GroupBy(x => ProductionUnitNormalizer.CanonicalCode(x.Code, x.Name), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderByDescending(y => y.IsDelete != true && y.IsActive != false)
+                    .ThenByDescending(y => Normalize(y.Code) == x.Key)
+                    .ThenBy(y => y.ID)
+                    .First(),
+                StringComparer.OrdinalIgnoreCase);
         var unitAdded = 0;
 
         foreach (var oldUnit in oldUnits)
         {
-            var code = Normalize(string.IsNullOrWhiteSpace(oldUnit.Kod) ? oldUnit.Ad : oldUnit.Kod);
+            var code = ProductionUnitNormalizer.CanonicalCode(oldUnit.Kod, oldUnit.Ad);
             if (string.IsNullOrWhiteSpace(code) || unitByCode.ContainsKey(code)) continue;
-            var unit = new PrdUnit { Code = code, Name = oldUnit.Ad.Trim(), IsActive = true, IsDelete = false, CreateDate = now, CreateUserID = userId };
+            var unit = new PrdUnit { Code = code, Name = ProductionUnitNormalizer.DisplayName(code, oldUnit.Ad), IsActive = true, IsDelete = false, CreateDate = now, CreateUserID = userId };
             _context.PrdUnits.Add(unit);
             unitByCode[code] = unit;
             unitAdded++;
@@ -42,12 +50,28 @@ public sealed class ProductionCatalogSyncService
             unitByCode[unit.Code] = unit;
             unitAdded++;
         }
+
+        if (!unitByCode.TryGetValue("ML", out var millilitreUnit))
+        {
+            var unit = new PrdUnit { Code = "ML", Name = "Mililitre", IsActive = true, IsDelete = false, CreateDate = now, CreateUserID = userId };
+            _context.PrdUnits.Add(unit);
+            unitByCode[unit.Code] = unit;
+            unitAdded++;
+        }
+        else if (millilitreUnit.IsDelete == true || millilitreUnit.IsActive == false)
+        {
+            millilitreUnit.Name = "Mililitre";
+            millilitreUnit.IsActive = true;
+            millilitreUnit.IsDelete = false;
+            millilitreUnit.UpdateDate = now;
+            millilitreUnit.UpdateUserID = userId;
+        }
         await _context.SaveChangesAsync(cancellationToken);
 
         var defaultUnit = unitByCode.Values.First();
         var unitIdByOldId = oldUnits
-            .Where(x => unitByCode.ContainsKey(Normalize(string.IsNullOrWhiteSpace(x.Kod) ? x.Ad : x.Kod)))
-            .ToDictionary(x => x.ID, x => unitByCode[Normalize(string.IsNullOrWhiteSpace(x.Kod) ? x.Ad : x.Kod)].ID);
+            .Where(x => unitByCode.ContainsKey(ProductionUnitNormalizer.CanonicalCode(x.Kod, x.Ad)))
+            .ToDictionary(x => x.ID, x => unitByCode[ProductionUnitNormalizer.CanonicalCode(x.Kod, x.Ad)].ID);
 
         var oldTypes = await _context.MalzemeTipi.AsNoTracking().Where(x => x.IsDelete != true).ToDictionaryAsync(x => x.ID, cancellationToken);
         var portalMaterials = await _context.Malzeme.AsNoTracking().Where(x => x.IsDelete != true && x.Kod != null && x.Kod != "").ToListAsync(cancellationToken);

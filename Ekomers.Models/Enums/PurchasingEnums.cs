@@ -110,6 +110,13 @@ public enum PurFreightPaymentType
     IncludedInPrice = 3
 }
 
+public enum PurPriceRequestEmailStatus
+{
+    Draft = 0,
+    Sent = 1,
+    Failed = 2
+}
+
 public enum PurGoodsReceiptStatus
 {
     Recorded = 1,
@@ -120,7 +127,21 @@ public enum PurGoodsReceiptStatus
     Returned = 6,
     Scrapped = 7,
     Cancelled = 8,
-    QualityPartiallyDecided = 9
+    QualityPartiallyDecided = 9,
+    CompletedWithMixedDisposition = 10,
+    StockPartiallyCompleted = 11
+}
+
+public enum PurQualityDispositionAction
+{
+    ReleaseToUsableStock = 1,
+    ReturnToSupplier = 2,
+    MoveToScrap = 3
+}
+
+public enum PurLandedCostAllocationMethod
+{
+    ByMaterialValue = 1
 }
 
 public static class PurchasingEnumExtensions
@@ -242,6 +263,22 @@ public static class PurchasingEnumExtensions
         PurGoodsReceiptStatus.Scrapped => "Hurdaya Ayrıldı",
         PurGoodsReceiptStatus.Cancelled => "İptal Edildi",
         PurGoodsReceiptStatus.QualityPartiallyDecided => "Kalite Kararı Kısmen Tamamlandı",
+        PurGoodsReceiptStatus.CompletedWithMixedDisposition => "Karma Sonuçlandırıldı",
+        PurGoodsReceiptStatus.StockPartiallyCompleted => "Stok Kısmen Sonuçlandırıldı",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PurQualityDispositionAction value) => value switch
+    {
+        PurQualityDispositionAction.ReleaseToUsableStock => "Kullanılabilir Stoğa Alındı",
+        PurQualityDispositionAction.ReturnToSupplier => "Tedarikçiye İade Edildi",
+        PurQualityDispositionAction.MoveToScrap => "Hurda Deposuna Alındı",
+        _ => value.ToString()
+    };
+
+    public static string ToTurkish(this PurLandedCostAllocationMethod value) => value switch
+    {
+        PurLandedCostAllocationMethod.ByMaterialValue => "Malzeme Alış Değerine Göre",
         _ => value.ToString()
     };
 }

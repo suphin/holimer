@@ -3,6 +3,8 @@
     ViewData["Title"] = "Satınalma Siparişi";
     var transportation = Model.Transportation;
     var currentRatesJson = System.Text.Json.JsonSerializer.Serialize(transportation.CurrentRates);
+    var canDelete = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaKayitSil");
+    var canReceive = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaMalKabulYonet");
 }
 
 <div class="card card-custom mb-5">
@@ -15,11 +17,11 @@
         </div>
         <div class="card-toolbar">
             <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
-            @if (Model.Status == Ekomers.Models.Enums.PurPurchaseOrderStatus.Open || Model.Status == Ekomers.Models.Enums.PurPurchaseOrderStatus.PartiallyReceived)
+            @if (canReceive && (Model.Status == Ekomers.Models.Enums.PurPurchaseOrderStatus.Open || Model.Status == Ekomers.Models.Enums.PurPurchaseOrderStatus.PartiallyReceived))
             {
                 <a asp-action="YeniMalKabul" asp-route-orderId="@Model.Id" class="btn btn-sm btn-primary mr-2">Parçalı Mal Kabul</a>
             }
-            @if (User.IsInRole("Admin"))
+            @if (canDelete)
             {
                 <form asp-action="SiparisSil" method="post" class="d-inline" onsubmit="return confirm('Sipariş silinecek ve kaynak teklif yeniden değerlendirmeye açılacak. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-danger mr-2">Siparişi Sil</button></form>
             }

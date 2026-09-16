@@ -3,6 +3,7 @@ using Ekomers.Common.Services.IServices;
 using Ekomers.Data;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
+using Ekomers.Models;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.ViewModels;
 using Ekomers.Models.ViewModels.Admin;
@@ -260,15 +261,22 @@ namespace Ekomers.Web.Controllers
 		[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 		public IActionResult Error()
 		{
-			//return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 			var exceptionHandlerPathFeature = HttpContext.Features.Get<IExceptionHandlerPathFeature>();
-			if (exceptionHandlerPathFeature != null)
-			{
-				var exception = exceptionHandlerPathFeature.Error;
-				// İsterseniz burada loglama yapabilirsiniz.
-				return View("Error", exception);
-			}
-			return View("Error");
+			var environment = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
+			var logger = HttpContext.RequestServices.GetRequiredService<ILogger<EkomersController>>();
+			var exception = exceptionHandlerPathFeature?.Error;
+			var requestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+
+			if (exception != null)
+				logger.LogError(exception, "İşlenmeyen hata. Path: {Path}, RequestId: {RequestId}", exceptionHandlerPathFeature?.Path, requestId);
+
+			var model = ErrorViewModel.FromException(
+				exception,
+				exceptionHandlerPathFeature?.Path ?? HttpContext.Request.Path,
+				requestId,
+				environment.IsDevelopment() || User.IsInRole("Admin"));
+
+			return View("~/Views/Home/Error.cshtml", model);
 		}
 		[Authorize]
 		public IActionResult AccessDenied()

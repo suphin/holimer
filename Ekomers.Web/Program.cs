@@ -11,6 +11,7 @@ using Ekomers.Models.Configuration;
 using Ekomers.Models.ViewModels;
 using Ekomers.Web.Controllers;
 using Ekomers.Web.Infrastructure.Auth;
+using Ekomers.Web.Services;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
@@ -49,6 +50,7 @@ builder.Services.Configure<SmsSettings>(builder.Configuration.GetSection("SmsSet
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.Configure<FileSettings>(builder.Configuration.GetSection("FileSettings")); 
 builder.Services.Configure<PageSettings>(builder.Configuration.GetSection("PageSettings"));
+builder.Services.Configure<ELogoOptions>(builder.Configuration.GetSection("ELogo"));
  
 
 //builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
@@ -103,10 +105,14 @@ builder.Services.AddAuthorization(options =>
 	options.AddPolicy("Update", policy =>
 		policy.RequireClaim("Authorize", "Update"));
     options.AddPolicy("TeklifKabul", policy =>
-        policy.RequireClaim("Authorize", "TeklifKabul"));
+        policy.RequireAssertion(context =>
+            context.User.IsInRole("Admin") ||
+            context.User.HasClaim("Authorize", "TeklifKabul")));
 
     options.AddPolicy("TalepKabul", policy =>
-        policy.RequireClaim("Authorize", "TalepKabul"));
+        policy.RequireAssertion(context =>
+            context.User.IsInRole("Admin") ||
+            context.User.HasClaim("Authorize", "TalepKabul")));
 });
 builder.Services.AddAuthorization(options =>
 {
@@ -126,6 +132,19 @@ builder.Services.AddAuthorization(options =>
 	  context.User.IsInRole("Admin") ||
 	  context.User.HasClaim("Modul", "PURCHASING")));
 
+	options.AddPolicy("AdminOrPurchasingOrUretim", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Modul", "PURCHASING") ||
+		  context.User.HasClaim("Modul", "Uretim") ||
+		  context.User.Claims.Any(x => x.Type == "Authorize" && new[]
+		  {
+			  "SatinalmaGoruntule", "SatinalmaTalepOlustur", "SatinalmaTalepDuzenle", "TalepKabul",
+			  "SatinalmaTedarikciYonet", "SatinalmaTeklifYonet", "TeklifKabul", "SatinalmaSiparisYonet",
+			  "SatinalmaMalKabulYonet", "SatinalmaKarantinaIsle", "SatinalmaEkMaliyetDagit",
+			  "SatinalmaStokSonuclandir", "SatinalmaSurecGeriAl", "SatinalmaKayitSil"
+		  }.Contains(x.Value))));
+
 	options.AddPolicy("AdminOrQuality", policy =>
 	  policy.RequireAssertion(context =>
 		  context.User.IsInRole("Admin") ||
@@ -139,10 +158,106 @@ builder.Services.AddAuthorization(options =>
 		  context.User.HasClaim("Authorize", "KaliteOnay") ||
 		  context.User.HasClaim("Modul", "PURCHASING")));
 
+	options.AddPolicy("SatinalmaGoruntule", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Modul", "PURCHASING") ||
+		  context.User.Claims.Any(x => x.Type == "Authorize" && new[]
+		  {
+			  "SatinalmaGoruntule", "SatinalmaTalepOlustur", "SatinalmaTalepDuzenle", "TalepKabul",
+			  "SatinalmaTedarikciYonet", "SatinalmaTeklifYonet", "TeklifKabul", "SatinalmaSiparisYonet",
+			  "SatinalmaMalKabulYonet", "SatinalmaKarantinaIsle", "SatinalmaEkMaliyetDagit",
+			  "SatinalmaStokSonuclandir", "SatinalmaSurecGeriAl", "SatinalmaKayitSil"
+		  }.Contains(x.Value))));
+
+	options.AddPolicy("SatinalmaTalepOlustur", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "SatinalmaTalepOlustur")));
+	options.AddPolicy("SatinalmaTalepDuzenle", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "SatinalmaTalepDuzenle")));
+	options.AddPolicy("SatinalmaTedarikciYonet", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "SatinalmaTedarikciYonet")));
+	options.AddPolicy("SatinalmaTeklifYonet", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "SatinalmaTeklifYonet")));
+	options.AddPolicy("SatinalmaSiparisYonet", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "SatinalmaSiparisYonet")));
+	options.AddPolicy("SatinalmaMalKabulYonet", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "SatinalmaMalKabulYonet")));
+	options.AddPolicy("SatinalmaKarantinaIsle", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "SatinalmaKarantinaIsle")));
+	options.AddPolicy("SatinalmaEkMaliyetDagit", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "SatinalmaEkMaliyetDagit")));
+	options.AddPolicy("SatinalmaStokSonuclandir", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "SatinalmaStokSonuclandir")));
+
+	options.AddPolicy("KaliteAnalizGoruntule", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Modul", "QUALITY") ||
+		  context.User.HasClaim("Authorize", "KaliteOnay") ||
+		  context.User.Claims.Any(x => x.Type == "Authorize" && new[]
+		  {
+			  "KaliteAnalizGoruntule", "KaliteAnalizDuzenle", "KaliteKararVer", "KaliteKarariGeriAl",
+			  "SatinalmaStokSonuclandir", "SatinalmaSurecGeriAl", "SatinalmaKayitSil"
+		  }.Contains(x.Value))));
+	options.AddPolicy("KaliteAnalizDuzenle", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Modul", "QUALITY") ||
+		context.User.HasClaim("Authorize", "KaliteOnay") || context.User.HasClaim("Authorize", "KaliteAnalizDuzenle")));
+	options.AddPolicy("KaliteKararVer", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Modul", "QUALITY") ||
+		context.User.HasClaim("Authorize", "KaliteOnay") || context.User.HasClaim("Authorize", "KaliteKararVer")));
+
 	options.AddPolicy("AdminOrUretim", policy =>
 	  policy.RequireAssertion(context =>
 		  context.User.IsInRole("Admin") ||
 		  context.User.HasClaim("Modul", "Uretim")));
+
+	options.AddPolicy("UretimSiparisGoruntule", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Modul", "Uretim") || context.User.HasClaim("Authorize", "UretimSiparisGoruntule")));
+	options.AddPolicy("UretimSiparisOlustur", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Modul", "Uretim") || context.User.HasClaim("Authorize", "UretimSiparisOlustur")));
+	options.AddPolicy("UretimSiparisDuzenle", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Modul", "Uretim") || context.User.HasClaim("Authorize", "UretimSiparisDuzenle")));
+	options.AddPolicy("UretimSiparisOnayla", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "UretimSiparisOnayla")));
+	options.AddPolicy("UretimSiparisPlanla", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Modul", "Uretim") || context.User.HasClaim("Authorize", "UretimSiparisPlanla")));
+	options.AddPolicy("UretimSiparisIptal", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "UretimSiparisIptal")));
+
+	options.AddPolicy("ReceteVersiyonOlustur", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Authorize", "ReceteVersiyonOlustur")));
+
+	options.AddPolicy("ReceteVersiyonTaslakAc", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Authorize", "ReceteVersiyonTaslakAc")));
+
+	options.AddPolicy("ReferansMaliyetDuzenle", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Authorize", "ReferansMaliyetDuzenle")));
+
+	options.AddPolicy("SatinalmaSurecGeriAl", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Authorize", "SatinalmaSurecGeriAl")));
+
+	options.AddPolicy("SatinalmaKayitSil", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Authorize", "SatinalmaKayitSil")));
+
+	options.AddPolicy("KaliteKarariGeriAl", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Authorize", "KaliteKarariGeriAl")));
+
+	options.AddPolicy("StokBelgesiSil", policy =>
+	  policy.RequireAssertion(context =>
+		  context.User.IsInRole("Admin") ||
+		  context.User.HasClaim("Authorize", "StokBelgesiSil")));
 
 	options.AddPolicy("AdminOrEnvanter", policy =>
 	  policy.RequireAssertion(context =>
@@ -255,6 +370,8 @@ builder.Services.AddSignalR();
 //builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddRazorPages();
 builder.Services.AddHttpClient(); // IHttpClientFactory'yi burada ekliyoruz
+builder.Services.AddHttpClient<IELogoPostboxClient, ELogoPostboxClient>(client =>
+    client.Timeout = TimeSpan.FromSeconds(90));
 builder.Services.AddControllersWithViews()
     .AddNewtonsoftJson(options =>
 {
@@ -303,6 +420,7 @@ builder.Services.AddScoped<IMalzemeService, MalzemeService>();
 builder.Services.AddScoped<ProductionCatalogSyncService>();
 builder.Services.AddScoped<IProductionOrderCleanupService, ProductionOrderCleanupService>();
 builder.Services.AddScoped<PurchasingSupplierImportService>();
+builder.Services.AddScoped<Ekomers.Web.Services.PurchasingInventoryReversalService>();
 builder.Services.AddScoped<IMalzemeFiyatService, MalzemeFiyatService>();
 builder.Services.AddScoped<ISiparisService, SiparisService>();
 builder.Services.AddScoped<ISiparisIadeService, SiparisIadeService>();
@@ -330,6 +448,7 @@ builder.Services.AddScoped<IMapService, MapService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<SystemErrorLogWriter>();
 builder.Services.AddScoped<TtnService>();
 builder.Services.AddScoped<IMailJobService, MailJobService>();
 

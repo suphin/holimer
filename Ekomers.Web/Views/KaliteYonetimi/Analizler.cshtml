@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Karantina Analizleri";
     var receiptId = ViewBag.GoodsReceiptId as int?;
+    var canProcessStock = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaStokSonuclandir") || User.HasClaim("Authorize", "SatinalmaSurecGeriAl");
 }
 
 <div class="card card-custom">
@@ -9,6 +10,7 @@
         <div class="card-title"><h3 class="card-label">Karantina Analizleri<span class="d-block text-muted pt-2 font-size-sm">Mal kabul satırı ve lot bazında laboratuvar/kalite kayıtları</span></h3></div>
         <div class="card-toolbar">
             @if (receiptId.HasValue) { <a asp-controller="SatinalmaYonetimi" asp-action="MalKabulDetay" asp-route-id="@receiptId" class="btn btn-sm btn-light mr-2">Mal Kabule Dön</a> }
+            @if (canProcessStock) { <a asp-action="StokSonuclandirma" class="btn btn-sm btn-light-success mr-2">Stok Sonuçlandırma</a> }
             <a asp-action="Analizler" class="btn btn-sm btn-light-primary">Tüm Analizler</a>
         </div>
     </div>

@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Portal Ana Sayfa";
     var fileName = "";
+    var shortcuts = ViewBag.Shortcuts as List<UserShortCut> ?? new List<UserShortCut>();
     // SignUpVM userdata = (SignUpVM)ViewBag.UserData;
 }
 <style>
@@ -11,6 +12,54 @@
         font-weight: bold;
     }
 </style>
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="card card-custom shadow-sm mt-5 mb-5">
+        <div class="card-header border-0 pt-4">
+            <div class="card-title align-items-start flex-column">
+                <h3 class="card-label font-weight-bolder text-dark">Kısayollarım</h3>
+                <span class="text-muted font-weight-bold font-size-sm mt-1">Sık kullandığınız sayfalara hızlı erişin</span>
+            </div>
+        </div>
+        <div class="card-body pt-2">
+            @if (shortcuts.Count == 0)
+            {
+                <div class="d-flex align-items-center rounded bg-light-primary p-5">
+                    <span class="font-size-h3 text-primary mr-4" aria-hidden="true">☆</span>
+                    <div>
+                        <div class="font-weight-bold text-dark">Henüz kısayol eklemediniz.</div>
+                        <div class="text-muted">Bir sayfayı açıp sağ üstteki “Kısayola ekle” düğmesini kullanabilirsiniz.</div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    @foreach (var shortcut in shortcuts)
+                    {
+                        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                            <div class="border rounded p-4 h-100 d-flex align-items-center justify-content-between bg-white">
+                                <a href="@shortcut.PageUrl" class="d-flex align-items-center text-dark text-hover-primary font-weight-bolder mr-3">
+                                    <span class="symbol symbol-40 symbol-light-primary mr-3">
+                                        <span class="symbol-label font-size-h4">↗</span>
+                                    </span>
+                                    <span>@shortcut.PageTitle</span>
+                                </a>
+                                <form asp-controller="UserActions" asp-action="ShortcutRemove" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@shortcut.ID" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                                    <button type="submit" class="btn btn-sm btn-icon btn-light-danger" title="Kısayolu kaldır" aria-label="Kısayolu kaldır">×</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
  
     @if (User.Identity.IsAuthenticated)
    {

@@ -21,7 +21,7 @@
                     <div class="table-responsive"><table class="table"><thead><tr><th>Ürün</th><th>Miktar</th><th></th></tr></thead><tbody>
                     @foreach(var item in Model.Plans)
                     {
-                        <tr><td><strong>@item.ProductName</strong><span class="d-block text-muted">@item.ProductCode · v@(item.VersionNumber)</span></td><td>@item.Quantity.ToString("0.######") @item.Unit</td><td><form asp-action="PlanlamadanCikar" method="post"><input type="hidden" name="recipeVersionId" value="@item.RecipeVersionId"/><button class="btn btn-sm btn-light-danger">Sil</button></form></td></tr>
+                        <tr><td><strong>@item.ProductName</strong><span class="d-block text-muted">@item.ProductCode · v@(item.VersionNumber)</span>@if(item.OrderSourceCount>0){<span class="d-block text-primary">@item.OrderSourceCount sipariş satırı · @item.OrderSourceQuantity.ToString("0.######") @item.Unit</span>}</td><td>@item.Quantity.ToString("0.######") @item.Unit</td><td><form asp-action="PlanlamadanCikar" method="post"><input type="hidden" name="recipeVersionId" value="@item.RecipeVersionId"/><button class="btn btn-sm btn-light-danger">Sil</button></form></td></tr>
                     }
                     </tbody></table></div>
                     <form asp-action="PlaniKilitle" method="post" onsubmit="return confirm('İhtiyaç hesabı anlık stok değerleriyle kaydedilip üretim planı kilitlensin mi?');">

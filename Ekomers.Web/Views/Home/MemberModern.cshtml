@@ -1,0 +1,352 @@
+@model Kullanici
+@{
+    ViewData["Title"] = "Portal Ana Sayfa";
+    var shortcuts = ViewBag.Shortcuts as List<UserShortCut> ?? new List<UserShortCut>();
+    var dashboard = ViewBag.OperationsDashboard as OperationalDashboardVM ?? new OperationalDashboardVM();
+    var fileName = (User.Identity?.Name ?? "default") + ".jpg";
+    var firstName = string.IsNullOrWhiteSpace(Model.AdSoyad)
+        ? (User.Identity?.Name ?? "Kullanıcı")
+        : Model.AdSoyad.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? Model.AdSoyad;
+    var greeting = DateTime.Now.Hour switch
+    {
+        < 6 => "İyi geceler",
+        < 12 => "Günaydın",
+        < 18 => "İyi günler",
+        _ => "İyi akşamlar"
+    };
+}
+
+@section CSSection {
+    <link href="~/css/member-modern.css?v=1.0.0" rel="stylesheet" type="text/css" />
+    <link href="~/css/member-dashboard.css?v=1.0.0" rel="stylesheet" type="text/css" />
+}
+
+<div class="portal-home">
+    <section class="portal-welcome-card">
+        <div class="portal-welcome-pattern" aria-hidden="true"></div>
+        <div class="portal-welcome-content">
+            <span class="portal-welcome-kicker">HOLİMER KURUMSAL PORTAL</span>
+            <h1>@greeting, @firstName</h1>
+            <p>Bugünkü çalışmalarınıza kaldığınız yerden devam edebilirsiniz.</p>
+
+            <div class="portal-user-meta">
+                @if (!string.IsNullOrWhiteSpace(Model.Departman))
+                {
+                    <span>
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20V7h7v13M11 11h9v9M7 10h1m-1 3h1m-1 3h1m7-2h1m-1 3h1M2 20h20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        @Model.Departman
+                    </span>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Unvan))
+                {
+                    <span>
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c.7-4 3-6 7-6s6.3 2 7 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                        @Model.Unvan
+                    </span>
+                }
+            </div>
+        </div>
+
+        <div class="portal-profile-summary">
+            <img src="~/img/user/@fileName" alt="@Model.AdSoyad" onerror="this.onerror=null;this.src='/img/user/default.jpg';" />
+            <div class="portal-profile-copy">
+                <strong>@Model.AdSoyad</strong>
+                <span>@(string.IsNullOrWhiteSpace(Model.Email) ? User.Identity?.Name : Model.Email)</span>
+            </div>
+            <a asp-controller="Home" asp-action="Profile" class="portal-profile-link">
+                Profilim
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+        </div>
+    </section>
+
+    @if (dashboard.HasAnyModule)
+    {
+        <section class="portal-operations" aria-labelledby="operations-title">
+            <header class="portal-section-header portal-operations-header">
+                <div>
+                    <span class="portal-section-kicker">OPERASYON MERKEZİ</span>
+                    <h2 id="operations-title">Güncel iş durumu</h2>
+                    <p>Satınalma, sipariş, üretim, kalite ve depo süreçlerindeki bekleyen işleri tek ekrandan izleyin.</p>
+                </div>
+                <div class="portal-live-status">
+                    <span></span>
+                    @dashboard.GeneratedAt.ToString("dd.MM.yyyy HH:mm") itibarıyla
+                </div>
+            </header>
+
+            <div class="portal-kpi-grid">
+                @if (dashboard.CanSeePurchasing)
+                {
+                    var attention = dashboard.Purchasing.PendingRequests + dashboard.Purchasing.PendingQuotations + dashboard.Purchasing.QuarantineReceipts;
+                    <a asp-controller="SatinalmaYonetimi" asp-action="Talepler" class="portal-kpi-card is-purchasing">
+                        <span class="portal-kpi-icon" aria-hidden="true">↗</span>
+                        <span class="portal-kpi-copy"><small>Satınalma</small><strong>@attention</strong><em>işlem bekliyor</em></span>
+                        <span class="portal-kpi-arrow" aria-hidden="true">→</span>
+                    </a>
+                }
+                @if (dashboard.CanSeeCustomerOrders)
+                {
+                    <a asp-controller="UretimSiparisleri" asp-action="Index" class="portal-kpi-card is-orders">
+                        <span class="portal-kpi-icon" aria-hidden="true">▤</span>
+                        <span class="portal-kpi-copy"><small>Sipariş</small><strong>@dashboard.CustomerOrders.ReadyForPlanning</strong><em>planlama bekliyor</em></span>
+                        <span class="portal-kpi-arrow" aria-hidden="true">→</span>
+                    </a>
+                }
+                @if (dashboard.CanSeeProduction)
+                {
+                    <a asp-controller="UretimYonetimi" asp-action="Emirler" class="portal-kpi-card is-production">
+                        <span class="portal-kpi-icon" aria-hidden="true">⚙</span>
+                        <span class="portal-kpi-copy"><small>Üretim</small><strong>@dashboard.Production.ActiveOrders</strong><em>aktif üretim emri</em></span>
+                        <span class="portal-kpi-arrow" aria-hidden="true">→</span>
+                    </a>
+                }
+                @if (dashboard.CanSeeQuality)
+                {
+                    <a asp-controller="KaliteYonetimi" asp-action="Analizler" class="portal-kpi-card is-quality">
+                        <span class="portal-kpi-icon" aria-hidden="true">✓</span>
+                        <span class="portal-kpi-copy"><small>Kalite</small><strong>@(dashboard.Quality.Pending + dashboard.Quality.Sampled)</strong><em>analiz sürecinde</em></span>
+                        <span class="portal-kpi-arrow" aria-hidden="true">→</span>
+                    </a>
+                }
+                @if (dashboard.CanSeeWarehouse)
+                {
+                    <a asp-controller="UretimYonetimi" asp-action="Stoklar" class="portal-kpi-card is-warehouse">
+                        <span class="portal-kpi-icon" aria-hidden="true">◇</span>
+                        <span class="portal-kpi-copy"><small>Depo</small><strong>@dashboard.Warehouse.CriticalMaterials</strong><em>kritik stok</em></span>
+                        <span class="portal-kpi-arrow" aria-hidden="true">→</span>
+                    </a>
+                }
+            </div>
+
+            <div class="portal-module-grid">
+                @if (dashboard.CanSeePurchasing)
+                {
+                    <article class="portal-module-card">
+                        <header class="portal-module-title">
+                            <div><span class="is-purchasing">S</span><div><h3>Satınalma</h3><p>Talep, teklif ve mal kabul akışı</p></div></div>
+                            <a asp-controller="SatinalmaYonetimi" asp-action="Talepler">Tümünü aç →</a>
+                        </header>
+                        <div class="portal-stat-grid">
+                            <a asp-controller="SatinalmaYonetimi" asp-action="Talepler"><strong>@dashboard.Purchasing.PendingRequests</strong><span>Onay bekleyen talep</span></a>
+                            <a asp-controller="SatinalmaYonetimi" asp-action="Teklifler"><strong>@dashboard.Purchasing.PendingQuotations</strong><span>Onay bekleyen teklif</span></a>
+                            <a asp-controller="SatinalmaYonetimi" asp-action="Siparisler"><strong>@dashboard.Purchasing.OpenOrders</strong><span>Açık sipariş</span></a>
+                            <a asp-controller="SatinalmaYonetimi" asp-action="MalKabuller"><strong>@dashboard.Purchasing.QuarantineReceipts</strong><span>Mal kabul / karantina</span></a>
+                        </div>
+                    </article>
+                }
+
+                @if (dashboard.CanSeeCustomerOrders)
+                {
+                    <article class="portal-module-card">
+                        <header class="portal-module-title">
+                            <div><span class="is-orders">S</span><div><h3>Siparişler</h3><p>Üretim planlamasına girecek siparişler</p></div></div>
+                            <a asp-controller="UretimSiparisleri" asp-action="Index">Tümünü aç →</a>
+                        </header>
+                        <div class="portal-inline-stats">
+                            <span><strong>@dashboard.CustomerOrders.ReadyForPlanning</strong> Planlama bekliyor</span>
+                            <span class="@(dashboard.CustomerOrders.Overdue > 0 ? "is-danger" : "")"><strong>@dashboard.CustomerOrders.Overdue</strong> Geciken</span>
+                            <span><strong>@dashboard.CustomerOrders.InProduction</strong> Planlandı / üretimde</span>
+                        </div>
+                        <div class="portal-data-list">
+                            @if (dashboard.CustomerOrders.Upcoming.Count == 0)
+                            {
+                                <div class="portal-data-empty">Açık sipariş bulunmuyor.</div>
+                            }
+                            @foreach (var row in dashboard.CustomerOrders.Upcoming)
+                            {
+                                <a asp-controller="UretimSiparisleri" asp-action="Detay" asp-route-id="@row.Id" class="portal-data-row @(row.IsOverdue ? "is-alert" : "")">
+                                    <span><strong>@row.OrderNumber</strong><small>@row.CustomerName</small></span>
+                                    <span class="portal-row-meta"><strong>@row.DeliveryDate.ToString("dd.MM.yyyy")</strong><small>@row.Status</small></span>
+                                </a>
+                            }
+                        </div>
+                    </article>
+                }
+
+                @if (dashboard.CanSeeProduction)
+                {
+                    <article class="portal-module-card">
+                        <header class="portal-module-title">
+                            <div><span class="is-production">Ü</span><div><h3>Üretim</h3><p>Planlar, emirler ve depo hazırlığı</p></div></div>
+                            <a asp-controller="UretimYonetimi" asp-action="Emirler">Tümünü aç →</a>
+                        </header>
+                        <div class="portal-inline-stats">
+                            <span><strong>@dashboard.Production.OpenPlans</strong> Açık plan</span>
+                            <span class="@(dashboard.Production.MaterialWaiting > 0 ? "is-danger" : "")"><strong>@dashboard.Production.MaterialWaiting</strong> Malzeme bekliyor</span>
+                            <span><strong>@dashboard.Production.WarehouseTasksWaiting</strong> Depo görevi</span>
+                        </div>
+                        <div class="portal-data-list">
+                            @if (dashboard.Production.Upcoming.Count == 0)
+                            {
+                                <div class="portal-data-empty">Aktif üretim emri bulunmuyor.</div>
+                            }
+                            @foreach (var row in dashboard.Production.Upcoming)
+                            {
+                                <a asp-controller="UretimYonetimi" asp-action="EmirDetay" asp-route-id="@row.Id" class="portal-data-row">
+                                    <span><strong>@row.OrderNumber · @row.ProductCode</strong><small>@row.ProductName</small></span>
+                                    <span class="portal-row-meta"><strong>@row.ProductionDate.ToString("dd.MM.yyyy")</strong><small>@row.Status</small></span>
+                                </a>
+                            }
+                        </div>
+                    </article>
+                }
+
+                @if (dashboard.CanSeeQuality)
+                {
+                    <article class="portal-module-card">
+                        <header class="portal-module-title">
+                            <div><span class="is-quality">K</span><div><h3>Kalite</h3><p>Numune ve analiz bekleyen kayıtlar</p></div></div>
+                            <a asp-controller="KaliteYonetimi" asp-action="Analizler">Tümünü aç →</a>
+                        </header>
+                        <div class="portal-inline-stats is-four">
+                            <span class="@(dashboard.Quality.Pending > 0 ? "is-danger" : "")"><strong>@dashboard.Quality.Pending</strong> Bekliyor</span>
+                            <span><strong>@dashboard.Quality.Sampled</strong> Numune alındı</span>
+                            <span><strong>@dashboard.Quality.Conditional</strong> Şartlı onay</span>
+                            <span class="@(dashboard.Quality.Rejected > 0 ? "is-danger" : "")"><strong>@dashboard.Quality.Rejected</strong> Reddedildi</span>
+                        </div>
+                        <div class="portal-data-list">
+                            @if (dashboard.Quality.Waiting.Count == 0)
+                            {
+                                <div class="portal-data-empty">Bekleyen kalite analizi bulunmuyor.</div>
+                            }
+                            @foreach (var row in dashboard.Quality.Waiting)
+                            {
+                                <a asp-controller="KaliteYonetimi" asp-action="AnalizDetay" asp-route-id="@row.Id" class="portal-data-row">
+                                    <span><strong>@row.InspectionNumber · @row.MaterialCode</strong><small>@row.MaterialName</small></span>
+                                    <span class="portal-row-meta"><small>@row.Status</small></span>
+                                </a>
+                            }
+                        </div>
+                    </article>
+                }
+
+                @if (dashboard.CanSeeWarehouse)
+                {
+                    <article class="portal-module-card">
+                        <header class="portal-module-title">
+                            <div><span class="is-warehouse">D</span><div><h3>Depo ve stok</h3><p>Kritik seviye ve stok değeri</p></div></div>
+                            <a asp-controller="UretimYonetimi" asp-action="Stoklar">Tümünü aç →</a>
+                        </header>
+                        <div class="portal-inline-stats">
+                            <span><strong>@dashboard.Warehouse.ActiveWarehouses</strong> Aktif depo</span>
+                            <span><strong>@dashboard.Warehouse.StockedMaterials</strong> Stoklu malzeme</span>
+                            <span><strong>₺@dashboard.Warehouse.TotalStockValue.ToString("N2")</strong> Stok değeri</span>
+                        </div>
+                        <div class="portal-data-list">
+                            @if (dashboard.Warehouse.CriticalStock.Count == 0)
+                            {
+                                <div class="portal-data-empty">Kritik seviyede malzeme bulunmuyor.</div>
+                            }
+                            @foreach (var row in dashboard.Warehouse.CriticalStock)
+                            {
+                                <a asp-controller="UretimYonetimi" asp-action="Stoklar" asp-route-code="@row.MaterialCode" class="portal-data-row is-alert">
+                                    <span><strong>@row.MaterialCode</strong><small>@row.MaterialName</small></span>
+                                    <span class="portal-row-meta"><strong>@row.Quantity.ToString("N2")</strong><small>Kritik: @row.CriticalQuantity.ToString("N2")</small></span>
+                                </a>
+                            }
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+    }
+
+    <section class="portal-overview-grid" aria-label="Kullanıcı özeti">
+        <div class="portal-overview-card">
+            <span class="portal-overview-icon is-blue" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </span>
+            <div><strong>@shortcuts.Count</strong><span>Kişisel kısayol</span></div>
+        </div>
+        <div class="portal-overview-card">
+            <span class="portal-overview-icon is-teal" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <div>
+                <strong>@Model.SonGirisTarihi.ToString("HH:mm")</strong>
+                <span>Son giriş · @Model.SonGirisTarihi.ToString("dd.MM.yyyy")</span>
+            </div>
+        </div>
+        <div class="portal-overview-card portal-overview-wide">
+            <span class="portal-overview-icon is-violet" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M5 4h14v16H5V4Z" stroke="currentColor" stroke-width="1.7"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </span>
+            <div>
+                <strong id="portal-session-duration">Yeni oturum</strong>
+                <span>Portal oturum süresi</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="portal-shortcuts-card">
+        <header class="portal-section-header">
+            <div>
+                <span class="portal-section-kicker">HIZLI ERİŞİM</span>
+                <h2>Kısayollarım</h2>
+                <p>Sık kullandığınız sayfalara tek tıklamayla ulaşın.</p>
+            </div>
+            <div class="portal-shortcut-hint">
+                <span aria-hidden="true">☆</span>
+                Sayfalardaki “Kısayola ekle” düğmesini kullanın
+            </div>
+        </header>
+
+        @if (shortcuts.Count == 0)
+        {
+            <div class="portal-shortcuts-empty">
+                <span class="portal-empty-icon" aria-hidden="true">☆</span>
+                <h3>İlk kısayolunuzu ekleyin</h3>
+                <p>Sık kullandığınız bir sayfayı açın ve sağ üstteki kısayol düğmesine basın.</p>
+            </div>
+        }
+        else
+        {
+            <div class="portal-shortcuts-grid">
+                @for (var index = 0; index < shortcuts.Count; index++)
+                {
+                    var shortcut = shortcuts[index];
+                    var colorClass = "color-" + (index % 5 + 1);
+                    <article class="portal-shortcut-item @colorClass">
+                        <a href="@shortcut.PageUrl" class="portal-shortcut-main">
+                            <span class="portal-shortcut-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none"><path d="M5 5h6v6H5V5Zm8 0h6v6h-6V5Zm-8 8h6v6H5v-6Zm8 0h6v6h-6v-6Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                            </span>
+                            <span class="portal-shortcut-copy">
+                                <strong>@shortcut.PageTitle</strong>
+                                <small>@shortcut.PageUrl?.Split('?')[0]</small>
+                            </span>
+                            <svg class="portal-shortcut-arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                        <form asp-controller="UserActions" asp-action="ShortcutRemove" method="post" class="portal-shortcut-remove-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@shortcut.ID" />
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                            <button type="submit" title="Kısayolu kaldır" aria-label="@shortcut.PageTitle kısayolunu kaldır">×</button>
+                        </form>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+@section JSSection {
+    <script>
+        (function () {
+            var target = document.getElementById('portal-session-duration');
+            if (!target) return;
+            var startedAt = new Date('@Model.SonGirisTarihi.ToString("yyyy-MM-ddTHH:mm:ss")');
+
+            function updateSessionDuration() {
+                var seconds = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000));
+                var hours = Math.floor(seconds / 3600);
+                var minutes = Math.floor((seconds % 3600) / 60);
+                target.textContent = hours > 0 ? hours + ' sa ' + minutes + ' dk' : minutes + ' dakika';
+            }
+
+            updateSessionDuration();
+            window.setInterval(updateSessionDuration, 60000);
+        })();
+    </script>
+}

@@ -3,11 +3,12 @@
     ViewData["Title"] = "Teklif Karşılaştırma";
     var groups = Model.Lines.GroupBy(x => new { x.PurchaseRequestLineId, x.MaterialCode, x.MaterialName, x.Unit })
         .OrderBy(x => x.Key.MaterialCode).ToList();
+    var canManageQuotation = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaTeklifYonet");
 }
 <div class="card card-custom mb-5">
     <div class="card-header flex-wrap py-3">
         <div class="card-title"><h3 class="card-label">Teklif Karşılaştırma<span class="d-block text-muted pt-2 font-size-sm">Talep: @Model.RequestNumber</span></h3></div>
-        <div class="card-toolbar"><a asp-action="YeniTeklif" asp-route-requestId="@Model.RequestId" class="btn btn-primary mr-2">Yeni Teklif Gir</a><a asp-action="TeklifTalepleri" class="btn btn-light">Geri Dön</a></div>
+        <div class="card-toolbar">@if (canManageQuotation) { <a asp-action="YeniTeklif" asp-route-requestId="@Model.RequestId" class="btn btn-primary mr-2">Yeni Teklif Gir</a> }<a asp-action="TeklifTalepleri" class="btn btn-light">Geri Dön</a></div>
     </div>
     <div class="card-body"><div class="alert alert-light-info mb-0">Her malzeme için farklı bir tedarikçi seçebilirsiniz. Farklı para birimleri, teklifte sabitlenen kur üzerinden TRY'ye çevrilir; en düşük net TRY birim fiyatı vurgulanır.</div></div>
 </div>
