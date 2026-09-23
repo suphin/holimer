@@ -1,61 +1,159 @@
-﻿@{
+@model Ekomers.Models.ViewModels.LogoRestApiSettingsVM
+@{
     ViewBag.Title = "Ayarlar";
+    var isAdmin = User.IsInRole("Admin");
 }
 
-<h2>Ayarlar</h2>
+<style>
+    .settings-page { display: grid; gap: 1.5rem; }
+    .settings-card { background: #fff; border: 1px solid #e4e9e6; border-radius: 1rem; box-shadow: 0 .4rem 1.5rem rgba(35,64,50,.04); overflow: hidden; }
+    .settings-card__head { padding: 1.5rem 1.75rem 1rem; }
+    .settings-card__head h2 { margin: 0 0 .35rem; color: #14213d; font-size: 1.35rem; font-weight: 700; }
+    .settings-card__head p { margin: 0; color: #6f7d76; }
+    .settings-card__body { padding: 1.25rem 1.75rem 1.65rem; }
+    .settings-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1.15rem 1.25rem; }
+    .settings-field label { display: block; margin-bottom: .45rem; color: #27362f; font-weight: 600; }
+    .settings-field .form-control, .settings-field .form-select { min-height: 44px; border-color: #d5dfda; border-radius: .55rem; }
+    .settings-help { display: block; margin-top: .4rem; color: #7a8981; font-size: .85rem; }
+    .settings-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.35rem; }
+    .settings-status { display: grid; grid-template-columns: minmax(150px,auto) minmax(150px,auto) 1fr; gap: 1.5rem; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #e4e9e6; }
+    .settings-status small { display: block; margin-bottom: .25rem; color: #839087; }
+    .settings-links { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+    .settings-link { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.1rem; border: 1px solid #e4e9e6; border-radius: .75rem; }
+    .settings-link strong { display: block; color: #203129; }
+    .settings-link span { color: #78867f; }
+    .settings-lock { padding: 1rem 1.25rem; border-radius: .7rem; background: #f2f6f4; color: #52635a; }
+    @@media (max-width: 991.98px) { .settings-grid,.settings-links,.settings-status { grid-template-columns: 1fr; } }
+</style>
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Ayar</th>
-            <th>Açıklama</th>
-            <th>İşlem</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>Cache Belleğini Temizle</td>
-            <td>Uygulamadaki tüm memory cache verilerini temizler.</td>
-            <td>
-                <button id="btnCacheTemizle" class="btn btn-danger">
-                    Cache Temizle
-                </button>
-            </td>
-        </tr>
-        <tr>
-            <td>Satınalma Eposta</td>
-            <td>Bildirim ayarları</td>
-            <td>
-                <a href="/PurchasingSettings/" class="btn btn-primary">Ayarları Düzenle</a>
-            </td>
-        </tr>
-    </tbody>
-</table>
+<div class="settings-page">
+    @if (TempData["Success"] is string successMessage)
+    {
+        <div class="alert alert-success mb-0">@successMessage</div>
+    }
 
-<div id="sonuc" class="mt-3"></div>
+    <section class="settings-card">
+        <div class="settings-card__head">
+            <h2>Genel Ayarlar</h2>
+            <p>Uygulama önbelleği ve modül ayarlarını yönetin.</p>
+        </div>
+        <div class="settings-card__body">
+            <div class="settings-links">
+                <div class="settings-link">
+                    <div><strong>Cache belleğini temizle</strong><span>Uygulamadaki memory cache verilerini yeniler.</span></div>
+                    <form id="cacheForm" asp-controller="Ayarlar" asp-action="CacheTemizle" method="post">
+                        <button id="btnCacheTemizle" type="submit" class="btn btn-light-danger text-nowrap">Cache Temizle</button>
+                    </form>
+                </div>
+                <div class="settings-link">
+                    <div><strong>Satınalma e-posta</strong><span>Bildirim hesabı ve gönderim ayarları.</span></div>
+                    <a href="/PurchasingSettings/" class="btn btn-light-primary text-nowrap">Ayarları Düzenle</a>
+                </div>
+            </div>
+            <div id="cacheResult" class="mt-3"></div>
+        </div>
+    </section>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <section id="logo-rest-api" class="settings-card">
+        <div class="settings-card__head">
+            <h2>Logo Tiger 3 Enterprise</h2>
+            <p>Portal kayıtlarının gerektiğinde Logo’ya doğrudan aktarılabilmesi için REST API bağlantısını tanımlayın.</p>
+        </div>
+        <div class="settings-card__body">
+            @if (!isAdmin)
+            {
+                <div class="settings-lock">Logo REST bağlantı bilgilerini yalnız Admin rolündeki kullanıcılar görüntüleyebilir ve değiştirebilir.</div>
+            }
+            else
+            {
+                <form asp-controller="Ayarlar" asp-action="LogoRestKaydet" method="post" autocomplete="off">
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    }
+                    <div class="settings-grid">
+                        <div class="settings-field">
+                            <label asp-for="ServerAddress"></label>
+                            <input asp-for="ServerAddress" class="form-control" placeholder="192.168.1.204 veya logo-sunucu" />
+                            <span asp-validation-for="ServerAddress" class="text-danger"></span>
+                        </div>
+                        <div class="settings-field">
+                            <label asp-for="Port"></label>
+                            <input asp-for="Port" class="form-control" min="1" max="65535" />
+                            <span asp-validation-for="Port" class="text-danger"></span>
+                        </div>
+                        <div class="settings-field">
+                            <label asp-for="Protocol"></label>
+                            <select asp-for="Protocol" class="form-select"><option value="HTTP">HTTP</option><option value="HTTPS">HTTPS</option></select>
+                            <span asp-validation-for="Protocol" class="text-danger"></span>
+                        </div>
+                        <div class="settings-field">
+                            <label asp-for="RestUserName"></label>
+                            <input asp-for="RestUserName" class="form-control" autocomplete="off" />
+                            <span asp-validation-for="RestUserName" class="text-danger"></span>
+                        </div>
+                        <div class="settings-field">
+                            <label asp-for="RestPassword"></label>
+                            <input asp-for="RestPassword" class="form-control" autocomplete="new-password" placeholder="@(Model.HasSavedPassword ? "Kayıtlı — değiştirmek için girin" : "REST şifresini girin")" />
+                            <span asp-validation-for="RestPassword" class="text-danger"></span>
+                        </div>
+                        <div class="settings-field">
+                            <label asp-for="FirmNumber"></label>
+                            <input asp-for="FirmNumber" class="form-control" />
+                            <span asp-validation-for="FirmNumber" class="text-danger"></span>
+                        </div>
+                        <div class="settings-field">
+                            <label asp-for="PeriodNumber"></label>
+                            <input asp-for="PeriodNumber" class="form-control" />
+                            <span asp-validation-for="PeriodNumber" class="text-danger"></span>
+                            <span class="settings-help">Kaydedilir; bağlantı testinde dönem doğrulanmaz.</span>
+                        </div>
+                        <div class="settings-field">
+                            <label asp-for="ClientId"></label>
+                            <input asp-for="ClientId" class="form-control" autocomplete="off" />
+                            <span asp-validation-for="ClientId" class="text-danger"></span>
+                            <span class="settings-help">Client ID ve Client Secret alanlarını boş bırakarak istemci anahtarı olmadan test edebilirsiniz.</span>
+                        </div>
+                        <div class="settings-field">
+                            <label asp-for="ClientSecret"></label>
+                            <input asp-for="ClientSecret" class="form-control" autocomplete="new-password" placeholder="@(Model.HasSavedClientSecret ? "Kayıtlı — değiştirmek için girin" : "İsteğe bağlı")" />
+                            <span asp-validation-for="ClientSecret" class="text-danger"></span>
+                            <span class="settings-help">Logo REST istemci anahtarıdır; kullanıcı şifresinden farklıdır.</span>
+                        </div>
+                    </div>
+                    <div class="settings-actions">
+                        <button type="submit" class="btn btn-success">Ayarları Kaydet</button>
+                        <button type="submit" class="btn btn-light-primary" formaction="@Url.Action("LogoRestBaglantiTesti", "Ayarlar")">Bağlantıyı Sına</button>
+                    </div>
+                    @if (Model.LastTestDate.HasValue || !string.IsNullOrWhiteSpace(Model.LastTestMessage))
+                    {
+                        <div class="settings-status">
+                            <div><small>Bağlantı</small><strong class="@(Model.LastTestSucceeded == true ? "text-success" : "text-danger")">@(Model.LastTestSucceeded == true ? "Firma oturumu doğrulandı" : "Bağlantı doğrulanamadı")</strong></div>
+                            <div><small>Son kontrol</small><strong>@(Model.LastTestDate?.ToString("dd.MM.yyyy HH:mm:ss") ?? "-")</strong></div>
+                            <div><small>Açıklama</small><span>@Model.LastTestMessage</span></div>
+                        </div>
+                    }
+                </form>
+            }
+        </div>
+    </section>
+</div>
 
 <script>
-    $("#btnCacheTemizle").click(function () {
-
-        $.ajax({
-            url: '@Url.Action("CacheTemizle", "Ayarlar")',
-            type: 'POST',
-            success: function (res) {
-                if (res.success) {
-                    $("#sonuc").html(
-                        '<div class="alert alert-success">' + res.message + '</div>'
-                    );
-                }
-            },
-            error: function () {
-                $("#sonuc").html(
-                    '<div class="alert alert-danger">Bir hata oluştu.</div>'
-                );
-            }
-        });
-
+    document.getElementById('cacheForm')?.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const result = document.getElementById('cacheResult');
+        const button = document.getElementById('btnCacheTemizle');
+        button.disabled = true;
+        try {
+            const response = await fetch(this.action, { method: 'POST', body: new FormData(this), headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!response.ok) throw new Error();
+            const data = await response.json();
+            result.innerHTML = `<div class="alert alert-success mb-0">${data.message}</div>`;
+        } catch {
+            result.innerHTML = '<div class="alert alert-danger mb-0">Cache temizlenirken bir hata oluştu.</div>';
+        } finally {
+            button.disabled = false;
+        }
     });
 </script>
-

@@ -4,6 +4,7 @@ using Ekomers.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Ekomers.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260923140407_AddLogoRestApiSettings")]
+    partial class AddLogoRestApiSettings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2896,101 +2899,6 @@ namespace Ekomers.Data.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("FirsatDurum");
-                });
-
-            modelBuilder.Entity("Ekomers.Models.Entity.IntegrationRequestLog", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ConnectionName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<long>("DurationMilliseconds")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
-
-                    b.Property<string>("HttpMethod")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<int?>("HttpStatusCode")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsSuccess")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Operation")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<string>("RequestBody")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RequestContentType")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("RequestHeaders")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RequestUrl")
-                        .IsRequired()
-                        .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)");
-
-                    b.Property<DateTime>("RequestedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ResponseBody")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ResponseContentType")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("ResponseHeaders")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TrackingId")
-                        .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RequestedAt");
-
-                    b.HasIndex("TrackingId")
-                        .IsUnique();
-
-                    b.HasIndex("IsSuccess", "RequestedAt");
-
-                    b.HasIndex("Category", "ConnectionName", "RequestedAt");
-
-                    b.ToTable("IntegrationRequestLog", (string)null);
                 });
 
             modelBuilder.Entity("Ekomers.Models.Entity.LogoRestApiSetting", b =>

@@ -3154,14 +3154,6 @@ public sealed class SatinalmaYonetimiController : Controller
         if (selected.Count == 0) ModelState.AddModelError(string.Empty, "Teklife en az bir talep satırı ekleyiniz.");
         var requestLineIds = selected.Select(x => x.PurchaseRequestLineId).Distinct().ToList();
         var requestLines = await _context.PurPurchaseRequestLines.Where(x => requestLineIds.Contains(x.ID) && x.PurchaseRequestId == model.PurchaseRequestId && x.IsDelete != true).ToDictionaryAsync(x => x.ID, ct);
-        var ownOrderIds = model.Id <= 0
-            ? new List<int>()
-            : await _context.PurPurchaseOrders.AsNoTracking()
-                .Where(x => x.SourceQuotationId == model.Id && x.IsDelete != true)
-                .Select(x => x.ID)
-                .ToListAsync(ct);
-        var ordered = await _context.PurPurchaseOrderLines.AsNoTracking().Where(x => requestLineIds.Contains(x.PurchaseRequestLineId) && x.IsDelete != true && x.Status != PurPurchaseOrderLineStatus.Cancelled && !ownOrderIds.Contains(x.PurchaseOrderId))
-            .GroupBy(x => x.PurchaseRequestLineId).Select(x => new { x.Key, Quantity = x.Sum(y => y.OrderedQuantity) }).ToDictionaryAsync(x => x.Key, x => x.Quantity, ct);
         var result = new List<ValidQuotationLine>();
         foreach (var input in selected)
         {
@@ -3171,11 +3163,9 @@ public sealed class SatinalmaYonetimiController : Controller
                 ModelState.AddModelError($"Lines[{index}].Include", "Talep satırı artık teklif için uygun değil.");
                 continue;
             }
-            ordered.TryGetValue(requestLine.ID, out var orderedQuantity);
-            var remaining = Math.Max(0, requestLine.ApprovedQuantity - orderedQuantity);
-            if (!TryParseDecimal(input.OfferedQuantityInput, out var quantity) || quantity <= 0 || quantity > remaining)
+            if (!TryParseDecimal(input.OfferedQuantityInput, out var quantity) || quantity <= 0)
             {
-                ModelState.AddModelError($"Lines[{index}].OfferedQuantityInput", $"Miktar sıfırdan büyük ve kalan {remaining:0.######} miktarı aşmamalıdır.");
+                ModelState.AddModelError($"Lines[{index}].OfferedQuantityInput", "Teklif miktarı sıfırdan büyük olmalıdır.");
                 continue;
             }
             if (!TryParseDecimal(input.UnitPriceInput, out var unitPrice) || unitPrice < 0)
@@ -3434,6 +3424,17 @@ public sealed class SatinalmaYonetimiController : Controller
     private async Task DeleteRequestWorkflowAsync(PurPurchaseRequest request, DateTime now, string user, CancellationToken ct)
     {
         await RollbackRequestToDraftAsync(request, now, user, ct);
+        var linkedProductionPlans = await _context.PrdProductionPlanHeaders
+            .Where(x => x.PurchaseRequestId == request.ID)
+            .ToListAsync(ct);
+        foreach (var plan in linkedProductionPlans)
+        {
+            plan.PurchaseRequestId = null;
+            plan.PurchaseRequestNumber = null;
+            plan.PurchaseRequestCreatedDate = null;
+            plan.UpdateDate = now;
+            plan.UpdateUserID = user;
+        }
         var requestLines = await _context.PurPurchaseRequestLines
             .Where(x => x.PurchaseRequestId == request.ID && x.IsDelete != true)
             .ToListAsync(ct);

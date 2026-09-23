@@ -1,0 +1,148 @@
+@model Ekomers.Models.ViewModels.IntegrationRequestLogListVM
+@{
+    ViewData["Title"] = "Entegrasyon Logları";
+    var firstPage = Math.Max(1, Model.Page - 2);
+    var lastPage = Math.Min(Model.TotalPages, Model.Page + 2);
+}
+
+<style>
+    .integration-log-page .card { border: 1px solid #e4ebe7; }
+    .integration-log-page .filter-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px 24px; }
+    .integration-log-page .table th, .integration-log-page .table td { padding:1.15rem 1.35rem; vertical-align:middle; }
+    .integration-log-page .request-url { max-width:680px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .integration-log-page .status-dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:8px; }
+    .integration-modal-dialog { max-width:min(96vw,1800px); }
+    .integration-code { background:#102f27; color:#edf7f2; border-radius:10px; padding:20px; min-height:360px; max-height:62vh; overflow:auto; white-space:pre-wrap; word-break:break-word; font-size:13px; line-height:1.55; }
+    .integration-headers { background:#f4f7f5; border-radius:8px; padding:12px 16px; white-space:pre-wrap; word-break:break-word; }
+    @@media (max-width:991.98px) { .integration-log-page .filter-grid { grid-template-columns:1fr; } }
+</style>
+
+<div class="integration-log-page">
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-6">
+        <div>
+            <h1 class="font-weight-bolder mb-2">Entegrasyon logları</h1>
+            <div class="text-muted">ERP, e-Fatura ve diğer harici servis çağrılarının istek ve yanıtlarını inceleyin.</div>
+        </div>
+        <a asp-action="Index" class="btn btn-light-primary"><i class="flaticon2-refresh"></i> Yenile</a>
+    </div>
+
+    <div class="alert alert-custom alert-light-primary mb-6" role="alert">
+        <div class="alert-icon"><span class="status-dot bg-success"></span></div>
+        <div class="alert-text"><strong>KALICI VERİ</strong> &nbsp; Kayıtlar veritabanında saklanır. Parolalar, erişim anahtarları ve oturum kimlikleri maskelenir.</div>
+        <div class="text-muted text-nowrap">Son 30 gün varsayılan</div>
+    </div>
+
+    <div class="card card-custom gutter-b">
+        <div class="card-header py-5">
+            <div class="card-title"><div><h3 class="card-label mb-1">İstek ve yanıt kayıtları</h3><span class="text-muted">HTTP 200 yanıtlarının içindeki servis hataları da başarısız olarak işaretlenir.</span></div></div>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index">
+                <div class="filter-grid">
+                    <div>
+                        <label class="form-label font-weight-bold">Kategori</label>
+                        <select name="category" class="form-control">
+                            <option value="">Tümü</option>
+                            @foreach (var item in Model.Categories) { <option value="@item" selected="@(Model.Category == item)">@item</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label font-weight-bold">Bağlantı</label>
+                        <select name="connection" class="form-control">
+                            <option value="">Tümü</option>
+                            @foreach (var item in Model.Connections) { <option value="@item" selected="@(Model.Connection == item)">@item</option> }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label font-weight-bold">Sonuç</label>
+                        <select name="result" class="form-control">
+                            <option value="">Tümü</option>
+                            <option value="success" selected="@(Model.Result == "success")">Başarılı</option>
+                            <option value="error" selected="@(Model.Result == "error")">Hatalı</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label font-weight-bold">Başlangıç</label>
+                        <input type="datetime-local" name="startDate" value="@Model.StartDate?.ToString("yyyy-MM-ddTHH:mm")" class="form-control" />
+                    </div>
+                    <div>
+                        <label class="form-label font-weight-bold">Bitiş</label>
+                        <input type="datetime-local" name="endDate" value="@Model.EndDate?.ToString("yyyy-MM-ddTHH:mm")" class="form-control" />
+                    </div>
+                    <div>
+                        <label class="form-label font-weight-bold">İçerikte veya adreste ara</label>
+                        <input name="search" value="@Model.Search" class="form-control" placeholder="Referans, adres, hata, yanıt..." />
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-5">
+                    <span class="text-muted">@Model.TotalCount kayıt bulundu.</span>
+                    <div><a asp-action="Index" class="btn btn-light mr-2">Temizle</a><button type="submit" class="btn btn-primary">Sorgula</button></div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-body p-0 border-top">
+            @if (Model.Rows.Count == 0)
+            {
+                <div class="p-8 text-center text-muted">Filtrelere uygun entegrasyon kaydı bulunamadı.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead><tr><th>Tarih</th><th>Kategori / bağlantı</th><th>İşlem</th><th>HTTP</th><th>Süre</th><th class="text-right">İşlem</th></tr></thead>
+                        <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr>
+                                <td class="text-nowrap">@row.RequestedAt.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                                <td><div class="font-weight-bold">@row.Category</div><small class="text-muted">@row.ConnectionName</small></td>
+                                <td style="min-width:360px"><div><span class="label label-light-primary label-inline mr-2">@row.HttpMethod</span><strong>@row.Operation</strong></div><div class="request-url text-muted mt-1" title="@row.RequestUrl">@row.RequestUrl</div>@if (!string.IsNullOrWhiteSpace(row.ErrorMessage)) { <small class="text-danger d-block mt-1">@row.ErrorMessage</small> }</td>
+                                <td><span class="label @(row.IsSuccess ? "label-light-success" : "label-light-danger") label-inline">@(row.HttpStatusCode?.ToString() ?? "Hata")</span></td>
+                                <td class="text-nowrap">@row.DurationMilliseconds ms</td>
+                                <td class="text-right"><button type="button" class="btn btn-sm btn-light-primary js-log-detail" data-id="@row.Id">İncele</button></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span class="text-muted">Sayfa @Model.Page / @Model.TotalPages</span>
+                <div>
+                @for (var pageNumber = firstPage; pageNumber <= lastPage; pageNumber++)
+                {
+                    <a asp-action="Index" asp-route-page="@pageNumber" asp-route-category="@Model.Category" asp-route-connection="@Model.Connection" asp-route-result="@Model.Result" asp-route-startDate="@Model.StartDate?.ToString("s")" asp-route-endDate="@Model.EndDate?.ToString("s")" asp-route-search="@Model.Search" class="btn btn-sm @(pageNumber == Model.Page ? "btn-primary" : "btn-light") mr-1">@pageNumber</a>
+                }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="integrationLogModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered integration-modal-dialog" role="document">
+        <div class="modal-content" id="integrationLogModalContent"></div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var modal = $('#integrationLogModal');
+        var content = document.getElementById('integrationLogModalContent');
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('.js-log-detail');
+            if (!button) return;
+            content.innerHTML = '<div class="modal-body p-10 text-center"><span class="spinner spinner-primary spinner-lg"></span><div class="mt-5 text-muted">Kayıt yükleniyor...</div></div>';
+            modal.modal({ backdrop: 'static', keyboard: false, show: true });
+            fetch('@Url.Action("Details", "EntegrasyonLoglari")?id=' + encodeURIComponent(button.dataset.id), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (response) { if (!response.ok) throw new Error('Kayıt okunamadı.'); return response.text(); })
+                .then(function (html) { content.innerHTML = html; })
+                .catch(function (error) { content.innerHTML = '<div class="modal-header"><h5 class="modal-title">Kayıt açılamadı</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body text-danger">' + error.message + '</div>'; });
+        });
+    })();
+</script>

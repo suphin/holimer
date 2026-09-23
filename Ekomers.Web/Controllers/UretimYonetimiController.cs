@@ -32,6 +32,207 @@ public sealed class UretimYonetimiController : Controller
     public IActionResult Dashboard() => ModulSayfasi("Üretim Paneli", "Üretim sürecinin genel görünümü bu ekranda yer alacak.");
 
     [HttpGet]
+    public async Task<IActionResult> UretilebilirUrunler(string? search,bool onlyProducible=false,CancellationToken ct=default)
+    {
+        ViewBag.Modul="YeniUretim";
+        search=string.IsNullOrWhiteSpace(search)?null:search.Trim();
+        var now=DateTime.Now;
+        var today=now.Date;
+
+        var recipeRows=await(
+            from version in _context.PrdRecipeVersions.AsNoTracking()
+            join recipe in _context.PrdRecipes.AsNoTracking() on version.RecipeId equals recipe.ID
+            join product in _context.PrdMaterials.AsNoTracking() on recipe.ProductMaterialId equals product.ID
+            join outputUnit in _context.PrdUnits.AsNoTracking() on version.UnitId equals outputUnit.ID
+            where version.Status==PrdRecipeStatus.Active
+                && version.IsDelete!=true
+                && recipe.IsDelete!=true
+                && product.IsDelete!=true
+                && product.IsActive!=false
+                && (search==null||EF.Functions.Like(product.Code,"%"+search+"%")||EF.Functions.Like(product.Name,"%"+search+"%")||EF.Functions.Like(recipe.Code,"%"+search+"%")||EF.Functions.Like(recipe.Name,"%"+search+"%"))
+            select new
+            {
+                RecipeId=recipe.ID,
+                RecipeCode=recipe.Code,
+                RecipeName=recipe.Name,
+                ProductCode=product.Code,
+                ProductName=product.Name,
+                VersionId=version.ID,
+                version.VersionNumber,
+                version.BaseQuantity,
+                OutputUnitId=outputUnit.ID,
+                OutputUnitCode=outputUnit.Code,
+                OutputUnitName=outputUnit.Name
+            }).ToListAsync(ct);
+        recipeRows=recipeRows.GroupBy(x=>x.RecipeId).Select(x=>x.OrderByDescending(v=>v.VersionNumber).ThenByDescending(v=>v.VersionId).First()).ToList();
+
+        var versionIds=recipeRows.Select(x=>x.VersionId).ToList();
+        var itemRows=await(
+            from item in _context.PrdRecipeItems.AsNoTracking()
+            join material in _context.PrdMaterials.AsNoTracking() on item.MaterialId equals material.ID
+            join itemUnit in _context.PrdUnits.AsNoTracking() on item.UnitId equals itemUnit.ID
+            join materialUnit in _context.PrdUnits.AsNoTracking() on material.UnitId equals materialUnit.ID
+            where versionIds.Contains(item.RecipeVersionId)
+                && item.IsDelete!=true
+                && material.IsDelete!=true
+                && material.IsActive!=false
+            select new
+            {
+                item.RecipeVersionId,
+                MaterialId=material.ID,
+                MaterialCode=material.Code,
+                MaterialName=material.Name,
+                item.Quantity,
+                item.PlannedWasteRate,
+                ItemUnitId=itemUnit.ID,
+                ItemUnitCode=itemUnit.Code,
+                ItemUnitName=itemUnit.Name,
+                MaterialUnitId=materialUnit.ID,
+                MaterialUnitCode=materialUnit.Code,
+                MaterialUnitName=materialUnit.Name
+            }).ToListAsync(ct);
+
+        var materialIds=itemRows.Select(x=>x.MaterialId).Distinct().ToList();
+        var warehouseIds=await _context.PrdWarehouses.AsNoTracking()
+            .Where(x=>x.IsDelete!=true&&x.IsActive!=false&&(x.Type==PrdWarehouseType.Main||x.Type==PrdWarehouseType.Production))
+            .Select(x=>x.ID).ToListAsync(ct);
+        var stockRows=await(
+            from movement in _context.PrdStockMovements.AsNoTracking()
+            join unit in _context.PrdUnits.AsNoTracking() on movement.UnitId equals unit.ID
+            join lot0 in _context.PrdStockLots.AsNoTracking() on movement.StockLotId equals lot0.ID into lotJoin
+            from lot in lotJoin.DefaultIfEmpty()
+            where materialIds.Contains(movement.MaterialId)
+                && warehouseIds.Contains(movement.WarehouseId)
+                && movement.IsDelete!=true
+                && (movement.StockLotId==null||lot.ExpirationDate==null||lot.ExpirationDate.Value.Year<=1900||lot.ExpirationDate>=today)
+            group movement by new{movement.MaterialId,movement.UnitId,unit.Code,unit.Name} into g
+            select new{g.Key.MaterialId,g.Key.UnitId,UnitCode=g.Key.Code,UnitName=g.Key.Name,Quantity=g.Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity)}).ToListAsync(ct);
+        var reservationRows=await(
+            from reservation in _context.PrdStockReservations.AsNoTracking()
+            join lot in _context.PrdStockLots.AsNoTracking() on reservation.StockLotId equals lot.ID
+            join material in _context.PrdMaterials.AsNoTracking() on reservation.MaterialId equals material.ID
+            join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID
+            where materialIds.Contains(reservation.MaterialId)
+                && warehouseIds.Contains(reservation.WarehouseId)
+                && reservation.IsDelete!=true
+                && (reservation.Status==PrdReservationStatus.Active||reservation.Status==PrdReservationStatus.PartiallyUsed)
+                && (lot.ExpirationDate==null||lot.ExpirationDate.Value.Year<=1900||lot.ExpirationDate>=today)
+            group reservation by new{reservation.MaterialId,material.UnitId,unit.Code,unit.Name} into g
+            select new{g.Key.MaterialId,g.Key.UnitId,UnitCode=g.Key.Code,UnitName=g.Key.Name,Quantity=g.Sum(x=>x.ReservedQuantity-x.UsedQuantity-x.ReleasedQuantity)}).ToListAsync(ct);
+        var conversionRules=await(
+            from conversion in _context.PrdUnitConversions.AsNoTracking()
+            join fromUnit in _context.PrdUnits.AsNoTracking() on conversion.FromUnitId equals fromUnit.ID
+            join toUnit in _context.PrdUnits.AsNoTracking() on conversion.ToUnitId equals toUnit.ID
+            where conversion.IsDelete!=true&&conversion.IsActive!=false&&conversion.Factor>0
+            select new CapacityUnitConversionRule
+            {
+                MaterialId=conversion.MaterialId,
+                FromUnitId=fromUnit.ID,
+                FromCode=fromUnit.Code,
+                FromName=fromUnit.Name,
+                ToUnitId=toUnit.ID,
+                ToCode=toUnit.Code,
+                ToName=toUnit.Name,
+                Factor=conversion.Factor
+            }).ToListAsync(ct);
+
+        var model=new ProductionCapacityReportVM
+        {
+            Search=search,
+            OnlyProducible=onlyProducible,
+            CalculationDate=now,
+            WarehouseCount=warehouseIds.Count
+        };
+        foreach(var recipe in recipeRows.OrderBy(x=>x.ProductCode))
+        {
+            var product=new ProductionCapacityProductVM
+            {
+                RecipeVersionId=recipe.VersionId,
+                RecipeCode=recipe.RecipeCode,
+                RecipeName=recipe.RecipeName,
+                ProductCode=recipe.ProductCode,
+                ProductName=recipe.ProductName,
+                VersionNumber=recipe.VersionNumber,
+                BaseQuantity=recipe.BaseQuantity,
+                Unit=ProductionUnitNormalizer.DisplayName(ProductionUnitNormalizer.CanonicalCode(recipe.OutputUnitCode,recipe.OutputUnitName),recipe.OutputUnitName),
+                IsWholeNumberUnit=ProductionUnitNormalizer.CanonicalCode(recipe.OutputUnitCode,recipe.OutputUnitName)=="ADET"
+            };
+            var recipeItems=itemRows.Where(x=>x.RecipeVersionId==recipe.VersionId).ToList();
+            if(recipe.BaseQuantity<=0||recipeItems.Count==0)
+            {
+                product.HasCalculationIssue=true;
+                product.CalculationIssue=recipe.BaseQuantity<=0?"Reçete baz miktarı sıfır veya geçersiz.":"Aktif reçetede malzeme kalemi bulunmuyor.";
+                model.Products.Add(product);
+                continue;
+            }
+
+            foreach(var materialGroup in recipeItems.GroupBy(x=>new{x.MaterialId,x.MaterialCode,x.MaterialName,x.MaterialUnitId,x.MaterialUnitCode,x.MaterialUnitName}))
+            {
+                var conversionIssue=false;
+                var requiredForBaseQuantity=0m;
+                foreach(var item in materialGroup)
+                {
+                    var quantityWithWaste=item.Quantity*(1m+item.PlannedWasteRate/100m);
+                    if(!TryConvertCapacityQuantity(quantityWithWaste,item.MaterialId,conversionRules,item.ItemUnitId,item.ItemUnitCode,item.ItemUnitName,item.MaterialUnitId,item.MaterialUnitCode,item.MaterialUnitName,out var converted))
+                    {
+                        conversionIssue=true;
+                        continue;
+                    }
+                    requiredForBaseQuantity+=converted;
+                }
+
+                var physical=0m;
+                foreach(var stock in stockRows.Where(x=>x.MaterialId==materialGroup.Key.MaterialId))
+                {
+                    if(!TryConvertCapacityQuantity(stock.Quantity,materialGroup.Key.MaterialId,conversionRules,stock.UnitId,stock.UnitCode,stock.UnitName,materialGroup.Key.MaterialUnitId,materialGroup.Key.MaterialUnitCode,materialGroup.Key.MaterialUnitName,out var converted))
+                    {
+                        conversionIssue=true;
+                        continue;
+                    }
+                    physical+=converted;
+                }
+                var reserved=reservationRows.Where(x=>x.MaterialId==materialGroup.Key.MaterialId).Sum(x=>x.Quantity);
+                var available=Math.Max(0,physical-reserved);
+                var requiredPerProductUnit=requiredForBaseQuantity/recipe.BaseQuantity;
+                var supported=!conversionIssue&&requiredPerProductUnit>0?available/requiredPerProductUnit:0;
+                product.Materials.Add(new ProductionCapacityMaterialVM
+                {
+                    MaterialId=materialGroup.Key.MaterialId,
+                    MaterialCode=materialGroup.Key.MaterialCode,
+                    MaterialName=materialGroup.Key.MaterialName,
+                    Unit=ProductionUnitNormalizer.DisplayName(ProductionUnitNormalizer.CanonicalCode(materialGroup.Key.MaterialUnitCode,materialGroup.Key.MaterialUnitName),materialGroup.Key.MaterialUnitName),
+                    RequiredPerProductUnit=requiredPerProductUnit,
+                    PhysicalStockQuantity=physical,
+                    ReservedQuantity=Math.Max(0,reserved),
+                    AvailableStockQuantity=available,
+                    SupportedProductionQuantity=supported,
+                    HasConversionIssue=conversionIssue
+                });
+            }
+
+            if(product.Materials.Count==0||product.Materials.Any(x=>x.HasConversionIssue||x.RequiredPerProductUnit<=0))
+            {
+                product.HasCalculationIssue=true;
+                product.CalculationIssue=product.Materials.Count==0?"Hesaplanabilir reçete kalemi bulunmuyor.":"Bir veya daha fazla malzemenin birim dönüşümü eksik ya da tüketim miktarı geçersiz.";
+                product.MaximumProductionQuantity=0;
+            }
+            else
+            {
+                var theoreticalMaximum=product.Materials.Min(x=>x.SupportedProductionQuantity);
+                product.MaximumProductionQuantity=product.IsWholeNumberUnit
+                    ? Math.Floor(Math.Max(0,theoreticalMaximum))
+                    : Math.Floor(Math.Max(0,theoreticalMaximum)*1_000_000m)/1_000_000m;
+                var tolerance=Math.Max(0.000001m,theoreticalMaximum*0.000001m);
+                foreach(var material in product.Materials)
+                    material.IsLimiting=Math.Abs(material.SupportedProductionQuantity-theoreticalMaximum)<=tolerance;
+            }
+            model.Products.Add(product);
+        }
+        if(onlyProducible)model.Products=model.Products.Where(x=>x.MaximumProductionQuantity>0&&!x.HasCalculationIssue).ToList();
+        return View(model);
+    }
+
+    [HttpGet]
     public async Task<IActionResult> Depolar(CancellationToken ct)
     {
         ViewBag.Modul="YeniUretim";
@@ -422,65 +623,6 @@ public sealed class UretimYonetimiController : Controller
             .OrderBy(x=>x.Code)
             .ToList();
 
-        var materialIds=shortages.Select(x=>x.MaterialId).ToList();
-        var openRequestRows=await(
-            from line in _context.PurPurchaseRequestLines.AsNoTracking()
-            join requestHeader in _context.PurPurchaseRequests.AsNoTracking() on line.PurchaseRequestId equals requestHeader.ID
-            join unit in _context.PrdUnits.AsNoTracking() on line.UnitId equals unit.ID
-            join material in _context.PrdMaterials.AsNoTracking() on line.MaterialId equals material.ID
-            join baseUnit in _context.PrdUnits.AsNoTracking() on material.UnitId equals baseUnit.ID
-            where materialIds.Contains(line.MaterialId)
-                && line.IsDelete!=true
-                && requestHeader.IsDelete!=true
-                && line.Status!=PurPurchaseRequestLineStatus.Rejected
-                && line.Status!=PurPurchaseRequestLineStatus.Cancelled
-                && line.Status!=PurPurchaseRequestLineStatus.Closed
-                && requestHeader.Status!=PurPurchaseRequestStatus.Rejected
-                && requestHeader.Status!=PurPurchaseRequestStatus.Cancelled
-            select new
-            {
-                LineId=line.ID,
-                line.MaterialId,
-                line.UnitId,
-                UnitCode=unit.Code,
-                UnitName=unit.Name,
-                BaseUnitId=baseUnit.ID,
-                BaseUnitCode=baseUnit.Code,
-                BaseUnitName=baseUnit.Name,
-                line.RequestedQuantity,
-                line.ApprovedQuantity,
-                line.Status
-            }).ToListAsync(ct);
-
-        var orderedLineIds=openRequestRows.Where(x=>x.Status==PurPurchaseRequestLineStatus.Ordered).Select(x=>x.LineId).ToList();
-        var orderedRemaining=orderedLineIds.Count==0
-            ? new Dictionary<int,decimal>()
-            : await(
-                from orderLine in _context.PurPurchaseOrderLines.AsNoTracking()
-                join order in _context.PurPurchaseOrders.AsNoTracking() on orderLine.PurchaseOrderId equals order.ID
-                where orderedLineIds.Contains(orderLine.PurchaseRequestLineId)
-                    && orderLine.IsDelete!=true
-                    && order.IsDelete!=true
-                    && orderLine.Status!=PurPurchaseOrderLineStatus.Cancelled
-                    && order.Status!=PurPurchaseOrderStatus.Cancelled
-                group orderLine by orderLine.PurchaseRequestLineId into g
-                select new{LineId=g.Key,Quantity=g.Sum(x=>x.OrderedQuantity-x.ReceivedQuantity)})
-                .ToDictionaryAsync(x=>x.LineId,x=>Math.Max(0,x.Quantity),ct);
-
-        var outstandingByMaterial=openRequestRows
-            .Select(x=>
-            {
-                var sourceQuantity=x.Status==PurPurchaseRequestLineStatus.Ordered
-                    ? (orderedRemaining.TryGetValue(x.LineId,out var remaining)?remaining:0)
-                    : x.Status is PurPurchaseRequestLineStatus.Approved or PurPurchaseRequestLineStatus.InQuotation
-                        ? (x.ApprovedQuantity>0?x.ApprovedQuantity:x.RequestedQuantity)
-                        : x.RequestedQuantity;
-                var baseQuantity=ConvertProductionQuantity(sourceQuantity,x.UnitId,x.UnitCode,x.UnitName,x.BaseUnitId,x.BaseUnitCode,x.BaseUnitName);
-                return new{x.MaterialId,Quantity=Math.Max(0,baseQuantity)};
-            })
-            .GroupBy(x=>x.MaterialId)
-            .ToDictionary(g=>g.Key,g=>g.Sum(x=>x.Quantity));
-
         var requestLines=shortages
             .Select(x=>new
             {
@@ -490,15 +632,14 @@ public sealed class UretimYonetimiController : Controller
                 x.UnitId,
                 x.UnitName,
                 GrossShortage=x.Quantity,
-                Outstanding=outstandingByMaterial.TryGetValue(x.MaterialId,out var outstanding)?outstanding:0,
-                Quantity=Math.Round(Math.Max(0,x.Quantity-(outstandingByMaterial.TryGetValue(x.MaterialId,out var pending)?pending:0)),6,MidpointRounding.AwayFromZero)
+                Quantity=Math.Round(Math.Max(0,x.Quantity),6,MidpointRounding.AwayFromZero)
             })
             .Where(x=>x.Quantity>0)
             .ToList();
 
         if(requestLines.Count==0)
         {
-            TempData["error"]="Seçilen planların eksik malzemeleri için açık satınalma talepleri veya siparişler zaten yeterli miktarı karşılıyor.";
+            TempData["error"]="Seçilen planlarda satınalma talebine aktarılacak pozitif eksik miktar bulunamadı.";
             return RedirectToAction(nameof(Planlar));
         }
 
@@ -516,7 +657,7 @@ public sealed class UretimYonetimiController : Controller
             RequestedUserId=user,
             Priority=PurPurchaseRequestPriority.Normal,
             Status=PurPurchaseRequestStatus.Draft,
-            Notes=$"Üretim planlarından otomatik oluşturuldu: {shortPlanNumbers}. Eksikler malzeme bazında birleştirildi; açık satınalma miktarları düşüldü.",
+            Notes=$"Üretim planlarından otomatik oluşturuldu: {shortPlanNumbers}. Eksikler malzeme bazında birleştirildi; başka planların açık satınalma kayıtları bu talepten düşülmedi.",
             IsActive=true,
             IsDelete=false,
             CreateDate=now,
@@ -529,7 +670,7 @@ public sealed class UretimYonetimiController : Controller
         for(var index=0;index<requestLines.Count;index++)
         {
             var line=requestLines[index];
-            var reason=$"{shortPlanNumbers} planlarının eksik malzeme ihtiyacı. Brüt eksik: {line.GrossShortage:0.######} {line.UnitName}; açık satınalma: {line.Outstanding:0.######} {line.UnitName}.";
+            var reason=$"{shortPlanNumbers} planlarının eksik malzeme ihtiyacı: {line.GrossShortage:0.######} {line.UnitName}.";
             if(reason.Length>500)reason=reason[..497]+"…";
             _context.PurPurchaseRequestLines.Add(new PurPurchaseRequestLine
             {
@@ -1107,6 +1248,29 @@ public sealed class UretimYonetimiController : Controller
         return 0m;
     }
 
+    private static bool TryConvertCapacityQuantity(decimal quantity,int materialId,IReadOnlyList<CapacityUnitConversionRule> rules,int sourceUnitId,string? sourceCode,string? sourceName,int targetUnitId,string? targetCode,string? targetName,out decimal converted)
+    {
+        converted=0m;
+        if(sourceUnitId==targetUnitId){converted=quantity;return true;}
+        var source=ResolveProductionUnit(sourceCode,sourceName);var target=ResolveProductionUnit(targetCode,targetName);
+        if(source.HasValue&&target.HasValue&&source.Value.Family==target.Value.Family)
+        {
+            converted=quantity*source.Value.Factor/target.Value.Factor;
+            return true;
+        }
+        var applicable=rules.Where(x=>x.MaterialId==materialId||!x.MaterialId.HasValue).OrderByDescending(x=>x.MaterialId.HasValue).ToList();
+        var direct=applicable.FirstOrDefault(x=>CapacityUnitMatches(sourceUnitId,sourceCode,sourceName,x.FromUnitId,x.FromCode,x.FromName)&&CapacityUnitMatches(targetUnitId,targetCode,targetName,x.ToUnitId,x.ToCode,x.ToName));
+        if(direct!=null){converted=quantity*direct.Factor;return true;}
+        var reverse=applicable.FirstOrDefault(x=>CapacityUnitMatches(sourceUnitId,sourceCode,sourceName,x.ToUnitId,x.ToCode,x.ToName)&&CapacityUnitMatches(targetUnitId,targetCode,targetName,x.FromUnitId,x.FromCode,x.FromName));
+        if(reverse!=null){converted=quantity/reverse.Factor;return true;}
+        return false;
+    }
+
+    private static bool CapacityUnitMatches(int unitId,string? code,string? name,int targetUnitId,string? targetCode,string? targetName)
+    {
+        return unitId==targetUnitId||string.Equals(ProductionUnitNormalizer.CanonicalCode(code,name),ProductionUnitNormalizer.CanonicalCode(targetCode,targetName),StringComparison.OrdinalIgnoreCase);
+    }
+
     private static (string Family,decimal Factor)? ResolveProductionUnit(string? code,string? name)
     {
         static string Normalize(string? value)
@@ -1126,6 +1290,18 @@ public sealed class UretimYonetimiController : Controller
         }
         var exact=Normalize(code);if(exact.Length==0)exact=Normalize(name);
         return exact.Length==0?null:($"EXACT:{exact}",1m);
+    }
+
+    private sealed class CapacityUnitConversionRule
+    {
+        public int? MaterialId { get; set; }
+        public int FromUnitId { get; set; }
+        public string FromCode { get; set; }=string.Empty;
+        public string FromName { get; set; }=string.Empty;
+        public int ToUnitId { get; set; }
+        public string ToCode { get; set; }=string.Empty;
+        public string ToName { get; set; }=string.Empty;
+        public decimal Factor { get; set; }
     }
 
     private async Task<ProductionPlanningVM> BuildPlanningModel(List<ProductionPlanningSessionItem> selected,CancellationToken ct)

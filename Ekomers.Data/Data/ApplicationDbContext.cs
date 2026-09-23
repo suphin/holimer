@@ -48,7 +48,9 @@ namespace Ekomers.Data
 
         public DbSet<UserActivityLog> UserActivityLog { get; set; }
         public DbSet<SystemErrorLog> SystemErrorLogs { get; set; }
+        public DbSet<IntegrationRequestLog> IntegrationRequestLogs { get; set; }
         public DbSet<PersonalWorkItem> PersonalWorkItems { get; set; }
+        public DbSet<LogoRestApiSetting> LogoRestApiSettings { get; set; }
         public DbSet<CrmActivityLog> CrmActivityLog { get; set; }
 
 
@@ -312,12 +314,42 @@ namespace Ekomers.Data
 			modelBuilder.Entity<SystemErrorLog>().Property(x => x.ExceptionType).HasMaxLength(500).IsRequired();
 			modelBuilder.Entity<SystemErrorLog>().Property(x => x.Message).HasMaxLength(4000).IsRequired();
 
+			modelBuilder.Entity<IntegrationRequestLog>().ToTable("IntegrationRequestLog");
+			modelBuilder.Entity<IntegrationRequestLog>().Property(x => x.TrackingId).HasMaxLength(36).IsRequired();
+			modelBuilder.Entity<IntegrationRequestLog>().Property(x => x.Category).HasMaxLength(100).IsRequired();
+			modelBuilder.Entity<IntegrationRequestLog>().Property(x => x.ConnectionName).HasMaxLength(200).IsRequired();
+			modelBuilder.Entity<IntegrationRequestLog>().Property(x => x.Operation).HasMaxLength(250).IsRequired();
+			modelBuilder.Entity<IntegrationRequestLog>().Property(x => x.HttpMethod).HasMaxLength(10).IsRequired();
+			modelBuilder.Entity<IntegrationRequestLog>().Property(x => x.RequestUrl).HasMaxLength(2048).IsRequired();
+			modelBuilder.Entity<IntegrationRequestLog>().Property(x => x.RequestContentType).HasMaxLength(200);
+			modelBuilder.Entity<IntegrationRequestLog>().Property(x => x.ResponseContentType).HasMaxLength(200);
+			modelBuilder.Entity<IntegrationRequestLog>().Property(x => x.ErrorMessage).HasMaxLength(4000);
+			modelBuilder.Entity<IntegrationRequestLog>().Property(x => x.UserName).HasMaxLength(256);
+			modelBuilder.Entity<IntegrationRequestLog>().HasIndex(x => x.TrackingId).IsUnique();
+			modelBuilder.Entity<IntegrationRequestLog>().HasIndex(x => x.RequestedAt);
+			modelBuilder.Entity<IntegrationRequestLog>().HasIndex(x => new { x.Category, x.ConnectionName, x.RequestedAt });
+			modelBuilder.Entity<IntegrationRequestLog>().HasIndex(x => new { x.IsSuccess, x.RequestedAt });
+
 			modelBuilder.Entity<PersonalWorkItem>().ToTable("PersonalWorkItem");
 			modelBuilder.Entity<PersonalWorkItem>().Property(x => x.OwnerUserId).HasMaxLength(450).IsRequired();
 			modelBuilder.Entity<PersonalWorkItem>().Property(x => x.Title).HasMaxLength(200).IsRequired();
 			modelBuilder.Entity<PersonalWorkItem>().Property(x => x.Content).HasMaxLength(4000);
 			modelBuilder.Entity<PersonalWorkItem>().HasIndex(x => new { x.OwnerUserId, x.Status, x.StartAt });
 			modelBuilder.Entity<PersonalWorkItem>().HasIndex(x => new { x.OwnerUserId, x.ItemType, x.IsDelete });
+
+			modelBuilder.Entity<LogoRestApiSetting>().ToTable("LogoRestApiSetting");
+			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.ServerAddress).HasMaxLength(255).IsRequired();
+			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.Protocol).HasMaxLength(5).IsRequired();
+			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.RestUserName).HasMaxLength(200).IsRequired();
+			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.RestPasswordProtected).HasMaxLength(4000).IsRequired();
+			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.FirmNumber).HasMaxLength(20).IsRequired();
+			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.PeriodNumber).HasMaxLength(10).IsRequired();
+			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.ClientId).HasMaxLength(200);
+			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.ClientSecretProtected).HasMaxLength(4000);
+			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.LastTestMessage).HasMaxLength(2000);
+			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.UpdatedBy).HasMaxLength(256);
+			modelBuilder.Entity<LogoRestApiSetting>().HasCheckConstraint("CK_LogoRestApiSetting_Port", "[Port] BETWEEN 1 AND 65535");
+			modelBuilder.Entity<LogoRestApiSetting>().HasCheckConstraint("CK_LogoRestApiSetting_Protocol", "[Protocol] IN ('HTTP', 'HTTPS')");
 
 			modelBuilder.Entity<Malzeme>()
 				.HasIndex(x => x.LogoKod)

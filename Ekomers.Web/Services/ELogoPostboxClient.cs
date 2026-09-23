@@ -135,6 +135,9 @@ public sealed class ELogoPostboxClient : IELogoPostboxClient
                 new XElement(SoapNamespace + "Body", body)));
 
         using var request = new HttpRequestMessage(HttpMethod.Post, _options.ServiceUrl);
+        request.Options.Set(IntegrationLoggingHandler.CategoryKey, "E-Fatura");
+        request.Options.Set(IntegrationLoggingHandler.ConnectionKey, "e-Logo Postbox");
+        request.Options.Set(IntegrationLoggingHandler.OperationKey, operation);
         request.Headers.TryAddWithoutValidation("SOAPAction", $"\"{ActionPrefix}{operation}\"");
         request.Content = new StringContent(
             envelope.ToString(SaveOptions.DisableFormatting),

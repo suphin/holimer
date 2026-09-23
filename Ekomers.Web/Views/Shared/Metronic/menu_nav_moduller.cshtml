@@ -960,6 +960,12 @@
 		<div class="menu-submenu">
 			<i class="menu-arrow"></i>
 			<ul class="menu-subnav">
+				<li class="menu-item @(controllerName == "EntegrasyonLoglari" ? "menu-item-active" : "")" aria-haspopup="true">
+					<a asp-controller="EntegrasyonLoglari" asp-action="Index" class="menu-link">
+						<i class="menu-bullet menu-bullet-dot"><span></span></i>
+						<span class="menu-text">Entegrasyon Logları</span>
+					</a>
+				</li>
 				<li class="menu-item @(controllerName == "HataKayitlari" ? "menu-item-active" : "")" aria-haspopup="true">
 					<a asp-controller="HataKayitlari" asp-action="Index" class="menu-link">
 						<i class="menu-bullet menu-bullet-dot"><span></span></i>
@@ -1027,6 +1033,7 @@
 			<li class="menu-item @(controllerName == "ProductionInventory" ? "menu-item-active" : "")"><a asp-controller="ProductionInventory" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Stok Hareketleri</span></a></li>
 			<li class="menu-item @(controllerName == "ReceteMaliyetleri" && actionName == "Index" ? "menu-item-active" : "")"><a asp-controller="ReceteMaliyetleri" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Reçete Maliyet Hesabı</span></a></li>
 			<li class="menu-item @(controllerName == "ReceteMaliyetleri" && (actionName == "KayitliHesaplar" || actionName == "KayitDetay") ? "menu-item-active" : "")"><a asp-controller="ReceteMaliyetleri" asp-action="KayitliHesaplar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Kayıtlı Maliyet Hesapları</span></a></li>
+			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "UretilebilirUrunler" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="UretilebilirUrunler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Stoka Göre Üretilebilir Ürünler</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Planlama" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Planlama" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Yeni Üretim Planı</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && (actionName == "Planlar" || actionName == "PlanDetay") ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Planlar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Planları</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Emirler" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Emirler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Emirleri</span></a></li>

@@ -1,0 +1,35 @@
+@model Ekomers.Models.ViewModels.IntegrationRequestLogDetailVM
+<div class="modal-header align-items-start">
+    <div>
+        <h4 class="modal-title mb-2">@Model.ConnectionName · @Model.HttpMethod · HTTP @(Model.HttpStatusCode?.ToString() ?? "yanıt yok")</h4>
+        <div class="font-weight-bold text-break">@Model.RequestUrl</div>
+        <div class="text-muted mt-1">@Model.RequestedAt.ToString("dd.MM.yyyy HH:mm:ss") · @Model.DurationMilliseconds ms · Kayıt: @Model.TrackingId</div>
+    </div>
+    <button type="button" class="close ml-4" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+</div>
+<div class="modal-body">
+    <div class="d-flex flex-wrap align-items-center mb-5">
+        <span class="label @(Model.IsSuccess ? "label-light-success" : "label-light-danger") label-inline mr-3">@(Model.IsSuccess ? "Başarılı" : "Hatalı")</span>
+        <strong class="mr-3">@Model.Category / @Model.Operation</strong>
+        <span class="text-muted">Kullanıcı: @(Model.UserName ?? "-")</span>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert alert-light-danger">@Model.ErrorMessage</div>
+    }
+    <div class="row">
+        <div class="col-lg-6 mb-5 mb-lg-0">
+            <h4 class="mb-1">Giden istek</h4>
+            <div class="text-muted mb-3">@(Model.RequestContentType ?? "İçerik türü belirtilmedi")</div>
+            <pre class="integration-code mb-3">@(string.IsNullOrWhiteSpace(Model.RequestBody) ? "(İstek gövdesi yok)" : Model.RequestBody)</pre>
+            <details><summary class="font-weight-bold cursor-pointer">İstek başlıkları</summary><pre class="integration-headers mt-3">@(Model.RequestHeaders ?? "-")</pre></details>
+        </div>
+        <div class="col-lg-6">
+            <h4 class="mb-1">Gelen yanıt</h4>
+            <div class="text-muted mb-3">@(Model.ResponseContentType ?? "İçerik türü belirtilmedi")</div>
+            <pre class="integration-code mb-3">@(string.IsNullOrWhiteSpace(Model.ResponseBody) ? "(Yanıt gövdesi yok)" : Model.ResponseBody)</pre>
+            <details><summary class="font-weight-bold cursor-pointer">Yanıt başlıkları</summary><pre class="integration-headers mt-3">@(Model.ResponseHeaders ?? "-")</pre></details>
+        </div>
+    </div>
+</div>
+<div class="modal-footer"><button type="button" class="btn btn-light" data-dismiss="modal">Kapat</button></div>

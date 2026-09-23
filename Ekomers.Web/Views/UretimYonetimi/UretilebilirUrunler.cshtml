@@ -1,0 +1,138 @@
+@model Ekomers.Models.ViewModels.Production.ProductionCapacityReportVM
+@using System.Globalization
+@{
+    ViewData["Title"]="Stoka Göre Üretilebilir Ürünler";
+    var tr=CultureInfo.GetCultureInfo("tr-TR");
+}
+
+<style>
+    .production-capacity-table > thead > tr > th,
+    .production-capacity-table > tbody > tr:not(.collapse) > td {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+
+    .production-capacity-table > thead > tr > th:first-child,
+    .production-capacity-table > tbody > tr:not(.collapse) > td:first-child {
+        padding-left: 2.5rem !important;
+    }
+
+    .production-capacity-table > thead > tr > th:last-child,
+    .production-capacity-table > tbody > tr:not(.collapse) > td:last-child {
+        padding-right: 2.5rem !important;
+    }
+
+    .production-capacity-table .capacity-detail-button {
+        white-space: nowrap;
+    }
+</style>
+
+<div class="card card-custom mb-6">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">Stoka Göre Üretilebilir Ürünler
+                <span class="d-block text-muted pt-2 font-size-sm">Güncel kullanılabilir stokla her ürün için bağımsız azami üretim varsayımı</span>
+            </h3>
+        </div>
+        <div class="card-toolbar text-muted">Hesaplama: @Model.CalculationDate.ToString("dd.MM.yyyy HH:mm")</div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light-info">
+            <strong>Varsayım raporudur.</strong> Her ürün tek başına üretiliyormuş gibi hesaplanır; bir ürün için kullanılan stok diğer ürün satırından düşülmez ve hiçbir stok kilidi, rezervasyon veya hareket oluşturulmaz. Planlanan fire dahildir; mevcut aktif rezervasyonlar kullanılabilir stoktan düşülür, süresi geçmiş lotlar hesaba katılmaz.
+        </div>
+        <form method="get" class="row align-items-end">
+            <div class="col-md-7 form-group mb-md-0">
+                <label>Ürün veya reçete ara</label>
+                <input name="search" value="@Model.Search" class="form-control" placeholder="Kod veya ad..." />
+            </div>
+            <div class="col-md-3 form-group mb-md-0">
+                <label class="checkbox mt-8">
+                    @if(Model.OnlyProducible)
+                    {
+                        <input type="checkbox" name="onlyProducible" value="true" checked />
+                    }
+                    else
+                    {
+                        <input type="checkbox" name="onlyProducible" value="true" />
+                    }
+                    <span></span>Yalnız üretilebilenleri göster
+                </label>
+            </div>
+            <div class="col-md-2 form-group mb-0 text-md-right">
+                <button class="btn btn-primary" type="submit">Raporu Yenile</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row mb-6">
+    <div class="col-md-4"><div class="card card-custom h-100"><div class="card-body"><span class="text-muted font-weight-bold">REÇETE</span><div class="font-size-h2 font-weight-bolder mt-2">@Model.Products.Count</div></div></div></div>
+    <div class="col-md-4"><div class="card card-custom h-100"><div class="card-body"><span class="text-muted font-weight-bold">ÜRETİLEBİLİR</span><div class="font-size-h2 font-weight-bolder text-success mt-2">@Model.ProducibleCount</div></div></div></div>
+    <div class="col-md-4"><div class="card card-custom h-100"><div class="card-body"><span class="text-muted font-weight-bold">HESABA KATILAN DEPO</span><div class="font-size-h2 font-weight-bolder mt-2">@Model.WarehouseCount</div></div></div></div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Ürün Kapasite Sonuçları</h3></div></div>
+    <div class="card-body p-0">
+        @if(Model.Products.Count==0)
+        {
+            <div class="alert alert-light-primary m-6">Arama ölçütüne uygun aktif reçete bulunamadı.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom mb-0 production-capacity-table">
+                    <thead><tr><th>Ürün / Reçete</th><th>Baz Reçete</th><th>Azami Üretim</th><th>Kısıtlayan Malzeme</th><th>Durum</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach(var row in Model.Products)
+                    {
+                        var collapseId="capacity-"+row.RecipeVersionId;
+                        <tr>
+                            <td><strong>@row.ProductCode</strong><span class="d-block">@row.ProductName</span><span class="d-block text-muted font-size-sm">@row.RecipeCode · v@(row.VersionNumber)</span></td>
+                            <td>@row.BaseQuantity.ToString("N6",tr) @row.Unit</td>
+                            <td><strong class="font-size-h5 @(row.MaximumProductionQuantity>0?"text-success":"text-danger")">@row.MaximumProductionQuantity.ToString(row.IsWholeNumberUnit?"N0":"N6",tr)</strong><span class="d-block text-muted">@row.Unit</span></td>
+                            <td>
+                                @if(row.HasCalculationIssue)
+                                {
+                                    <span class="text-danger">@row.CalculationIssue</span>
+                                }
+                                else
+                                {
+                                    @foreach(var limit in row.LimitingMaterials.Take(3))
+                                    {
+                                        <span class="d-block"><strong>@limit.MaterialCode</strong> <span class="text-muted">@limit.MaterialName</span></span>
+                                    }
+                                }
+                            </td>
+                            <td><span class="label @(row.HasCalculationIssue?"label-light-warning":row.MaximumProductionQuantity>0?"label-light-success":"label-light-danger") label-inline">@(row.HasCalculationIssue?"Hesaplanamadı":row.MaximumProductionQuantity>0?"Üretilebilir":"Stok yetersiz")</span></td>
+                            <td class="text-right"><button class="btn btn-sm btn-light-primary capacity-detail-button" type="button" data-toggle="collapse" data-target="#@collapseId" aria-expanded="false">Malzeme Detayı</button></td>
+                        </tr>
+                        <tr class="collapse" id="@collapseId">
+                            <td colspan="6" class="bg-light">
+                                <div class="table-responsive p-3">
+                                    <table class="table table-sm mb-0">
+                                        <thead><tr><th>Malzeme</th><th>1 ürün için tüketim</th><th>Fiziksel stok</th><th>Aktif rezervasyon</th><th>Kullanılabilir</th><th>Desteklediği üretim</th></tr></thead>
+                                        <tbody>
+                                        @foreach(var material in row.Materials)
+                                        {
+                                            <tr class="@(material.IsLimiting?"font-weight-bold":"")">
+                                                <td>@material.MaterialCode<span class="d-block text-muted">@material.MaterialName</span>@if(material.HasConversionIssue){<span class="d-block text-danger">Birim dönüşümü eksik</span>}</td>
+                                                <td>@material.RequiredPerProductUnit.ToString("N6",tr) @material.Unit</td>
+                                                <td>@material.PhysicalStockQuantity.ToString("N6",tr) @material.Unit</td>
+                                                <td>@material.ReservedQuantity.ToString("N6",tr) @material.Unit</td>
+                                                <td>@material.AvailableStockQuantity.ToString("N6",tr) @material.Unit</td>
+                                                <td class="@(material.IsLimiting?"text-danger":"")">@material.SupportedProductionQuantity.ToString("N6",tr) @row.Unit @if(material.IsLimiting){<span class="label label-light-danger label-inline ml-2">Sınır</span>}</td>
+                                            </tr>
+                                        }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

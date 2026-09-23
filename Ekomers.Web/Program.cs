@@ -369,9 +369,15 @@ builder.Services.AddAutoMapper(cfg => {
 builder.Services.AddSignalR();
 //builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddRazorPages();
+builder.Services.AddDataProtection();
+builder.Services.AddTransient<IntegrationLoggingHandler>();
+builder.Services.ConfigureHttpClientDefaults(httpClientBuilder =>
+    httpClientBuilder.AddHttpMessageHandler<IntegrationLoggingHandler>());
 builder.Services.AddHttpClient(); // IHttpClientFactory'yi burada ekliyoruz
 builder.Services.AddHttpClient<IELogoPostboxClient, ELogoPostboxClient>(client =>
     client.Timeout = TimeSpan.FromSeconds(90));
+builder.Services.AddHttpClient<LogoRestApiClient>(client =>
+    client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddControllersWithViews()
     .AddNewtonsoftJson(options =>
 {
