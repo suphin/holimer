@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /Ekomers.Web/appsettings.json
 /Ekomers.Web/appsettings.json
+/.buildcheck/request-table-padding-fix
