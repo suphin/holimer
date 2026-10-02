@@ -5,6 +5,126 @@
         .OrderBy(x => x.Key.MaterialCode).ToList();
     var canManageQuotation = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaTeklifYonet");
 }
+@section CSSection {
+    <style>
+        .comparison-summary { gap: 2rem; }
+        .offer-list {
+            border: 1px solid #e4e6ef;
+            border-radius: .8rem;
+            overflow: hidden;
+        }
+        .offer-card {
+            position: relative;
+            padding: 1.4rem 1.5rem 1.25rem;
+            background: #fff;
+            border-bottom: 1px solid #e9edf3;
+        }
+        .offer-card:last-child { border-bottom: 0; }
+        .offer-card.comparison-best {
+            background: #effbf9;
+            box-shadow: inset 4px 0 0 #1bc5bd;
+        }
+        .offer-grid {
+            display: grid;
+            grid-template-columns: minmax(220px, 1.3fr) minmax(180px, .95fr) minmax(190px, 1fr) minmax(220px, 1.15fr);
+            gap: 1.5rem;
+            align-items: start;
+        }
+        .offer-section {
+            min-width: 0;
+            padding-right: 1.25rem;
+            border-right: 1px solid rgba(123, 135, 155, .16);
+        }
+        .offer-section:last-child {
+            padding-right: 0;
+            border-right: 0;
+        }
+        .offer-section-title {
+            margin-bottom: .7rem;
+            color: #9a9caf;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+        .supplier-name {
+            display: block;
+            color: #273042;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+        }
+        .offer-facts {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .7rem 1rem;
+        }
+        .offer-fact { min-width: 0; }
+        .offer-fact-wide { grid-column: 1 / -1; }
+        .offer-fact-label {
+            display: block;
+            margin-bottom: .12rem;
+            color: #9a9caf;
+            font-size: .72rem;
+            line-height: 1.25;
+        }
+        .offer-fact-value {
+            display: block;
+            color: #273042;
+            font-weight: 600;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+        .offer-fact-sub {
+            display: block;
+            margin-top: .12rem;
+            color: #8f96a8;
+            font-size: .76rem;
+            line-height: 1.3;
+        }
+        .offer-action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.25rem;
+            margin-top: 1.15rem;
+            padding-top: 1rem;
+            border-top: 1px dashed rgba(123, 135, 155, .25);
+        }
+        .approval-box {
+            display: grid;
+            grid-template-columns: minmax(155px, .7fr) minmax(220px, 1.25fr) auto;
+            gap: .75rem;
+            align-items: start;
+            width: min(100%, 760px);
+            margin-left: auto;
+        }
+        .approval-box .form-group { margin-bottom: 0; }
+        .approval-submit-label { visibility: hidden; }
+        .approval-box .btn { min-height: 38px; white-space: nowrap; }
+        .price-highlight { color: #0f8f86; }
+        @@media (max-width: 991.98px) {
+            .comparison-summary { width: 100%; justify-content: flex-start; margin-top: 1rem; gap: 1.25rem; }
+            .comparison-summary > div { text-align: left !important; }
+            .offer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .offer-section:nth-child(2) { padding-right: 0; border-right: 0; }
+            .approval-box { width: 100%; }
+        }
+        @@media (max-width: 767.98px) {
+            .offer-card { padding: 1.15rem; }
+            .offer-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .offer-section,
+            .offer-section:nth-child(2) {
+                padding: 0 0 1rem;
+                border-right: 0;
+                border-bottom: 1px solid rgba(123, 135, 155, .16);
+            }
+            .offer-section:last-child { padding-bottom: 0; border-bottom: 0; }
+            .offer-action-bar { align-items: stretch; flex-direction: column; }
+            .approval-box { grid-template-columns: 1fr; }
+            .approval-box .btn { width: 100%; }
+        }
+    </style>
+}
 <div class="card card-custom mb-5">
     <div class="card-header flex-wrap py-3">
         <div class="card-title"><h3 class="card-label">Teklif Karşılaştırma<span class="d-block text-muted pt-2 font-size-sm">Talep: @Model.RequestNumber</span></h3></div>
@@ -28,62 +148,137 @@ else
         <div class="card card-custom mb-5">
             <div class="card-header flex-wrap py-3">
                 <div class="card-title"><h3 class="card-label">@group.Key.MaterialCode<span class="d-block text-muted pt-2 font-size-sm">@group.Key.MaterialName</span></h3></div>
-                <div class="card-toolbar">
+                <div class="card-toolbar comparison-summary d-flex flex-wrap">
                     <div class="text-right mr-5"><small class="text-muted d-block">Onaylanan Talep</small><strong>@first.RequestApprovedQuantity.ToString("0.######") @group.Key.Unit</strong></div>
                     <div class="text-right"><small class="text-muted d-block">Sipariş / Kalan</small><strong>@first.AlreadyOrderedQuantity.ToString("0.######") / @first.RemainingRequestQuantity.ToString("0.######") @group.Key.Unit</strong></div>
                 </div>
             </div>
-            <div class="card-body px-6 py-5">
-                <div class="table-responsive border" style="border-radius:.42rem; overflow:hidden;">
-                    <table class="table table-separate table-head-custom mb-0">
-                        <thead><tr><th style="min-width:260px">Tedarikçi / Teklif</th><th>Teklif Miktarı</th><th>Liste Fiyatı</th><th>İskonto</th><th>Net Birim</th><th>Kur</th><th>KDV</th><th>Satır Toplamı</th><th style="min-width:180px">Teslim</th><th style="min-width:220px">Koşullar</th><th style="min-width:220px">Durum / İşlem</th></tr></thead>
-                        <tbody>
-                        @foreach (var offer in offers)
-                        {
-                            var isBest = bestNetPriceTry.HasValue && offer.NetUnitPriceTry == bestNetPriceTry.Value && offer.Status != PurSupplierQuotationLineStatus.Rejected && offer.Status != PurSupplierQuotationLineStatus.Cancelled && offer.Status != PurSupplierQuotationLineStatus.NotSelected;
-                            var isExpired = offer.ValidUntil.HasValue && offer.ValidUntil.Value.Date < DateTime.Today;
-                            var selectableQuantity = Math.Min(offer.OfferedQuantity, offer.RemainingRequestQuantity);
-                            <tr class="@(isBest ? "table-success" : "")">
-                                <td>
-                                    <strong>@offer.SupplierCode - @offer.SupplierName</strong>
-                                    <a asp-action="TeklifDetay" asp-route-id="@offer.QuotationId" class="d-block">@offer.QuotationNumber</a>
-                                    @if (!string.IsNullOrWhiteSpace(offer.SupplierQuotationNumber)) { <small class="text-muted">Firma teklif no: @offer.SupplierQuotationNumber</small> }
-                                    @if (isBest) { <span class="label label-success label-inline d-block mt-2" style="width:max-content">En düşük TRY karşılığı</span> }
-                                </td>
-                                <td><strong>@offer.OfferedQuantity.ToString("0.######")</strong> @offer.Unit</td>
-                                <td>@offer.UnitPrice.ToString("N6") @offer.CurrencyCode</td>
-                                <td>%@offer.DiscountRate.ToString("0.##")</td>
-                                <td><strong>@offer.NetUnitPrice.ToString("N6") @offer.CurrencyCode</strong><small class="d-block text-muted">@offer.NetUnitPriceTry.ToString("N6") TRY</small></td>
-                                <td><strong>@offer.ExchangeRate.ToString("N6")</strong><small class="d-block text-muted">@(offer.ExchangeRateDate?.ToString("dd.MM.yyyy") ?? "-") · @offer.ExchangeRateSource</small></td>
-                                <td>%@offer.VatRate.ToString("0.##")</td>
-                                <td><strong>@offer.GrandTotal.ToString("N2") @offer.CurrencyCode</strong><small class="d-block text-muted">@offer.GrandTotalTry.ToString("N2") TRY</small></td>
-                                <td><span>@(offer.DeliveryDate?.ToString("dd.MM.yyyy") ?? "Belirtilmedi")</span><small class="d-block text-muted">Teklif: @offer.QuotationDate.ToString("dd.MM.yyyy")</small><small class="d-block @(isExpired ? "text-danger" : "text-muted")">Geçerlilik: @(offer.ValidUntil?.ToString("dd.MM.yyyy") ?? "Belirtilmedi")</small></td>
-                                <td><strong>Ödeme:</strong> @(offer.PaymentTerms ?? "-")<br /><strong>Teslim:</strong> @(offer.DeliveryTerms ?? "-")</td>
-                                <td>
-                                    <span class="label label-light-primary label-inline mb-2">@offer.Status.ToTurkish()</span>
+            <div class="card-body px-5 py-5">
+                <div class="offer-list">
+                    @foreach (var offer in offers)
+                    {
+                        var isBest = bestNetPriceTry.HasValue && offer.NetUnitPriceTry == bestNetPriceTry.Value && offer.Status != PurSupplierQuotationLineStatus.Rejected && offer.Status != PurSupplierQuotationLineStatus.Cancelled && offer.Status != PurSupplierQuotationLineStatus.NotSelected;
+                        var isExpired = offer.ValidUntil.HasValue && offer.ValidUntil.Value.Date < DateTime.Today;
+                        var selectableQuantity = Math.Min(offer.OfferedQuantity, offer.RemainingRequestQuantity);
+                        <article class="offer-card @(isBest ? "comparison-best" : "")">
+                            <div class="offer-grid">
+                                <section class="offer-section">
+                                    <div class="offer-section-title">Tedarikçi / Teklif</div>
+                                    <strong class="supplier-name">@offer.SupplierCode - @offer.SupplierName</strong>
+                                    <a asp-action="TeklifDetay" asp-route-id="@offer.QuotationId" class="d-block mt-1">@offer.QuotationNumber</a>
+                                    @if (!string.IsNullOrWhiteSpace(offer.SupplierQuotationNumber))
+                                    {
+                                        <small class="d-block text-muted mt-1">Firma teklif no: @offer.SupplierQuotationNumber</small>
+                                    }
+                                    @if (isBest)
+                                    {
+                                        <span class="label label-success label-inline mt-3">En düşük TRY karşılığı</span>
+                                    }
+                                </section>
+
+                                <section class="offer-section">
+                                    <div class="offer-section-title">Miktar / Birim Fiyat</div>
+                                    <div class="offer-facts">
+                                        <div class="offer-fact offer-fact-wide">
+                                            <span class="offer-fact-label">Teklif miktarı</span>
+                                            <span class="offer-fact-value">@offer.OfferedQuantity.ToString("0.######") @offer.Unit</span>
+                                        </div>
+                                        <div class="offer-fact">
+                                            <span class="offer-fact-label">Liste fiyatı</span>
+                                            <span class="offer-fact-value">@offer.UnitPrice.ToString("N6") @offer.CurrencyCode</span>
+                                        </div>
+                                        <div class="offer-fact">
+                                            <span class="offer-fact-label">İskonto</span>
+                                            <span class="offer-fact-value">%@offer.DiscountRate.ToString("0.##")</span>
+                                        </div>
+                                        <div class="offer-fact offer-fact-wide">
+                                            <span class="offer-fact-label">Net birim fiyat</span>
+                                            <span class="offer-fact-value @(isBest ? "price-highlight" : "")">@offer.NetUnitPrice.ToString("N6") @offer.CurrencyCode</span>
+                                            <span class="offer-fact-sub">@offer.NetUnitPriceTry.ToString("N6") TRY</span>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="offer-section">
+                                    <div class="offer-section-title">Kur / Toplam</div>
+                                    <div class="offer-facts">
+                                        <div class="offer-fact">
+                                            <span class="offer-fact-label">Kur</span>
+                                            <span class="offer-fact-value">@offer.ExchangeRate.ToString("N6")</span>
+                                            <span class="offer-fact-sub">@(offer.ExchangeRateDate?.ToString("dd.MM.yyyy") ?? "-") · @offer.ExchangeRateSource</span>
+                                        </div>
+                                        <div class="offer-fact">
+                                            <span class="offer-fact-label">KDV</span>
+                                            <span class="offer-fact-value">%@offer.VatRate.ToString("0.##")</span>
+                                        </div>
+                                        <div class="offer-fact offer-fact-wide">
+                                            <span class="offer-fact-label">Satır toplamı</span>
+                                            <span class="offer-fact-value">@offer.GrandTotal.ToString("N2") @offer.CurrencyCode</span>
+                                            <span class="offer-fact-sub">@offer.GrandTotalTry.ToString("N2") TRY</span>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="offer-section">
+                                    <div class="offer-section-title">Teslim / Koşullar</div>
+                                    <div class="offer-facts">
+                                        <div class="offer-fact">
+                                            <span class="offer-fact-label">Teslim tarihi</span>
+                                            <span class="offer-fact-value">@(offer.DeliveryDate?.ToString("dd.MM.yyyy") ?? "Belirtilmedi")</span>
+                                        </div>
+                                        <div class="offer-fact">
+                                            <span class="offer-fact-label">Teklif tarihi</span>
+                                            <span class="offer-fact-value">@offer.QuotationDate.ToString("dd.MM.yyyy")</span>
+                                        </div>
+                                        <div class="offer-fact offer-fact-wide">
+                                            <span class="offer-fact-label">Geçerlilik</span>
+                                            <span class="offer-fact-value @(isExpired ? "text-danger" : "")">@(offer.ValidUntil?.ToString("dd.MM.yyyy") ?? "Belirtilmedi")</span>
+                                        </div>
+                                        <div class="offer-fact">
+                                            <span class="offer-fact-label">Ödeme</span>
+                                            <span class="offer-fact-value">@(offer.PaymentTerms ?? "-")</span>
+                                        </div>
+                                        <div class="offer-fact">
+                                            <span class="offer-fact-label">Teslim</span>
+                                            <span class="offer-fact-value">@(offer.DeliveryTerms ?? "-")</span>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <div class="offer-action-bar">
+                                <div>
+                                    <span class="label label-light-primary label-inline">@offer.Status.ToTurkish()</span>
                                     @if (isExpired && offer.Status == PurSupplierQuotationLineStatus.PendingApproval)
                                     {
-                                        <small class="d-block text-danger">Teklif süresi dolmuş</small>
+                                        <small class="d-block text-danger mt-2">Teklif süresi dolmuş</small>
                                     }
-                                    else if (Model.CanApprove && offer.Status == PurSupplierQuotationLineStatus.PendingApproval && selectableQuantity > 0)
-                                    {
-                                        <form asp-action="TeklifSatirKarari" method="post" class="mt-2" onsubmit="return confirm('Bu teklif seçilip siparişe dönüştürülsün mü?');">
-                                            <input type="hidden" name="QuotationId" value="@offer.QuotationId" />
-                                            <input type="hidden" name="LineId" value="@offer.QuotationLineId" />
-                                            <input type="hidden" name="RequestId" value="@Model.RequestId" />
-                                            <input type="hidden" name="ReturnToComparison" value="true" />
-                                            <input type="hidden" name="Decision" value="@PurQuotationApprovalAction.Approved" />
+                                </div>
+                                @if (!isExpired && Model.CanApprove && offer.Status == PurSupplierQuotationLineStatus.PendingApproval && selectableQuantity > 0)
+                                {
+                                    <form asp-action="TeklifSatirKarari" method="post" class="approval-box" onsubmit="return confirm('Bu teklif seçilip siparişe dönüştürülsün mü?');">
+                                        <input type="hidden" name="QuotationId" value="@offer.QuotationId" />
+                                        <input type="hidden" name="LineId" value="@offer.QuotationLineId" />
+                                        <input type="hidden" name="RequestId" value="@Model.RequestId" />
+                                        <input type="hidden" name="ReturnToComparison" value="true" />
+                                        <input type="hidden" name="Decision" value="@PurQuotationApprovalAction.Approved" />
+                                        <div class="form-group">
                                             <label class="small mb-1">Sipariş miktarı</label>
-                                            <input name="ApprovedQuantityInput" value="@selectableQuantity.ToString("0.######", CultureInfo.InvariantCulture)" class="form-control form-control-sm mb-2" inputmode="decimal" />
-                                            <input name="Note" class="form-control form-control-sm mb-2" placeholder="Onay notu (isteğe bağlı)" />
-                                            <button class="btn btn-sm btn-success btn-block">Seç ve Siparişe Dönüştür</button>
-                                        </form>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
+                                            <input name="ApprovedQuantityInput" value="@selectableQuantity.ToString("0.######", CultureInfo.InvariantCulture)" class="form-control form-control-sm" inputmode="decimal" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="small mb-1">Onay notu</label>
+                                            <input name="Note" class="form-control form-control-sm" placeholder="İsteğe bağlı" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="small mb-1 approval-submit-label" aria-hidden="true">İşlem</label>
+                                            <button class="btn btn-sm btn-success d-block">Seç ve Siparişe Dönüştür</button>
+                                        </div>
+                                    </form>
+                                }
+                            </div>
+                        </article>
+                    }
                 </div>
             </div>
         </div>

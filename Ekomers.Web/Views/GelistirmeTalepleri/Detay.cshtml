@@ -1,0 +1,80 @@
+@model DevelopmentRequestDetailVM
+@using Ekomers.Models.Enums
+@{
+    ViewData["Title"] = "Geliştirme Talebi Detayı";
+    string StatusClass(DevelopmentRequestStatus value) => value switch
+    {
+        DevelopmentRequestStatus.New => "label-light-primary",
+        DevelopmentRequestStatus.InProgress => "label-light-warning",
+        DevelopmentRequestStatus.Completed => "label-light-success",
+        _ => "label-light"
+    };
+    string PriorityClass(DevelopmentRequestPriority value) => value switch
+    {
+        DevelopmentRequestPriority.Urgent => "label-light-danger",
+        DevelopmentRequestPriority.High => "label-light-warning",
+        DevelopmentRequestPriority.Low => "label-light-info",
+        _ => "label-light-primary"
+    };
+}
+
+@section CSSection {
+    <style>
+        .request-detail-card { border-radius: 18px; }
+        .request-description { white-space: pre-line; line-height: 1.75; color: #3f4254; }
+        .request-meta { background: #f7f9fb; border-radius: 12px; }
+        .request-note { border-left: 4px solid #1bc5bd; background: #f2fbfa; border-radius: 10px; white-space: pre-line; }
+    </style>
+}
+
+@if (TempData["success"] != null) { <div class="alert alert-light-success mb-6">@TempData["success"]</div> }
+@if (TempData["error"] != null) { <div class="alert alert-light-danger mb-6">@TempData["error"]</div> }
+@if (TempData["warning"] != null) { <div class="alert alert-light-warning mb-6">@TempData["warning"]</div> }
+
+<div class="card card-custom request-detail-card mb-6">
+    <div class="card-header flex-wrap py-5">
+        <div class="card-title"><h3 class="card-label">@Model.Title<span class="d-block text-muted pt-2 font-size-sm">@Model.RequestNumber</span></h3></div>
+        <div class="card-toolbar"><span class="label @StatusClass(Model.Status) label-inline label-xl font-weight-bold mr-3">@Model.Status.ToDisplayText()</span><a asp-action="Index" class="btn btn-light">Listeye Dön</a></div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-7">
+            <div class="col-md-3 mb-4 mb-md-0"><div class="request-meta p-4 h-100"><span class="text-muted d-block font-size-sm">Talep Eden</span><strong class="d-block mt-1">@Model.OwnerName</strong>@if (!string.IsNullOrWhiteSpace(Model.OwnerEmail)) { <span class="text-muted font-size-sm">@Model.OwnerEmail</span> }</div></div>
+            <div class="col-md-3 mb-4 mb-md-0"><div class="request-meta p-4 h-100"><span class="text-muted d-block font-size-sm">Öncelik</span><span class="label @PriorityClass(Model.Priority) label-inline font-weight-bold mt-2">@Model.Priority.ToDisplayText()</span></div></div>
+            <div class="col-md-3 mb-4 mb-md-0"><div class="request-meta p-4 h-100"><span class="text-muted d-block font-size-sm">Oluşturulma</span><strong class="d-block mt-1">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</strong></div></div>
+            <div class="col-md-3"><div class="request-meta p-4 h-100"><span class="text-muted d-block font-size-sm">Son Güncelleme</span><strong class="d-block mt-1">@((Model.UpdatedAt ?? Model.CreatedAt).ToString("dd.MM.yyyy HH:mm"))</strong></div></div>
+        </div>
+        <h5 class="font-weight-bolder mb-3">Talep Açıklaması</h5>
+        <div class="request-description">@Model.Description</div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.AdminNote))
+        {
+            <div class="request-note p-5 mt-7"><strong class="d-block mb-2">İş Geliştirme Notu</strong>@Model.AdminNote</div>
+        }
+
+        @if (Model.Status == DevelopmentRequestStatus.Completed)
+        {
+            <div class="alert alert-custom alert-light-success mt-7 mb-0"><div class="alert-icon"><i class="flaticon2-check-mark text-success"></i></div><div class="alert-text"><strong>Talep tamamlandı.</strong><br />@(Model.CompletedAt?.ToString("dd.MM.yyyy HH:mm")) @if (!string.IsNullOrWhiteSpace(Model.CompletedByName)) { <span>· @Model.CompletedByName</span> }</div></div>
+        }
+    </div>
+</div>
+
+@if (Model.CanManage)
+{
+    <div class="card card-custom request-detail-card">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Admin İşlemleri<span class="d-block text-muted pt-2 font-size-sm">Durumu ve kullanıcıya gösterilecek sonucu güncelleyin.</span></h3></div></div>
+        <form asp-action="DurumGuncelle" method="post">
+            <div class="card-body">
+                <input type="hidden" name="Id" value="@Model.Id" />
+                <div class="row">
+                    <div class="col-lg-4 form-group"><label class="font-weight-bold">Durum</label><select name="Status" class="form-control"><option value="1" selected="@(Model.Status == DevelopmentRequestStatus.New ? "selected" : null)">Yeni</option><option value="2" selected="@(Model.Status == DevelopmentRequestStatus.InProgress ? "selected" : null)">İşlemde</option><option value="3" selected="@(Model.Status == DevelopmentRequestStatus.Completed ? "selected" : null)">Tamamlandı</option></select></div>
+                    <div class="col-lg-8 form-group"><label class="font-weight-bold">İş geliştirme / sonuç notu</label><textarea name="AdminNote" class="form-control" rows="5" maxlength="4000" placeholder="Yapılan geliştirmeyi veya kullanıcıya iletilecek sonucu yazın...">@Model.AdminNote</textarea></div>
+                </div>
+                @if (Model.Status == DevelopmentRequestStatus.Completed)
+                {
+                    <div class="text-muted font-size-sm">E-posta bildirimi: @if (Model.NotificationSent) { <span class="text-success font-weight-bold">Gönderildi (@Model.NotificationSentAt?.ToString("dd.MM.yyyy HH:mm"))</span> } else { <span class="text-danger font-weight-bold">Gönderilemedi</span> @if (!string.IsNullOrWhiteSpace(Model.NotificationError)) { <span>· @Model.NotificationError</span> } }</div>
+                }
+            </div>
+            <div class="card-footer d-flex justify-content-end"><button class="btn btn-primary" onclick="return confirm('Talep durumu güncellensin mi?');"><i class="la la-save"></i> Durumu Güncelle</button></div>
+        </form>
+    </div>
+}

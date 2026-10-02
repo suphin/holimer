@@ -14,6 +14,12 @@
 		<span class="menu-text">Notlarım ve Takvimim</span>
 	</a>
 </li>
+<li class="menu-item @(controllerName == "GelistirmeTalepleri" ? "menu-item-active" : "")" aria-haspopup="true">
+	<a asp-controller="GelistirmeTalepleri" asp-action="Index" class="menu-link">
+		<span class="svg-icon menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M9 14H7v-2h2v2m0-3H7V9h2v2m0-3H7V6h2v2m8 6h-6v-2h6v2m0-3h-6V9h6v2m0-3h-6V6h6v2Z"/></svg></span>
+		<span class="menu-text">Geliştirme Talepleri</span>
+	</a>
+</li>
 <!--begin::Dijital Şirket-->
 @if (User.HasClaim("Modul", "DijitalSirket") || User.IsInRole("Admin"))
 {
@@ -489,7 +495,7 @@
 
 				@if (User.HasClaim("Rapor", "Bankalar") || User.IsInRole("Admin"))
 				{
-					<li class="menu-item menu-item-submenu  @((controllerName == "Reports" && (actionName == "Bankalar" || actionName == "BankaKredileri")) ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+					<li class="menu-item menu-item-submenu  @(((controllerName == "Reports" && (actionName == "Bankalar" || actionName == "BankaKredileri")) || controllerName == "LogoBankaHareketleri") ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 						<a href="javascript:;" class="menu-link menu-toggle">
 							<i class="menu-bullet menu-bullet-line">
 								<span></span>
@@ -514,6 +520,12 @@
 											<span></span>
 										</i>
 										<span class="menu-text">Banka Kredileri</span>
+									</a>
+								</li>
+								<li class="menu-item @(controllerName == "LogoBankaHareketleri" ? "menu-item-active" : "")" aria-haspopup="true">
+									<a asp-controller="LogoBankaHareketleri" asp-action="Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot"><span></span></i>
+										<span class="menu-text">Havale / EFT Hareketleri</span>
 									</a>
 								</li>
 							</ul>
@@ -960,6 +972,12 @@
 		<div class="menu-submenu">
 			<i class="menu-arrow"></i>
 			<ul class="menu-subnav">
+				<li class="menu-item @(controllerName == "ApiAnahtarlari" ? "menu-item-active" : "")" aria-haspopup="true">
+					<a asp-controller="ApiAnahtarlari" asp-action="Index" class="menu-link">
+						<i class="menu-bullet menu-bullet-dot"><span></span></i>
+						<span class="menu-text">API Anahtarları</span>
+					</a>
+				</li>
 				<li class="menu-item @(controllerName == "EntegrasyonLoglari" ? "menu-item-active" : "")" aria-haspopup="true">
 					<a asp-controller="EntegrasyonLoglari" asp-action="Index" class="menu-link">
 						<i class="menu-bullet menu-bullet-dot"><span></span></i>
@@ -996,6 +1014,14 @@
 }
 <!--end::Uretim Siparis Yonetimi-->
 <!--begin::Yeni Uretim Yonetimi-->
+@{
+	var canViewLogoProductionReceipt = User.IsInRole("Admin")
+		|| User.HasClaim("Authorize", "LogoUretimGirisiGoruntule")
+		|| User.HasClaim("Authorize", "LogoUretimGirisiYonet");
+	var canViewLogoConsumptionSlip = User.IsInRole("Admin")
+		|| User.HasClaim("Authorize", "LogoSarfFisiGoruntule")
+		|| User.HasClaim("Authorize", "LogoSarfFisiYonet");
+}
 @if (User.HasClaim("Modul", "Uretim") || User.IsInRole("Admin"))
 {
 	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "YeniUretim" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
@@ -1033,7 +1059,6 @@
 			<li class="menu-item @(controllerName == "ProductionInventory" ? "menu-item-active" : "")"><a asp-controller="ProductionInventory" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Stok Hareketleri</span></a></li>
 			<li class="menu-item @(controllerName == "ReceteMaliyetleri" && actionName == "Index" ? "menu-item-active" : "")"><a asp-controller="ReceteMaliyetleri" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Reçete Maliyet Hesabı</span></a></li>
 			<li class="menu-item @(controllerName == "ReceteMaliyetleri" && (actionName == "KayitliHesaplar" || actionName == "KayitDetay") ? "menu-item-active" : "")"><a asp-controller="ReceteMaliyetleri" asp-action="KayitliHesaplar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Kayıtlı Maliyet Hesapları</span></a></li>
-			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "UretilebilirUrunler" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="UretilebilirUrunler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Stoka Göre Üretilebilir Ürünler</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Planlama" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Planlama" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Yeni Üretim Planı</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && (actionName == "Planlar" || actionName == "PlanDetay") ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Planlar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Planları</span></a></li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Emirler" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Emirler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Emirleri</span></a></li>
@@ -1044,11 +1069,62 @@
 				<li class="menu-item @(controllerName == "UretimEmriYonetim" ? "menu-item-active" : "")"><a asp-controller="UretimEmriYonetim" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Kayıt Yönetimi</span></a></li>
 			}
 			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Izlenebilirlik" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Izlenebilirlik" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Lot / Parti İzlenebilirliği</span></a></li>
-			<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Raporlar" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Raporlar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Raporları</span></a></li>
+			<li class="menu-item menu-item-submenu @(
+				controllerName == "UretimYonetimi" &&
+				(actionName == "Raporlar" || actionName == "MalzemeKullanimRaporu" || actionName == "UretilebilirUrunler")
+					? "menu-item-open"
+					: "")" aria-haspopup="true" data-menu-toggle="hover">
+				<a href="javascript:;" class="menu-link menu-toggle">
+					<i class="menu-bullet menu-bullet-line"><span></span></i>
+					<span class="menu-text">Raporlar</span>
+					<i class="menu-arrow"></i>
+				</a>
+				<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
+					<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "Raporlar" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Raporlar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Raporları</span></a></li>
+					<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "MalzemeKullanimRaporu" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="MalzemeKullanimRaporu" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Malzeme Kullanım Raporu</span></a></li>
+					<li class="menu-item @(controllerName == "UretimYonetimi" && actionName == "UretilebilirUrunler" ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="UretilebilirUrunler" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Stoka Göre Üretilebilir Ürünler</span></a></li>
+				</ul></div>
+			</li>
 		</ul></div>
 	</li>
 }
 <!--end::Yeni Uretim Yonetimi-->
+<!--begin::Logo Fis Islemleri-->
+@if (canViewLogoProductionReceipt || canViewLogoConsumptionSlip)
+{
+	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "LogoFisleri" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+		<a href="javascript:;" class="menu-link menu-toggle">
+			<span class="svg-icon menu-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+					<path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6m1 7V3.5L18.5 9H15m-6 4h6v2H9v-2m0 4h6v2H9v-2m-1-6 3-3 3 3h-2v2h-2v-2H8Z" />
+				</svg>
+			</span>
+			<span class="menu-text">Logo Fiş İşlemleri</span><i class="menu-arrow"></i>
+		</a>
+		<div class="menu-submenu"><i class="menu-arrow"></i><ul class="menu-subnav">
+			<li class="menu-item menu-item-parent"><span class="menu-link"><span class="menu-text">Logo Fiş İşlemleri</span></span></li>
+			@if (canViewLogoProductionReceipt)
+			{
+				<li class="menu-item @(controllerName == "LogoUretimGirisi" ? "menu-item-active" : "")">
+					<a asp-controller="LogoUretimGirisi" asp-action="Index" class="menu-link">
+						<i class="menu-bullet menu-bullet-dot"><span></span></i>
+						<span class="menu-text">Üretimden Giriş Fişleri</span>
+					</a>
+				</li>
+			}
+			@if (canViewLogoConsumptionSlip)
+			{
+				<li class="menu-item @(controllerName == "LogoSarfFisi" ? "menu-item-active" : "")">
+					<a asp-controller="LogoSarfFisi" asp-action="Index" class="menu-link">
+						<i class="menu-bullet menu-bullet-dot"><span></span></i>
+						<span class="menu-text">Sarf Fişleri</span>
+					</a>
+				</li>
+			}
+		</ul></div>
+	</li>
+}
+<!--end::Logo Fis Islemleri-->
 <!--begin::Yeni Satinalma Yonetimi-->
 @if (hasPurchasingAccess)
 {

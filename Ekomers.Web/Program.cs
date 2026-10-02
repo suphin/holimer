@@ -10,9 +10,11 @@ using Ekomers.Models.Ekomers;
 using Ekomers.Models.Configuration;
 using Ekomers.Models.ViewModels;
 using Ekomers.Web.Controllers;
+using Ekomers.Web.Filters;
 using Ekomers.Web.Infrastructure.Auth;
 using Ekomers.Web.Services;
 using Hangfire;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -83,7 +85,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         {
             options.LoginPath = "/Home/SignIn";
             options.AccessDeniedPath = "/Home/AccessDenied";
-        });
+        })
+        .AddScheme<AuthenticationSchemeOptions, ApiTokenAuthenticationHandler>(
+            ApiTokenDefaults.AuthenticationScheme,
+            _ => { });
+
+builder.Services.AddScoped<ApiRequestAuditFilter>();
 
 #region "role claim policy"
 
@@ -104,6 +111,13 @@ builder.Services.AddAuthorization(options =>
 
 	options.AddPolicy("Update", policy =>
 		policy.RequireClaim("Authorize", "Update"));
+
+	options.AddPolicy("RecipeCostsApiRead", policy =>
+	{
+		policy.AddAuthenticationSchemes(ApiTokenDefaults.AuthenticationScheme);
+		policy.RequireAuthenticatedUser();
+		policy.RequireClaim("scope", ApiTokenDefaults.RecipeCostsReadScope);
+	});
     options.AddPolicy("TeklifKabul", policy =>
         policy.RequireAssertion(context =>
             context.User.IsInRole("Admin") ||
@@ -223,6 +237,19 @@ builder.Services.AddAuthorization(options =>
 		context.User.IsInRole("Admin") || context.User.HasClaim("Modul", "Uretim") || context.User.HasClaim("Authorize", "UretimSiparisPlanla")));
 	options.AddPolicy("UretimSiparisIptal", policy => policy.RequireAssertion(context =>
 		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "UretimSiparisIptal")));
+
+	options.AddPolicy("LogoUretimGirisiGoruntule", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") ||
+		context.User.HasClaim("Authorize", "LogoUretimGirisiGoruntule") ||
+		context.User.HasClaim("Authorize", "LogoUretimGirisiYonet")));
+	options.AddPolicy("LogoUretimGirisiYonet", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "LogoUretimGirisiYonet")));
+	options.AddPolicy("LogoSarfFisiGoruntule", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") ||
+		context.User.HasClaim("Authorize", "LogoSarfFisiGoruntule") ||
+		context.User.HasClaim("Authorize", "LogoSarfFisiYonet")));
+	options.AddPolicy("LogoSarfFisiYonet", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "LogoSarfFisiYonet")));
 
 	options.AddPolicy("ReceteVersiyonOlustur", policy =>
 	  policy.RequireAssertion(context =>
@@ -378,6 +405,7 @@ builder.Services.AddHttpClient<IELogoPostboxClient, ELogoPostboxClient>(client =
     client.Timeout = TimeSpan.FromSeconds(90));
 builder.Services.AddHttpClient<LogoRestApiClient>(client =>
     client.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddScoped<LogoRestSettingsProvider>();
 builder.Services.AddControllersWithViews()
     .AddNewtonsoftJson(options =>
 {
@@ -399,6 +427,8 @@ builder.Services.AddScoped<IStokService, StokService>();
 builder.Services.AddScoped<IIadeService, IadeService>(); 
 builder.Services.AddScoped<ISmsSender, SmsSenderTuraCell>();
 builder.Services.AddScoped<IEmailSenderService, EmailSenderService>(); 
+builder.Services.AddScoped<LogoBankMovementReportService>();
+builder.Services.AddScoped<LogoBankMovementReportJob>();
 builder.Services.AddScoped<IDynamicTableService, DynamicTableService>(); 
 builder.Services.AddScoped<ISehirlerService, SehirlerService>();
 builder.Services.AddScoped<IVergiDairesiService, VergiDairesiService>(); 
@@ -488,6 +518,11 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
 	Authorization = [new HangfireAuthorizationFilter()]
 });
+
+RecurringJob.AddOrUpdate<LogoBankMovementReportJob>(
+	"logo-bank-movement-report-dispatcher",
+	job => job.ProcessDueSchedulesAsync(),
+	Cron.Minutely);
 
 
 app.UseRequestLocalization(new RequestLocalizationOptions

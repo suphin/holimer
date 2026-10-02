@@ -5,5 +5,11 @@ namespace Ekomers.Common.Services;
 
 public interface IEmailSenderService
 {
-	Task<bool> SendEmailAsync(string email, string subject, string message);
+	Task<bool> SendEmailAsync(
+		string email,
+		string subject,
+		string message,
+		byte[]? attachmentContent = null,
+		string? attachmentFileName = null,
+		string? attachmentContentType = null);
 }

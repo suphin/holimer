@@ -71,6 +71,37 @@ public sealed class InventoryDocumentDetailLineVM
     public string? Notes { get; set; }
 }
 
+public sealed class InventoryDocumentEditVM
+{
+    public int Id { get; set; }
+    public string DocumentNumber { get; set; } = string.Empty;
+    public PrdInventoryDocumentType Type { get; set; }
+    public PrdInventoryDocumentStatus Status { get; set; }
+    public DateTime DocumentDate { get; set; }
+    public string SourceWarehouse { get; set; } = string.Empty;
+    public string TargetWarehouse { get; set; } = string.Empty;
+    public string CurrencyCode { get; set; } = "TRY";
+    public string ExchangeRate { get; set; } = "1";
+    public string? Notes { get; set; }
+    public string? EditReason { get; set; }
+    public List<InventoryDocumentEditLineVM> Lines { get; set; } = [];
+}
+
+public sealed class InventoryDocumentEditLineVM
+{
+    public int Id { get; set; }
+    public int Sequence { get; set; }
+    public string MaterialCode { get; set; } = string.Empty;
+    public string MaterialName { get; set; } = string.Empty;
+    public string Unit { get; set; } = string.Empty;
+    public string? LotNumber { get; set; }
+    public DateTime? ProductionDate { get; set; }
+    public DateTime? ExpirationDate { get; set; }
+    public string Quantity { get; set; } = string.Empty;
+    public string UnitCost { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+}
+
 public sealed class InventoryLotBalanceVM
 {
     public int StockLotId { get; set; }

@@ -1,0 +1,69 @@
+@model Ekomers.Models.ViewModels.Production.InventoryDocumentEditVM
+@{
+    ViewData["Title"] = "Stok Belgesini Düzenle";
+}
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">Stok Belgesini Düzenle
+                <span class="d-block text-muted pt-2 font-size-sm">@Model.DocumentNumber · @Model.Type.ToTurkish() · @Model.Status.ToTurkish()</span>
+            </h3>
+        </div>
+        <div class="card-toolbar"><a asp-action="Detay" asp-route-id="@Model.Id" class="btn btn-sm btn-light">Detaya Dön</a></div>
+    </div>
+    <div class="card-body pb-0">
+        <div class="alert alert-light-warning">
+            Bu ekran yalnızca Admin kullanıcıları içindir. İşlenmiş belgelerde yapılan miktar, maliyet, tarih ve lot değişiklikleri bağlı stok hareketlerine de uygulanır.
+        </div>
+    </div>
+</div>
+
+<form asp-action="Duzenle" method="post" onsubmit="return confirm('Belge ve bağlı stok hareketleri güncellenecek. Devam edilsin mi?');">
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="DocumentNumber" type="hidden" />
+    <input asp-for="Type" type="hidden" />
+    <input asp-for="Status" type="hidden" />
+    <div class="card card-custom">
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+            <div class="row">
+                <div class="col-md-4 form-group"><label>Kaynak Depo</label><div class="form-control bg-light">@Model.SourceWarehouse</div></div>
+                <div class="col-md-4 form-group"><label>Hedef Depo</label><div class="form-control bg-light">@Model.TargetWarehouse</div></div>
+                <div class="col-md-4 form-group"><label>Belge Tarihi</label><input asp-for="DocumentDate" type="date" class="form-control" required /></div>
+                <div class="col-md-2 form-group"><label>Para Birimi</label><input asp-for="CurrencyCode" class="form-control" maxlength="3" required /></div>
+                <div class="col-md-3 form-group"><label>Döviz Kuru</label><input asp-for="ExchangeRate" class="form-control" inputmode="decimal" required /></div>
+                <div class="col-md-7 form-group"><label>Belge Açıklaması</label><input asp-for="Notes" class="form-control" maxlength="500" /></div>
+                <div class="col-12 form-group"><label>Düzenleme Nedeni</label><textarea asp-for="EditReason" class="form-control" rows="2" minlength="5" maxlength="500" required></textarea><span class="form-text text-muted">Değişiklik denetim kaydına kullanıcı ve tarih bilgisiyle yazılır.</span></div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom">
+                    <thead><tr><th>#</th><th style="min-width:260px">Malzeme</th><th style="min-width:150px">Lot</th><th>Üretim Tarihi</th><th>SKT</th><th style="min-width:130px">Miktar</th><th style="min-width:160px">Birim Maliyet</th><th style="min-width:200px">Not</th></tr></thead>
+                    <tbody>
+                    @for(var i=0;i<Model.Lines.Count;i++)
+                    {
+                        <tr>
+                            <td>
+                                @Model.Lines[i].Sequence
+                                <input asp-for="Lines[i].Id" type="hidden" />
+                                <input asp-for="Lines[i].Sequence" type="hidden" />
+                            </td>
+                            <td><strong>@Model.Lines[i].MaterialCode</strong><span class="d-block text-muted">@Model.Lines[i].MaterialName · @Model.Lines[i].Unit</span></td>
+                            <td><input asp-for="Lines[i].LotNumber" class="form-control" maxlength="100" /></td>
+                            <td><input asp-for="Lines[i].ProductionDate" type="date" class="form-control" /></td>
+                            <td><input asp-for="Lines[i].ExpirationDate" type="date" class="form-control" /></td>
+                            <td><input asp-for="Lines[i].Quantity" class="form-control" inputmode="decimal" required /></td>
+                            <td><input asp-for="Lines[i].UnitCost" class="form-control" inputmode="decimal" required /><span class="form-text text-muted">@Model.CurrencyCode</span></td>
+                            <td><input asp-for="Lines[i].Notes" class="form-control" maxlength="250" /></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between">
+            <a asp-action="Detay" asp-route-id="@Model.Id" class="btn btn-light">Vazgeç</a>
+            <button type="submit" class="btn btn-primary">Değişiklikleri Kaydet</button>
+        </div>
+    </div>
+</form>

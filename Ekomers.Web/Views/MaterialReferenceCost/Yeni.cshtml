@@ -61,6 +61,7 @@
                     <label asp-for="ExchangeRate" class="font-weight-bold">Kur</label>
                     <input asp-for="ExchangeRate" class="form-control" id="exchangeRate" inputmode="decimal" required />
                     <span asp-validation-for="ExchangeRate" class="text-danger"></span>
+                    <small id="exchangeRateInfo" class="form-text text-muted"></small>
                 </div>
                 <div class="col-lg-3 mb-4">
                     <label asp-for="ValidFrom" class="font-weight-bold">Geçerlilik Başlangıcı</label>
@@ -158,14 +159,49 @@
 (function () {
     const currency = document.getElementById('currencyCode');
     const rate = document.getElementById('exchangeRate');
+    const rateInfo = document.getElementById('exchangeRateInfo');
     if (!currency || !rate) return;
-    function syncRate() {
-        const isTry = currency.value === 'TRY';
-        if (isTry) rate.value = '1';
-        rate.readOnly = isTry;
+    let rateRequest = 0;
+
+    function showRateInfo(message, className) {
+        if (!rateInfo) return;
+        rateInfo.className = 'form-text ' + (className || 'text-muted');
+        rateInfo.textContent = message || '';
     }
-    currency.addEventListener('change', syncRate);
-    syncRate();
+
+    async function syncRate(fetchForeignRate) {
+        const isTry = currency.value === 'TRY';
+        if (isTry) {
+            rate.value = '1';
+            showRateInfo('TRY kuru sabittir.', 'text-muted');
+        }
+        rate.readOnly = isTry;
+        if (isTry || !fetchForeignRate) return;
+
+        const requestId = ++rateRequest;
+        const code = currency.value;
+        rate.value = '';
+        rate.readOnly = true;
+        showRateInfo(code + ' satış kuru TCMB’den alınıyor...', 'text-info');
+        try {
+            const response = await fetch('@Url.Action("KurGetir", "MaterialReferenceCost")?currencyCode=' + encodeURIComponent(code), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const result = await response.json();
+            if (requestId !== rateRequest) return;
+            if (!response.ok || !result.success) throw new Error(result.message || 'Kur alınamadı.');
+            rate.value = String(result.rate).replace('.', ',');
+            showRateInfo((result.source || 'TCMB') + ' · ' + (result.displayDate || result.date || ''), 'text-success');
+        } catch (error) {
+            if (requestId !== rateRequest) return;
+            rate.value = '';
+            showRateInfo(error.message || 'Kur alınamadı. Kuru manuel girebilirsiniz.', 'text-danger');
+        } finally {
+            if (requestId === rateRequest && currency.value !== 'TRY') rate.readOnly = false;
+        }
+    }
+    currency.addEventListener('change', function () { syncRate(true); });
+    syncRate(false);
 
     document.querySelectorAll('.use-logo-cost').forEach(function (button) {
         button.addEventListener('click', function () {
@@ -177,7 +213,7 @@
             if (unit && button.dataset.unitId) unit.value = button.dataset.unitId;
             currency.value = 'TRY';
             rate.value = '1';
-            syncRate();
+            syncRate(false);
             if (source) source.value = '7';
             if (notes) notes.value = 'Logo fatura ' + button.dataset.invoice + ' · ' + button.dataset.supplier + ' · ' + button.dataset.date;
             if (unitCost) { unitCost.focus(); unitCost.scrollIntoView({ behavior: 'smooth', block: 'center' }); }

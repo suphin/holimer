@@ -12,7 +12,8 @@ namespace Ekomers.Common.Models
 		public string UsdSatis { get; set; }
 		public string EurSatis { get; set; }
 		public string EurAlis { get; set; }
-		//public double SterlinKuru { get; set; }
+		public string GbpSatis { get; set; }
+		public string GbpAlis { get; set; }
 		//public double AltinKuru { get; set; }
 		public DateTime Tarih { get; set; }
 	}

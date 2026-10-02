@@ -1,0 +1,101 @@
+@model Ekomers.Models.ViewModels.Production.ProductionStockMovementHistoryVM
+@{
+    ViewData["Title"] = "Malzeme Stok Hareketleri";
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                @Model.MaterialCode
+                <span class="d-block text-muted pt-2 font-size-sm">@Model.MaterialName</span>
+            </h3>
+        </div>
+        <div class="card-toolbar">
+            <a asp-action="Stoklar" class="btn btn-light">Stoklara Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4"><span class="text-muted d-block">Depo</span><strong>@Model.WarehouseCode - @Model.WarehouseName</strong></div>
+            <div class="col-lg-3 col-md-6 mb-4"><span class="text-muted d-block">Toplam Giriş</span><strong class="text-success">@Model.IncomingQuantity.ToString("N2") @Model.Unit</strong></div>
+            <div class="col-lg-3 col-md-6 mb-4"><span class="text-muted d-block">Toplam Çıkış</span><strong class="text-danger">@Model.OutgoingQuantity.ToString("N2") @Model.Unit</strong></div>
+            <div class="col-lg-3 col-md-6 mb-4"><span class="text-muted d-block">Güncel Bakiye</span><strong class="text-primary">@Model.RemainingQuantity.ToString("N2") @Model.Unit</strong></div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header">
+        <div class="card-title"><h3 class="card-label">Son 10 Stok Hareketi<span class="d-block text-muted pt-2 font-size-sm">Giriş sırasında kaydedilen lot, tarih ve not bilgileriyle birlikte</span></h3></div>
+    </div>
+    <div class="card-body">
+        @if (Model.Movements.Count == 0)
+        {
+            <div class="alert alert-light-primary mb-0">Bu malzeme ve depo için stok hareketi bulunamadı.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-separate table-head-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Hareket / Belge</th>
+                            <th>Miktar</th>
+                            <th>Lot / Seri No</th>
+                            <th>Üretim Tarihi</th>
+                            <th>SKT</th>
+                            <th>Maliyet</th>
+                            <th>Notlar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var movement in Model.Movements)
+                    {
+                        var isIncoming = movement.Direction == PrdStockDirection.In;
+                        <tr>
+                            <td class="text-nowrap">@movement.MovementDate.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <span class="label @(isIncoming ? "label-light-success" : "label-light-danger") label-inline mb-2">@(isIncoming ? "Giriş" : "Çıkış")</span>
+                                <strong class="d-block">@movement.MovementType.ToTurkish()</strong>
+                                @if (movement.InventoryDocumentId.HasValue)
+                                {
+                                    <a asp-controller="ProductionInventory" asp-action="Detay" asp-route-id="@movement.InventoryDocumentId.Value" class="text-primary">@movement.DocumentNumber</a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@movement.DocumentNumber</span>
+                                }
+                            </td>
+                            <td class="text-nowrap"><strong class="@(isIncoming ? "text-success" : "text-danger")">@(isIncoming ? "+" : "-")@movement.Quantity.ToString("N2")</strong> @movement.Unit</td>
+                            <td><strong>@(string.IsNullOrWhiteSpace(movement.LotNumber) ? "-" : movement.LotNumber)</strong></td>
+                            <td class="text-nowrap">@(movement.ProductionDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                            <td class="text-nowrap">@(movement.ExpirationDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                            <td class="text-nowrap"><strong>@movement.TotalCost.ToString("N2") ₺</strong><span class="d-block text-muted">@movement.UnitCost.ToString("N6") ₺ / birim</span></td>
+                            <td style="min-width:260px">
+                                @if (!string.IsNullOrWhiteSpace(movement.LineNotes))
+                                {
+                                    <div><span class="text-muted">Satır:</span> @movement.LineNotes</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(movement.DocumentNotes))
+                                {
+                                    <div><span class="text-muted">Belge:</span> @movement.DocumentNotes</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(movement.MovementDescription))
+                                {
+                                    <div><span class="text-muted">Hareket:</span> @movement.MovementDescription</div>
+                                }
+                                @if (string.IsNullOrWhiteSpace(movement.LineNotes) && string.IsNullOrWhiteSpace(movement.DocumentNotes) && string.IsNullOrWhiteSpace(movement.MovementDescription))
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

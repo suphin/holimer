@@ -12,6 +12,7 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Ekomers.Common.Services.IServices;
 
 namespace Ekomers.Web.Controllers;
 
@@ -21,11 +22,52 @@ public sealed class MaterialReferenceCostController : Controller
     private const string ReferenceCostEditPolicy = "ReferansMaliyetDuzenle";
     private readonly ApplicationDbContext _context;
     private readonly LogoContext _logoContext;
+    private readonly ITcmbService _tcmbService;
 
-    public MaterialReferenceCostController(ApplicationDbContext context, LogoContext logoContext)
+    public MaterialReferenceCostController(ApplicationDbContext context, LogoContext logoContext, ITcmbService tcmbService)
     {
         _context = context;
         _logoContext = logoContext;
+        _tcmbService = tcmbService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> KurGetir(string? currencyCode)
+    {
+        var code = (currencyCode ?? string.Empty).Trim().ToUpperInvariant();
+        if (code == "TRY")
+            return Json(new { success = true, currencyCode = code, rate = 1m, date = DateTime.Today.ToString("yyyy-MM-dd"), source = "Sabit" });
+        if (code is not ("USD" or "EUR" or "GBP"))
+            return BadRequest(new { success = false, message = "Desteklenmeyen para birimi." });
+
+        try
+        {
+            var rates = await _tcmbService.DovizKuruGetir();
+            var rawRate = code switch
+            {
+                "USD" => rates.UsdSatis,
+                "EUR" => rates.EurSatis,
+                "GBP" => rates.GbpSatis,
+                _ => null
+            };
+            if (!TryParseDecimal(rawRate, out var rate) || rate <= 0)
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { success = false, message = $"TCMB {code} satış kuru bulunamadı." });
+
+            var rateDate = rates.Tarih == default ? DateTime.Today : rates.Tarih.Date;
+            return Json(new
+            {
+                success = true,
+                currencyCode = code,
+                rate,
+                date = rateDate.ToString("yyyy-MM-dd"),
+                displayDate = rateDate.ToString("dd.MM.yyyy"),
+                source = "TCMB Döviz Satış"
+            });
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { success = false, message = "TCMB kurları şu anda alınamadı. Kuru manuel girebilirsiniz." });
+        }
     }
 
     [HttpGet]

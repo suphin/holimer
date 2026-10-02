@@ -1,3 +1,4 @@
+using Ekomers.Common.Services;
 using Ekomers.Data;
 using Ekomers.Data.Services;
 using Ekomers.Models.Entity.Production;
@@ -9,6 +10,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using System.Net;
+using System.Text;
 
 namespace Ekomers.Web.Controllers;
 
@@ -16,17 +19,61 @@ namespace Ekomers.Web.Controllers;
 public sealed class ReceteMaliyetleriController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IEmailSenderService _emailSender;
 
-    public ReceteMaliyetleriController(ApplicationDbContext context)
+    public ReceteMaliyetleriController(ApplicationDbContext context, IEmailSenderService emailSender)
     {
         _context = context;
+        _emailSender = emailSender;
     }
 
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
         ViewBag.Modul = "YeniUretim";
-        return View(await BuildCalculationModelAsync(ct));
+        var model = await BuildCalculationModelAsync(ct);
+        var userName = User.Identity?.Name;
+        if (!string.IsNullOrWhiteSpace(userName))
+        {
+            model.SuggestedRecipientEmail = await _context.Users.AsNoTracking()
+                .Where(x => x.UserName == userName)
+                .Select(x => x.Email ?? string.Empty)
+                .FirstOrDefaultAsync(ct) ?? string.Empty;
+        }
+        return View(model);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> MaliyetDetayiEpostaGonder(RecipeCostDetailEmailVM input, CancellationToken ct)
+    {
+        var recipient = input.RecipientEmail?.Trim() ?? string.Empty;
+        if (!ModelState.IsValid)
+        {
+            TempData["error"] = ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage).FirstOrDefault()
+                ?? "E-posta bilgileri geçerli değil.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var calculationDate = input.CalculationDate.HasValue && input.CalculationDate.Value <= DateTime.Now.AddMinutes(5)
+            ? input.CalculationDate.Value
+            : DateTime.Now;
+        var calculation = await BuildCalculationModelAsync(ct, calculationDate, new[] { input.RecipeVersionId });
+        var row = calculation.Rows.FirstOrDefault(x => x.RecipeVersionId == input.RecipeVersionId);
+        if (row == null)
+        {
+            TempData["error"] = "Gönderilecek reçete maliyet detayı artık bulunamadı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var subject = string.IsNullOrWhiteSpace(input.Subject)
+            ? $"Reçete Maliyet Detayı - {row.ProductCode}"
+            : input.Subject.Replace('\r', ' ').Replace('\n', ' ').Trim();
+        var body = BuildRecipeCostDetailEmail(row, calculation.CalculationDate, input.Message, User.Identity?.Name);
+        var sent = await _emailSender.SendEmailAsync(recipient, subject, body);
+        TempData[sent ? "success" : "error"] = sent
+            ? $"{row.ProductCode} reçete maliyet detayı {recipient} adresine gönderildi."
+            : "E-posta gönderilemedi. SMTP ayarlarını ve alıcı adresini kontrol ediniz.";
+        return RedirectToAction(nameof(Index));
     }
 
     private async Task<RecipeCostCalculationVM> BuildCalculationModelAsync(CancellationToken ct, DateTime? calculationDate = null, IReadOnlyCollection<int>? requestedVersionIds = null)
@@ -659,6 +706,76 @@ public sealed class ReceteMaliyetleriController : Controller
         model.LineCount = model.Lines.Count;
         return model;
     }
+
+    private static string BuildRecipeCostDetailEmail(RecipeCostCalculationRowVM row, DateTime calculationDate, string? message, string? senderAccount)
+    {
+        static string Html(string? value) => WebUtility.HtmlEncode(value ?? string.Empty);
+        var culture = CultureInfo.GetCultureInfo("tr-TR");
+        var baseRecipeCost = row.CostItems.Sum(x => x.ItemCost);
+        var body = new StringBuilder();
+        body.Append("<div style=\"font-family:Arial,Helvetica,sans-serif;color:#25324b;line-height:1.45;max-width:1100px;margin:auto\">");
+        body.Append("<div style=\"padding:22px 26px;background:#174f3f;color:#fff;border-radius:12px 12px 0 0\">");
+        body.Append("<div style=\"font-size:22px;font-weight:700\">Reçete Maliyet Detayı</div>");
+        body.Append($"<div style=\"margin-top:6px;opacity:.9\">{Html(row.ProductCode)} - {Html(row.ProductName)}</div></div>");
+        body.Append("<div style=\"padding:24px 26px;border:1px solid #dfe7e3;border-top:0;border-radius:0 0 12px 12px\">");
+
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            var encodedMessage = Html(message).Replace("\r\n", "<br>").Replace("\n", "<br>");
+            body.Append($"<div style=\"padding:13px 15px;background:#f2f8f5;border-left:4px solid #2f7b63;margin-bottom:20px\">{encodedMessage}</div>");
+        }
+
+        body.Append($"<p><strong>Reçete:</strong> {Html(row.RecipeCode)} · v{row.VersionNumber} · {Html(row.RecipeStatus.ToTurkish())}<br>");
+        body.Append($"<strong>Hesaplama tarihi:</strong> {calculationDate:dd.MM.yyyy HH:mm}</p>");
+        body.Append("<table role=\"presentation\" style=\"width:100%;border-collapse:separate;border-spacing:8px;margin:0 -8px 20px\"><tr>");
+        AppendSummaryCell(body, "Baz reçete", $"{row.BaseQuantity.ToString("N6", culture)} {row.ProductionUnit}");
+        AppendSummaryCell(body, "Baz reçete maliyeti", $"{baseRecipeCost.ToString("N4", culture)} TRY");
+        AppendSummaryCell(body, "Hammadde / Ambalaj", $"{row.RawMaterialUnitCost.ToString("N4", culture)} / {row.PackagingUnitCost.ToString("N4", culture)} TRY");
+        AppendSummaryCell(body, "Toplam birim maliyet", $"{row.RecipeUnitCost.ToString("N4", culture)} TRY / {row.ProductionUnit}");
+        body.Append("</tr></table>");
+
+        body.Append("<table style=\"width:100%;border-collapse:collapse;font-size:13px\"><thead><tr style=\"background:#eef4f1\">");
+        foreach (var header in new[] { "Malzeme", "Reçete / Fire", "Fiyatlandırılan Miktar", "Kullanılan Birim Fiyat", "Kaynak", "Maliyet Etkisi" })
+            body.Append($"<th style=\"padding:10px;border:1px solid #dfe7e3;text-align:left\">{header}</th>");
+        body.Append("</tr></thead><tbody>");
+        foreach (var item in row.CostItems)
+        {
+            var background = item.IncludedInCalculation ? "#ffffff" : "#fff8e6";
+            var pricedQuantity = item.PricedQuantity.HasValue
+                ? $"{item.PricedQuantity.Value.ToString("N6", culture)} {Html(item.CostUnit)}"
+                : "Fiyatlandırılamadı";
+            var unitCost = item.UnitCostTry.HasValue
+                ? $"{item.UnitCostTry.Value.ToString("N6", culture)} TRY / {Html(item.CostUnit)}"
+                : "Maliyet yok";
+            var sourceDetail = string.IsNullOrWhiteSpace(item.CostSourceDetail) ? string.Empty : $"<br><span style=\"color:#6d7788\">{Html(item.CostSourceDetail)}</span>";
+            var reason = string.IsNullOrWhiteSpace(item.Reason) ? string.Empty : $"<br><span style=\"color:#c0392b\">{Html(item.Reason)}</span>";
+            body.Append($"<tr style=\"background:{background}\">");
+            AppendTableCell(body, $"<strong>{Html(item.MaterialCode)}</strong><br><span style=\"color:#6d7788\">{Html(item.MaterialName)}</span><br>{Html(item.MaterialType)}");
+            AppendTableCell(body, $"{item.RecipeQuantity.ToString("N6", culture)} {Html(item.RecipeUnit)}<br><span style=\"color:#6d7788\">%{item.PlannedWasteRate.ToString("N2", culture)} fire → {item.CostQuantity.ToString("N6", culture)} {Html(item.RecipeUnit)}</span>");
+            AppendTableCell(body, pricedQuantity);
+            AppendTableCell(body, unitCost);
+            AppendTableCell(body, $"{Html(item.CostSource)}{sourceDetail}{reason}");
+            AppendTableCell(body, $"<strong>{item.ItemCost.ToString("N4", culture)} TRY</strong><br><span style=\"color:#6d7788\">Birim ürüne: {item.ProductUnitCostContribution.ToString("N4", culture)} TRY</span>");
+            body.Append("</tr>");
+        }
+        body.Append("</tbody><tfoot>");
+        body.Append($"<tr><th colspan=\"5\" style=\"padding:10px;border:1px solid #dfe7e3;text-align:right\">Baz reçete toplamı</th><th style=\"padding:10px;border:1px solid #dfe7e3;text-align:left\">{baseRecipeCost.ToString("N4", culture)} TRY</th></tr>");
+        body.Append($"<tr><th colspan=\"5\" style=\"padding:10px;border:1px solid #dfe7e3;text-align:right\">Ürün birim maliyeti</th><th style=\"padding:10px;border:1px solid #dfe7e3;text-align:left;color:#174f3f\">{row.RecipeUnitCost.ToString("N4", culture)} TRY / {Html(row.ProductionUnit)}</th></tr>");
+        body.Append("</tfoot></table>");
+        body.Append($"<p style=\"margin-top:20px;color:#7a8494;font-size:12px\">Bu rapor ERP maliyet kaynaklarından otomatik hazırlanmıştır. Gönderen kullanıcı: {Html(senderAccount ?? "-")}</p>");
+        body.Append("</div></div>");
+        return body.ToString();
+    }
+
+    private static void AppendSummaryCell(StringBuilder body, string label, string value)
+    {
+        body.Append("<td style=\"width:25%;padding:12px;background:#f7f9f8;border:1px solid #e4ebe7;border-radius:8px;vertical-align:top\">");
+        body.Append($"<span style=\"display:block;color:#7a8494;font-size:11px;text-transform:uppercase\">{WebUtility.HtmlEncode(label)}</span>");
+        body.Append($"<strong style=\"display:block;margin-top:5px\">{WebUtility.HtmlEncode(value)}</strong></td>");
+    }
+
+    private static void AppendTableCell(StringBuilder body, string html)
+        => body.Append($"<td style=\"padding:10px;border:1px solid #dfe7e3;vertical-align:top\">{html}</td>");
 
     private static void StyleExcelHeader(IXLRange range)
     {

@@ -1,0 +1,187 @@
+@model Ekomers.Models.ViewModels.Production.LogoProductionReceiptCreateVM
+@{
+    var editing = Model.Id.HasValue;
+    ViewData["Title"] = editing ? "Üretim Giriş Fişini Düzenle" : "Yeni Üretim Giriş Fişi";
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">
+                @(editing ? "Üretim Giriş Fişini Düzenle" : "Yeni Üretim Giriş Fişi")
+                <span class="d-block text-muted pt-2 font-size-sm">Bu ekran yerel stokları değiştirmez. Kaydettiğiniz taslak, detay ekranından Logo Tiger'a gönderilir.</span>
+            </h3>
+        </div>
+        <div class="card-toolbar"><a asp-action="Index" class="btn btn-light">Fişlere Dön</a></div>
+    </div>
+</div>
+
+<form asp-action="Kaydet" method="post" id="logoReceiptForm">
+    <input asp-for="Id" type="hidden" />
+    <div class="card card-custom mb-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Fiş Bilgileri</h3></div></div>
+        <div class="card-body">
+            <div asp-validation-summary="All" class="alert alert-light-danger"></div>
+            <div class="row">
+                <div class="col-lg-3 col-md-6 form-group">
+                    <label>Fiş Tarihi</label>
+                    <input asp-for="DocumentDate" type="date" class="form-control" />
+                    <span asp-validation-for="DocumentDate" class="text-danger"></span>
+                </div>
+                <div class="col-lg-3 col-md-6 form-group">
+                    <label>Logo Fiş Numarası</label>
+                    <input asp-for="LogoSlipNumber" class="form-control" maxlength="50" placeholder="Boşsa Logo otomatik verir" />
+                    <span class="form-text text-muted">Boş bırakılırsa Logo'ya <strong>~</strong> gönderilir.</span>
+                </div>
+                <div class="col-lg-2 col-md-3 form-group">
+                    <label>Ambar No</label>
+                    <input asp-for="WarehouseNumber" type="number" min="0" max="9999" class="form-control" />
+                </div>
+                <div class="col-lg-2 col-md-3 form-group">
+                    <label>İşyeri No</label>
+                    <input asp-for="DivisionNumber" type="number" min="0" max="9999" class="form-control" />
+                </div>
+                <div class="col-lg-2 col-md-3 form-group">
+                    <label>Fabrika No</label>
+                    <input asp-for="FactoryNumber" type="number" min="0" max="9999" class="form-control" />
+                </div>
+                <div class="col-lg-2 col-md-3 form-group">
+                    <label>Bölüm No</label>
+                    <input asp-for="DepartmentNumber" type="number" min="0" max="9999" class="form-control" />
+                </div>
+                <div class="col-lg-10 form-group">
+                    <label>Açıklama</label>
+                    <input asp-for="Notes" class="form-control" maxlength="500" placeholder="Logo fiş açıklaması" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-custom">
+        <div class="card-header flex-wrap py-3">
+            <div class="card-title"><h3 class="card-label">Ürünler ve Miktarlar</h3></div>
+            <div class="card-toolbar"><button type="button" id="addProductRow" class="btn btn-light-primary"><i class="la la-plus"></i> Ürün Ekle</button></div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive overflow-visible">
+                <table class="table table-separate table-head-custom" id="productLinesTable">
+                    <thead><tr><th style="min-width:360px">Mamul / Yarı Mamul</th><th style="min-width:150px">Miktar</th><th style="min-width:150px">Birim</th><th style="min-width:180px">Parti No</th><th style="min-width:165px">Üretim Tarihi</th><th style="min-width:165px">SKT</th><th style="min-width:240px">Satır Açıklaması</th><th style="width:60px"></th></tr></thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.Lines.Count; i++)
+                        {
+                            <tr class="product-line">
+                                <td>
+                                    <select name="Lines[@i].MaterialId" class="form-control product-select" data-selected-text="@Model.Lines[i].MaterialText">
+                                        @if (Model.Lines[i].MaterialId.HasValue)
+                                        {
+                                            <option value="@Model.Lines[i].MaterialId" selected>@Model.Lines[i].MaterialText</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td><input name="Lines[@i].Quantity" value="@Model.Lines[i].Quantity" class="form-control quantity-input" inputmode="decimal" placeholder="0,000000" /></td>
+                                <td><div class="form-control bg-light unit-text">@(Model.Lines[i].UnitText ?? "-")</div></td>
+                                <td><input name="Lines[@i].LotNumber" value="@Model.Lines[i].LotNumber" class="form-control lot-number-input" maxlength="100" /></td>
+                                <td><input name="Lines[@i].ProductionDate" value="@Model.Lines[i].ProductionDate?.ToString("yyyy-MM-dd")" type="date" class="form-control production-date-input" /></td>
+                                <td><input name="Lines[@i].ExpirationDate" value="@Model.Lines[i].ExpirationDate?.ToString("yyyy-MM-dd")" type="date" class="form-control expiration-date-input" /></td>
+                                <td><input name="Lines[@i].Description" value="@Model.Lines[i].Description" class="form-control" maxlength="250" /></td>
+                                <td><button type="button" class="btn btn-sm btn-icon btn-light-danger remove-product" title="Satırı kaldır"><i class="la la-trash"></i></button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span class="text-muted">Lot takibi olan ürünlerde parti no ve üretim tarihi; SKT takibi olanlarda son kullanma tarihi zorunludur.</span>
+            <button type="submit" class="btn btn-primary">Taslağı Kaydet</button>
+        </div>
+    </div>
+</form>
+
+@section JSSection {
+<script>
+(function () {
+    var searchUrl = '@Url.Action("UrunAra", "LogoUretimGirisi")';
+    var form = document.getElementById('logoReceiptForm');
+    var body = document.querySelector('#productLinesTable tbody');
+
+    function initializeSelect(element) {
+        var $element = $(element);
+        if ($element.hasClass('select2-hidden-accessible')) return;
+        $element.select2({
+            width: '100%',
+            placeholder: 'Ürün kodu veya adıyla arayın',
+            allowClear: true,
+            dropdownParent: $(form),
+            minimumInputLength: 0,
+            ajax: {
+                url: searchUrl,
+                dataType: 'json',
+                delay: 250,
+                data: function (params) { return { q: params.term || '', page: params.page || 1 }; },
+                processResults: function (data) { return data; }
+            },
+            templateResult: function (item) {
+                if (item.loading) return item.text;
+                return $('<div><strong></strong><div class="text-muted font-size-sm"></div></div>')
+                    .find('strong').text(item.text).end()
+                    .find('div').text('Logo: ' + (item.logoCode || '-') + ' · ' + (item.unit || '-')).end();
+            }
+        }).on('select2:select', function (event) {
+            var row = event.currentTarget.closest('tr');
+            row.querySelector('.unit-text').textContent = event.params.data.unit || '-';
+        }).on('select2:clear', function (event) {
+            event.currentTarget.closest('tr').querySelector('.unit-text').textContent = '-';
+        });
+    }
+
+    function reindexRows() {
+        body.querySelectorAll('tr.product-line').forEach(function (row, index) {
+            row.querySelectorAll('[name]').forEach(function (input) {
+                input.name = input.name.replace(/Lines\[\d+\]/, 'Lines[' + index + ']');
+            });
+        });
+    }
+
+    function addRow() {
+        var row = document.createElement('tr');
+        row.className = 'product-line';
+        row.innerHTML = '<td><select name="Lines[0].MaterialId" class="form-control product-select"></select></td>' +
+            '<td><input name="Lines[0].Quantity" class="form-control quantity-input" inputmode="decimal" placeholder="0,000000" /></td>' +
+            '<td><div class="form-control bg-light unit-text">-</div></td>' +
+            '<td><input name="Lines[0].LotNumber" class="form-control lot-number-input" maxlength="100" /></td>' +
+            '<td><input name="Lines[0].ProductionDate" type="date" class="form-control production-date-input" /></td>' +
+            '<td><input name="Lines[0].ExpirationDate" type="date" class="form-control expiration-date-input" /></td>' +
+            '<td><input name="Lines[0].Description" class="form-control" maxlength="250" /></td>' +
+            '<td><button type="button" class="btn btn-sm btn-icon btn-light-danger remove-product" title="Satırı kaldır"><i class="la la-trash"></i></button></td>';
+        body.appendChild(row);
+        reindexRows();
+        initializeSelect(row.querySelector('.product-select'));
+        row.querySelector('.product-select').focus();
+    }
+
+    document.querySelectorAll('.product-select').forEach(initializeSelect);
+    document.getElementById('addProductRow').addEventListener('click', addRow);
+    body.addEventListener('click', function (event) {
+        var button = event.target.closest('.remove-product');
+        if (!button) return;
+        var rows = body.querySelectorAll('tr.product-line');
+        if (rows.length === 1) {
+            $(rows[0].querySelector('.product-select')).val(null).trigger('change');
+            rows[0].querySelector('.quantity-input').value = '';
+            rows[0].querySelector('.unit-text').textContent = '-';
+            rows[0].querySelector('.lot-number-input').value = '';
+            rows[0].querySelector('.production-date-input').value = '';
+            rows[0].querySelector('.expiration-date-input').value = '';
+            rows[0].querySelector('input[name$=".Description"]').value = '';
+            return;
+        }
+        var row = button.closest('tr');
+        var select = row.querySelector('.product-select');
+        if ($(select).hasClass('select2-hidden-accessible')) $(select).select2('destroy');
+        row.remove();
+        reindexRows();
+    });
+})();
+</script>
+}

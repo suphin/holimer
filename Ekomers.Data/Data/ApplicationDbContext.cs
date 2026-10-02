@@ -48,8 +48,12 @@ namespace Ekomers.Data
 
         public DbSet<UserActivityLog> UserActivityLog { get; set; }
         public DbSet<SystemErrorLog> SystemErrorLogs { get; set; }
-        public DbSet<IntegrationRequestLog> IntegrationRequestLogs { get; set; }
+		public DbSet<IntegrationRequestLog> IntegrationRequestLogs { get; set; }
+		public DbSet<ApiAccessToken> ApiAccessTokens { get; set; }
         public DbSet<PersonalWorkItem> PersonalWorkItems { get; set; }
+        public DbSet<DevelopmentRequest> DevelopmentRequests { get; set; }
+        public DbSet<LogoBankMovementReportSchedule> LogoBankMovementReportSchedules { get; set; }
+        public DbSet<LogoBankMovementReportDelivery> LogoBankMovementReportDeliveries { get; set; }
         public DbSet<LogoRestApiSetting> LogoRestApiSettings { get; set; }
         public DbSet<CrmActivityLog> CrmActivityLog { get; set; }
 
@@ -221,6 +225,10 @@ namespace Ekomers.Data
 		public DbSet<PrdWarehouseTaskLot> PrdWarehouseTaskLots { get; set; }
 		public DbSet<PrdProductionMaterialActual> PrdProductionMaterialActuals { get; set; }
 		public DbSet<PrdProductionResult> PrdProductionResults { get; set; }
+		public DbSet<PrdLogoProductionReceipt> PrdLogoProductionReceipts { get; set; }
+		public DbSet<PrdLogoProductionReceiptLine> PrdLogoProductionReceiptLines { get; set; }
+		public DbSet<PrdLogoConsumptionSlip> PrdLogoConsumptionSlips { get; set; }
+		public DbSet<PrdLogoConsumptionSlipLine> PrdLogoConsumptionSlipLines { get; set; }
 
 		// Bağımsız satınalma yönetimi (Pur) tabloları
 		public DbSet<PurPurchaseRequest> PurPurchaseRequests { get; set; }
@@ -329,6 +337,14 @@ namespace Ekomers.Data
 			modelBuilder.Entity<IntegrationRequestLog>().HasIndex(x => x.RequestedAt);
 			modelBuilder.Entity<IntegrationRequestLog>().HasIndex(x => new { x.Category, x.ConnectionName, x.RequestedAt });
 			modelBuilder.Entity<IntegrationRequestLog>().HasIndex(x => new { x.IsSuccess, x.RequestedAt });
+			modelBuilder.Entity<ApiAccessToken>().ToTable("ApiAccessToken");
+			modelBuilder.Entity<ApiAccessToken>().Property(x => x.Name).HasMaxLength(100).IsRequired();
+			modelBuilder.Entity<ApiAccessToken>().Property(x => x.TokenPrefix).HasMaxLength(20).IsRequired();
+			modelBuilder.Entity<ApiAccessToken>().Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+			modelBuilder.Entity<ApiAccessToken>().Property(x => x.Scope).HasMaxLength(200).IsRequired();
+			modelBuilder.Entity<ApiAccessToken>().Property(x => x.LastUsedIp).HasMaxLength(64);
+			modelBuilder.Entity<ApiAccessToken>().HasIndex(x => x.TokenHash).IsUnique();
+			modelBuilder.Entity<ApiAccessToken>().HasIndex(x => new { x.IsActive, x.ExpiresAt });
 
 			modelBuilder.Entity<PersonalWorkItem>().ToTable("PersonalWorkItem");
 			modelBuilder.Entity<PersonalWorkItem>().Property(x => x.OwnerUserId).HasMaxLength(450).IsRequired();
@@ -336,6 +352,45 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PersonalWorkItem>().Property(x => x.Content).HasMaxLength(4000);
 			modelBuilder.Entity<PersonalWorkItem>().HasIndex(x => new { x.OwnerUserId, x.Status, x.StartAt });
 			modelBuilder.Entity<PersonalWorkItem>().HasIndex(x => new { x.OwnerUserId, x.ItemType, x.IsDelete });
+
+			modelBuilder.Entity<DevelopmentRequest>().ToTable("DevelopmentRequest");
+			modelBuilder.Entity<DevelopmentRequest>().Property(x => x.RequestNumber).HasMaxLength(40).IsRequired();
+			modelBuilder.Entity<DevelopmentRequest>().Property(x => x.OwnerUserId).HasMaxLength(450).IsRequired();
+			modelBuilder.Entity<DevelopmentRequest>().Property(x => x.OwnerName).HasMaxLength(200).IsRequired();
+			modelBuilder.Entity<DevelopmentRequest>().Property(x => x.OwnerEmail).HasMaxLength(256);
+			modelBuilder.Entity<DevelopmentRequest>().Property(x => x.Title).HasMaxLength(200).IsRequired();
+			modelBuilder.Entity<DevelopmentRequest>().Property(x => x.Description).HasMaxLength(4000).IsRequired();
+			modelBuilder.Entity<DevelopmentRequest>().Property(x => x.AdminNote).HasMaxLength(4000);
+			modelBuilder.Entity<DevelopmentRequest>().Property(x => x.CompletedByUserId).HasMaxLength(450);
+			modelBuilder.Entity<DevelopmentRequest>().Property(x => x.CompletedByName).HasMaxLength(200);
+			modelBuilder.Entity<DevelopmentRequest>().Property(x => x.NotificationError).HasMaxLength(2000);
+			modelBuilder.Entity<DevelopmentRequest>().HasIndex(x => x.RequestNumber).IsUnique();
+			modelBuilder.Entity<DevelopmentRequest>().HasIndex(x => new { x.OwnerUserId, x.Status, x.IsDelete });
+			modelBuilder.Entity<DevelopmentRequest>().HasIndex(x => new { x.Status, x.CreateDate });
+
+			modelBuilder.Entity<LogoBankMovementReportSchedule>().ToTable("LogoBankMovementReportSchedule");
+			modelBuilder.Entity<LogoBankMovementReportSchedule>().Property(x => x.Name).HasMaxLength(150).IsRequired();
+			modelBuilder.Entity<LogoBankMovementReportSchedule>().Property(x => x.CompanyIds).HasMaxLength(1000).IsRequired();
+			modelBuilder.Entity<LogoBankMovementReportSchedule>().Property(x => x.RecipientUserIds).HasMaxLength(4000).IsRequired();
+			modelBuilder.Entity<LogoBankMovementReportSchedule>().Property(x => x.SendTime).HasColumnType("time");
+			modelBuilder.Entity<LogoBankMovementReportSchedule>().Property(x => x.LastError).HasMaxLength(4000);
+			modelBuilder.Entity<LogoBankMovementReportSchedule>().HasIndex(x => new { x.IsEnabled, x.IsDelete, x.SendTime });
+
+			modelBuilder.Entity<LogoBankMovementReportDelivery>().ToTable("LogoBankMovementReportDelivery");
+			modelBuilder.Entity<LogoBankMovementReportDelivery>().Property(x => x.CompanySummary).HasMaxLength(1000).IsRequired();
+			modelBuilder.Entity<LogoBankMovementReportDelivery>().Property(x => x.Recipients).HasMaxLength(2000).IsRequired();
+			modelBuilder.Entity<LogoBankMovementReportDelivery>().Property(x => x.TriggerType).HasMaxLength(30).IsRequired();
+			modelBuilder.Entity<LogoBankMovementReportDelivery>().Property(x => x.ErrorMessage).HasMaxLength(4000);
+			modelBuilder.Entity<LogoBankMovementReportDelivery>().Property(x => x.TriggeredBy).HasMaxLength(256);
+			modelBuilder.Entity<LogoBankMovementReportDelivery>().Property(x => x.IncomingTotalTry).HasPrecision(18, 2);
+			modelBuilder.Entity<LogoBankMovementReportDelivery>().Property(x => x.OutgoingTotalTry).HasPrecision(18, 2);
+			modelBuilder.Entity<LogoBankMovementReportDelivery>().HasIndex(x => x.StartedAt);
+			modelBuilder.Entity<LogoBankMovementReportDelivery>().HasIndex(x => x.ScheduleId);
+			modelBuilder.Entity<LogoBankMovementReportDelivery>()
+				.HasOne<LogoBankMovementReportSchedule>()
+				.WithMany()
+				.HasForeignKey(x => x.ScheduleId)
+				.OnDelete(DeleteBehavior.SetNull);
 
 			modelBuilder.Entity<LogoRestApiSetting>().ToTable("LogoRestApiSetting");
 			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.ServerAddress).HasMaxLength(255).IsRequired();
@@ -493,7 +548,9 @@ namespace Ekomers.Data
 				typeof(PrdCustomerOrder), typeof(PrdCustomerOrderLine), typeof(PrdProductionPlanOrderAllocation),
 				typeof(PrdProductionOrder), typeof(PrdMaterialRequirement),
 				typeof(PrdStockReservation), typeof(PrdWarehouseTask), typeof(PrdWarehouseTaskItem),
-				typeof(PrdWarehouseTaskLot), typeof(PrdProductionMaterialActual), typeof(PrdProductionResult)
+				typeof(PrdWarehouseTaskLot), typeof(PrdProductionMaterialActual), typeof(PrdProductionResult),
+				typeof(PrdLogoProductionReceipt), typeof(PrdLogoProductionReceiptLine),
+				typeof(PrdLogoConsumptionSlip), typeof(PrdLogoConsumptionSlipLine)
 			];
 
 			foreach (var type in productionTypes)
@@ -614,6 +671,27 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdWarehouseTask>().HasIndex(x => x.TaskNumber).IsUnique();
 			modelBuilder.Entity<PrdWarehouseTask>().Property(x => x.TaskNumber).HasMaxLength(50);
 			modelBuilder.Entity<PrdProductionResult>().Property(x => x.BatchNumber).HasMaxLength(100);
+			modelBuilder.Entity<PrdLogoProductionReceipt>().HasIndex(x => x.DocumentNumber).IsUnique();
+			modelBuilder.Entity<PrdLogoProductionReceipt>().HasIndex(x => new { x.Status, x.DocumentDate });
+			modelBuilder.Entity<PrdLogoProductionReceipt>().Property(x => x.DocumentNumber).HasMaxLength(50).IsRequired();
+			modelBuilder.Entity<PrdLogoProductionReceipt>().Property(x => x.LogoSlipNumber).HasMaxLength(50);
+			modelBuilder.Entity<PrdLogoProductionReceipt>().Property(x => x.LogoAssignedSlipNumber).HasMaxLength(50);
+			modelBuilder.Entity<PrdLogoProductionReceipt>().Property(x => x.LogoReference).HasMaxLength(250);
+			modelBuilder.Entity<PrdLogoProductionReceipt>().Property(x => x.Notes).HasMaxLength(500);
+			modelBuilder.Entity<PrdLogoProductionReceipt>().Property(x => x.LastError).HasMaxLength(4000);
+			modelBuilder.Entity<PrdLogoProductionReceiptLine>().HasIndex(x => new { x.ReceiptId, x.Sequence }).IsUnique();
+			modelBuilder.Entity<PrdLogoProductionReceiptLine>().Property(x => x.LotNumber).HasMaxLength(100);
+			modelBuilder.Entity<PrdLogoProductionReceiptLine>().Property(x => x.Description).HasMaxLength(250);
+			modelBuilder.Entity<PrdLogoConsumptionSlip>().HasIndex(x => x.DocumentNumber).IsUnique();
+			modelBuilder.Entity<PrdLogoConsumptionSlip>().HasIndex(x => new { x.Status, x.DocumentDate });
+			modelBuilder.Entity<PrdLogoConsumptionSlip>().Property(x => x.DocumentNumber).HasMaxLength(50).IsRequired();
+			modelBuilder.Entity<PrdLogoConsumptionSlip>().Property(x => x.LogoSlipNumber).HasMaxLength(50);
+			modelBuilder.Entity<PrdLogoConsumptionSlip>().Property(x => x.LogoAssignedSlipNumber).HasMaxLength(50);
+			modelBuilder.Entity<PrdLogoConsumptionSlip>().Property(x => x.LogoReference).HasMaxLength(250);
+			modelBuilder.Entity<PrdLogoConsumptionSlip>().Property(x => x.Notes).HasMaxLength(500);
+			modelBuilder.Entity<PrdLogoConsumptionSlip>().Property(x => x.LastError).HasMaxLength(4000);
+			modelBuilder.Entity<PrdLogoConsumptionSlipLine>().HasIndex(x => new { x.SlipId, x.Sequence }).IsUnique();
+			modelBuilder.Entity<PrdLogoConsumptionSlipLine>().Property(x => x.Description).HasMaxLength(250);
 			modelBuilder.Entity<PrdStockReservation>().HasIndex(x => new { x.MaterialId, x.WarehouseId, x.StockLotId, x.Status });
 
 			modelBuilder.Entity<PrdMaterial>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
@@ -701,6 +779,12 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdProductionResult>().HasOne<PrdWarehouse>().WithMany().HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionResult>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdProductionResult>().HasOne<PrdStockLot>().WithMany().HasForeignKey(x => x.StockLotId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdLogoProductionReceiptLine>().HasOne<PrdLogoProductionReceipt>().WithMany().HasForeignKey(x => x.ReceiptId).OnDelete(DeleteBehavior.Cascade);
+			modelBuilder.Entity<PrdLogoProductionReceiptLine>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdLogoProductionReceiptLine>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdLogoConsumptionSlipLine>().HasOne<PrdLogoConsumptionSlip>().WithMany().HasForeignKey(x => x.SlipId).OnDelete(DeleteBehavior.Cascade);
+			modelBuilder.Entity<PrdLogoConsumptionSlipLine>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdLogoConsumptionSlipLine>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
 		}
 
 		private static void ConfigurePurchasingModel(ModelBuilder modelBuilder)

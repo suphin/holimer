@@ -325,6 +325,13 @@
                                 </div>
                             </div>
                             <div class="modal-footer">
+                                <button type="button"
+                                        class="btn btn-light-primary recipe-cost-email-trigger"
+                                        data-version-id="@row.RecipeVersionId"
+                                        data-email-subject="Reçete Maliyet Detayı - @row.ProductCode"
+                                        data-product-label="@row.ProductCode - @row.ProductName">
+                                    <i class="la la-envelope"></i> E-posta ile Gönder
+                                </button>
                                 <button type="button" class="btn btn-light" data-dismiss="modal">Kapat</button>
                             </div>
                         </div>
@@ -398,6 +405,46 @@
 </div>
 </form>
 
+<div class="modal fade" id="recipeCostEmailModal" tabindex="-1" role="dialog" aria-labelledby="recipeCostEmailModalTitle" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form asp-action="MaliyetDetayiEpostaGonder" method="post" id="recipeCostEmailForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="RecipeVersionId" id="emailRecipeVersionId" />
+                <input type="hidden" name="CalculationDate" value="@Model.CalculationDate.ToString("O", invariant)" />
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="recipeCostEmailModalTitle">Reçete Maliyet Detayını Gönder</h5>
+                        <span class="text-muted" id="emailProductLabel"></span>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-light-primary">
+                        Modalda görünen özet ve malzeme maliyet tablosu HTML e-posta olarak gönderilir. Maliyet verileri gönderim sırasında ERP kayıtlarından yeniden doğrulanır.
+                    </div>
+                    <div class="form-group">
+                        <label for="emailRecipient" class="font-weight-bold">Alıcı E-posta</label>
+                        <input id="emailRecipient" name="RecipientEmail" type="email" value="@Model.SuggestedRecipientEmail" class="form-control form-control-lg" maxlength="320" required autocomplete="email" />
+                    </div>
+                    <div class="form-group">
+                        <label for="emailSubject" class="font-weight-bold">Konu</label>
+                        <input id="emailSubject" name="Subject" class="form-control" maxlength="250" required />
+                    </div>
+                    <div class="form-group mb-0">
+                        <label for="emailMessage" class="font-weight-bold">Mesaj <span class="text-muted font-weight-normal">(isteğe bağlı)</span></label>
+                        <textarea id="emailMessage" name="Message" class="form-control" rows="4" maxlength="1500" placeholder="Raporun üzerinde gösterilecek kısa açıklama..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Vazgeç</button>
+                    <button type="submit" class="btn btn-primary" id="sendRecipeCostEmailButton"><i class="la la-paper-plane"></i> Gönder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
     'use strict';
@@ -409,6 +456,12 @@
     const form = document.getElementById('recipeCostForm');
     const saveButton = document.getElementById('saveCalculationButton');
     const saveValidationAlert = document.getElementById('saveValidationAlert');
+    const emailModal = document.getElementById('recipeCostEmailModal');
+    const emailVersionInput = document.getElementById('emailRecipeVersionId');
+    const emailSubjectInput = document.getElementById('emailSubject');
+    const emailProductLabel = document.getElementById('emailProductLabel');
+    const emailForm = document.getElementById('recipeCostEmailForm');
+    const emailSendButton = document.getElementById('sendRecipeCostEmailButton');
     const rows = Array.from(document.querySelectorAll('.recipe-row'));
     if (!fixedInput || !variableInput) return;
 
@@ -509,6 +562,23 @@
     }
 
     document.querySelectorAll('.cost-input, .production-quantity').forEach(input => input.addEventListener('input', recalculate));
+    document.querySelectorAll('.recipe-cost-email-trigger').forEach(button => button.addEventListener('click', function () {
+        emailVersionInput.value = button.dataset.versionId || '';
+        emailSubjectInput.value = button.dataset.emailSubject || 'Reçete Maliyet Detayı';
+        emailProductLabel.textContent = button.dataset.productLabel || '';
+        const detailModal = button.closest('.modal');
+        if (detailModal && window.jQuery) {
+            window.jQuery(detailModal).one('hidden.bs.modal', function () {
+                window.jQuery(emailModal).modal('show');
+            }).modal('hide');
+        } else if (window.jQuery) {
+            window.jQuery(emailModal).modal('show');
+        }
+    }));
+    if (emailForm) emailForm.addEventListener('submit', function () {
+        emailSendButton.disabled = true;
+        emailSendButton.innerHTML = '<span class="spinner spinner-white mr-3"></span>Gönderiliyor...';
+    });
     scenarioNameInput.addEventListener('input', saveDraft);
     defaultQuantityInput.addEventListener('input', function () {
         rows.forEach(row => row.querySelector('.production-quantity').value = defaultQuantityInput.value);

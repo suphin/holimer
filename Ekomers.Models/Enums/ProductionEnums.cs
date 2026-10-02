@@ -18,6 +18,14 @@ public enum PrdStockMovementType { Opening = 1, Purchase = 2, Transfer = 3, Prod
 public enum PrdStockDocumentType { Opening = 1, WarehouseTask = 2, ProductionOrder = 3, ProductionActual = 4, Manual = 5, InventoryDocument = 6 }
 public enum PrdInventoryDocumentType { Opening = 1, PurchaseReceipt = 2, WarehouseTransfer = 3, ProductionIssue = 4, ProductionReturn = 5, ProductionReceipt = 6, ScrapTransfer = 7, ScrapDisposal = 8, Adjustment = 9, SupplierReturn = 10 }
 public enum PrdInventoryDocumentStatus { Draft = 0, Posted = 1, Cancelled = 2, Reversed = 3 }
+public enum PrdLogoTransferStatus
+{
+    [Display(Name = "Taslak")] Draft = 0,
+    [Display(Name = "Aktarılıyor")] Sending = 1,
+    [Display(Name = "Logo'ya Aktarıldı")] Sent = 2,
+    [Display(Name = "Aktarım Hatası")] Failed = 3,
+    [Display(Name = "İptal")] Cancelled = 4
+}
 public enum PrdStockCostSource { Manual = 1, Opening = 2, ApprovedOffer = 3, LotAverage = 4, Transfer = 5, Production = 6, Adjustment = 7, LegacyImport = 8, LandedCost = 9 }
 public enum PrdMaterialReferenceCostSource
 {
@@ -38,6 +46,16 @@ public enum PrdSpecificationResultStatus { [Display(Name = "Bekliyor")] Pending 
 
 public static class ProductionEnumText
 {
+    public static string ToTurkish(this PrdLogoTransferStatus value) => value switch
+    {
+        PrdLogoTransferStatus.Draft => "Taslak",
+        PrdLogoTransferStatus.Sending => "Aktarılıyor",
+        PrdLogoTransferStatus.Sent => "Logo'ya Aktarıldı",
+        PrdLogoTransferStatus.Failed => "Aktarım Hatası",
+        PrdLogoTransferStatus.Cancelled => "İptal",
+        _ => value.ToString()
+    };
+
     public static string ToTurkish(this PrdRecipeStatus value) => value switch
     {
         PrdRecipeStatus.Draft => "Taslak", PrdRecipeStatus.Active => "Aktif",

@@ -124,6 +124,203 @@ public sealed class ProductionInventoryController : Controller
         model.Lines=await(from line in _context.PrdInventoryDocumentLines.AsNoTracking() join material in _context.PrdMaterials.AsNoTracking() on line.MaterialId equals material.ID join unit in _context.PrdUnits.AsNoTracking() on line.UnitId equals unit.ID where line.InventoryDocumentId==id&&line.IsDelete!=true orderby line.Sequence select new InventoryDocumentDetailLineVM{Sequence=line.Sequence,MaterialCode=material.Code,MaterialName=material.Name,LotNumber=line.LotNumber??string.Empty,ExpirationDate=line.ExpirationDate,Quantity=line.Quantity,Unit=unit.Name,UnitCost=line.UnitCost,TotalCost=line.TotalCost,MovementType=_context.PrdStockMovements.Where(m=>m.InventoryDocumentLineId==line.ID&&m.IsDelete!=true).Select(m=>(PrdStockMovementType?)m.MovementType).FirstOrDefault(),Notes=line.Notes}).ToListAsync(ct);model.LineCount=model.Lines.Count;return View(model);
     }
 
+    [HttpGet,Authorize(Roles="Admin")]
+    public async Task<IActionResult> Duzenle(int id,CancellationToken ct)
+    {
+        ViewBag.Modul="YeniUretim";
+        var model=await BuildEditModel(id,null,ct);
+        if(model==null)return NotFound();
+        if(model.Status==PrdInventoryDocumentStatus.Cancelled||model.Status==PrdInventoryDocumentStatus.Reversed)
+        {
+            TempData["error"]="İptal edilmiş veya ters kayıtla kapatılmış stok belgesi düzenlenemez.";
+            return RedirectToAction(nameof(Detay),new{id});
+        }
+        return View(model);
+    }
+
+    [HttpPost,ValidateAntiForgeryToken,Authorize(Roles="Admin")]
+    [RequestFormLimits(ValueCountLimit=10000)]
+    public async Task<IActionResult> Duzenle(InventoryDocumentEditVM model,CancellationToken ct)
+    {
+        ViewBag.Modul="YeniUretim";
+        model.EditReason=model.EditReason?.Trim();
+        if(string.IsNullOrWhiteSpace(model.EditReason)||model.EditReason.Length<5||model.EditReason.Length>500)
+            ModelState.AddModelError(nameof(model.EditReason),"Düzenleme nedeni 5-500 karakter olmalıdır.");
+        if(model.DocumentDate==default)ModelState.AddModelError(nameof(model.DocumentDate),"Belge tarihi zorunludur.");
+        var currency=(model.CurrencyCode??string.Empty).Trim().ToUpperInvariant();
+        if(currency.Length!=3)ModelState.AddModelError(nameof(model.CurrencyCode),"Para birimi üç karakter olmalıdır.");
+        if(!TryParseDecimal(model.ExchangeRate,out var exchangeRate)||exchangeRate<=0)
+            ModelState.AddModelError(nameof(model.ExchangeRate),"Geçerli bir kur giriniz.");
+
+        await using var transaction=await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable,ct);
+        var document=await _context.PrdInventoryDocuments.FirstOrDefaultAsync(x=>x.ID==model.Id&&x.IsDelete!=true,ct);
+        if(document==null)return NotFound();
+        if(document.Status==PrdInventoryDocumentStatus.Cancelled||document.Status==PrdInventoryDocumentStatus.Reversed)
+        {
+            TempData["error"]="İptal edilmiş veya ters kayıtla kapatılmış stok belgesi düzenlenemez.";
+            return RedirectToAction(nameof(Detay),new{id=model.Id});
+        }
+        var now=DateTime.Now;
+        var actor=User.Identity?.Name??"Admin";
+
+        var lines=await _context.PrdInventoryDocumentLines.Where(x=>x.InventoryDocumentId==document.ID&&x.IsDelete!=true).OrderBy(x=>x.Sequence).ToListAsync(ct);
+        var postedLineIds=model.Lines.Select(x=>x.Id).ToList();
+        if(postedLineIds.Count!=postedLineIds.Distinct().Count()||postedLineIds.Count!=lines.Count||lines.Any(x=>!postedLineIds.Contains(x.ID)))
+            ModelState.AddModelError(string.Empty,"Belge kalemleri değişti. Sayfayı yenileyip tekrar deneyiniz.");
+
+        var materialIds=lines.Select(x=>x.MaterialId).Distinct().ToList();
+        var materials=await _context.PrdMaterials.Where(x=>materialIds.Contains(x.ID)&&x.IsDelete!=true).ToDictionaryAsync(x=>x.ID,ct);
+        var lineIds=lines.Select(x=>x.ID).ToList();
+        var movements=await _context.PrdStockMovements.Where(x=>lineIds.Contains(x.InventoryDocumentLineId??0)&&x.IsDelete!=true).ToListAsync(ct);
+        var originalLotIds=movements.Where(x=>x.StockLotId.HasValue).Select(x=>x.StockLotId!.Value).Distinct().ToList();
+        var lots=await _context.PrdStockLots.Where(x=>originalLotIds.Contains(x.ID)&&x.IsDelete!=true).ToDictionaryAsync(x=>x.ID,ct);
+        var requestedLotEdits=new Dictionary<int,(string LotNumber,DateTime? ProductionDate,DateTime? ExpirationDate)>();
+        var before=JsonSerializer.Serialize(new
+        {
+            document.DocumentDate,document.CurrencyCode,document.ExchangeRate,document.TotalCost,document.Notes,
+            Lines=lines.Select(x=>new{x.ID,x.LotNumber,x.ProductionDate,x.ExpirationDate,x.Quantity,x.OriginalUnitCost,x.UnitCost,x.TotalCost,x.Notes})
+        });
+
+        foreach(var line in lines)
+        {
+            var input=model.Lines.FirstOrDefault(x=>x.Id==line.ID);
+            if(input==null)continue;
+            if(!TryParseDecimal(input.Quantity,out var quantity)||quantity<=0)
+            {
+                ModelState.AddModelError(string.Empty,$"{line.Sequence}. satır miktarı geçersiz.");
+                continue;
+            }
+            if(!TryParseDecimal(input.UnitCost,out var originalUnitCost)||originalUnitCost<0)
+            {
+                ModelState.AddModelError(string.Empty,$"{line.Sequence}. satır birim maliyeti geçersiz.");
+                continue;
+            }
+            if(!materials.TryGetValue(line.MaterialId,out var material))
+            {
+                ModelState.AddModelError(string.Empty,$"{line.Sequence}. satırdaki malzeme bulunamadı.");
+                continue;
+            }
+
+            var lotNumber=(input.LotNumber??string.Empty).Trim();
+            if(material.RequiresLotTracking&&string.IsNullOrWhiteSpace(lotNumber))
+                ModelState.AddModelError(string.Empty,$"{material.Code} için lot numarası zorunludur.");
+            if(material.RequiresExpirationDate&&!input.ExpirationDate.HasValue)
+                ModelState.AddModelError(string.Empty,$"{material.Code} için son kullanma tarihi zorunludur.");
+
+            foreach(var movement in movements.Where(x=>x.InventoryDocumentLineId==line.ID&&x.StockLotId.HasValue))
+            {
+                var lotId=movement.StockLotId!.Value;
+                var requested=(string.IsNullOrWhiteSpace(lotNumber)?"LOTSUZ":lotNumber,input.ProductionDate?.Date,input.ExpirationDate?.Date);
+                if(requestedLotEdits.TryGetValue(lotId,out var existing)&&existing!=requested)
+                    ModelState.AddModelError(string.Empty,$"{lots.GetValueOrDefault(lotId)?.LotNumber??$"Lot #{lotId}"} aynı belgede birbiriyle uyuşmayan bilgilerle düzenlenemez.");
+                else requestedLotEdits[lotId]=requested;
+            }
+
+            var unitCost=originalUnitCost*exchangeRate;
+            line.LotNumber=string.IsNullOrWhiteSpace(lotNumber)?"LOTSUZ":lotNumber;
+            line.ProductionDate=input.ProductionDate?.Date;
+            line.ExpirationDate=input.ExpirationDate?.Date;
+            line.Quantity=quantity;
+            line.OriginalUnitCost=originalUnitCost;
+            line.CurrencyCode=currency;
+            line.ExchangeRate=exchangeRate;
+            line.UnitCost=unitCost;
+            line.TotalCost=quantity*unitCost;
+            line.Notes=input.Notes?.Trim();
+            line.UpdateDate=now;
+            line.UpdateUserID=actor;
+        }
+
+        foreach(var request in requestedLotEdits)
+        {
+            if(!lots.TryGetValue(request.Key,out var lot))
+            {
+                ModelState.AddModelError(string.Empty,$"Lot #{request.Key} bulunamadı.");
+                continue;
+            }
+            var duplicate=await _context.PrdStockLots.FirstOrDefaultAsync(x=>x.ID!=lot.ID&&x.MaterialId==lot.MaterialId&&x.WarehouseId==lot.WarehouseId&&x.LotNumber==request.Value.LotNumber&&x.IsDelete!=true,ct);
+            if(duplicate!=null)
+            {
+                ModelState.AddModelError(string.Empty,$"{request.Value.LotNumber} lotu aynı malzeme ve depoda zaten kayıtlı. Mevcut lot numarasını kullanınız veya farklı bir lot giriniz.");
+                continue;
+            }
+            lot.LotNumber=request.Value.LotNumber;
+            lot.ProductionDate=request.Value.ProductionDate;
+            lot.ExpirationDate=request.Value.ExpirationDate;
+            lot.UpdateDate=now;
+            lot.UpdateUserID=actor;
+        }
+
+        if(!ModelState.IsValid)
+        {
+            await transaction.RollbackAsync(ct);
+            var invalidModel=await BuildEditModel(model.Id,model,ct);
+            if(invalidModel==null)return NotFound();
+            return View(invalidModel);
+        }
+
+        document.DocumentDate=model.DocumentDate.Date;
+        document.CurrencyCode=currency;
+        document.ExchangeRate=exchangeRate;
+        document.Notes=model.Notes?.Trim();
+        document.TotalCost=lines.Sum(x=>x.TotalCost);
+        document.UpdateDate=now;
+        document.UpdateUserID=actor;
+        foreach(var movement in movements)
+        {
+            var line=lines.First(x=>x.ID==movement.InventoryDocumentLineId);
+            movement.Quantity=line.Quantity;
+            movement.OriginalUnitCost=line.OriginalUnitCost;
+            movement.CurrencyCode=line.CurrencyCode;
+            movement.ExchangeRate=line.ExchangeRate;
+            movement.UnitCost=line.UnitCost;
+            movement.TotalCost=line.TotalCost;
+            movement.MovementDate=document.DocumentDate;
+            movement.Description=document.Notes;
+            movement.UpdateDate=now;
+            movement.UpdateUserID=actor;
+        }
+
+        var affectedLotIds=movements.Where(x=>x.StockLotId.HasValue).Select(x=>x.StockLotId!.Value).Distinct().ToList();
+        if(affectedLotIds.Count>0)
+        {
+            var allMovements=await _context.PrdStockMovements.Where(x=>x.IsDelete!=true&&x.StockLotId.HasValue&&affectedLotIds.Contains(x.StockLotId.Value)).ToListAsync(ct);
+            var reservations=await _context.PrdStockReservations.AsNoTracking().Where(x=>x.IsDelete!=true&&affectedLotIds.Contains(x.StockLotId)&&(x.Status==PrdReservationStatus.Active||x.Status==PrdReservationStatus.PartiallyUsed)).ToListAsync(ct);
+            foreach(var lotId in affectedLotIds)
+            {
+                var balance=allMovements.Where(x=>x.StockLotId==lotId).Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity);
+                var reserved=reservations.Where(x=>x.StockLotId==lotId).Sum(x=>Math.Max(0,x.ReservedQuantity-x.UsedQuantity-x.ReleasedQuantity));
+                if(balance<0||reserved>balance)
+                {
+                    await transaction.RollbackAsync(ct);
+                    ModelState.AddModelError(string.Empty,$"{lots.GetValueOrDefault(lotId)?.LotNumber??$"Lot #{lotId}"} için değişiklik sonrası bakiye {balance:0.######}, aktif rezervasyon {reserved:0.######} olur. Miktar azaltılamaz.");
+                    var invalidModel=await BuildEditModel(model.Id,model,ct);
+                    if(invalidModel==null)return NotFound();
+                    return View(invalidModel);
+                }
+            }
+        }
+
+        var after=JsonSerializer.Serialize(new
+        {
+            document.DocumentDate,document.CurrencyCode,document.ExchangeRate,document.TotalCost,document.Notes,
+            Lines=lines.Select(x=>new{x.ID,x.LotNumber,x.ProductionDate,x.ExpirationDate,x.Quantity,x.OriginalUnitCost,x.UnitCost,x.TotalCost,x.Notes})
+        });
+        _context.UserActivityLog.Add(new UserActivityLog
+        {
+            DateTime=now,
+            UserName=Limit(actor,100),
+            ControllerName=nameof(ProductionInventoryController),
+            ActionName=nameof(Duzenle),
+            Parameters=Limit(JsonSerializer.Serialize(new{InventoryDocumentId=document.ID,document.DocumentNumber,Reason=model.EditReason,Before=before,After=after}),4096),
+            Info="InventoryDocumentAdminEdit"
+        });
+        await _context.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        TempData["success"]=$"{document.DocumentNumber} belgesi ve bağlı stok hareketleri güncellendi.";
+        return RedirectToAction(nameof(Detay),new{id=document.ID});
+    }
+
     [HttpPost,ValidateAntiForgeryToken]
     public async Task<IActionResult> StokaIsle(int id,CancellationToken ct)
     {
@@ -300,6 +497,57 @@ public sealed class ProductionInventoryController : Controller
         model.Warehouses=await _context.PrdWarehouses.AsNoTracking().Where(x=>x.IsActive!=false&&x.IsDelete!=true).OrderBy(x=>x.Type).ThenBy(x=>x.Code).Select(x=>new SelectListItem(x.Code+" - "+x.Name+" ("+x.Type.ToTurkish()+")",x.ID.ToString())).ToListAsync(ct);model.Materials=await(from material in _context.PrdMaterials.AsNoTracking() join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID where material.IsActive!=false&&material.IsDelete!=true orderby material.Code select new SelectListItem(material.Code+" - "+material.Name+" ("+unit.Name+")",material.ID.ToString())).ToListAsync(ct);
         if(model.Type==PrdInventoryDocumentType.WarehouseTransfer&&model.SourceWarehouseId.HasValue){var balances=await GetLotBalances(model.SourceWarehouseId.Value,ct);model.SourceLots=balances.Where(x=>x.AvailableQuantity>0).Select(x=>new SelectListItem($"{x.MaterialCode} - {x.MaterialName} | Lot: {x.LotNumber} | Kullanılabilir: {x.AvailableQuantity:0.######} {x.Unit} | Maliyet: {x.UnitCost:N6} ₺"+(x.ExpirationDate.HasValue?$" | SKT: {x.ExpirationDate:dd.MM.yyyy}":string.Empty),x.StockLotId.ToString())).ToList();}
         while(model.Lines.Count<15)model.Lines.Add(new InventoryDocumentCreateLineVM());
+    }
+
+    private async Task<InventoryDocumentEditVM?> BuildEditModel(int id,InventoryDocumentEditVM? posted,CancellationToken ct)
+    {
+        var document=await _context.PrdInventoryDocuments.AsNoTracking().Where(x=>x.ID==id&&x.IsDelete!=true).Select(x=>new
+        {
+            x.ID,x.DocumentNumber,x.Type,x.Status,x.DocumentDate,x.CurrencyCode,x.ExchangeRate,x.Notes,
+            SourceWarehouse=_context.PrdWarehouses.Where(w=>w.ID==x.SourceWarehouseId).Select(w=>w.Code+" - "+w.Name).FirstOrDefault()??"-",
+            TargetWarehouse=_context.PrdWarehouses.Where(w=>w.ID==x.TargetWarehouseId).Select(w=>w.Code+" - "+w.Name).FirstOrDefault()??"-"
+        }).FirstOrDefaultAsync(ct);
+        if(document==null)return null;
+        var culture=CultureInfo.GetCultureInfo("tr-TR");
+        var model=new InventoryDocumentEditVM
+        {
+            Id=document.ID,DocumentNumber=document.DocumentNumber,Type=document.Type,Status=document.Status,
+            DocumentDate=document.DocumentDate,SourceWarehouse=document.SourceWarehouse,TargetWarehouse=document.TargetWarehouse,
+            CurrencyCode=document.CurrencyCode,ExchangeRate=document.ExchangeRate.ToString("0.######",culture),Notes=document.Notes
+        };
+        var lineRows=await(from line in _context.PrdInventoryDocumentLines.AsNoTracking()
+                           join material in _context.PrdMaterials.AsNoTracking() on line.MaterialId equals material.ID
+                           join unit in _context.PrdUnits.AsNoTracking() on line.UnitId equals unit.ID
+                           where line.InventoryDocumentId==id&&line.IsDelete!=true
+                           orderby line.Sequence
+                           select new{Line=line,MaterialCode=material.Code,MaterialName=material.Name,Unit=unit.Name}).ToListAsync(ct);
+        model.Lines=lineRows.Select(x=>new InventoryDocumentEditLineVM
+        {
+            Id=x.Line.ID,Sequence=x.Line.Sequence,MaterialCode=x.MaterialCode,MaterialName=x.MaterialName,Unit=x.Unit,
+            LotNumber=x.Line.LotNumber,ProductionDate=x.Line.ProductionDate,ExpirationDate=x.Line.ExpirationDate,
+            Quantity=x.Line.Quantity.ToString("0.######",culture),
+            UnitCost=(x.Line.OriginalUnitCost??(x.Line.ExchangeRate>0?x.Line.UnitCost/x.Line.ExchangeRate:x.Line.UnitCost)).ToString("0.######",culture),
+            Notes=x.Line.Notes
+        }).ToList();
+        if(posted==null)return model;
+
+        model.DocumentDate=posted.DocumentDate;
+        model.CurrencyCode=posted.CurrencyCode;
+        model.ExchangeRate=posted.ExchangeRate;
+        model.Notes=posted.Notes;
+        model.EditReason=posted.EditReason;
+        var postedLines=posted.Lines.GroupBy(x=>x.Id).ToDictionary(x=>x.Key,x=>x.First());
+        foreach(var line in model.Lines)
+        {
+            if(!postedLines.TryGetValue(line.Id,out var input))continue;
+            line.LotNumber=input.LotNumber;
+            line.ProductionDate=input.ProductionDate;
+            line.ExpirationDate=input.ExpirationDate;
+            line.Quantity=input.Quantity;
+            line.UnitCost=input.UnitCost;
+            line.Notes=input.Notes;
+        }
+        return model;
     }
 
     private async Task<List<InventoryLotBalanceVM>> GetLotBalances(int warehouseId,CancellationToken ct)

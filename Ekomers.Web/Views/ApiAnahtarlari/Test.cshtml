@@ -1,0 +1,232 @@
+@{
+    ViewData["Title"] = "Reçete Maliyeti API Testi";
+}
+
+@section CSSection {
+    <style>
+        .api-test-card { border-radius: 16px; overflow: hidden; }
+        .api-test-code {
+            min-height: 280px;
+            max-height: 620px;
+            margin: 0;
+            padding: 1.25rem;
+            overflow: auto;
+            border-radius: 10px;
+            background: #102d25;
+            color: #e8fff6;
+            font-family: Consolas, Monaco, monospace;
+            font-size: .9rem;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+        .api-test-url {
+            padding: .85rem 1rem;
+            border: 1px solid #dce5df;
+            border-radius: 9px;
+            background: #f8faf9;
+            font-family: Consolas, Monaco, monospace;
+            overflow-wrap: anywhere;
+        }
+        .api-test-status { min-width: 105px; }
+    </style>
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-6">
+    <div>
+        <h2 class="font-weight-bolder mb-1">Reçete Maliyeti API Testi</h2>
+        <span class="text-muted">Anahtarı kaydetmeden, API uçlarını doğrudan bu portal üzerinden deneyin.</span>
+    </div>
+    <a asp-action="Index" class="btn btn-light font-weight-bold"><i class="la la-arrow-left"></i> API Anahtarlarına Dön</a>
+</div>
+
+<div class="alert alert-light-warning">
+    Anahtar yalnızca aşağıdaki isteğin <code>Authorization: Bearer</code> başlığında kullanılır; bu sayfada saklanmaz.
+</div>
+
+<div class="card card-custom api-test-card mb-7">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">İstek Hazırla</h3></div></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-8 form-group">
+                <label class="font-weight-bold" for="apiToken">API anahtarı</label>
+                <div class="input-group">
+                    <input id="apiToken" type="password" class="form-control" autocomplete="off" spellcheck="false" placeholder="rct_..." />
+                    <div class="input-group-append">
+                        <button id="toggleToken" type="button" class="btn btn-light" aria-label="Anahtarı göster veya gizle"><i class="la la-eye"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 form-group">
+                <label class="font-weight-bold" for="requestType">Test işlemi</label>
+                <select id="requestType" class="form-control">
+                    <option value="list">Maliyet çalışmalarını listele</option>
+                    <option value="product">Ürünün son maliyetini getir</option>
+                    <option value="calculation">Maliyet çalışması detayını getir</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="listFields" class="row">
+            <div class="col-lg-5 form-group">
+                <label for="listProductCode">Ürün kodu <span class="text-muted">(isteğe bağlı)</span></label>
+                <input id="listProductCode" class="form-control" placeholder="152MM.01.02.001" />
+            </div>
+            <div class="col-lg-3 form-group">
+                <label for="page">Sayfa</label>
+                <input id="page" type="number" min="1" value="1" class="form-control" />
+            </div>
+            <div class="col-lg-4 form-group">
+                <label for="pageSize">Sayfa büyüklüğü</label>
+                <input id="pageSize" type="number" min="1" max="100" value="10" class="form-control" />
+            </div>
+        </div>
+
+        <div id="productFields" class="form-group d-none">
+            <label class="font-weight-bold" for="productCode">Ürün kodu</label>
+            <input id="productCode" class="form-control" placeholder="152MM.01.02.001" />
+        </div>
+
+        <div id="calculationFields" class="form-group d-none">
+            <label class="font-weight-bold" for="calculationId">Maliyet çalışması ID</label>
+            <input id="calculationId" type="number" min="1" class="form-control" placeholder="123" />
+        </div>
+
+        <label class="font-weight-bold">Gönderilecek adres</label>
+        <div id="requestUrl" class="api-test-url mb-5"></div>
+
+        <button id="sendRequest" type="button" class="btn btn-primary font-weight-bold px-8">
+            <i class="la la-paper-plane"></i> Test İsteğini Gönder
+        </button>
+    </div>
+</div>
+
+<div class="card card-custom api-test-card">
+    <div class="card-header">
+        <div class="card-title"><h3 class="card-label">API Yanıtı</h3></div>
+        <div class="card-toolbar d-flex align-items-center" style="gap:.75rem">
+            <span id="duration" class="text-muted"></span>
+            <span id="status" class="label label-light label-inline api-test-status">Henüz gönderilmedi</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <pre id="responseBody" class="api-test-code">Test isteği gönderildiğinde yanıt burada gösterilecek.</pre>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var tokenInput = document.getElementById('apiToken');
+            var typeInput = document.getElementById('requestType');
+            var requestUrl = document.getElementById('requestUrl');
+            var sendButton = document.getElementById('sendRequest');
+            var status = document.getElementById('status');
+            var duration = document.getElementById('duration');
+            var responseBody = document.getElementById('responseBody');
+
+            function value(id) {
+                return document.getElementById(id).value.trim();
+            }
+
+            function buildUrl() {
+                var type = typeInput.value;
+                if (type === 'product') {
+                    var productCode = value('productCode');
+                    return '/api/v1/recipe-costs/products/' + encodeURIComponent(productCode || '{ürün-kodu}');
+                }
+                if (type === 'calculation') {
+                    var calculationId = value('calculationId');
+                    return '/api/v1/recipe-costs/calculations/' + encodeURIComponent(calculationId || '{id}');
+                }
+
+                var parameters = new URLSearchParams();
+                parameters.set('page', value('page') || '1');
+                parameters.set('pageSize', value('pageSize') || '10');
+                var listProductCode = value('listProductCode');
+                if (listProductCode) parameters.set('productCode', listProductCode);
+                return '/api/v1/recipe-costs?' + parameters.toString();
+            }
+
+            function updateForm() {
+                var type = typeInput.value;
+                document.getElementById('listFields').classList.toggle('d-none', type !== 'list');
+                document.getElementById('productFields').classList.toggle('d-none', type !== 'product');
+                document.getElementById('calculationFields').classList.toggle('d-none', type !== 'calculation');
+                requestUrl.textContent = 'GET ' + buildUrl();
+            }
+
+            function setStatus(code, ok) {
+                status.className = 'label label-inline api-test-status ' + (ok ? 'label-light-success' : 'label-light-danger');
+                status.textContent = 'HTTP ' + code;
+            }
+
+            document.getElementById('toggleToken').addEventListener('click', function () {
+                var show = tokenInput.type === 'password';
+                tokenInput.type = show ? 'text' : 'password';
+                this.querySelector('i').className = show ? 'la la-eye-slash' : 'la la-eye';
+            });
+
+            typeInput.addEventListener('change', updateForm);
+            ['listProductCode', 'page', 'pageSize', 'productCode', 'calculationId'].forEach(function (id) {
+                document.getElementById(id).addEventListener('input', updateForm);
+            });
+
+            sendButton.addEventListener('click', async function () {
+                var token = tokenInput.value.trim();
+                if (!token) {
+                    status.className = 'label label-light-warning label-inline api-test-status';
+                    status.textContent = 'Anahtar gerekli';
+                    tokenInput.focus();
+                    return;
+                }
+
+                var type = typeInput.value;
+                if (type === 'product' && !value('productCode')) {
+                    document.getElementById('productCode').focus();
+                    return;
+                }
+                if (type === 'calculation' && !value('calculationId')) {
+                    document.getElementById('calculationId').focus();
+                    return;
+                }
+
+                var url = buildUrl();
+                sendButton.disabled = true;
+                status.className = 'label label-light-primary label-inline api-test-status';
+                status.textContent = 'Gönderiliyor';
+                duration.textContent = '';
+                responseBody.textContent = 'Yanıt bekleniyor...';
+                var startedAt = performance.now();
+
+                try {
+                    var response = await fetch(url, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        }
+                    });
+                    var elapsed = Math.round(performance.now() - startedAt);
+                    var raw = await response.text();
+                    var formatted = raw;
+                    try { formatted = JSON.stringify(JSON.parse(raw), null, 2); } catch (_) { }
+                    setStatus(response.status, response.ok);
+                    duration.textContent = elapsed + ' ms';
+                    responseBody.textContent = formatted || '(Boş yanıt)';
+                } catch (error) {
+                    status.className = 'label label-light-danger label-inline api-test-status';
+                    status.textContent = 'Bağlantı hatası';
+                    duration.textContent = '';
+                    responseBody.textContent = error && error.message ? error.message : String(error);
+                } finally {
+                    sendButton.disabled = false;
+                }
+            });
+
+            updateForm();
+        })();
+    </script>
+}

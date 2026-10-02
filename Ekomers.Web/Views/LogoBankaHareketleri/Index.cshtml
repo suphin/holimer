@@ -1,0 +1,199 @@
+@model Ekomers.Models.ViewModels.LogoBankMovementReportPageVM
+@{
+    ViewData["Title"] = "Havale / EFT Hareketleri";
+    var canManageSchedules = ViewBag.CanManageSchedules == true;
+    var net = Model.IncomingTotalTry - Model.OutgoingTotalTry;
+}
+
+@section CSSection {
+    <style>
+        .bank-report-card { border-radius: 16px; overflow: hidden; }
+        .bank-report-table-wrap { overflow-x: auto; }
+        .bank-report-table { min-width: 1450px; }
+        .bank-report-table th, .bank-report-table td { padding: 1rem 1.1rem !important; vertical-align: middle !important; }
+        .bank-report-table th { background: #f6f9f7; color: #8b8da1; font-size: .8rem; letter-spacing: .04em; }
+        .summary-box { border: 1px solid #e4e6ef; border-radius: 12px; padding: 1.25rem; height: 100%; }
+        .summary-value { font-size: 1.35rem; font-weight: 700; color: #181c32; }
+        .schedule-grid select[multiple] { min-height: 145px; }
+        .schedule-table th, .schedule-table td, .delivery-table th, .delivery-table td { padding: .9rem 1rem !important; vertical-align: middle !important; }
+        .text-break-soft { overflow-wrap: anywhere; }
+    </style>
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-6">
+    <div>
+        <h2 class="font-weight-bolder mb-1">Gelen ve Giden Havale / EFT</h2>
+        <span class="text-muted">Logo firmalarındaki banka hareketlerini tek ekranda izleyin ve zamanlanmış raporlar oluşturun.</span>
+    </div>
+    <span class="label label-lg label-light-success label-inline">LogoConnection · Salt okunur</span>
+</div>
+
+@if (TempData["success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["error"] is string error) { <div class="alert alert-danger">@error</div> }
+@if (ViewBag.QueryWarning is string warning) { <div class="alert alert-warning">@warning</div> }
+@if (ViewBag.QueryError is string queryError) { <div class="alert alert-danger">@queryError</div> }
+
+<div class="card card-custom bank-report-card mb-6">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Rapor Filtresi</h3></div></div>
+    <div class="card-body">
+        <form method="get" class="row align-items-end">
+            <div class="col-xl-2 col-md-6 form-group mb-xl-0">
+                <label class="font-weight-bold">Firma</label>
+                <select name="companyId" class="form-control">
+                    <option value="0">Tüm Logo firmaları</option>
+                    @foreach (var company in Model.Companies)
+                    {
+                        <option value="@company.Id" selected="@(company.Id == Model.CompanyId ? "selected" : null)">@company.Name (@company.FirmNumber)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-xl-2 col-md-6 form-group mb-xl-0">
+                <label class="font-weight-bold">Cari</label>
+                <input type="search" name="clientSearch" value="@Model.ClientSearch" class="form-control" maxlength="150" placeholder="Cari kodu veya unvanı" autocomplete="off" />
+            </div>
+            <div class="col-xl-2 col-md-6 form-group mb-xl-0"><label class="font-weight-bold">Başlangıç</label><input type="date" name="startDate" value="@Model.StartDate.ToString("yyyy-MM-dd")" class="form-control" required /></div>
+            <div class="col-xl-2 col-md-6 form-group mb-xl-0"><label class="font-weight-bold">Bitiş</label><input type="date" name="endDate" value="@Model.EndDate.ToString("yyyy-MM-dd")" class="form-control" required /></div>
+            <div class="col-xl-2 col-md-6 form-group mb-xl-0">
+                <label class="font-weight-bold">Hareket yönü</label>
+                <select name="direction" class="form-control">
+                    <option value="all" selected="@(Model.Direction == "all" ? "selected" : null)">Gelen + Giden</option>
+                    <option value="incoming" selected="@(Model.Direction == "incoming" ? "selected" : null)">Yalnızca gelen</option>
+                    <option value="outgoing" selected="@(Model.Direction == "outgoing" ? "selected" : null)">Yalnızca giden</option>
+                </select>
+            </div>
+            <div class="col-xl-2"><button class="btn btn-primary btn-block"><i class="la la-search"></i> Raporu Getir</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="row mb-6">
+    <div class="col-xl-3 col-md-6 mb-4 mb-xl-0"><div class="summary-box"><div class="text-muted mb-2">Gelen havale / EFT</div><div class="summary-value text-success">@Model.IncomingTotalTry.ToString("N2") TRY</div></div></div>
+    <div class="col-xl-3 col-md-6 mb-4 mb-xl-0"><div class="summary-box"><div class="text-muted mb-2">Giden havale / EFT</div><div class="summary-value text-danger">@Model.OutgoingTotalTry.ToString("N2") TRY</div></div></div>
+    <div class="col-xl-3 col-md-6 mb-4 mb-md-0"><div class="summary-box"><div class="text-muted mb-2">Net hareket</div><div class="summary-value">@net.ToString("N2") TRY</div></div></div>
+    <div class="col-xl-3 col-md-6"><div class="summary-box"><div class="text-muted mb-2">Hareket sayısı</div><div class="summary-value">@Model.Rows.Count.ToString("N0")</div></div></div>
+</div>
+
+<div class="card card-custom bank-report-card mb-8">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Banka Hareketleri (@Model.Rows.Count)</h3></div></div>
+    <div class="card-body p-0 bank-report-table-wrap">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="text-center text-muted py-15">Seçilen dönemde gelen veya giden havale/EFT hareketi bulunamadı.</div>
+        }
+        else
+        {
+            <table class="table table-hover mb-0 bank-report-table">
+                <thead><tr><th>Firma</th><th>Tarih</th><th>Yön</th><th>Banka / Hesap</th><th>Cari</th><th>Belge</th><th>Açıklama</th><th class="text-right">Tutar (TRY)</th><th class="text-right">İşlem Dövizi</th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td><strong>@row.CompanyName</strong><div class="text-muted small">Firma @row.FirmNumber / Dönem @row.PeriodNumber</div></td>
+                        <td class="text-nowrap">@row.Date.ToString("dd.MM.yyyy")</td>
+                        <td><span class="label @(row.Direction == "Gelen" ? "label-light-success" : "label-light-danger") label-inline">@row.Direction</span></td>
+                        <td><strong>@row.BankName</strong><div class="text-muted small">@row.AccountCode @row.AccountName @row.AccountNumber</div></td>
+                        <td><strong>@row.ClientCode</strong><div class="text-muted small">@row.ClientName</div></td>
+                        <td>@(string.IsNullOrWhiteSpace(row.DocumentNumber) ? row.TransactionNumber : row.DocumentNumber)</td>
+                        <td class="text-break-soft">@row.Description</td>
+                        <td class="text-right text-nowrap font-weight-bold">@row.LocalAmount.ToString("N2")</td>
+                        <td class="text-right text-nowrap">@row.TransactionAmount.ToString("N2") @row.CurrencyCode<div class="text-muted small">Kur @row.ExchangeRate.ToString("N6")</div></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@if (canManageSchedules)
+{
+    <div class="card card-custom bank-report-card mb-8">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">@(Model.ScheduleForm.Id.HasValue ? "Rapor Planını Düzenle" : "Zamanlanmış E-posta Raporu")</h3></div></div>
+        <div class="card-body">
+            <div class="alert alert-light-info">Banka verisi yalnızca <strong>aktif portal kullanıcılarına</strong> gönderilir. Aynı gün içinde farklı saatler için birden fazla plan oluşturabilirsiniz.</div>
+            <form asp-action="PlanKaydet" method="post" class="row schedule-grid">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ScheduleForm.Id" value="@Model.ScheduleForm.Id" />
+                <div class="col-lg-4 form-group"><label class="font-weight-bold">Plan adı</label><input name="ScheduleForm.Name" value="@Model.ScheduleForm.Name" class="form-control" maxlength="150" required placeholder="Örn. Günlük banka hareketleri" /></div>
+                <div class="col-lg-2 form-group"><label class="font-weight-bold">Gönderim saati</label><input type="time" name="ScheduleForm.SendTime" value="@Model.ScheduleForm.SendTime" class="form-control" required /></div>
+                <div class="col-lg-2 form-group"><label class="font-weight-bold">Son kaç gün?</label><input type="number" name="ScheduleForm.LookbackDays" value="@Model.ScheduleForm.LookbackDays" min="1" max="31" class="form-control" required /></div>
+                <div class="col-lg-4 form-group d-flex align-items-center pt-lg-6">
+                    <label class="checkbox checkbox-lg mr-7"><input type="checkbox" name="ScheduleForm.IncludeToday" value="true" checked="@(Model.ScheduleForm.IncludeToday ? "checked" : null)" /><span></span>&nbsp; Bugünü dahil et</label>
+                    <label class="checkbox checkbox-lg"><input type="checkbox" name="ScheduleForm.IsEnabled" value="true" checked="@(Model.ScheduleForm.IsEnabled ? "checked" : null)" /><span></span>&nbsp; Plan etkin</label>
+                </div>
+                <div class="col-lg-6 form-group">
+                    <label class="font-weight-bold">Logo firmaları</label>
+                    <select name="ScheduleForm.CompanyIds" class="form-control" multiple required>
+                        @foreach (var company in Model.Companies)
+                        {
+                            <option value="@company.Id" selected="@(Model.ScheduleForm.CompanyIds.Contains(company.Id) ? "selected" : null)">@company.Name (@company.FirmNumber)</option>
+                        }
+                    </select>
+                    <small class="form-text text-muted">Ctrl/Cmd tuşuyla birden fazla firma seçebilirsiniz.</small>
+                </div>
+                <div class="col-lg-6 form-group">
+                    <label class="font-weight-bold">Alıcı portal kullanıcıları</label>
+                    <select name="ScheduleForm.RecipientUserIds" class="form-control" multiple required>
+                        @foreach (var recipient in Model.AvailableRecipients)
+                        {
+                            <option value="@recipient.Id" selected="@(Model.ScheduleForm.RecipientUserIds.Contains(recipient.Id) ? "selected" : null)">@recipient.Name — @recipient.Email</option>
+                        }
+                    </select>
+                    <small class="form-text text-muted">Gönderimden önce kullanıcı hesabının aktifliği ve e-posta adresi yeniden doğrulanır.</small>
+                </div>
+                <div class="col-12 text-right">
+                    @if (Model.ScheduleForm.Id.HasValue) { <a asp-action="Index" class="btn btn-light mr-2">Vazgeç</a> }
+                    <button class="btn btn-primary"><i class="la la-save"></i> @(Model.ScheduleForm.Id.HasValue ? "Planı Güncelle" : "Planı Kaydet")</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card card-custom bank-report-card mb-8">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Rapor Planları (@Model.Schedules.Count)</h3></div></div>
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-hover mb-0 schedule-table" style="min-width:1200px">
+                <thead><tr><th>Plan</th><th>Firmalar</th><th>Alıcılar</th><th>Saat / Aralık</th><th>Son Gönderim</th><th>Durum</th><th class="text-right">İşlem</th></tr></thead>
+                <tbody>
+                @foreach (var schedule in Model.Schedules)
+                {
+                    <tr>
+                        <td><strong>@schedule.Name</strong>@if (!string.IsNullOrWhiteSpace(schedule.LastError)) { <div class="text-danger small text-break-soft">@schedule.LastError</div> }</td>
+                        <td>@schedule.Companies</td><td>@schedule.Recipients</td>
+                        <td><strong>@schedule.SendTime.ToString(@"hh\:mm")</strong><div class="text-muted small">Son @schedule.LookbackDays gün · @(schedule.IncludeToday ? "bugün dahil" : "bugün hariç")</div></td>
+                        <td>@(schedule.LastSuccessAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")<div class="text-muted small">@(schedule.LastRecordCount.HasValue ? schedule.LastRecordCount + " hareket" : "")</div></td>
+                        <td><span class="label @(schedule.IsEnabled ? "label-light-success" : "label-light-dark") label-inline">@(schedule.IsEnabled ? "Etkin" : "Durduruldu")</span></td>
+                        <td class="text-right text-nowrap">
+                            <a asp-action="Index" asp-route-editId="@schedule.Id" class="btn btn-sm btn-light-primary">Düzenle</a>
+                            <form asp-action="SimdiGonder" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@schedule.Id" /><button class="btn btn-sm btn-primary">Şimdi Gönder</button></form>
+                            <form asp-action="PlanDurum" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@schedule.Id" /><button class="btn btn-sm btn-light">@(schedule.IsEnabled ? "Durdur" : "Etkinleştir")</button></form>
+                            <form asp-action="PlanSil" method="post" class="d-inline" onsubmit="return confirm('Bu rapor planı silinsin mi? Gönderim geçmişi korunacaktır.');">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@schedule.Id" /><button class="btn btn-sm btn-light-danger">Sil</button></form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card card-custom bank-report-card">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Son Gönderimler</h3></div></div>
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-hover mb-0 delivery-table" style="min-width:1100px">
+                <thead><tr><th>Başlangıç</th><th>Plan / Tetikleme</th><th>Firmalar</th><th>Alıcılar</th><th class="text-right">Gelen</th><th class="text-right">Giden</th><th>Sonuç</th></tr></thead>
+                <tbody>
+                @foreach (var delivery in Model.Deliveries)
+                {
+                    <tr>
+                        <td class="text-nowrap">@delivery.StartedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td><strong>@delivery.ScheduleName</strong><div class="text-muted small">@delivery.TriggerType</div></td>
+                        <td>@delivery.CompanySummary</td><td class="text-break-soft">@delivery.Recipients</td>
+                        <td class="text-right text-nowrap">@delivery.IncomingTotalTry.ToString("N2")</td><td class="text-right text-nowrap">@delivery.OutgoingTotalTry.ToString("N2")</td>
+                        <td><span class="label @(delivery.IsSuccess ? "label-light-success" : "label-light-danger") label-inline">@(delivery.IsSuccess ? $"Başarılı · {delivery.RecordCount}" : "Hata")</span>@if (!string.IsNullOrWhiteSpace(delivery.ErrorMessage)) { <div class="text-danger small mt-1">@delivery.ErrorMessage</div> }</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

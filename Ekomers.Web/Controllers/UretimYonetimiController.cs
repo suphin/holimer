@@ -32,6 +32,64 @@ public sealed class UretimYonetimiController : Controller
     public IActionResult Dashboard() => ModulSayfasi("Üretim Paneli", "Üretim sürecinin genel görünümü bu ekranda yer alacak.");
 
     [HttpGet]
+    public async Task<IActionResult> MalzemeKullanimRaporu(string? search,string materialType="all",string versionScope="active",CancellationToken ct=default)
+    {
+        ViewBag.Modul="YeniUretim";
+        search=string.IsNullOrWhiteSpace(search)?null:search.Trim();
+        materialType=materialType is "raw" or "packaging" or "other"?materialType:"all";
+        versionScope=versionScope=="all"?"all":"active";
+        var model=new MaterialUsageReportVM{Search=search,MaterialType=materialType,VersionScope=versionScope};
+        if(string.IsNullOrWhiteSpace(search))return View(model);
+
+        var materialQuery=
+            from material in _context.PrdMaterials.AsNoTracking()
+            join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID
+            where material.IsDelete!=true
+                &&_context.PrdRecipeItems.Any(item=>item.MaterialId==material.ID&&item.IsDelete!=true)
+                &&(EF.Functions.Like(material.Code,"%"+search+"%")||EF.Functions.Like(material.Name,"%"+search+"%")||(material.LogoCode!=null&&EF.Functions.Like(material.LogoCode,"%"+search+"%")))
+                &&(materialType=="all"
+                    ||(materialType=="raw"&&material.Type==PrdMaterialType.RawMaterial)
+                    ||(materialType=="packaging"&&material.Type==PrdMaterialType.Packaging)
+                    ||(materialType=="other"&&material.Type==PrdMaterialType.Other))
+            select new MaterialUsageMaterialVM
+            {
+                MaterialId=material.ID,Code=material.Code,Name=material.Name,Type=material.Type,
+                BaseUnit=unit.Code+" - "+unit.Name
+            };
+
+        model.TotalMatchedMaterialCount=await materialQuery.CountAsync(ct);
+        model.Materials=await materialQuery.OrderBy(x=>x.Code).Take(50).ToListAsync(ct);
+        var materialIds=model.Materials.Select(x=>x.MaterialId).ToList();
+        if(materialIds.Count==0)return View(model);
+
+        model.Rows=await(
+            from item in _context.PrdRecipeItems.AsNoTracking()
+            join version in _context.PrdRecipeVersions.AsNoTracking() on item.RecipeVersionId equals version.ID
+            join recipe in _context.PrdRecipes.AsNoTracking() on version.RecipeId equals recipe.ID
+            join product in _context.PrdMaterials.AsNoTracking() on recipe.ProductMaterialId equals product.ID
+            join usageUnit in _context.PrdUnits.AsNoTracking() on item.UnitId equals usageUnit.ID
+            join outputUnit in _context.PrdUnits.AsNoTracking() on version.UnitId equals outputUnit.ID
+            where materialIds.Contains(item.MaterialId)
+                &&item.IsDelete!=true&&version.IsDelete!=true&&recipe.IsDelete!=true&&product.IsDelete!=true
+                &&(versionScope=="all"||version.Status==PrdRecipeStatus.Active)
+            orderby item.MaterialId,product.Code,recipe.Code,version.VersionNumber descending,item.Sequence
+            select new MaterialUsageRowVM
+            {
+                MaterialId=item.MaterialId,RecipeId=recipe.ID,RecipeVersionId=version.ID,
+                RecipeCode=recipe.Code,RecipeName=recipe.Name,ProductCode=product.Code,ProductName=product.Name,
+                VersionNumber=version.VersionNumber,VersionStatus=version.Status,BaseQuantity=version.BaseQuantity,
+                OutputUnit=outputUnit.Code+" - "+outputUnit.Name,Quantity=item.Quantity,
+                UsageUnit=usageUnit.Code+" - "+usageUnit.Name,PlannedWasteRate=item.PlannedWasteRate,
+                Sequence=item.Sequence,IsRequired=item.IsRequired,AlternativeGroupCode=item.AlternativeGroupCode,
+                Notes=item.Notes,ValidFrom=version.ValidFrom,ValidTo=version.ValidTo
+            }).ToListAsync(ct);
+
+        var usageCounts=model.Rows.GroupBy(x=>x.MaterialId).ToDictionary(x=>x.Key,x=>x.Count());
+        foreach(var material in model.Materials)material.UsageCount=usageCounts.GetValueOrDefault(material.MaterialId);
+        return View(model);
+    }
+
+    [HttpGet]
     public async Task<IActionResult> UretilebilirUrunler(string? search,bool onlyProducible=false,CancellationToken ct=default)
     {
         ViewBag.Modul="YeniUretim";
@@ -282,6 +340,71 @@ public sealed class UretimYonetimiController : Controller
     {
         ViewBag.Modul="YeniUretim";
         return View(await BuildStockReportModel(code,name,warehouseId,true,ct));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> StokHareketleri(int materialId,int warehouseId,CancellationToken ct)
+    {
+        ViewBag.Modul="YeniUretim";
+        var header=await(from material in _context.PrdMaterials.AsNoTracking()
+                         join warehouse in _context.PrdWarehouses.AsNoTracking() on warehouseId equals warehouse.ID
+                         join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID
+                         where material.ID==materialId&&material.IsDelete!=true&&warehouse.IsDelete!=true
+                         select new{Material=material,Warehouse=warehouse,Unit=unit.Name}).FirstOrDefaultAsync(ct);
+        if(header==null)return NotFound();
+
+        var totals=await _context.PrdStockMovements.AsNoTracking()
+            .Where(x=>x.MaterialId==materialId&&x.WarehouseId==warehouseId&&x.IsDelete!=true)
+            .GroupBy(x=>1)
+            .Select(g=>new
+            {
+                Incoming=g.Where(x=>x.Direction==PrdStockDirection.In).Sum(x=>x.Quantity),
+                Outgoing=g.Where(x=>x.Direction==PrdStockDirection.Out).Sum(x=>x.Quantity)
+            }).FirstOrDefaultAsync(ct);
+
+        var movements=await(from movement in _context.PrdStockMovements.AsNoTracking()
+                            join unit in _context.PrdUnits.AsNoTracking() on movement.UnitId equals unit.ID
+                            join lot0 in _context.PrdStockLots.AsNoTracking() on movement.StockLotId equals lot0.ID into lotJoin
+                            from lot in lotJoin.DefaultIfEmpty()
+                            join line0 in _context.PrdInventoryDocumentLines.AsNoTracking() on movement.InventoryDocumentLineId equals (int?)line0.ID into lineJoin
+                            from line in lineJoin.DefaultIfEmpty()
+                            join document0 in _context.PrdInventoryDocuments.AsNoTracking() on movement.InventoryDocumentId equals (int?)document0.ID into documentJoin
+                            from document in documentJoin.DefaultIfEmpty()
+                            where movement.MaterialId==materialId&&movement.WarehouseId==warehouseId&&movement.IsDelete!=true
+                            orderby movement.MovementDate descending,movement.ID descending
+                            select new ProductionStockMovementHistoryItemVM
+                            {
+                                Id=movement.ID,
+                                MovementDate=movement.MovementDate,
+                                Direction=movement.Direction,
+                                MovementType=movement.MovementType,
+                                Quantity=movement.Quantity,
+                                Unit=unit.Name,
+                                UnitCost=movement.UnitCost,
+                                TotalCost=movement.TotalCost,
+                                DocumentNumber=movement.DocumentNumber,
+                                InventoryDocumentId=movement.InventoryDocumentId,
+                                LotNumber=line!=null&&line.LotNumber!=null?line.LotNumber:(lot==null?null:lot.LotNumber),
+                                ProductionDate=line!=null&&line.ProductionDate.HasValue?line.ProductionDate:(lot==null?null:lot.ProductionDate),
+                                ExpirationDate=line!=null&&line.ExpirationDate.HasValue?line.ExpirationDate:(lot==null?null:lot.ExpirationDate),
+                                MovementDescription=movement.Description,
+                                LineNotes=line==null?null:line.Notes,
+                                DocumentNotes=document==null?null:document.Notes
+                            }).Take(10).ToListAsync(ct);
+
+        return View(new ProductionStockMovementHistoryVM
+        {
+            MaterialId=header.Material.ID,
+            WarehouseId=header.Warehouse.ID,
+            MaterialCode=header.Material.Code,
+            MaterialName=header.Material.Name,
+            WarehouseCode=header.Warehouse.Code,
+            WarehouseName=header.Warehouse.Name,
+            Unit=header.Unit,
+            IncomingQuantity=totals?.Incoming??0,
+            OutgoingQuantity=totals?.Outgoing??0,
+            Movements=movements
+        });
     }
 
     [HttpGet]

@@ -21,7 +21,13 @@ public class EmailSenderService : IEmailSenderService
 
     public EmailSenderService(IOptions<EmailSettings> settings) => _settings = settings.Value;
 
-    public async Task<bool> SendEmailAsync(string email, string subject, string message)
+    public async Task<bool> SendEmailAsync(
+        string email,
+        string subject,
+        string message,
+        byte[]? attachmentContent = null,
+        string? attachmentFileName = null,
+        string? attachmentContentType = null)
     {
         try
         {
@@ -39,6 +45,17 @@ public class EmailSenderService : IEmailSenderService
                 IsBodyHtml = true
             };
             mailMessage.To.Add(email);
+            if (attachmentContent is { Length: > 0 })
+            {
+                var attachmentStream = new MemoryStream(attachmentContent, writable: false);
+                var attachment = new Attachment(
+                    attachmentStream,
+                    string.IsNullOrWhiteSpace(attachmentFileName) ? "rapor.xlsx" : attachmentFileName,
+                    string.IsNullOrWhiteSpace(attachmentContentType)
+                        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        : attachmentContentType);
+                mailMessage.Attachments.Add(attachment);
+            }
             await smtpClient.SendMailAsync(mailMessage);
             return true;
         }

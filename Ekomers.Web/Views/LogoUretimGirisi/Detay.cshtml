@@ -1,0 +1,125 @@
+@model Ekomers.Models.ViewModels.Production.LogoProductionReceiptDetailVM
+@{
+    ViewData["Title"] = "Logo Üretim Giriş Fişi";
+    var canManage = User.IsInRole("Admin") || User.HasClaim("Authorize", "LogoUretimGirisiYonet");
+    var editable = (Model.Status is PrdLogoTransferStatus.Draft or PrdLogoTransferStatus.Failed)
+        && string.IsNullOrWhiteSpace(Model.LogoReference)
+        && canManage;
+    var canSend = editable;
+    var labelClass = Model.Status switch
+    {
+        PrdLogoTransferStatus.Sent => "label-light-success",
+        PrdLogoTransferStatus.Failed => "label-light-danger",
+        PrdLogoTransferStatus.Sending => "label-light-info",
+        PrdLogoTransferStatus.Cancelled => "label-light-dark",
+        _ => "label-light-warning"
+    };
+}
+
+@if (TempData["success"] != null)
+{
+    <div class="alert alert-light-success mb-5">@TempData["success"]</div>
+}
+@if (TempData["error"] != null)
+{
+    <div class="alert alert-light-danger mb-5">@TempData["error"]</div>
+}
+
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title">
+            <h3 class="card-label">@Model.DocumentNumber<span class="d-block text-muted pt-2 font-size-sm">Logo üretimden giriş fişi</span></h3>
+        </div>
+        <div class="card-toolbar">
+            <span class="label @labelClass label-inline mr-3">@Model.Status.ToTurkish()</span>
+            @if (editable)
+            {
+                <a asp-action="Duzenle" asp-route-id="@Model.Id" class="btn btn-light-primary mr-2">Düzenle</a>
+            }
+            @if (canSend)
+            {
+                <form asp-action="Gonder" method="post" class="d-inline mr-2" onsubmit="return confirm('Bu fişteki ürünler Logo Tiger\'a üretimden giriş fişi olarak gönderilecek. Devam edilsin mi?');">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-primary">Logo'ya Gönder</button>
+                </form>
+            }
+            @if ((Model.Status == PrdLogoTransferStatus.Sent
+                || (Model.Status == PrdLogoTransferStatus.Failed && !string.IsNullOrWhiteSpace(Model.LogoReference)))
+                && User.IsInRole("Admin"))
+            {
+                <form asp-action="YenidenAktarimaAc" method="post" class="d-inline mr-2" onsubmit="return confirm('Bu işlem yalnızca fiş Logo Tiger tarafında silindiyse kullanılmalıdır. Portal kaydı taslağa döndürülsün mü?');">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-light-warning">Yeniden Aktarıma Aç</button>
+                </form>
+            }
+            @if (Model.Status == PrdLogoTransferStatus.Cancelled && User.IsInRole("Admin"))
+            {
+                <form asp-action="Sil" method="post" class="d-inline mr-2" onsubmit="return confirm('Bu iptal edilmiş fiş portal listesinden silinecek. Logo tarafında herhangi bir işlem yapılmayacak. Devam edilsin mi?');">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-light-danger">Sil</button>
+                </form>
+            }
+            <a asp-action="Index" class="btn btn-light">Listeye Dön</a>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (!string.IsNullOrWhiteSpace(Model.LastError))
+        {
+            <div class="alert alert-light-danger"><strong>Son aktarım hatası:</strong> @Model.LastError</div>
+        }
+        @if (Model.Status == PrdLogoTransferStatus.Sent)
+        {
+            <div class="alert alert-light-success">Bu fiş Logo'ya aktarılmıştır. Logo tarafındaki kayıt silindiyse admin “Yeniden Aktarıma Aç” işlemini kullanabilir.</div>
+        }
+        @if (Model.Status == PrdLogoTransferStatus.Failed && !string.IsNullOrWhiteSpace(Model.LogoReference))
+        {
+            <div class="alert alert-light-warning">Logo fiş başlığını oluşturmuş olabilir. Mükerrer kayıt oluşmaması için önce <strong>@Model.LogoReference</strong> referanslı fişi Logo'dan silin, sonra admin “Yeniden Aktarıma Aç” işlemini kullanın.</div>
+        }
+        <div class="row">
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Fiş Tarihi</span><strong>@Model.DocumentDate.ToString("dd.MM.yyyy")</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">İstenen Logo Fiş No</span><strong>@(string.IsNullOrWhiteSpace(Model.LogoSlipNumber) ? "Otomatik" : Model.LogoSlipNumber)</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Logo'nun Verdiği Fiş No</span><strong>@(Model.LogoAssignedSlipNumber ?? "-")</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Ambar / İşyeri</span><strong>@Model.WarehouseNumber / @Model.DivisionNumber</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Fabrika / Bölüm</span><strong>@Model.FactoryNumber / @Model.DepartmentNumber</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Aktarım Denemesi</span><strong>@Model.AttemptCount</strong></div>
+            <div class="col-lg-2 col-md-4 mb-4"><span class="text-muted d-block">Logo Referansı</span><strong>@(Model.LogoReference ?? "-")</strong></div>
+            <div class="col-12"><span class="text-muted d-block">Açıklama</span><strong>@(Model.Notes ?? "-")</strong></div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Fiş Kalemleri (@Model.LineCount)</h3></div></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-separate table-head-custom">
+                <thead><tr><th>#</th><th>Ürün</th><th>Logo Kodu</th><th class="text-right">Miktar</th><th>Birim</th><th>Parti No</th><th>Üretim Tarihi</th><th>SKT</th><th>Açıklama</th></tr></thead>
+                <tbody>
+                    @foreach (var line in Model.Lines)
+                    {
+                        <tr>
+                            <td>@line.Sequence</td>
+                            <td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span></td>
+                            <td>@line.LogoCode</td>
+                            <td class="text-right"><strong>@line.Quantity.ToString("N6")</strong></td>
+                            <td>@line.UnitCode <span class="text-muted">· @line.UnitName</span></td>
+                            <td>@(line.LotNumber ?? "-")</td>
+                            <td>@(line.ProductionDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                            <td>@(line.ExpirationDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                            <td>@(line.Description ?? "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @if (editable)
+    {
+        <div class="card-footer text-right">
+            <form asp-action="Iptal" method="post" class="d-inline" onsubmit="return confirm('Gönderilmemiş taslak iptal edilecek. Devam edilsin mi?');">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-light-danger">Taslağı İptal Et</button>
+            </form>
+        </div>
+    }
+</div>

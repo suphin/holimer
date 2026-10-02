@@ -1,3 +1,4 @@
+using Ekomers.Models.Enums;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Ekomers.Models.ViewModels.Production;
@@ -86,4 +87,39 @@ public sealed class ProductionStockUnitSummaryVM
 {
     public string Unit { get; set; } = string.Empty;
     public decimal Quantity { get; set; }
+}
+
+public sealed class ProductionStockMovementHistoryVM
+{
+    public int MaterialId { get; set; }
+    public int WarehouseId { get; set; }
+    public string MaterialCode { get; set; } = string.Empty;
+    public string MaterialName { get; set; } = string.Empty;
+    public string WarehouseCode { get; set; } = string.Empty;
+    public string WarehouseName { get; set; } = string.Empty;
+    public string Unit { get; set; } = string.Empty;
+    public decimal IncomingQuantity { get; set; }
+    public decimal OutgoingQuantity { get; set; }
+    public decimal RemainingQuantity => IncomingQuantity - OutgoingQuantity;
+    public List<ProductionStockMovementHistoryItemVM> Movements { get; set; } = [];
+}
+
+public sealed class ProductionStockMovementHistoryItemVM
+{
+    public int Id { get; set; }
+    public DateTime MovementDate { get; set; }
+    public PrdStockDirection Direction { get; set; }
+    public PrdStockMovementType MovementType { get; set; }
+    public decimal Quantity { get; set; }
+    public string Unit { get; set; } = string.Empty;
+    public decimal UnitCost { get; set; }
+    public decimal TotalCost { get; set; }
+    public string DocumentNumber { get; set; } = string.Empty;
+    public int? InventoryDocumentId { get; set; }
+    public string? LotNumber { get; set; }
+    public DateTime? ProductionDate { get; set; }
+    public DateTime? ExpirationDate { get; set; }
+    public string? MovementDescription { get; set; }
+    public string? LineNotes { get; set; }
+    public string? DocumentNotes { get; set; }
 }

@@ -1,0 +1,119 @@
+@model Ekomers.Models.ViewModels.Production.MaterialUsageReportVM
+@using Ekomers.Models.Enums
+@{
+    ViewData["Title"] = "Malzeme Kullanım Raporu";
+    string StatusClass(PrdRecipeStatus status) => status switch
+    {
+        PrdRecipeStatus.Active => "label-light-success",
+        PrdRecipeStatus.Draft => "label-light-warning",
+        PrdRecipeStatus.Passive => "label-light-dark",
+        _ => "label-light-info"
+    };
+}
+
+@section CSSection {
+    <style>
+        .usage-search-card, .usage-result-card { border-radius: 16px; }
+        .usage-result-card { overflow: hidden; }
+        .usage-material-code { font-size: 1.15rem; color: #181c32; }
+        .usage-table th, .usage-table td { padding: 1rem 1.15rem !important; vertical-align: middle !important; }
+        .usage-table .recipe-cell { min-width: 260px; }
+        .usage-table .product-cell { min-width: 280px; }
+        .usage-empty { padding: 3rem 1rem; text-align: center; color: #a5a5b8; }
+    </style>
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-6">
+    <div><h2 class="font-weight-bolder mb-1">Malzeme Nerede Kullanılıyor?</h2><span class="text-muted">ERP'deki reçete bileşenlerinin hangi reçetelerde kullanıldığını bulun.</span></div>
+</div>
+
+<div class="card card-custom usage-search-card mb-6">
+    <div class="card-body">
+        <form method="get" class="row align-items-end">
+            <div class="col-lg-6 form-group mb-lg-0">
+                <label class="font-weight-bold">Malzeme kodu veya adı</label>
+                <input name="search" value="@Model.Search" class="form-control form-control-lg" minlength="2" placeholder="Örn. 150HM.01 veya kakao" required autofocus />
+                <small class="form-text text-muted">Logo kodu, ERP malzeme kodu veya malzeme adında arama yapılır.</small>
+            </div>
+            <div class="col-lg-2 form-group mb-lg-0">
+                <label class="font-weight-bold">Malzeme Türü</label>
+                <select name="materialType" class="form-control">
+                    <option value="all" selected="@(Model.MaterialType == "all" ? "selected" : null)">Tüm Reçete Malzemeleri</option>
+                    <option value="raw" selected="@(Model.MaterialType == "raw" ? "selected" : null)">Hammadde</option>
+                    <option value="packaging" selected="@(Model.MaterialType == "packaging" ? "selected" : null)">Ambalaj</option>
+                    <option value="other" selected="@(Model.MaterialType == "other" ? "selected" : null)">Diğer / Sınıflandırılmamış</option>
+                </select>
+            </div>
+            <div class="col-lg-2 form-group mb-lg-0">
+                <label class="font-weight-bold">Reçete Versiyonu</label>
+                <select name="versionScope" class="form-control">
+                    <option value="active" selected="@(Model.VersionScope == "active" ? "selected" : null)">Yalnızca Aktif</option>
+                    <option value="all" selected="@(Model.VersionScope == "all" ? "selected" : null)">Tüm Versiyonlar</option>
+                </select>
+            </div>
+            <div class="col-lg-2"><button class="btn btn-primary btn-lg btn-block"><i class="la la-search"></i> Tara</button></div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.IsSearchPerformed)
+{
+    <div class="card card-custom usage-result-card"><div class="usage-empty"><i class="la la-search icon-3x d-block mb-3"></i>Malzeme kodu veya adını yazarak aramayı başlatın.</div></div>
+}
+else if (Model.Materials.Count == 0)
+{
+    <div class="alert alert-light-warning"><strong>Malzeme bulunamadı.</strong> “@Model.Search” ifadesiyle eşleşen bir reçete malzemesi kartı yok.</div>
+}
+else
+{
+    @if (Model.TotalMatchedMaterialCount > Model.Materials.Count)
+    {
+        <div class="alert alert-light-warning">@Model.TotalMatchedMaterialCount malzeme eşleşti. İlk @Model.Materials.Count kayıt gösteriliyor; arama ifadesini daraltabilirsiniz.</div>
+    }
+    <div class="alert alert-light-primary">@Model.Materials.Count malzeme bulundu · @Model.Rows.Count reçete kullanımı listelendi.</div>
+
+    @foreach (var material in Model.Materials)
+    {
+        var usages = Model.Rows.Where(x => x.MaterialId == material.MaterialId).ToList();
+        <div class="card card-custom usage-result-card mb-6">
+            <div class="card-header flex-wrap py-4">
+                <div class="card-title">
+                    <h3 class="card-label"><span class="usage-material-code">@material.Code</span><span class="d-block text-muted pt-2 font-size-sm">@material.Name</span></h3>
+                </div>
+                <div class="card-toolbar">
+                    <span class="label @(material.Type == PrdMaterialType.RawMaterial ? "label-light-primary" : "label-light-info") label-inline mr-3">@material.Type.ToTurkish()</span>
+                    <span class="text-muted mr-4">Ana birim: <strong>@material.BaseUnit</strong></span>
+                    <span class="label label-light-success label-inline">@material.UsageCount kullanım</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                @if (usages.Count == 0)
+                {
+                    <div class="usage-empty">Bu malzeme seçilen kapsamdaki reçetelerde kullanılmıyor.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover usage-table mb-0">
+                            <thead class="thead-light"><tr><th>Üretilen Ürün</th><th>Reçete</th><th>Versiyon</th><th>Baz Reçete</th><th>Kullanım Miktarı</th><th>Fire Dahil</th><th>Reçetedeki Yeri</th></tr></thead>
+                            <tbody>
+                            @foreach (var row in usages)
+                            {
+                                <tr>
+                                    <td class="product-cell"><strong>@row.ProductCode</strong><span class="d-block text-muted">@row.ProductName</span></td>
+                                    <td class="recipe-cell"><a asp-controller="ProductionRecipe" asp-action="Details" asp-route-id="@row.RecipeVersionId" class="font-weight-bold">@row.RecipeCode</a><span class="d-block text-muted">@row.RecipeName</span></td>
+                                    <td><span class="font-weight-bold">v@(row.VersionNumber)</span><span class="label @StatusClass(row.VersionStatus) label-inline d-block mt-2" style="width:max-content">@row.VersionStatus.ToTurkish()</span>@if (row.ValidFrom.HasValue) { <small class="d-block text-muted mt-1">@row.ValidFrom.Value.ToString("dd.MM.yyyy")</small> }</td>
+                                    <td><strong>@row.BaseQuantity.ToString("N6")</strong><span class="d-block text-muted">@row.OutputUnit</span></td>
+                                    <td><strong>@row.Quantity.ToString("N6")</strong><span class="d-block text-muted">@row.UsageUnit</span></td>
+                                    <td><strong>@row.QuantityIncludingWaste.ToString("N6")</strong><span class="d-block text-muted">Fire: %@row.PlannedWasteRate.ToString("0.##")</span></td>
+                                    <td><span class="d-block">Sıra: <strong>@row.Sequence</strong></span><small class="d-block text-muted">@(row.IsRequired ? "Zorunlu" : "İsteğe bağlı")</small>@if (!string.IsNullOrWhiteSpace(row.AlternativeGroupCode)) { <small class="d-block text-warning">Alternatif: @row.AlternativeGroupCode</small> }@if (!string.IsNullOrWhiteSpace(row.Notes)) { <small class="d-block text-muted mt-1">@row.Notes</small> }</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}

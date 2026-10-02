@@ -1,5 +1,6 @@
 using Ekomers.Models.Enums;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel.DataAnnotations;
 
 namespace Ekomers.Models.ViewModels.Production;
 
@@ -7,8 +8,28 @@ public sealed class RecipeCostCalculationVM
 {
     public DateTime CalculationDate { get; set; }
     public string ScenarioName { get; set; } = string.Empty;
+    public string SuggestedRecipientEmail { get; set; } = string.Empty;
     public List<RecipeCostCalculationRowVM> Rows { get; set; } = [];
     public int MissingCostProductCount => Rows.Count(x => x.MissingCostCount > 0);
+}
+
+public sealed class RecipeCostDetailEmailVM
+{
+    [Range(1, int.MaxValue)]
+    public int RecipeVersionId { get; set; }
+
+    public DateTime? CalculationDate { get; set; }
+
+    [Required(ErrorMessage = "Alıcı e-posta adresi zorunludur.")]
+    [EmailAddress(ErrorMessage = "Geçerli bir alıcı e-posta adresi giriniz.")]
+    [StringLength(320)]
+    public string RecipientEmail { get; set; } = string.Empty;
+
+    [StringLength(250)]
+    public string? Subject { get; set; }
+
+    [StringLength(1500)]
+    public string? Message { get; set; }
 }
 
 public sealed class RecipeCostScenarioSaveVM

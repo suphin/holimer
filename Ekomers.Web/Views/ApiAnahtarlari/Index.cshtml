@@ -1,0 +1,120 @@
+@model Ekomers.Models.ViewModels.ApiAccessTokenManagementVM
+@{
+    ViewData["Title"] = "API Anahtarları";
+}
+
+@section CSSection {
+    <style>
+        .api-card { border-radius: 16px; overflow: hidden; }
+        .api-code { padding: 1rem 1.2rem; border-radius: 10px; background: #102d25; color: #e8fff6; overflow-wrap: anywhere; }
+        .api-endpoint { padding: .85rem 1rem; border: 1px solid #e4e6ef; border-radius: 9px; background: #f8faf9; }
+        .api-token-table th, .api-token-table td { padding: 1rem !important; vertical-align: middle !important; }
+    </style>
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-6">
+    <div>
+        <h2 class="font-weight-bolder mb-1">Reçete Maliyeti API Anahtarları</h2>
+        <span class="text-muted">Dış sistemlere yalnızca kaydedilmiş reçete maliyetlerini okuma yetkisi verin.</span>
+    </div>
+    <div class="d-flex align-items-center flex-wrap" style="gap:.75rem">
+        <span class="label label-lg label-light-success label-inline">Salt okunur · RecipeCosts.Read</span>
+        <a asp-action="Test" class="btn btn-light-primary font-weight-bold"><i class="la la-flask"></i> API'yi Test Et</a>
+    </div>
+</div>
+
+@if (TempData["success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["error"] is string error) { <div class="alert alert-danger">@error</div> }
+
+@if (!string.IsNullOrWhiteSpace(Model.NewToken))
+{
+    <div class="alert alert-warning">
+        <h5 class="font-weight-bold">Yeni API anahtarını şimdi kopyalayın</h5>
+        <p>Güvenlik nedeniyle bu anahtar yeniden gösterilmeyecektir.</p>
+        <div class="d-flex align-items-center flex-wrap" style="gap:.75rem">
+            <code id="new-api-token" class="api-code flex-grow-1">@Model.NewToken</code>
+            <button type="button" class="btn btn-dark" onclick="copyApiToken()"><i class="la la-copy"></i> Kopyala</button>
+        </div>
+    </div>
+}
+
+<div class="card card-custom api-card mb-7">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Yeni Anahtar Oluştur</h3></div></div>
+    <div class="card-body">
+        <form asp-action="Olustur" method="post" class="row align-items-end">
+            @Html.AntiForgeryToken()
+            <div class="col-lg-6 form-group mb-lg-0">
+                <label class="font-weight-bold">Anahtar adı</label>
+                <input name="Name" class="form-control" maxlength="100" required placeholder="Örn. Dış ERP maliyet entegrasyonu" />
+            </div>
+            <div class="col-lg-3 form-group mb-lg-0">
+                <label class="font-weight-bold">Son kullanma tarihi</label>
+                <input type="date" name="ExpiresAt" min="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-lg-3"><button class="btn btn-primary btn-block"><i class="la la-key"></i> Anahtar Oluştur</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-custom api-card mb-7">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Kullanım Bilgileri</h3></div></div>
+    <div class="card-body">
+        <p>Her istekte anahtarı <code>Authorization: Bearer</code> başlığıyla gönderin.</p>
+        <div class="api-code mb-5">Authorization: Bearer rct_xxxxxxxxxxxxxxxxx</div>
+        <div class="api-endpoint mb-3"><strong>GET</strong> <code>/api/v1/recipe-costs?page=1&amp;pageSize=50</code><div class="text-muted small mt-1">Kaydedilmiş maliyet çalışmalarını listeler.</div></div>
+        <div class="api-endpoint mb-3"><strong>GET</strong> <code>/api/v1/recipe-costs?productCode=152MM.01.02.001</code><div class="text-muted small mt-1">Belirli ürünü içeren maliyet çalışmalarını listeler.</div></div>
+        <div class="api-endpoint mb-3"><strong>GET</strong> <code>/api/v1/recipe-costs/calculations/123</code><div class="text-muted small mt-1">Maliyet çalışmasını ürün satırlarıyla getirir.</div></div>
+        <div class="api-endpoint"><strong>GET</strong> <code>/api/v1/recipe-costs/products/152MM.01.02.001</code><div class="text-muted small mt-1">Ürünün en güncel kaydedilmiş maliyetini getirir.</div></div>
+    </div>
+</div>
+
+<div class="card card-custom api-card">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Tanımlı Anahtarlar (@Model.Tokens.Count)</h3></div></div>
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0 api-token-table" style="min-width:1050px">
+            <thead><tr><th>Ad / Anahtar</th><th>Yetki</th><th>Oluşturma</th><th>Son Kullanma</th><th>Son Erişim</th><th>Kullanım</th><th>Durum</th><th class="text-right">İşlem</th></tr></thead>
+            <tbody>
+            @if (Model.Tokens.Count == 0)
+            {
+                <tr><td colspan="8" class="text-center text-muted py-10">Henüz API anahtarı oluşturulmadı.</td></tr>
+            }
+            else
+            {
+                @foreach (var token in Model.Tokens)
+                {
+                    <tr>
+                        <td><strong>@token.Name</strong><div class="text-muted small"><code>@token.TokenPrefix...</code></div></td>
+                        <td><span class="label label-light-primary label-inline">@token.Scope</span></td>
+                        <td>@token.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td>@(token.ExpiresAt?.ToString("dd.MM.yyyy") ?? "Süresiz")</td>
+                        <td>@(token.LastUsedAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")<div class="text-muted small">@token.LastUsedIp</div></td>
+                        <td>@token.UseCount.ToString("N0")</td>
+                        <td><span class="label @(token.IsEnabled ? "label-light-success" : "label-light-danger") label-inline">@(token.IsEnabled ? "Aktif" : "Pasif")</span></td>
+                        <td class="text-right">
+                            @if (token.IsEnabled)
+                            {
+                                <form asp-action="IptalEt" method="post" class="d-inline" onsubmit="return confirm('Bu API anahtarı iptal edilsin mi? İşlem geri alınamaz.');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@token.Id" />
+                                    <button class="btn btn-sm btn-light-danger">İptal Et</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyApiToken() {
+            var token = document.getElementById('new-api-token').innerText.trim();
+            navigator.clipboard.writeText(token).then(function () {
+                if (window.toastr) toastr.success('API anahtarı kopyalandı.');
+            });
+        }
+    </script>
+}

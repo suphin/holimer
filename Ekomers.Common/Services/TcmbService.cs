@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Globalization;
 
 namespace Ekomers.Common.Services
 {
@@ -45,12 +46,22 @@ namespace Ekomers.Common.Services
 			var eurBuying = eurNode.SelectSingleNode("ForexBuying")?.InnerText;
 			var eurSelling = eurNode.SelectSingleNode("ForexSelling")?.InnerText;
 
+			// GBP
+			var gbpNode = doc.SelectSingleNode("//Currency[@CurrencyCode='GBP']");
+			var gbpBuying = gbpNode?.SelectSingleNode("ForexBuying")?.InnerText;
+			var gbpSelling = gbpNode?.SelectSingleNode("ForexSelling")?.InnerText;
+			var dateText = doc.DocumentElement?.GetAttribute("Date");
+			_ = DateTime.TryParseExact(dateText, "MM/dd/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var rateDate);
+
 			kurlar = new KurlarVM
 			{
 				UsdAlis = usdBuying.Replace(".",","),
 				UsdSatis = usdSelling.Replace(".", ","),
 				EurAlis = eurBuying.Replace(".", ","),
-				EurSatis = eurSelling.Replace(".", ",")
+				EurSatis = eurSelling.Replace(".", ","),
+				GbpAlis = gbpBuying?.Replace(".", ",") ?? string.Empty,
+				GbpSatis = gbpSelling?.Replace(".", ",") ?? string.Empty,
+				Tarih = rateDate
 			};
 
 			// Cache ayarı (örnek: 1 saat bellekte tut)
