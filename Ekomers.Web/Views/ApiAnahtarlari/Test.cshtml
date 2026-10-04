@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Reçete Maliyeti API Testi";
+    ViewData["Title"] = "Dış API Testi";
 }
 
 @section CSSection {
@@ -34,7 +34,7 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-6">
     <div>
-        <h2 class="font-weight-bolder mb-1">Reçete Maliyeti API Testi</h2>
+        <h2 class="font-weight-bolder mb-1">Dış API Testi</h2>
         <span class="text-muted">Anahtarı kaydetmeden, API uçlarını doğrudan bu portal üzerinden deneyin.</span>
     </div>
     <a asp-action="Index" class="btn btn-light font-weight-bold"><i class="la la-arrow-left"></i> API Anahtarlarına Dön</a>
@@ -63,6 +63,7 @@
                     <option value="list">Maliyet çalışmalarını listele</option>
                     <option value="product">Ürünün son maliyetini getir</option>
                     <option value="calculation">Maliyet çalışması detayını getir</option>
+                    <option value="clients">Firma cari listesini getir</option>
                 </select>
             </div>
         </div>
@@ -90,6 +91,28 @@
         <div id="calculationFields" class="form-group d-none">
             <label class="font-weight-bold" for="calculationId">Maliyet çalışması ID</label>
             <input id="calculationId" type="number" min="1" class="form-control" placeholder="123" />
+        </div>
+
+        <div id="clientFields" class="row d-none">
+            <div class="col-lg-2 form-group">
+                <label class="font-weight-bold" for="firmNumber">Firma no</label>
+                <input id="firmNumber" type="number" min="1" max="999" value="100" class="form-control" />
+            </div>
+            <div class="col-lg-4 form-group">
+                <label for="clientSearch">Cari ara <span class="text-muted">(isteğe bağlı)</span></label>
+                <input id="clientSearch" maxlength="100" class="form-control" placeholder="Cari kodu, unvanı veya vergi no" />
+            </div>
+            <div class="col-lg-2 form-group">
+                <label for="clientPage">Sayfa</label>
+                <input id="clientPage" type="number" min="1" value="1" class="form-control" />
+            </div>
+            <div class="col-lg-2 form-group">
+                <label for="clientPageSize">Sayfa büyüklüğü</label>
+                <input id="clientPageSize" type="number" min="1" max="200" value="100" class="form-control" />
+            </div>
+            <div class="col-lg-2 form-group d-flex align-items-end">
+                <label class="checkbox checkbox-lg mb-3"><input id="includePassive" type="checkbox" /><span></span>Pasifleri getir</label>
+            </div>
         </div>
 
         <label class="font-weight-bold">Gönderilecek adres</label>
@@ -139,6 +162,16 @@
                     var calculationId = value('calculationId');
                     return '/api/v1/recipe-costs/calculations/' + encodeURIComponent(calculationId || '{id}');
                 }
+                if (type === 'clients') {
+                    var clientParameters = new URLSearchParams();
+                    clientParameters.set('firmNumber', value('firmNumber') || '{firma-no}');
+                    clientParameters.set('page', value('clientPage') || '1');
+                    clientParameters.set('pageSize', value('clientPageSize') || '100');
+                    var clientSearch = value('clientSearch');
+                    if (clientSearch) clientParameters.set('search', clientSearch);
+                    if (document.getElementById('includePassive').checked) clientParameters.set('includePassive', 'true');
+                    return '/api/v1/logo-clients?' + clientParameters.toString();
+                }
 
                 var parameters = new URLSearchParams();
                 parameters.set('page', value('page') || '1');
@@ -153,6 +186,7 @@
                 document.getElementById('listFields').classList.toggle('d-none', type !== 'list');
                 document.getElementById('productFields').classList.toggle('d-none', type !== 'product');
                 document.getElementById('calculationFields').classList.toggle('d-none', type !== 'calculation');
+                document.getElementById('clientFields').classList.toggle('d-none', type !== 'clients');
                 requestUrl.textContent = 'GET ' + buildUrl();
             }
 
@@ -168,9 +202,10 @@
             });
 
             typeInput.addEventListener('change', updateForm);
-            ['listProductCode', 'page', 'pageSize', 'productCode', 'calculationId'].forEach(function (id) {
+            ['listProductCode', 'page', 'pageSize', 'productCode', 'calculationId', 'firmNumber', 'clientSearch', 'clientPage', 'clientPageSize'].forEach(function (id) {
                 document.getElementById(id).addEventListener('input', updateForm);
             });
+            document.getElementById('includePassive').addEventListener('change', updateForm);
 
             sendButton.addEventListener('click', async function () {
                 var token = tokenInput.value.trim();
@@ -188,6 +223,10 @@
                 }
                 if (type === 'calculation' && !value('calculationId')) {
                     document.getElementById('calculationId').focus();
+                    return;
+                }
+                if (type === 'clients' && !value('firmNumber')) {
+                    document.getElementById('firmNumber').focus();
                     return;
                 }
 

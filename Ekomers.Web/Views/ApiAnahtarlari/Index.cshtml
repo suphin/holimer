@@ -14,11 +14,11 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-6">
     <div>
-        <h2 class="font-weight-bolder mb-1">Reçete Maliyeti API Anahtarları</h2>
-        <span class="text-muted">Dış sistemlere yalnızca kaydedilmiş reçete maliyetlerini okuma yetkisi verin.</span>
+        <h2 class="font-weight-bolder mb-1">Dış API Anahtarları</h2>
+        <span class="text-muted">Dış sistemlere reçete maliyetlerini ve Logo cari kartlarını salt okunur sunun.</span>
     </div>
     <div class="d-flex align-items-center flex-wrap" style="gap:.75rem">
-        <span class="label label-lg label-light-success label-inline">Salt okunur · RecipeCosts.Read</span>
+        <span class="label label-lg label-light-success label-inline">Salt okunur · RecipeCosts.Read · LogoClients.Read</span>
         <a asp-action="Test" class="btn btn-light-primary font-weight-bold"><i class="la la-flask"></i> API'yi Test Et</a>
     </div>
 </div>
@@ -45,7 +45,7 @@
             @Html.AntiForgeryToken()
             <div class="col-lg-6 form-group mb-lg-0">
                 <label class="font-weight-bold">Anahtar adı</label>
-                <input name="Name" class="form-control" maxlength="100" required placeholder="Örn. Dış ERP maliyet entegrasyonu" />
+                <input name="Name" class="form-control" maxlength="100" required placeholder="Örn. Dış ERP veri entegrasyonu" />
             </div>
             <div class="col-lg-3 form-group mb-lg-0">
                 <label class="font-weight-bold">Son kullanma tarihi</label>
@@ -64,7 +64,8 @@
         <div class="api-endpoint mb-3"><strong>GET</strong> <code>/api/v1/recipe-costs?page=1&amp;pageSize=50</code><div class="text-muted small mt-1">Kaydedilmiş maliyet çalışmalarını listeler.</div></div>
         <div class="api-endpoint mb-3"><strong>GET</strong> <code>/api/v1/recipe-costs?productCode=152MM.01.02.001</code><div class="text-muted small mt-1">Belirli ürünü içeren maliyet çalışmalarını listeler.</div></div>
         <div class="api-endpoint mb-3"><strong>GET</strong> <code>/api/v1/recipe-costs/calculations/123</code><div class="text-muted small mt-1">Maliyet çalışmasını ürün satırlarıyla getirir.</div></div>
-        <div class="api-endpoint"><strong>GET</strong> <code>/api/v1/recipe-costs/products/152MM.01.02.001</code><div class="text-muted small mt-1">Ürünün en güncel kaydedilmiş maliyetini getirir.</div></div>
+        <div class="api-endpoint mb-3"><strong>GET</strong> <code>/api/v1/recipe-costs/products/152MM.01.02.001</code><div class="text-muted small mt-1">Ürünün en güncel kaydedilmiş maliyetini getirir.</div></div>
+        <div class="api-endpoint"><strong>GET</strong> <code>/api/v1/logo-clients?firmNumber=100&amp;page=1&amp;pageSize=100</code><div class="text-muted small mt-1">Verilen Logo firma numarasındaki aktif cari kartları listeler. <code>search</code> ve <code>includePassive</code> parametreleri isteğe bağlıdır.</div></div>
     </div>
 </div>
 

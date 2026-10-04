@@ -13,6 +13,7 @@ public static class ApiTokenDefaults
 {
     public const string AuthenticationScheme = "ApiToken";
     public const string RecipeCostsReadScope = "RecipeCosts.Read";
+    public const string LogoClientsReadScope = "LogoClients.Read";
 }
 
 public static class ApiTokenSecurity
@@ -60,13 +61,16 @@ public sealed class ApiTokenAuthenticationHandler : AuthenticationHandler<Authen
         token.UseCount++;
         await _context.SaveChangesAsync(Context.RequestAborted);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, token.ID.ToString()),
             new Claim(ClaimTypes.Name, token.Name),
-            new Claim("scope", token.Scope),
             new Claim("token_prefix", token.TokenPrefix)
         };
+        claims.AddRange(token.Scope
+            .Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(scope => new Claim("scope", scope)));
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, ApiTokenDefaults.AuthenticationScheme));
         return AuthenticateResult.Success(new AuthenticationTicket(principal, ApiTokenDefaults.AuthenticationScheme));
     }

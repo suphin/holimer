@@ -118,6 +118,12 @@ builder.Services.AddAuthorization(options =>
 		policy.RequireAuthenticatedUser();
 		policy.RequireClaim("scope", ApiTokenDefaults.RecipeCostsReadScope);
 	});
+	options.AddPolicy("LogoClientsApiRead", policy =>
+	{
+		policy.AddAuthenticationSchemes(ApiTokenDefaults.AuthenticationScheme);
+		policy.RequireAuthenticatedUser();
+		policy.RequireClaim("scope", ApiTokenDefaults.LogoClientsReadScope);
+	});
     options.AddPolicy("TeklifKabul", policy =>
         policy.RequireAssertion(context =>
             context.User.IsInRole("Admin") ||
@@ -429,6 +435,7 @@ builder.Services.AddScoped<ISmsSender, SmsSenderTuraCell>();
 builder.Services.AddScoped<IEmailSenderService, EmailSenderService>(); 
 builder.Services.AddScoped<LogoBankMovementReportService>();
 builder.Services.AddScoped<LogoBankMovementReportJob>();
+builder.Services.AddScoped<LogoClientReadService>();
 builder.Services.AddScoped<IDynamicTableService, DynamicTableService>(); 
 builder.Services.AddScoped<ISehirlerService, SehirlerService>();
 builder.Services.AddScoped<IVergiDairesiService, VergiDairesiService>(); 

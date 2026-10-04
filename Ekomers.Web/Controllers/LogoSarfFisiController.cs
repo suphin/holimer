@@ -149,7 +149,6 @@ public sealed class LogoSarfFisiController : Controller
                                join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID
                                where materialIds.Contains(material.ID)
                                      && material.IsActive != false && material.IsDelete != true
-                                     && material.Type != PrdMaterialType.FinishedProduct
                                select new
                                {
                                    material.ID,
@@ -541,7 +540,6 @@ public sealed class LogoSarfFisiController : Controller
         var query = from material in _context.PrdMaterials.AsNoTracking()
                     join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID
                     where material.IsActive != false && material.IsDelete != true
-                          && material.Type != PrdMaterialType.FinishedProduct
                     select new { material, unit };
         if (!string.IsNullOrWhiteSpace(q))
             query = query.Where(x => x.material.Code.Contains(q)

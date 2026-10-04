@@ -75,7 +75,7 @@ public sealed class ApiAnahtarlariController : Controller
             Name = input.Name.Trim(),
             TokenPrefix = rawToken[..Math.Min(12, rawToken.Length)],
             TokenHash = ApiTokenSecurity.ComputeHash(rawToken),
-            Scope = ApiTokenDefaults.RecipeCostsReadScope,
+            Scope = $"{ApiTokenDefaults.RecipeCostsReadScope} {ApiTokenDefaults.LogoClientsReadScope}",
             ExpiresAt = input.ExpiresAt?.Date.AddDays(1),
             IsActive = true,
             IsDelete = false,

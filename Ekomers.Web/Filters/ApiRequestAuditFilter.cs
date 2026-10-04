@@ -40,6 +40,9 @@ public sealed class ApiRequestAuditFilter : IAsyncActionFilter
 
             var responseValue = (executed.Result as ObjectResult)?.Value;
             var responseBody = responseValue == null ? null : Truncate(JsonSerializer.Serialize(responseValue), 100_000);
+            var connectionName = executed.HttpContext.Request.Path.StartsWithSegments("/api/v1/logo-clients")
+                ? "Logo Cari API"
+                : "Reçete Maliyet API";
             var requestHeaders = JsonSerializer.Serialize(new
             {
                 Accept = executed.HttpContext.Request.Headers.Accept.ToString(),
@@ -54,7 +57,7 @@ public sealed class ApiRequestAuditFilter : IAsyncActionFilter
                 RequestedAt = startedAt,
                 CompletedAt = DateTime.Now,
                 Category = "Dış API",
-                ConnectionName = "Reçete Maliyet API",
+                ConnectionName = connectionName,
                 Operation = context.ActionDescriptor.DisplayName ?? context.ActionDescriptor.RouteValues["action"] ?? "API",
                 HttpMethod = executed.HttpContext.Request.Method,
                 RequestUrl = Truncate($"{executed.HttpContext.Request.Path}{executed.HttpContext.Request.QueryString}", 2048)!,
@@ -72,7 +75,7 @@ public sealed class ApiRequestAuditFilter : IAsyncActionFilter
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Reçete maliyet API erişim kaydı yazılamadı.");
+            _logger.LogError(ex, "Dış API erişim kaydı yazılamadı.");
         }
     }
 
