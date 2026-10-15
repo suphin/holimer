@@ -6,6 +6,11 @@
     var canEdit = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaMalKabulYonet");
     var canQuarantine = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaKarantinaIsle");
     var canAllocateCost = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaEkMaliyetDagit");
+    var pendingLines = Model.Lines.Where(x => !x.IsStockPosted).ToList();
+    var missingLot = pendingLines.Where(x => x.LotRequired && string.IsNullOrWhiteSpace(x.LotNumber)).ToList();
+    var missingExpiration = pendingLines.Where(x => x.ExpirationDateRequired && !x.ExpirationDate.HasValue).ToList();
+    var needsDirect = pendingLines.Any(x => x.QualityControlRequirement != Ekomers.Models.Enums.PrdQualityControlRequirement.Required);
+    var needsQuarantine = pendingLines.Any(x => x.QualityControlRequirement == Ekomers.Models.Enums.PrdQualityControlRequirement.Required);
 }
 
 <div class="card card-custom mb-5">
@@ -13,7 +18,7 @@
         <div class="card-title"><h3 class="card-label">@Model.ReceiptNumber<span class="d-block text-muted pt-2 font-size-sm">@Model.OrderNumber · @Model.SupplierCode - @Model.SupplierName</span></h3></div>
         <div class="card-toolbar">
             <span class="label label-light-primary label-inline mr-2">@Model.Status.ToTurkish()</span>
-            @if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Recorded)
+            @if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Recorded && Model.DirectStockDocuments.Count == 0 && !Model.QuarantineInventoryDocumentId.HasValue)
             {
                 @if (canEdit) { <a asp-action="MalKabulDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-primary mr-2">Düzenle</a> }
                 @if (canDelete) { <form asp-action="MalKabulSil" method="post" class="d-inline mr-2" onsubmit="return confirm('Mal kabul silinecek ve sipariş teslim miktarları yeniden hesaplanacak. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-danger">Sil</button></form> }
@@ -33,48 +38,97 @@
     </div>
 </div>
 
-<div class="card card-custom mb-5">
-    <div class="card-header flex-wrap py-3">
-        <div class="card-title"><h3 class="card-label">Karantina Girişi<span class="d-block text-muted pt-2 font-size-sm">Teslim alınan lotların kalite kontrol öncesi fiziksel depo girişi</span></h3></div>
-        @if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.InQuarantine)
-        {
-            <div class="card-toolbar"><span class="label label-light-warning label-inline">Kalite Sonucu Bekleniyor</span></div>
-        }
-    </div>
-    <div class="card-body">
-        @if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Recorded)
-        {
-            var missingLot = Model.Lines.Where(x => x.LotRequired && string.IsNullOrWhiteSpace(x.LotNumber)).ToList();
-            var missingExpiration = Model.Lines.Where(x => x.ExpirationDateRequired && !x.ExpirationDate.HasValue).ToList();
+@if (pendingLines.Count > 0 && Model.Status != Ekomers.Models.Enums.PurGoodsReceiptStatus.Cancelled)
+{
+    <div class="card card-custom mb-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Stok Girişi<span class="d-block text-muted pt-2 font-size-sm">Malzemenin kalite kontrol gerekliliğine göre doğrudan stok veya karantina girişi</span></h3></div></div>
+        <div class="card-body">
             @if (missingLot.Count > 0 || missingExpiration.Count > 0)
             {
                 <div class="alert alert-light-danger">
-                    Karantina girişi öncesinde eksik izlenebilirlik bilgilerini tamamlayınız.
+                    Stok girişi öncesinde eksik izlenebilirlik bilgilerini tamamlayınız.
                     @if (missingLot.Count > 0) { <span class="d-block">Lot eksik: @string.Join(", ", missingLot.Select(x => x.MaterialCode))</span> }
                     @if (missingExpiration.Count > 0) { <span class="d-block">SKT eksik: @string.Join(", ", missingExpiration.Select(x => x.MaterialCode))</span> }
                     @if (canEdit) { <a asp-action="MalKabulDuzenle" asp-route-id="@Model.Id" class="btn btn-sm btn-light-danger mt-3">Mal Kabulü Düzenle</a> }
                 </div>
             }
-            else if (Model.QuarantineWarehouses.Count == 0)
-            {
-                <div class="alert alert-light-warning mb-0">Aktif bir karantina deposu bulunmuyor. Önce depo tanımlarından “Karantina Deposu” türünde bir depo oluşturunuz.</div>
-            }
             else
             {
-                @if (canQuarantine) { <form asp-action="KarantinayaAl" method="post" onsubmit="return confirm('Teslim alınan lotlar seçilen karantina deposuna stok girişi olarak işlenecek. Devam edilsin mi?');">
+                @if (canQuarantine) { <form asp-action="StokGirisiniTamamla" method="post" id="receipt-stock-form">
                     <input type="hidden" name="id" value="@Model.Id" />
-                    <div class="row align-items-end">
-                        <div class="col-md-6 form-group mb-md-0">
-                            <label>Karantina Deposu</label>
-                            <select name="quarantineWarehouseId" asp-items="Model.QuarantineWarehouses" class="form-control kt_select2" data-live-search="true" data-size="5" required><option value="">Depo seçiniz</option></select>
+                    <div class="table-responsive mb-5"><table class="table table-separate table-head-custom">
+                        <thead><tr><th>Malzeme</th><th>Miktar</th><th>Kalite Kontrol</th><th>İşlem</th></tr></thead>
+                        <tbody>
+                        @for (var i = 0; i < pendingLines.Count; i++)
+                        {
+                            var line = pendingLines[i];
+                            <tr>
+                                <td><input type="hidden" name="Lines[@i].ReceiptLineId" value="@line.Id" /><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span></td>
+                                <td>@line.ReceivedQuantity.ToString("0.######") @line.Unit</td>
+                                <td>@(line.QualityControlRequirement == Ekomers.Models.Enums.PrdQualityControlRequirement.Required ? "Zorunlu" : line.QualityControlRequirement == Ekomers.Models.Enums.PrdQualityControlRequirement.Optional ? "İsteğe bağlı" : "Gerekli değil")</td>
+                                <td>
+                                    @if (line.QualityControlRequirement == Ekomers.Models.Enums.PrdQualityControlRequirement.Optional)
+                                    {
+                                        <select name="Lines[@i].SendToQuality" class="form-control receipt-quality-choice"><option value="false">Doğrudan kullanılabilir stoğa al</option><option value="true">Kalite kontrol için karantinaya al</option></select>
+                                    }
+                                    else
+                                    {
+                                        var quarantine = line.QualityControlRequirement == Ekomers.Models.Enums.PrdQualityControlRequirement.Required;
+                                        <input type="hidden" name="Lines[@i].SendToQuality" value="@quarantine.ToString().ToLowerInvariant()" class="receipt-quality-choice" />
+                                        <span class="@(quarantine ? "text-warning" : "text-success")">@(quarantine ? "Kalite kontrol için karantinaya alınacak" : "Doğrudan kullanılabilir stoğa alınacak")</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                    <div class="row">
+                        <div class="col-md-6 form-group @(needsDirect ? "" : "d-none")" id="usable-warehouse-group">
+                            <label>Kullanılabilir Stok Deposu</label>
+                            <select name="usableWarehouseId" asp-items="Model.UsableWarehouses" class="form-control kt_select2" required="@needsDirect"><option value="">Depo seçiniz</option></select>
+                            @if (Model.UsableWarehouses.Count == 0) { <small class="form-text text-danger">Aktif bir kullanılabilir stok deposu tanımlayınız.</small> }
                         </div>
-                        <div class="col-md-6 text-md-right"><button class="btn btn-warning">Lotları Karantinaya Al</button></div>
+                        <div class="col-md-6 form-group @(needsQuarantine ? "" : "d-none")" id="quarantine-warehouse-group">
+                            <label>Karantina Deposu</label>
+                            <select name="quarantineWarehouseId" asp-items="Model.QuarantineWarehouses" class="form-control kt_select2" required="@needsQuarantine"><option value="">Depo seçiniz</option></select>
+                            @if (Model.QuarantineWarehouses.Count == 0) { <small class="form-text text-danger">Kalite kontrol için aktif bir karantina deposu tanımlayınız.</small> }
+                        </div>
                     </div>
-                </form> } else { <div class="alert alert-light-info mb-0">Karantina stok girişi yapma yetkiniz bulunmuyor.</div> }
+                    <div class="text-right"><button class="btn btn-success" id="receipt-stock-submit">@(needsQuarantine ? "Stok Girişini Tamamla" : "Doğrudan Stoğa Al")</button></div>
+                </form> } else { <div class="alert alert-light-info mb-0">Mal kabul stok girişi yapma yetkiniz bulunmuyor.</div> }
             }
-        }
-        else if (Model.QuarantineInventoryDocumentId.HasValue)
-        {
+        </div>
+    </div>
+}
+
+@if (Model.DirectStockDocuments.Count > 0)
+{
+    <div class="card card-custom mb-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Doğrudan Stok Girişi<span class="d-block text-muted pt-2 font-size-sm">Bu satırlar kullanılabilir stoktadır.</span></h3></div></div>
+        <div class="card-body">
+            @foreach (var document in Model.DirectStockDocuments)
+            {
+                <div class="border rounded p-4 mb-3">
+                    <strong>@document.DocumentNumber</strong><span class="d-block">@document.Warehouse</span>
+                    <span class="d-block text-muted">@(document.PostingDate?.ToString("dd.MM.yyyy HH:mm") ?? "-") · @document.User</span>
+                    @if (canUndo)
+                    {
+                        <form asp-action="DogrudanStokGirisiniGeriAl" method="post" class="mt-3" onsubmit="return confirm('Stok girişi ters hareketle geri alınacak. Devam edilsin mi?');">
+                            <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="documentId" value="@document.Id" />
+                            <div class="input-group"><input name="reason" class="form-control" minlength="5" maxlength="1000" placeholder="Geri alma gerekçesi" required /><div class="input-group-append"><button class="btn btn-light-warning">Stok Girişini Geri Al</button></div></div>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (Model.QuarantineInventoryDocumentId.HasValue)
+{
+    <div class="card card-custom mb-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Karantina ve Kalite Kontrol</h3></div></div>
+        <div class="card-body">
             <div class="row">
                 <div class="col-md-3"><strong>Karantina Deposu</strong><div>@Model.QuarantineWarehouseCode - @Model.QuarantineWarehouseName</div></div>
                 <div class="col-md-3"><strong>Stok Belgesi</strong><div>@Model.QuarantineDocumentNumber</div></div>
@@ -94,7 +148,7 @@
                 </div>
             }
             <div class="mt-5">
-                @if (Model.QualityInspectionCount == 0 && Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.InQuarantine && canQuarantine)
+                @if (Model.QualityInspectionCount == 0 && canQuarantine)
                 {
                     <form asp-action="KaliteyeGonder" method="post" class="d-inline"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-primary">Analiz Kayıtlarını Oluştur</button></form>
                 }
@@ -105,9 +159,9 @@
                     else { <a asp-controller="KaliteYonetimi" asp-action="StokSonuclandirma" asp-route-search="@Model.ReceiptNumber" asp-route-status="all" class="btn btn-light-success ml-2">Stok Sonuçlarını Gör</a> }
                 }
             </div>
-        }
+        </div>
     </div>
-</div>
+}
 
 <div class="card card-custom mb-5">
     <div class="card-header"><div class="card-title"><h3 class="card-label">Gerçekleşen Nakliye</h3></div></div>
@@ -126,7 +180,7 @@
         {
             <div class="alert alert-light-primary mb-0">Bu teslimat için gerçekleşen nakliye gideri girilmedi.</div>
         }
-        @if (Model.QuarantineInventoryDocumentId.HasValue && canAllocateCost)
+        @if ((Model.QuarantineInventoryDocumentId.HasValue || Model.DirectStockDocuments.Count > 0) && canAllocateCost)
         {
             <div class="text-right mt-5"><a asp-action="EkMaliyetDagitimi" asp-route-id="@Model.Id" class="btn btn-light-primary">Ek Maliyet Dağıtımını Aç</a></div>
         }
@@ -142,7 +196,7 @@
         }
         else if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.TransferredToStock)
         {
-            <div class="alert alert-light-success">Bu mal kabuldeki tüm lotlar kalite onayı sonrasında kullanılabilir stoğa alınmıştır.</div>
+            <div class="alert alert-light-success">Bu mal kabuldeki tüm satırlar kullanılabilir stoğa alınmıştır.</div>
         }
         else if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.Returned)
         {
@@ -158,7 +212,7 @@
         }
         else if (Model.Status == Ekomers.Models.Enums.PurGoodsReceiptStatus.StockPartiallyCompleted)
         {
-            <div class="alert alert-light-warning">Bu mal kabulde bazı lotlar sonuçlandırılmış, bazı lotlar ise hâlâ karantina deposundadır.</div>
+            <div class="alert alert-light-warning">Bu mal kabulde bazı satırlar sonuçlandırılmıştır. Diğer satırlar stok girişi veya kalite sonucunu bekliyor.</div>
         }
         else
         {
@@ -166,7 +220,7 @@
         }
         <div class="table-responsive">
             <table class="table table-separate table-head-custom">
-                <thead><tr><th>#</th><th>Malzeme</th><th>Miktar</th><th>Lot</th><th>Üretim Tarihi</th><th>SKT</th><th>Not</th></tr></thead>
+                <thead><tr><th>#</th><th>Malzeme</th><th>Miktar</th><th>Lot</th><th>Üretim Tarihi</th><th>SKT</th><th>Stok Girişi</th><th>Not</th></tr></thead>
                 <tbody>
                 @foreach (var line in Model.Lines)
                 {
@@ -177,6 +231,11 @@
                         <td>@(line.LotNumber ?? "-")</td>
                         <td>@(line.ProductionDate?.ToString("dd.MM.yyyy") ?? "-")</td>
                         <td>@(line.ExpirationDate?.ToString("dd.MM.yyyy") ?? "-")</td>
+                        <td>
+                            @if (line.IsDirectStock) { <strong class="text-success">Doğrudan stok</strong><span class="d-block">@line.StockWarehouse</span><small class="text-muted">@line.StockDocumentNumber</small> }
+                            else if (line.IsStockPosted) { <span>Kalite kontrol akışında</span><small class="d-block text-muted">@Model.QuarantineDocumentNumber</small> }
+                            else { <span class="text-warning">Stok girişi bekliyor</span> }
+                        </td>
                         <td>@(line.Notes ?? "-")</td>
                     </tr>
                 }
@@ -187,5 +246,20 @@
 </div>
 
 @section JSSection {
-    <script>$(function () { $('.kt_select2').select2({ width: '100%', placeholder: 'Karantina deposu seçiniz', allowClear: true }); });</script>
+    <script>
+        $(function () {
+            $('.kt_select2').select2({ width: '100%', placeholder: 'Depo seçiniz', allowClear: true });
+            function updateDestinations() {
+                const routes = $('.receipt-quality-choice').map(function () { return $(this).val() === 'true'; }).get();
+                const quarantine = routes.some(Boolean);
+                const direct = routes.some(function (value) { return !value; });
+                $('#usable-warehouse-group').toggleClass('d-none', !direct).find('select').prop('required', direct).prop('disabled', !direct);
+                $('#quarantine-warehouse-group').toggleClass('d-none', !quarantine).find('select').prop('required', quarantine).prop('disabled', !quarantine);
+                $('#receipt-stock-submit').text(quarantine ? 'Stok Girişini Tamamla' : 'Doğrudan Stoğa Al');
+            }
+            $('.receipt-quality-choice').on('change', updateDestinations);
+            updateDestinations();
+            $('#receipt-stock-form').on('submit', function () { $('#receipt-stock-submit').prop('disabled', true); });
+        });
+    </script>
 }

@@ -133,6 +133,8 @@ public sealed class GoodsReceiptDetailVM
     public string? Notes { get; set; }
     public List<GoodsReceiptDetailLineVM> Lines { get; set; } = [];
     public List<SelectListItem> QuarantineWarehouses { get; set; } = [];
+    public List<SelectListItem> UsableWarehouses { get; set; } = [];
+    public List<GoodsReceiptStockDocumentVM> DirectStockDocuments { get; set; } = [];
     public int QualityInspectionCount { get; set; }
     public int PendingQualityInspectionCount { get; set; }
     public decimal FreightTax => (ActualFreightAmount ?? 0m) * (ActualFreightVatRate ?? 0m) / 100m;
@@ -142,6 +144,7 @@ public sealed class GoodsReceiptDetailVM
 
 public sealed class GoodsReceiptDetailLineVM
 {
+    public int Id { get; set; }
     public int Sequence { get; set; }
     public string MaterialCode { get; set; } = string.Empty;
     public string MaterialName { get; set; } = string.Empty;
@@ -153,7 +156,35 @@ public sealed class GoodsReceiptDetailLineVM
     public DateTime? ProductionDate { get; set; }
     public DateTime? ExpirationDate { get; set; }
     public int? QuarantineStockLotId { get; set; }
+    public PrdQualityControlRequirement QualityControlRequirement { get; set; }
+    public bool IsStockPosted { get; set; }
+    public string? StockWarehouse { get; set; }
+    public string? StockDocumentNumber { get; set; }
+    public bool IsDirectStock { get; set; }
     public string? Notes { get; set; }
+}
+
+public sealed class GoodsReceiptStockPostingVM
+{
+    public int Id { get; set; }
+    public int? UsableWarehouseId { get; set; }
+    public int? QuarantineWarehouseId { get; set; }
+    public List<GoodsReceiptStockPostingLineVM> Lines { get; set; } = [];
+}
+
+public sealed class GoodsReceiptStockPostingLineVM
+{
+    public int ReceiptLineId { get; set; }
+    public bool SendToQuality { get; set; }
+}
+
+public sealed class GoodsReceiptStockDocumentVM
+{
+    public int Id { get; set; }
+    public string DocumentNumber { get; set; } = string.Empty;
+    public string Warehouse { get; set; } = string.Empty;
+    public DateTime? PostingDate { get; set; }
+    public string? User { get; set; }
 }
 
 public sealed class GoodsReceiptLandedCostVM

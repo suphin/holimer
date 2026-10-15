@@ -1466,9 +1466,9 @@ public sealed class SatinalmaYonetimiController : Controller
         ViewBag.Modul = "YeniSatinalma";
         var receipt = await _context.PurGoodsReceipts.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
         if (receipt == null) return NotFound();
-        if (receipt.Status != PurGoodsReceiptStatus.Recorded)
+        if (receipt.Status != PurGoodsReceiptStatus.Recorded || await GoodsReceiptStockWorkflow.HasDirectEntryAsync(_context, id, ct))
         {
-            TempData["error"] = "Karantina girişi yapılmış mal kabul doğrudan düzenlenemez. Önce stok hareketinin kontrollü olarak geri alınması gerekir.";
+            TempData["error"] = "Stok girişi yapılmış mal kabul doğrudan düzenlenemez. Önce stok hareketinin kontrollü olarak geri alınması gerekir.";
             return RedirectToAction(nameof(MalKabulDetay), new { id });
         }
         var model = new GoodsReceiptFormVM
@@ -1518,9 +1518,9 @@ public sealed class SatinalmaYonetimiController : Controller
         if (!model.Id.HasValue) return BadRequest();
         var receipt = await _context.PurGoodsReceipts.FirstOrDefaultAsync(x => x.ID == model.Id && x.IsDelete != true, ct);
         if (receipt == null) return NotFound();
-        if (receipt.Status != PurGoodsReceiptStatus.Recorded)
+        if (receipt.Status != PurGoodsReceiptStatus.Recorded || await GoodsReceiptStockWorkflow.HasDirectEntryAsync(_context, receipt.ID, ct))
         {
-            TempData["error"] = "Karantina girişi yapılmış mal kabul doğrudan düzenlenemez.";
+            TempData["error"] = "Stok girişi yapılmış mal kabul doğrudan düzenlenemez.";
             return RedirectToAction(nameof(MalKabulDetay), new { id = receipt.ID });
         }
         if (receipt.PurchaseOrderId != model.PurchaseOrderId) return BadRequest();
@@ -1582,6 +1582,7 @@ public sealed class SatinalmaYonetimiController : Controller
                              orderby line.Sequence
                              select new GoodsReceiptDetailLineVM
                              {
+                                 Id = line.ID,
                                  Sequence = line.Sequence,
                                  MaterialCode = material.Code,
                                  MaterialName = material.Name,
@@ -1593,6 +1594,8 @@ public sealed class SatinalmaYonetimiController : Controller
                                  ProductionDate = line.ProductionDate,
                                  ExpirationDate = line.ExpirationDate,
                                  QuarantineStockLotId = line.QuarantineStockLotId,
+                                 IsStockPosted = line.QuarantineInventoryDocumentLineId.HasValue,
+                                 QualityControlRequirement = material.QualityControlRequirement,
                                  Notes = line.Notes
                              }).ToListAsync(ct);
         model.QuarantineWarehouses = await _context.PrdWarehouses.AsNoTracking()
@@ -1601,6 +1604,31 @@ public sealed class SatinalmaYonetimiController : Controller
             .Select(x => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = x.ID.ToString(), Text = x.Code + " - " + x.Name })
             .ToListAsync(ct);
         if (model.QuarantineWarehouses.Count == 1) model.QuarantineWarehouses[0].Selected = true;
+        model.UsableWarehouses = await _context.PrdWarehouses.AsNoTracking()
+            .Where(x => x.Type != PrdWarehouseType.Quarantine && x.Type != PrdWarehouseType.Scrap && x.IsActive != false && x.IsDelete != true)
+            .OrderBy(x => x.Code)
+            .Select(x => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = x.ID.ToString(), Text = x.Code + " - " + x.Name })
+            .ToListAsync(ct);
+        if (model.UsableWarehouses.Count == 1) model.UsableWarehouses[0].Selected = true;
+        var directEntries = await GoodsReceiptStockWorkflow.LoadDirectEntriesAsync(_context, id, ct);
+        var directWarehouseIds = directEntries.Where(x => x.WarehouseId.HasValue).Select(x => x.WarehouseId!.Value).Distinct().ToList();
+        var directWarehouses = await _context.PrdWarehouses.AsNoTracking().Where(x => directWarehouseIds.Contains(x.ID))
+            .ToDictionaryAsync(x => x.ID, x => x.Code + " - " + x.Name, ct);
+        foreach (var line in model.Lines)
+        {
+            var entry = directEntries.FirstOrDefault(x => x.ReceiptLineId == line.Id);
+            if (entry == null) continue;
+            line.IsStockPosted = true;
+            line.IsDirectStock = true;
+            line.StockWarehouse = entry.WarehouseId.HasValue ? directWarehouses.GetValueOrDefault(entry.WarehouseId.Value) : null;
+            line.StockDocumentNumber = entry.DocumentNumber;
+        }
+        model.DirectStockDocuments = directEntries.GroupBy(x => x.DocumentId).Select(x => x.First())
+            .Select(x => new GoodsReceiptStockDocumentVM
+            {
+                Id = x.DocumentId, DocumentNumber = x.DocumentNumber, PostingDate = x.PostingDate, User = x.User,
+                Warehouse = x.WarehouseId.HasValue ? directWarehouses.GetValueOrDefault(x.WarehouseId.Value) ?? "-" : "-"
+            }).ToList();
         if (model.QuarantineWarehouseId.HasValue)
         {
             var warehouse = await _context.PrdWarehouses.AsNoTracking().FirstOrDefaultAsync(x => x.ID == model.QuarantineWarehouseId, ct);
@@ -1631,8 +1659,9 @@ public sealed class SatinalmaYonetimiController : Controller
         await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var receipt = await _context.PurGoodsReceipts.FirstOrDefaultAsync(x => x.ID == input.GoodsReceiptId && x.IsDelete != true, ct);
         if (receipt == null) return NotFound();
-        if (!receipt.QuarantineInventoryDocumentId.HasValue || receipt.Status is PurGoodsReceiptStatus.Recorded or PurGoodsReceiptStatus.Cancelled)
-            return LandedCostError(receipt.ID, "Ek maliyet dağıtımı için mal kabulün karantina stok girişi tamamlanmış olmalıdır.");
+        if (receipt.Status is PurGoodsReceiptStatus.Recorded or PurGoodsReceiptStatus.Cancelled ||
+            (!receipt.QuarantineInventoryDocumentId.HasValue && !await GoodsReceiptStockWorkflow.HasDirectEntryAsync(_context, receipt.ID, ct)))
+            return LandedCostError(receipt.ID, "Ek maliyet dağıtımı için mal kabulün stok girişi tamamlanmış olmalıdır.");
         if (await _context.PurGoodsReceiptLandedCosts.AnyAsync(x => x.GoodsReceiptId == receipt.ID && x.IsDelete != true, ct))
             return LandedCostError(receipt.ID, "Bu mal kabul için ek maliyetler daha önce stoka dağıtılmış.");
 
@@ -1804,9 +1833,10 @@ public sealed class SatinalmaYonetimiController : Controller
     {
         var receipt = await _context.PurGoodsReceipts.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
         if (receipt == null) return NotFound();
-        if (receipt.Status != PurGoodsReceiptStatus.Recorded || receipt.QuarantineInventoryDocumentId.HasValue)
+        if (receipt.Status != PurGoodsReceiptStatus.Recorded || receipt.QuarantineInventoryDocumentId.HasValue ||
+            await GoodsReceiptStockWorkflow.HasDirectEntryAsync(_context, id, ct))
         {
-            TempData["error"] = "Stok hareketi bulunan mal kabul silinemez. Önce karantina girişinin kontrollü geri alma işlemi yapılmalıdır.";
+            TempData["error"] = "Stok hareketi bulunan mal kabul silinemez. Önce stok girişlerinin kontrollü geri alma işlemi yapılmalıdır.";
             return RedirectToAction(nameof(MalKabulDetay), new { id });
         }
         var now = DateTime.Now;
@@ -1898,8 +1928,55 @@ public sealed class SatinalmaYonetimiController : Controller
                 ? $"Karantina girişi {now:dd.MM.yyyy HH:mm} tarihinde geri alındı: {reason}"
                 : $"{receipt.Notes}\nKarantina girişi {now:dd.MM.yyyy HH:mm} tarihinde geri alındı: {reason}";
             await _context.SaveChangesAsync(ct);
+            await GoodsReceiptStockWorkflow.RecalculateAsync(_context, receipt.ID, now, CurrentUser, ct);
             await transaction.CommitAsync(ct);
-            TempData["success"] = $"Karantina girişi geri alındı; {reversal.DocumentNumber} numaralı ters stok belgesi oluşturuldu. Mal kabul artık düzenlenebilir veya silinebilir.";
+            TempData["success"] = $"Karantina girişi geri alındı; {reversal.DocumentNumber} numaralı ters stok belgesi oluşturuldu. Diğer stok girişleri yoksa mal kabul düzenlenebilir veya silinebilir.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(MalKabulDetay), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SatinalmaSurecGeriAl")]
+    public async Task<IActionResult> DogrudanStokGirisiniGeriAl(int id, int documentId, string? reason, CancellationToken ct)
+    {
+        reason = Clean(reason);
+        if (reason == null || reason.Length < 5 || reason.Length > 1000)
+        {
+            TempData["error"] = "Geri alma gerekçesi 5 ile 1000 karakter arasında olmalıdır.";
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+        try
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            var receipt = await _context.PurGoodsReceipts.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
+            if (receipt == null) return NotFound();
+            var document = await _context.PrdInventoryDocuments.FirstOrDefaultAsync(x => x.ID == documentId &&
+                x.SourceDocumentType == GoodsReceiptStockWorkflow.DirectSource && x.SourceDocumentId == id &&
+                x.Status == PrdInventoryDocumentStatus.Posted && x.IsDelete != true, ct);
+            if (document == null)
+            {
+                TempData["error"] = "Bu mal kabule ait aktif doğrudan stok giriş belgesi bulunamadı.";
+                return RedirectToAction(nameof(MalKabulDetay), new { id });
+            }
+            var now = DateTime.Now;
+            var landedCosts = await _context.PurGoodsReceiptLandedCosts.Where(x => x.GoodsReceiptId == id && x.IsDelete != true).ToListAsync(ct);
+            foreach (var cost in landedCosts)
+            {
+                var costDocument = await _context.PrdInventoryDocuments.FirstOrDefaultAsync(x => x.ID == cost.InventoryDocumentId &&
+                    x.Status == PrdInventoryDocumentStatus.Posted && x.IsDelete != true, ct);
+                if (costDocument != null) await _reversalService.ReversePostedDocumentAsync(costDocument, reason, CurrentUser, ct);
+                var allocations = await _context.PurGoodsReceiptLandedCostAllocations.Where(x => x.LandedCostId == cost.ID && x.IsDelete != true).ToListAsync(ct);
+                foreach (var allocation in allocations) SoftDelete(allocation, now, CurrentUser);
+                SoftDelete(cost, now, CurrentUser);
+            }
+            var reversal = await _reversalService.ReversePostedDocumentAsync(document, reason, CurrentUser, ct);
+            await _context.SaveChangesAsync(ct);
+            await GoodsReceiptStockWorkflow.RecalculateAsync(_context, id, now, CurrentUser, ct);
+            await transaction.CommitAsync(ct);
+            TempData["success"] = $"Doğrudan stok girişi geri alındı; {reversal.DocumentNumber} ters stok belgesi oluşturuldu. İlgili satırlar yeniden stok girişine açıldı.";
         }
         catch (InvalidOperationException ex)
         {
@@ -1909,20 +1986,15 @@ public sealed class SatinalmaYonetimiController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SatinalmaKarantinaIsle")]
-    public async Task<IActionResult> KarantinayaAl(int id, int quarantineWarehouseId, CancellationToken ct)
+    public async Task<IActionResult> StokGirisiniTamamla(GoodsReceiptStockPostingVM model, CancellationToken ct)
     {
+        var id = model.Id;
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var receipt = await _context.PurGoodsReceipts.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
         if (receipt == null) return NotFound();
-        if (receipt.Status != PurGoodsReceiptStatus.Recorded || receipt.QuarantineInventoryDocumentId.HasValue)
+        if (receipt.Status == PurGoodsReceiptStatus.Cancelled)
         {
-            TempData["error"] = "Bu mal kabul daha önce karantinaya alınmış veya artık bu işleme uygun değil.";
-            return RedirectToAction(nameof(MalKabulDetay), new { id });
-        }
-
-        var warehouse = await _context.PrdWarehouses.FirstOrDefaultAsync(x => x.ID == quarantineWarehouseId && x.Type == PrdWarehouseType.Quarantine && x.IsActive != false && x.IsDelete != true, ct);
-        if (warehouse == null)
-        {
-            TempData["error"] = "Aktif bir karantina deposu seçiniz.";
+            TempData["error"] = "İptal edilmiş mal kabul için stok girişi yapılamaz.";
             return RedirectToAction(nameof(MalKabulDetay), new { id });
         }
 
@@ -1934,11 +2006,45 @@ public sealed class SatinalmaYonetimiController : Controller
                           where receiptLine.GoodsReceiptId == receipt.ID && receiptLine.IsDelete != true && orderLine.IsDelete != true
                           orderby receiptLine.Sequence
                           select new { ReceiptLine = receiptLine, OrderLine = orderLine, Material = material }).ToListAsync(ct);
+        var directEntries = await GoodsReceiptStockWorkflow.LoadDirectEntriesAsync(_context, id, ct);
+        var directLineIds = directEntries.Select(x => x.ReceiptLineId).ToHashSet();
+        rows = rows.Where(x => !x.ReceiptLine.QuarantineInventoryDocumentLineId.HasValue && !directLineIds.Contains(x.ReceiptLine.ID)).ToList();
         if (rows.Count == 0)
         {
-            TempData["error"] = "Karantinaya alınacak mal kabul satırı bulunamadı.";
+            TempData["error"] = "Stok girişi bekleyen mal kabul satırı bulunamadı; mevcut kayıtlar tekrar işlenmez.";
             return RedirectToAction(nameof(MalKabulDetay), new { id });
         }
+
+        model.Lines ??= [];
+        if (!ModelState.IsValid || model.Lines.Count != rows.Count || model.Lines.GroupBy(x => x.ReceiptLineId).Any(x => x.Count() != 1) ||
+            model.Lines.Any(x => rows.All(y => y.ReceiptLine.ID != x.ReceiptLineId)))
+        {
+            TempData["error"] = "Mal kabul satırları değişmiş. Sayfayı yenileyip stok girişini tekrar deneyiniz.";
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+        var choices = model.Lines.ToDictionary(x => x.ReceiptLineId, x => x.SendToQuality);
+        var toQuality = rows.ToDictionary(x => x.ReceiptLine.ID, x => x.Material.QualityControlRequirement switch
+        {
+            PrdQualityControlRequirement.Required => true,
+            PrdQualityControlRequirement.NotRequired => false,
+            PrdQualityControlRequirement.Optional => choices[x.ReceiptLine.ID],
+            _ => true
+        });
+        var needsQuarantine = toQuality.Values.Any(x => x);
+        var needsDirect = toQuality.Values.Any(x => !x);
+        var quarantineWarehouse = needsQuarantine ? await _context.PrdWarehouses.FirstOrDefaultAsync(x =>
+            x.ID == model.QuarantineWarehouseId && x.Type == PrdWarehouseType.Quarantine && x.IsActive != false && x.IsDelete != true, ct) : null;
+        var usableWarehouse = needsDirect ? await _context.PrdWarehouses.FirstOrDefaultAsync(x =>
+            x.ID == model.UsableWarehouseId && x.Type != PrdWarehouseType.Quarantine && x.Type != PrdWarehouseType.Scrap && x.IsActive != false && x.IsDelete != true, ct) : null;
+        if ((needsQuarantine && (quarantineWarehouse == null || receipt.QuarantineInventoryDocumentId.HasValue)) || (needsDirect && usableWarehouse == null))
+        {
+            TempData["error"] = needsQuarantine && receipt.QuarantineInventoryDocumentId.HasValue
+                ? "Önce mevcut karantina girişini kontrollü olarak geri alınız."
+                : "İlgili satırlar için aktif bir kullanılabilir stok deposu ve/veya karantina deposu seçiniz.";
+            return RedirectToAction(nameof(MalKabulDetay), new { id });
+        }
+        var warehouseByLine = rows.ToDictionary(x => x.ReceiptLine.ID,
+            x => toQuality[x.ReceiptLine.ID] ? quarantineWarehouse! : usableWarehouse!);
 
         var validationErrors = new List<string>();
         foreach (var row in rows)
@@ -1948,6 +2054,10 @@ public sealed class SatinalmaYonetimiController : Controller
                 validationErrors.Add($"{row.Material.Code} için lot numarası zorunludur.");
             if (row.Material.RequiresExpirationDate && !row.ReceiptLine.ExpirationDate.HasValue)
                 validationErrors.Add($"{row.Material.Code} için son kullanma tarihi zorunludur.");
+            if (row.ReceiptLine.ReceivedQuantity <= 0)
+                validationErrors.Add($"{row.Material.Code} için teslim miktarı sıfırdan büyük olmalıdır.");
+            if (row.ReceiptLine.ProductionDate.HasValue && row.ReceiptLine.ExpirationDate < row.ReceiptLine.ProductionDate)
+                validationErrors.Add($"{row.Material.Code} için SKT üretim tarihinden önce olamaz.");
         }
         if (validationErrors.Count > 0)
         {
@@ -1955,16 +2065,20 @@ public sealed class SatinalmaYonetimiController : Controller
             return RedirectToAction(nameof(MalKabulDetay), new { id });
         }
 
-        var lotKeys = rows.Select(x => new { x.ReceiptLine.MaterialId, LotNumber = x.ReceiptLine.LotNumber!.Trim() }).Distinct().ToList();
+        // Untracked materials use a receipt-specific internal lot so costing/reversal can still trace the stock.
+        string LotNumber(PurGoodsReceiptLine line) => Clean(line.LotNumber) ?? $"MK-{receipt.ID}-{line.ID}";
+        var lotKeys = rows.Select(x => new { x.ReceiptLine.MaterialId, LotNumber = LotNumber(x.ReceiptLine), WarehouseId = warehouseByLine[x.ReceiptLine.ID].ID }).Distinct().ToList();
         var materialIds = lotKeys.Select(x => x.MaterialId).Distinct().ToList();
         var lotNumbers = lotKeys.Select(x => x.LotNumber).Distinct().ToList();
+        var warehouseIds = lotKeys.Select(x => x.WarehouseId).Distinct().ToList();
         var existingLots = await _context.PrdStockLots
-            .Where(x => x.WarehouseId == warehouse.ID && materialIds.Contains(x.MaterialId) && lotNumbers.Contains(x.LotNumber) && x.IsDelete != true)
+            .Where(x => warehouseIds.Contains(x.WarehouseId) && materialIds.Contains(x.MaterialId) && lotNumbers.Contains(x.LotNumber) && x.IsDelete != true)
             .ToListAsync(ct);
         foreach (var row in rows)
         {
-            var lotNumber = row.ReceiptLine.LotNumber!.Trim();
-            var existingLot = existingLots.FirstOrDefault(x => x.MaterialId == row.ReceiptLine.MaterialId && x.LotNumber == lotNumber);
+            var lotNumber = LotNumber(row.ReceiptLine);
+            var warehouse = warehouseByLine[row.ReceiptLine.ID];
+            var existingLot = existingLots.FirstOrDefault(x => x.WarehouseId == warehouse.ID && x.MaterialId == row.ReceiptLine.MaterialId && string.Equals(x.LotNumber, lotNumber, StringComparison.OrdinalIgnoreCase));
             if (existingLot == null) continue;
             if (existingLot.ProductionDate.HasValue && row.ReceiptLine.ProductionDate.HasValue && existingLot.ProductionDate.Value.Date != row.ReceiptLine.ProductionDate.Value.Date)
                 validationErrors.Add($"{row.Material.Code} / {lotNumber} lotunun üretim tarihi mevcut stok lotuyla uyuşmuyor.");
@@ -1979,36 +2093,42 @@ public sealed class SatinalmaYonetimiController : Controller
 
         var now = DateTime.Now;
         var user = CurrentUser;
-        await using var transaction = await _context.Database.BeginTransactionAsync(ct);
-        var document = new PrdInventoryDocument
+        var documents = new Dictionary<bool, PrdInventoryDocument>();
+        foreach (var group in rows.GroupBy(x => toQuality[x.ReceiptLine.ID]))
         {
-            DocumentNumber = $"PKAR-{receipt.ID}-{now:yyyyMMddHHmmssfff}",
-            Type = PrdInventoryDocumentType.PurchaseReceipt,
-            Status = PrdInventoryDocumentStatus.Posted,
-            DocumentDate = receipt.ReceiptDate.Date,
-            PostingDate = now,
-            PostedUserId = user,
-            TargetWarehouseId = warehouse.ID,
-            CurrencyCode = "TRY",
-            ExchangeRate = 1m,
-            TotalCost = rows.Sum(x => x.ReceiptLine.ReceivedQuantity * x.OrderLine.NetUnitPrice * order.ExchangeRate),
-            SourceDocumentType = "PurGoodsReceipt",
-            SourceDocumentId = receipt.ID,
-            Notes = $"{receipt.ReceiptNumber} / {receipt.DispatchNumber} karantina girişi",
-            IsActive = true,
-            IsDelete = false,
-            CreateDate = now,
-            CreateUserID = user
-        };
-        _context.PrdInventoryDocuments.Add(document);
+            var warehouse = warehouseByLine[group.First().ReceiptLine.ID];
+            var document = new PrdInventoryDocument
+            {
+                DocumentNumber = $"{(group.Key ? "PKAR" : "PSTK")}-{receipt.ID}-{now:yyyyMMddHHmmssfff}",
+                Type = PrdInventoryDocumentType.PurchaseReceipt,
+                Status = PrdInventoryDocumentStatus.Posted,
+                DocumentDate = receipt.ReceiptDate.Date,
+                PostingDate = now,
+                PostedUserId = user,
+                TargetWarehouseId = warehouse.ID,
+                CurrencyCode = "TRY",
+                ExchangeRate = 1m,
+                TotalCost = group.Sum(x => x.ReceiptLine.ReceivedQuantity * x.OrderLine.NetUnitPrice * order.ExchangeRate),
+                SourceDocumentType = group.Key ? "PurGoodsReceipt" : GoodsReceiptStockWorkflow.DirectSource,
+                SourceDocumentId = receipt.ID,
+                Notes = $"{receipt.ReceiptNumber} / {receipt.DispatchNumber} {(group.Key ? "karantina" : "doğrudan stok")} girişi",
+                IsActive = true,
+                IsDelete = false,
+                CreateDate = now,
+                CreateUserID = user
+            };
+            documents[group.Key] = document;
+            _context.PrdInventoryDocuments.Add(document);
+        }
         await _context.SaveChangesAsync(ct);
 
-        var lotMap = existingLots.ToDictionary(x => $"{x.MaterialId}|{x.LotNumber}", StringComparer.OrdinalIgnoreCase);
-        var sequence = 0;
+        var lotMap = existingLots.ToDictionary(x => $"{x.WarehouseId}|{x.MaterialId}|{x.LotNumber}", StringComparer.OrdinalIgnoreCase);
         foreach (var row in rows)
         {
-            var lotNumber = row.ReceiptLine.LotNumber!.Trim();
-            var key = $"{row.ReceiptLine.MaterialId}|{lotNumber}";
+            var warehouse = warehouseByLine[row.ReceiptLine.ID];
+            var document = documents[toQuality[row.ReceiptLine.ID]];
+            var lotNumber = LotNumber(row.ReceiptLine);
+            var key = $"{warehouse.ID}|{row.ReceiptLine.MaterialId}|{lotNumber}";
             if (!lotMap.TryGetValue(key, out var lot))
             {
                 lot = new PrdStockLot
@@ -2038,7 +2158,7 @@ public sealed class SatinalmaYonetimiController : Controller
             var documentLine = new PrdInventoryDocumentLine
             {
                 InventoryDocumentId = document.ID,
-                Sequence = ++sequence,
+                Sequence = row.ReceiptLine.Sequence,
                 MaterialId = row.ReceiptLine.MaterialId,
                 UnitId = row.ReceiptLine.UnitId,
                 TargetStockLotId = lot.ID,
@@ -2052,7 +2172,7 @@ public sealed class SatinalmaYonetimiController : Controller
                 UnitCost = unitCostTry,
                 TotalCost = totalCostTry,
                 CostSource = PrdStockCostSource.ApprovedOffer,
-                Notes = $"{receipt.ReceiptNumber} / {receipt.DispatchNumber}",
+                Notes = Clean(row.ReceiptLine.Notes) ?? $"{receipt.ReceiptNumber} / {receipt.DispatchNumber}",
                 IsActive = true,
                 IsDelete = false,
                 CreateDate = now,
@@ -2081,29 +2201,35 @@ public sealed class SatinalmaYonetimiController : Controller
                 DocumentNumber = document.DocumentNumber,
                 DocumentType = PrdStockDocumentType.InventoryDocument,
                 DocumentId = document.ID,
-                Description = document.Notes,
+                Description = Clean(row.ReceiptLine.Notes) ?? document.Notes,
                 IsActive = true,
                 IsDelete = false,
                 CreateDate = now,
                 CreateUserID = user
             });
-            row.ReceiptLine.QuarantineStockLotId = lot.ID;
-            row.ReceiptLine.QuarantineInventoryDocumentLineId = documentLine.ID;
+            if (toQuality[row.ReceiptLine.ID])
+            {
+                row.ReceiptLine.QuarantineStockLotId = lot.ID;
+                row.ReceiptLine.QuarantineInventoryDocumentLineId = documentLine.ID;
+            }
             row.ReceiptLine.UpdateDate = now;
             row.ReceiptLine.UpdateUserID = user;
         }
-        receipt.Status = PurGoodsReceiptStatus.InQuarantine;
-        receipt.QuarantineWarehouseId = warehouse.ID;
-        receipt.QuarantineInventoryDocumentId = document.ID;
-        receipt.QuarantineDate = now;
-        receipt.QuarantineUserId = user;
+        if (documents.TryGetValue(true, out var quarantineDocument))
+        {
+            receipt.QuarantineWarehouseId = quarantineWarehouse!.ID;
+            receipt.QuarantineInventoryDocumentId = quarantineDocument.ID;
+            receipt.QuarantineDate = now;
+            receipt.QuarantineUserId = user;
+        }
         receipt.UpdateDate = now;
         receipt.UpdateUserID = user;
         await _context.SaveChangesAsync(ct);
         await CreateMissingQualityInspectionsAsync(receipt.ID, now, user, ct);
+        await GoodsReceiptStockWorkflow.RecalculateAsync(_context, receipt.ID, now, user, ct);
         await transaction.CommitAsync(ct);
 
-        TempData["success"] = $"{receipt.ReceiptNumber} içindeki {rows.Count} satır {warehouse.Code} - {warehouse.Name} karantina deposuna alındı. Bu stoklar kalite onayı verilene kadar MRP tarafından kullanılmaz.";
+        TempData["success"] = $"Stok girişi tamamlandı. {rows.Count(x => !toQuality[x.ReceiptLine.ID])} satır kullanılabilir stoğa, {rows.Count(x => toQuality[x.ReceiptLine.ID])} satır kalite kontrol için karantinaya alındı.";
         return RedirectToAction(nameof(MalKabulDetay), new { id });
     }
 
@@ -2112,7 +2238,7 @@ public sealed class SatinalmaYonetimiController : Controller
     {
         var receipt = await _context.PurGoodsReceipts.FirstOrDefaultAsync(x => x.ID == id && x.IsDelete != true, ct);
         if (receipt == null) return NotFound();
-        if (!receipt.QuarantineWarehouseId.HasValue || receipt.Status != PurGoodsReceiptStatus.InQuarantine)
+        if (!receipt.QuarantineWarehouseId.HasValue || receipt.Status == PurGoodsReceiptStatus.Cancelled)
         {
             TempData["error"] = "Yalnızca karantina deposuna alınmış mal kabuller kalite analizine gönderilebilir.";
             return RedirectToAction(nameof(MalKabulDetay), new { id });
@@ -2219,13 +2345,6 @@ public sealed class SatinalmaYonetimiController : Controller
         var orderLines = await _context.PurPurchaseOrderLines
             .Where(x => orderLineIds.Contains(x.ID) && x.PurchaseOrderId == model.PurchaseOrderId && x.IsDelete != true && x.Status != PurPurchaseOrderLineStatus.Cancelled)
             .ToDictionaryAsync(x => x.ID, ct);
-        var otherReceived = await (from line in _context.PurGoodsReceiptLines.AsNoTracking()
-                                   join receipt in _context.PurGoodsReceipts.AsNoTracking() on line.GoodsReceiptId equals receipt.ID
-                                   where orderLineIds.Contains(line.PurchaseOrderLineId) && line.IsDelete != true && receipt.IsDelete != true &&
-                                         receipt.Status != PurGoodsReceiptStatus.Cancelled && (!currentReceiptId.HasValue || receipt.ID != currentReceiptId.Value)
-                                   group line by line.PurchaseOrderLineId into grouped
-                                   select new { grouped.Key, Quantity = grouped.Sum(x => x.ReceivedQuantity) })
-            .ToDictionaryAsync(x => x.Key, x => x.Quantity, ct);
         var materials = await _context.PrdMaterials.AsNoTracking()
             .Where(x => orderLines.Values.Select(y => y.MaterialId).Contains(x.ID))
             .ToDictionaryAsync(x => x.ID, ct);
@@ -2238,11 +2357,9 @@ public sealed class SatinalmaYonetimiController : Controller
                 ModelState.AddModelError($"Lines[{index}].Include", "Sipariş satırı artık mal kabul için uygun değil.");
                 continue;
             }
-            otherReceived.TryGetValue(orderLine.ID, out var previouslyReceived);
-            var remaining = Math.Max(0, orderLine.OrderedQuantity - previouslyReceived);
-            if (!TryParseDecimal(input.ReceivedQuantityInput, out var quantity) || quantity <= 0 || quantity > remaining)
+            if (!TryParseDecimal(input.ReceivedQuantityInput, out var quantity) || quantity <= 0)
             {
-                ModelState.AddModelError($"Lines[{index}].ReceivedQuantityInput", $"Miktar sıfırdan büyük ve kalan {remaining:0.######} miktarı aşmamalıdır.");
+                ModelState.AddModelError($"Lines[{index}].ReceivedQuantityInput", "Teslim alınan miktar sıfırdan büyük olmalıdır.");
                 continue;
             }
             if (materials.TryGetValue(orderLine.MaterialId, out var material))
@@ -2440,7 +2557,7 @@ public sealed class SatinalmaYonetimiController : Controller
             .ToDictionaryAsync(x => x.Key, x => x.Quantity, ct);
         foreach (var line in orderLines)
         {
-            line.ReceivedQuantity = Math.Min(line.OrderedQuantity, received.GetValueOrDefault(line.ID));
+            line.ReceivedQuantity = received.GetValueOrDefault(line.ID);
             line.Status = line.ReceivedQuantity >= line.OrderedQuantity
                 ? PurPurchaseOrderLineStatus.Received
                 : line.ReceivedQuantity > 0 ? PurPurchaseOrderLineStatus.PartiallyReceived : PurPurchaseOrderLineStatus.Open;
@@ -2545,6 +2662,8 @@ public sealed class SatinalmaYonetimiController : Controller
                 .Select(x => new { x.InventoryDocumentId, x.TargetStockLotId })
                 .ToListAsync(ct);
         var inspectionByLine = inspections.ToDictionary(x => x.GoodsReceiptLineId);
+        var directEntries = (await GoodsReceiptStockWorkflow.LoadDirectEntriesAsync(_context, receiptId, ct))
+            .ToDictionary(x => x.ReceiptLineId);
         var dispositionByInspection = dispositions.GroupBy(x => x.InspectionId).ToDictionary(x => x.Key, x => x.OrderByDescending(y => y.ID).First());
         var dispositionLineByDocument = dispositionLines.GroupBy(x => x.InventoryDocumentId).ToDictionary(x => x.Key, x => x.First());
         var quarantineLotIds = sourceLines.Where(x => x.QuarantineStockLotId.HasValue).Select(x => x.QuarantineStockLotId!.Value).Distinct().ToList();
@@ -2561,6 +2680,11 @@ public sealed class SatinalmaYonetimiController : Controller
             int? stockLotId = line.QuarantineStockLotId;
             var isReturned = false;
             string? reason = null;
+            if (directEntries.TryGetValue(line.ReceiptLineId, out var directEntry))
+            {
+                warehouseId = directEntry.WarehouseId;
+                stockLotId = directEntry.StockLotId;
+            }
             if (inspectionByLine.TryGetValue(line.ReceiptLineId, out var inspection) && dispositionByInspection.TryGetValue(inspection.ID, out var disposition))
             {
                 if (disposition.Type == PrdInventoryDocumentType.SupplierReturn)

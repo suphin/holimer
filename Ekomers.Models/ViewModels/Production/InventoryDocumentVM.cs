@@ -84,6 +84,7 @@ public sealed class InventoryDocumentEditVM
     public string ExchangeRate { get; set; } = "1";
     public string? Notes { get; set; }
     public string? EditReason { get; set; }
+    public bool CanDeleteLines { get; set; }
     public List<InventoryDocumentEditLineVM> Lines { get; set; } = [];
 }
 

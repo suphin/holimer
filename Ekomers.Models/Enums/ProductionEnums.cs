@@ -14,9 +14,9 @@ public enum PrdProductionOrderStatus { Draft = 0, MaterialWaiting = 1, Warehouse
 public enum PrdReservationStatus { Active = 1, PartiallyUsed = 2, Used = 3, Released = 4, Cancelled = 5 }
 public enum PrdWarehouseTaskStatus { Waiting = 0, Preparing = 1, Shortage = 2, Ready = 3, Shipped = 4, Delivered = 5, Cancelled = 6 }
 public enum PrdStockDirection { In = 1, Out = 2 }
-public enum PrdStockMovementType { Opening = 1, Purchase = 2, Transfer = 3, ProductionIssue = 4, ProductionReturn = 5, ProductionWaste = 6, ProductionReceipt = 7, Adjustment = 8, InventoryShortage = 9, InventorySurplus = 10, SupplierReturn = 11, ScrapTransfer = 12, LandedCostAdjustment = 13 }
+public enum PrdStockMovementType { Opening = 1, Purchase = 2, Transfer = 3, ProductionIssue = 4, ProductionReturn = 5, ProductionWaste = 6, ProductionReceipt = 7, Adjustment = 8, InventoryShortage = 9, InventorySurplus = 10, SupplierReturn = 11, ScrapTransfer = 12, LandedCostAdjustment = 13, RawMaterialConsumption = 14 }
 public enum PrdStockDocumentType { Opening = 1, WarehouseTask = 2, ProductionOrder = 3, ProductionActual = 4, Manual = 5, InventoryDocument = 6 }
-public enum PrdInventoryDocumentType { Opening = 1, PurchaseReceipt = 2, WarehouseTransfer = 3, ProductionIssue = 4, ProductionReturn = 5, ProductionReceipt = 6, ScrapTransfer = 7, ScrapDisposal = 8, Adjustment = 9, SupplierReturn = 10 }
+public enum PrdInventoryDocumentType { Opening = 1, PurchaseReceipt = 2, WarehouseTransfer = 3, ProductionIssue = 4, ProductionReturn = 5, ProductionReceipt = 6, ScrapTransfer = 7, ScrapDisposal = 8, Adjustment = 9, SupplierReturn = 10, RawMaterialConsumption = 11 }
 public enum PrdInventoryDocumentStatus { Draft = 0, Posted = 1, Cancelled = 2, Reversed = 3 }
 public enum PrdLogoTransferStatus
 {
@@ -132,7 +132,7 @@ public static class ProductionEnumText
         PrdInventoryDocumentType.WarehouseTransfer => "Depolar Arası Transfer", PrdInventoryDocumentType.ProductionIssue => "Üretime Çıkış",
         PrdInventoryDocumentType.ProductionReturn => "Üretimden İade", PrdInventoryDocumentType.ProductionReceipt => "Üretimden Mamul Girişi",
         PrdInventoryDocumentType.ScrapTransfer => "Hurdaya Transfer", PrdInventoryDocumentType.ScrapDisposal => "Hurda İmha",
-        PrdInventoryDocumentType.Adjustment => "Stok Düzeltme", PrdInventoryDocumentType.SupplierReturn => "Tedarikçiye İade", _ => value.ToString()
+        PrdInventoryDocumentType.Adjustment => "Stok Düzeltme", PrdInventoryDocumentType.SupplierReturn => "Tedarikçiye İade", PrdInventoryDocumentType.RawMaterialConsumption => "Hammadde Sarf", _ => value.ToString()
     };
 
     public static string ToTurkish(this PrdStockMovementType value) => value switch
@@ -150,6 +150,7 @@ public static class ProductionEnumText
         PrdStockMovementType.SupplierReturn => "Tedarikçiye İade",
         PrdStockMovementType.ScrapTransfer => "Hurdaya Transfer",
         PrdStockMovementType.LandedCostAdjustment => "Ek Maliyet Dağıtımı",
+        PrdStockMovementType.RawMaterialConsumption => "Hammadde Sarf",
         _ => value.ToString()
     };
 

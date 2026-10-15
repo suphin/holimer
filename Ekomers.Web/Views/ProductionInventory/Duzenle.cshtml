@@ -14,6 +14,14 @@
     <div class="card-body pb-0">
         <div class="alert alert-light-warning">
             Bu ekran yalnızca Admin kullanıcıları içindir. İşlenmiş belgelerde yapılan miktar, maliyet, tarih ve lot değişiklikleri bağlı stok hareketlerine de uygulanır.
+            @if(Model.CanDeleteLines)
+            {
+                <span class="d-block mt-2">Satır silme, bağlı stok hareketlerini de bakiyeden çıkarır. Silmeden önce formdaki diğer değişikliklerinizi kaydediniz.</span>
+            }
+            else
+            {
+                <span class="d-block mt-2">Kaynak sürece bağlı belgelerin satırları bu ekrandan silinemez; kaynak süreç üzerinden geri alınmalıdır.</span>
+            }
         </div>
     </div>
 </div>
@@ -38,7 +46,7 @@
 
             <div class="table-responsive">
                 <table class="table table-separate table-head-custom">
-                    <thead><tr><th>#</th><th style="min-width:260px">Malzeme</th><th style="min-width:150px">Lot</th><th>Üretim Tarihi</th><th>SKT</th><th style="min-width:130px">Miktar</th><th style="min-width:160px">Birim Maliyet</th><th style="min-width:200px">Not</th></tr></thead>
+                    <thead><tr><th>#</th><th style="min-width:260px">Malzeme</th><th style="min-width:150px">Lot</th><th>Üretim Tarihi</th><th>SKT</th><th style="min-width:130px">Miktar</th><th style="min-width:160px">Birim Maliyet</th><th style="min-width:200px">Not</th>@if(Model.CanDeleteLines){<th>İşlem</th>}</tr></thead>
                     <tbody>
                     @for(var i=0;i<Model.Lines.Count;i++)
                     {
@@ -55,6 +63,19 @@
                             <td><input asp-for="Lines[i].Quantity" class="form-control" inputmode="decimal" required /></td>
                             <td><input asp-for="Lines[i].UnitCost" class="form-control" inputmode="decimal" required /><span class="form-text text-muted">@Model.CurrencyCode</span></td>
                             <td><input asp-for="Lines[i].Notes" class="form-control" maxlength="250" /></td>
+                            @if(Model.CanDeleteLines)
+                            {
+                                <td class="text-nowrap">
+                                    @if(Model.Lines.Count>1)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-light-danger" data-toggle="modal" data-target="#deleteInventoryLineModal-@Model.Lines[i].Id" aria-label="@Model.Lines[i].Sequence. satırı sil">Sil</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-sm btn-light-danger" disabled title="Son satır için detay ekranındaki Belgeyi Sil işlemini kullanınız.">Sil</button>
+                                    }
+                                </td>
+                            }
                         </tr>
                     }
                     </tbody>
@@ -67,3 +88,37 @@
         </div>
     </div>
 </form>
+
+@if(Model.CanDeleteLines&&Model.Lines.Count>1)
+{
+    @foreach(var line in Model.Lines)
+    {
+        <div class="modal fade" id="deleteInventoryLineModal-@line.Id" tabindex="-1" role="dialog" aria-labelledby="deleteInventoryLineTitle-@line.Id" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <form asp-action="SatirSil" method="post">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="lineId" value="@line.Id" />
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteInventoryLineTitle-@line.Id">Stok Belgesi Satırını Sil</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Kapat"><span aria-hidden="true">&times;</span></button>
+                        </div>
+                        <div class="modal-body">
+                            <p><strong>@Model.DocumentNumber · @line.Sequence. satır</strong><br />@line.MaterialCode - @line.MaterialName<br />Lot: @line.LotNumber · Miktar: @line.Quantity @line.Unit</p>
+                            <div class="alert alert-light-danger">Satır ve bağlı stok hareketleri bakiyeden çıkarılacak. Kullanılmış veya rezerve stok nedeniyle bakiye yetersiz kalıyorsa işlem engellenir. Kaydedilmemiş form değişiklikleri kaybolur.</div>
+                            <div class="form-group">
+                                <label for="deleteInventoryLineReason-@line.Id">Silme Nedeni</label>
+                                <textarea id="deleteInventoryLineReason-@line.Id" name="reason" class="form-control" rows="2" minlength="5" maxlength="500" required></textarea>
+                            </div>
+                            <label class="checkbox"><input type="checkbox" name="confirmStockRollback" value="true" required /><span></span>Satırın ve bağlı stok hareketlerinin kaldırılmasını onaylıyorum.</label>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-dismiss="modal">Vazgeç</button>
+                            <button type="submit" class="btn btn-danger">Satırı Sil</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}

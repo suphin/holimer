@@ -1,0 +1,137 @@
+@model ScheduledSqlTaskIndexVM
+@{
+    ViewData["Title"] = "Zamanlanmış SQL Görevleri";
+    string DaysText(int mask)
+    {
+        var names = new[] { "Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt" };
+        var selected = Enumerable.Range(0, 7).Where(day => (mask & (1 << day)) != 0).Select(day => names[day]);
+        return string.Join(", ", selected);
+    }
+}
+
+@section CSSection {
+    <style>
+        .sql-task-card { border-radius: 16px; overflow: hidden; }
+        .sql-task-table th, .sql-task-table td { padding: 1rem !important; vertical-align: middle !important; }
+        .sql-task-table th { white-space: nowrap; }
+        .sql-task-description { max-width: 340px; white-space: normal; }
+        .sql-task-error { max-width: 430px; white-space: normal; overflow-wrap: anywhere; }
+    </style>
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-6">
+    <div>
+        <h2 class="font-weight-bolder mb-1">Zamanlanmış SQL Görevleri</h2>
+        <span class="text-muted">Portal veya Logo veritabanında belirlenen zamanlarda çalışacak SQL betiklerini yönetin.</span>
+    </div>
+    <a asp-action="Yeni" class="btn btn-primary font-weight-bold"><i class="la la-plus"></i> Yeni Ekle</a>
+</div>
+
+@if (TempData["success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["error"] is string error) { <div class="alert alert-danger">@error</div> }
+
+<div class="alert alert-custom alert-light-warning mb-6" role="alert">
+    <div class="alert-icon"><i class="flaticon-warning text-warning"></i></div>
+    <div class="alert-text">
+        SQL betikleri seçilen bağlantının yetkileriyle doğrudan çalışır. Betiği kaydetmeden önce hedef veritabanını kontrol edin.
+        <strong>GO</strong> ayıracı kullanmayın; birden fazla komutu noktalı virgülle ayırın.
+    </div>
+</div>
+
+<div class="card card-custom sql-task-card mb-7">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Tanımlı Görevler (@Model.Tasks.Count)</h3></div></div>
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0 sql-task-table" style="min-width:1200px">
+            <thead>
+                <tr><th>Görev</th><th>Bağlantı</th><th>Çalışma Planı</th><th>Sonraki Çalışma</th><th>Son Sonuç</th><th>Durum</th><th class="text-right">İşlem</th></tr>
+            </thead>
+            <tbody>
+            @if (Model.Tasks.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted py-10">Henüz zamanlanmış SQL görevi eklenmedi.</td></tr>
+            }
+            @foreach (var item in Model.Tasks)
+            {
+                <tr>
+                    <td class="sql-task-description">
+                        <div class="font-weight-bolder">@item.Name</div>
+                        @if (!string.IsNullOrWhiteSpace(item.Description)) { <div class="text-muted small mt-1">@item.Description</div> }
+                    </td>
+                    <td><span class="label label-lg label-light-primary label-inline">@(item.ConnectionTarget == ScheduledSqlConnectionTarget.Logo ? "Logo" : "Portal")</span></td>
+                    <td>
+                        @if (item.IsRecurring)
+                        {
+                            <div class="font-weight-bold">@DaysText(item.DaysOfWeekMask)</div>
+                            <div class="text-muted small">Günde @item.RunsPerDay kez · @item.FirstRunTime.ToString(@"hh\:mm")@if (item.RunsPerDay > 1) { <text>–@item.LastRunTime.ToString(@"hh\:mm")</text> }</div>
+                        }
+                        else
+                        {
+                            <div class="font-weight-bold">Tek sefer</div>
+                            <div class="text-muted small">@item.FirstRunTime.ToString(@"hh\:mm")</div>
+                        }
+                    </td>
+                    <td>@(item.NextRunAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                    <td class="sql-task-error">
+                        @if (!item.LastCompletedAt.HasValue)
+                        {
+                            <span class="text-muted">Henüz çalışmadı</span>
+                        }
+                        else if (item.LastSucceeded == true)
+                        {
+                            <span class="label label-lg label-light-success label-inline">Başarılı</span>
+                            <div class="text-muted small mt-1">@item.LastCompletedAt.Value.ToString("dd.MM.yyyy HH:mm") · Etkilenen: @(item.LastAffectedRows >= 0 ? item.LastAffectedRows.ToString() : "Sonuç kümesi")</div>
+                        }
+                        else
+                        {
+                            <span class="label label-lg label-light-danger label-inline">Hata</span>
+                            <div class="text-danger small mt-1">@item.LastError</div>
+                        }
+                    </td>
+                    <td>
+                        @if (item.IsRunning) { <span class="label label-lg label-light-info label-inline">Çalışıyor</span> }
+                        else if (item.IsEnabled) { <span class="label label-lg label-light-success label-inline">Aktif</span> }
+                        else { <span class="label label-lg label-light label-inline">Pasif</span> }
+                    </td>
+                    <td class="text-right text-nowrap">
+                        <a asp-action="Duzenle" asp-route-id="@item.Id" class="btn btn-sm btn-light-primary @(item.IsRunning ? "disabled" : "")"><i class="la la-edit"></i> Düzenle</a>
+                        <form asp-action="DurumDegistir" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.Id" />
+                            <button class="btn btn-sm @(item.IsEnabled ? "btn-light-warning" : "btn-light-success")" disabled="@item.IsRunning">@(item.IsEnabled ? "Pasife Al" : "Etkinleştir")</button>
+                        </form>
+                        <form asp-action="Sil" method="post" class="d-inline" onsubmit="return confirm('Bu görevi silmek istediğinize emin misiniz?');">
+                            @Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.Id" />
+                            <button class="btn btn-sm btn-light-danger" disabled="@item.IsRunning"><i class="la la-trash"></i> Sil</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card card-custom sql-task-card">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Son 50 Çalışma</h3></div></div>
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0 sql-task-table" style="min-width:900px">
+            <thead><tr><th>Başlangıç</th><th>Görev</th><th>Süre</th><th>Sonuç</th><th>Etkilenen Satır / Açıklama</th></tr></thead>
+            <tbody>
+            @if (Model.RecentRuns.Count == 0)
+            {
+                <tr><td colspan="5" class="text-center text-muted py-10">Çalışma kaydı bulunmuyor.</td></tr>
+            }
+            @foreach (var run in Model.RecentRuns)
+            {
+                var duration = run.CompletedAt.HasValue ? run.CompletedAt.Value - run.StartedAt : (TimeSpan?)null;
+                <tr>
+                    <td>@run.StartedAt.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                    <td><div class="font-weight-bold">@run.TaskName</div><span class="text-muted small">@run.TriggerType</span></td>
+                    <td>@(duration.HasValue ? $"{duration.Value.TotalSeconds:N1} sn" : "Çalışıyor")</td>
+                    <td>@if (run.IsSuccess) { <span class="label label-lg label-light-success label-inline">Başarılı</span> } else { <span class="label label-lg label-light-danger label-inline">Hata</span> }</td>
+                    <td class="sql-task-error">@(run.IsSuccess ? (run.AffectedRows >= 0 ? $"{run.AffectedRows} satır" : "Sonuç kümesi döndü") : run.ErrorMessage)</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

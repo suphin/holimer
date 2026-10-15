@@ -1,0 +1,54 @@
+@model Ekomers.Models.ViewModels.Production.RawMaterialConsumptionCreateVM
+@{ ViewData["Title"]="Yeni Hammadde Sarf"; var available=Model.Lots.Where(x=>x.CanConsume).ToList(); }
+<div class="card card-custom mb-5">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Yeni Hammadde Sarf<span class="d-block text-muted pt-2 font-size-sm">Üretim emri seçmeden depo ve lot bazında manuel tüketim</span></h3></div><div class="card-toolbar"><a asp-action="Index" class="btn btn-light">Listeye Dön</a></div></div>
+    <div class="card-body">
+        <form asp-action="Yeni" method="get"><div class="row align-items-end">
+            <div class="col-md-8 form-group mb-0"><label for="warehouseFilter">Kaynak Depo</label><select id="warehouseFilter" name="warehouseId" class="form-control" asp-items="Model.Warehouses"><option value="">Depo seçiniz</option></select></div>
+            <div class="col-md-4 mt-3 mt-md-0"><button class="btn btn-primary btn-block">Depo Stoklarını Getir</button></div>
+        </div></form>
+    </div>
+</div>
+<form asp-action="Yeni" method="post">
+    <input asp-for="WarehouseId" type="hidden" />
+    <div class="card card-custom">
+        <div class="card-body">
+            <div asp-validation-summary="All" class="text-danger mb-4"></div>
+            <div class="alert alert-light-info">Yalnızca aktif “Hammadde” kartlarının kullanılabilir lotları seçilebilir. Birim ve maliyet stok kayıtlarından alınır. Taslak kaydı stok düşmez veya rezervasyon oluşturmaz.</div>
+            <div class="row">
+                <div class="col-md-4 form-group"><label>Seçilen Depo</label><div class="form-control bg-light">@(Model.Warehouses.FirstOrDefault(x=>x.Value==Model.WarehouseId?.ToString())?.Text??"Depo seçilmedi")</div></div>
+                <div class="col-md-3 form-group"><label asp-for="DocumentDate">Sarf Tarihi</label><input asp-for="DocumentDate" type="date" class="form-control" max="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
+                <div class="col-md-5 form-group"><label asp-for="Notes">Sarf Açıklaması / Nedeni</label><textarea asp-for="Notes" class="form-control" rows="2" minlength="5" maxlength="500" required placeholder="Ek üretim ihtiyacı, kullanım yeri, talep eden kişi..."></textarea></div>
+            </div>
+            @if(Model.WarehouseId.HasValue&&available.Count==0){<div class="alert alert-warning">Bu depoda sarf edilebilecek hammadde lotu bulunamadı. Malzeme türünü, rezervasyonları, birimleri ve SKT bilgilerini kontrol ediniz.</div>}
+            @if(Model.Lots.Any(x=>x.BlockReason!=null)){
+                <details class="mb-4"><summary>Sarf edilemeyen lotlar (@Model.Lots.Count(x=>x.BlockReason!=null))</summary><ul class="mt-2">@foreach(var lot in Model.Lots.Where(x=>x.BlockReason!=null)){<li>@lot.MaterialCode / @lot.LotNumber: @lot.BlockReason</li>}</ul></details>
+            }
+            <div class="table-responsive"><table class="table table-separate"><thead><tr><th style="min-width:420px">Hammadde / Lot</th><th style="min-width:180px">Kullanılabilir Stok</th><th style="min-width:140px">Sarf Miktarı</th><th style="min-width:200px">Satır Notu</th><th></th></tr></thead><tbody id="sarfLines">
+            @for(var i=0;i<Model.Lines.Count;i++){
+                <tr class="sarf-row"><td><select asp-for="Lines[i].StockLotId" class="form-control sarf-lot"><option value="">Hammadde / lot seçiniz</option>
+                    @foreach(var lot in available){<option value="@lot.StockLotId" data-available="@lot.AvailableQuantity.ToString("0.######")" data-unit="@lot.Unit">@lot.MaterialCode - @lot.MaterialName | Lot: @lot.LotNumber | @lot.AvailableQuantity.ToString("0.######") @lot.Unit | SKT: @(lot.ExpirationDate?.ToString("dd.MM.yyyy")??"-")</option>}
+                </select></td><td class="sarf-info text-muted">Lot seçiniz</td><td><input asp-for="Lines[i].Quantity" class="form-control" inputmode="decimal" placeholder="0,00" /></td><td><input asp-for="Lines[i].Notes" class="form-control" maxlength="250" /></td><td><button type="button" class="btn btn-sm btn-light-danger sarf-remove">Kaldır</button></td></tr>
+            }
+            </tbody></table></div>
+            <button type="button" id="addSarfLine" class="btn btn-sm btn-light-primary" disabled="@(available.Count==0)">Satır Ekle</button>
+        </div>
+        <div class="card-footer d-flex justify-content-between"><a asp-action="Index" class="btn btn-light">Vazgeç</a><button type="submit" class="btn btn-primary" disabled="@(available.Count==0)">Sarf Taslağını Kaydet</button></div>
+    </div>
+</form>
+<template id="sarfLineTemplate"><tr class="sarf-row"><td><select name="Lines[__index__].StockLotId" class="form-control sarf-lot"><option value="">Hammadde / lot seçiniz</option>
+@foreach(var lot in available){<option value="@lot.StockLotId" data-available="@lot.AvailableQuantity.ToString("0.######")" data-unit="@lot.Unit">@lot.MaterialCode - @lot.MaterialName | Lot: @lot.LotNumber | @lot.AvailableQuantity.ToString("0.######") @lot.Unit | SKT: @(lot.ExpirationDate?.ToString("dd.MM.yyyy")??"-")</option>}
+</select></td><td class="sarf-info text-muted">Lot seçiniz</td><td><input name="Lines[__index__].Quantity" class="form-control" inputmode="decimal" placeholder="0,00" /></td><td><input name="Lines[__index__].Notes" class="form-control" maxlength="250" /></td><td><button type="button" class="btn btn-sm btn-light-danger sarf-remove">Kaldır</button></td></tr></template>
+<script>
+(function(){
+    var body=document.getElementById('sarfLines');
+    function refresh(row){var option=row.querySelector('select').selectedOptions[0];row.querySelector('.sarf-info').textContent=option&&option.value?option.dataset.available+' '+option.dataset.unit:'Lot seçiniz';}
+    function reindex(){body.querySelectorAll('.sarf-row').forEach(function(row,index){row.querySelectorAll('[name]').forEach(function(input){input.name=input.name.replace(/Lines\[[^\]]+\]/,'Lines['+index+']');});});}
+    body.addEventListener('change',function(e){if(e.target.classList.contains('sarf-lot'))refresh(e.target.closest('tr'));});
+    body.addEventListener('click',function(e){if(e.target.classList.contains('sarf-remove')){e.target.closest('tr').remove();reindex();}});
+    document.getElementById('addSarfLine').addEventListener('click',function(){if(body.children.length>=100){alert('En fazla 100 satır eklenebilir.');return;}var fragment=document.getElementById('sarfLineTemplate').content.cloneNode(true);body.appendChild(fragment);reindex();});
+    body.querySelectorAll('.sarf-row').forEach(refresh);
+    var selectedWarehouse=document.querySelector('input[name="WarehouseId"]').value;
+    document.getElementById('warehouseFilter').value=selectedWarehouse;
+})();
+</script>

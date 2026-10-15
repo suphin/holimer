@@ -120,6 +120,8 @@ public sealed class ProductionInventoryController : Controller
     public async Task<IActionResult> Detay(int id,CancellationToken ct)
     {
         ViewBag.Modul="YeniUretim";
+        if(await _context.PrdInventoryDocuments.AnyAsync(x=>x.ID==id&&x.IsDelete!=true&&x.Type==PrdInventoryDocumentType.RawMaterialConsumption,ct))
+            return RedirectToAction("Detay","HammaddeSarf",new{id});
         var model=await _context.PrdInventoryDocuments.AsNoTracking().Where(x=>x.ID==id&&x.IsDelete!=true).Select(x=>new InventoryDocumentDetailVM{Id=x.ID,DocumentNumber=x.DocumentNumber,Type=x.Type,Status=x.Status,DocumentDate=x.DocumentDate,PostingDate=x.PostingDate,PostedUserId=x.PostedUserId,SourceWarehouse=_context.PrdWarehouses.Where(w=>w.ID==x.SourceWarehouseId).Select(w=>w.Code+" - "+w.Name).FirstOrDefault()??"-",TargetWarehouse=_context.PrdWarehouses.Where(w=>w.ID==x.TargetWarehouseId).Select(w=>w.Code+" - "+w.Name).FirstOrDefault()??"-",CurrencyCode=x.CurrencyCode,ExchangeRate=x.ExchangeRate,TotalCost=x.TotalCost,Notes=x.Notes,SourceDocumentType=x.SourceDocumentType,SourceDocumentId=x.SourceDocumentId,CanDeleteFromInventory=(x.Type==PrdInventoryDocumentType.Opening||x.Type==PrdInventoryDocumentType.WarehouseTransfer)&&x.SourceDocumentType==null&&!x.SourceDocumentId.HasValue&&!x.ReversalDocumentId.HasValue}).FirstOrDefaultAsync(ct);if(model==null)return NotFound();
         model.Lines=await(from line in _context.PrdInventoryDocumentLines.AsNoTracking() join material in _context.PrdMaterials.AsNoTracking() on line.MaterialId equals material.ID join unit in _context.PrdUnits.AsNoTracking() on line.UnitId equals unit.ID where line.InventoryDocumentId==id&&line.IsDelete!=true orderby line.Sequence select new InventoryDocumentDetailLineVM{Sequence=line.Sequence,MaterialCode=material.Code,MaterialName=material.Name,LotNumber=line.LotNumber??string.Empty,ExpirationDate=line.ExpirationDate,Quantity=line.Quantity,Unit=unit.Name,UnitCost=line.UnitCost,TotalCost=line.TotalCost,MovementType=_context.PrdStockMovements.Where(m=>m.InventoryDocumentLineId==line.ID&&m.IsDelete!=true).Select(m=>(PrdStockMovementType?)m.MovementType).FirstOrDefault(),Notes=line.Notes}).ToListAsync(ct);model.LineCount=model.Lines.Count;return View(model);
     }
@@ -128,6 +130,7 @@ public sealed class ProductionInventoryController : Controller
     public async Task<IActionResult> Duzenle(int id,CancellationToken ct)
     {
         ViewBag.Modul="YeniUretim";
+        if(await FindConsumptionDocumentIdAsync(id,ct) is int consumptionId)return ConsumptionWorkflowRedirect(consumptionId);
         var model=await BuildEditModel(id,null,ct);
         if(model==null)return NotFound();
         if(model.Status==PrdInventoryDocumentStatus.Cancelled||model.Status==PrdInventoryDocumentStatus.Reversed)
@@ -143,6 +146,7 @@ public sealed class ProductionInventoryController : Controller
     public async Task<IActionResult> Duzenle(InventoryDocumentEditVM model,CancellationToken ct)
     {
         ViewBag.Modul="YeniUretim";
+        if(await FindConsumptionDocumentIdAsync(model.Id,ct) is int consumptionId)return ConsumptionWorkflowRedirect(consumptionId);
         model.EditReason=model.EditReason?.Trim();
         if(string.IsNullOrWhiteSpace(model.EditReason)||model.EditReason.Length<5||model.EditReason.Length>500)
             ModelState.AddModelError(nameof(model.EditReason),"Düzenleme nedeni 5-500 karakter olmalıdır.");
@@ -321,9 +325,94 @@ public sealed class ProductionInventoryController : Controller
         return RedirectToAction(nameof(Detay),new{id=document.ID});
     }
 
+    [HttpPost,ValidateAntiForgeryToken,Authorize(Roles="Admin")]
+    public async Task<IActionResult> SatirSil(int id,int lineId,string? reason,bool confirmStockRollback,CancellationToken ct)
+    {
+        reason=reason?.Trim();
+        if(string.IsNullOrWhiteSpace(reason)||reason.Length<5||reason.Length>500||!confirmStockRollback)
+        {
+            TempData["error"]="Silme nedeni 5-500 karakter olmalı ve bağlı stok hareketlerinin kaldırılmasını onaylamalısınız.";
+            return RedirectToAction(nameof(Duzenle),new{id});
+        }
+
+        await using var transaction=await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable,ct);
+        var document=await _context.PrdInventoryDocuments.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);
+        if(document==null)return NotFound();
+        if(!CanDeleteDocumentLines(document))
+        {
+            TempData["error"]="Yalnızca bağımsız devir veya depo transfer belgelerinin satırları silinebilir. Bağlı belgeleri kaynak süreç üzerinden geri alınız.";
+            return RedirectToAction(nameof(Duzenle),new{id});
+        }
+        var lines=await _context.PrdInventoryDocumentLines.Where(x=>x.InventoryDocumentId==id&&x.IsDelete!=true).ToListAsync(ct);
+        var line=lines.FirstOrDefault(x=>x.ID==lineId);
+        if(line==null)return NotFound();
+        if(lines.Count<=1)
+        {
+            TempData["error"]="Belgenin son satırı silinemez. Belgenin tamamını kaldırmak için detay ekranındaki Belgeyi Sil işlemini kullanınız.";
+            return RedirectToAction(nameof(Duzenle),new{id});
+        }
+        var hasWorkflowLink=await _context.PrdInventoryDocuments.AnyAsync(x=>x.IsDelete!=true&&
+            (x.ReversalDocumentId==id||(x.SourceDocumentType=="PrdInventoryDocumentReversal"&&x.SourceDocumentId==id)),ct)||
+            await _context.PurGoodsReceipts.AnyAsync(x=>x.QuarantineInventoryDocumentId==id,ct)||
+            await _context.PurGoodsReceiptLandedCosts.AnyAsync(x=>x.InventoryDocumentId==id,ct)||
+            await _context.PurGoodsReceiptLines.AnyAsync(x=>x.QuarantineInventoryDocumentLineId==lineId,ct)||
+            await _context.PurGoodsReceiptLandedCostAllocations.AnyAsync(x=>x.InventoryDocumentLineId==lineId,ct);
+        if(hasWorkflowLink)
+        {
+            TempData["error"]="Satır satınalma, kalite veya ters kayıt sürecinde kullanılıyor; kaynak süreç üzerinden geri alınmalıdır.";
+            return RedirectToAction(nameof(Duzenle),new{id});
+        }
+
+        var movements=await _context.PrdStockMovements.Where(x=>x.InventoryDocumentLineId==lineId&&x.IsDelete!=true).ToListAsync(ct);
+        var lotIds=movements.Where(x=>x.StockLotId.HasValue).Select(x=>x.StockLotId!.Value).Distinct().ToList();
+        var allMovements=await _context.PrdStockMovements.AsNoTracking()
+            .Where(x=>x.IsDelete!=true&&x.StockLotId.HasValue&&lotIds.Contains(x.StockLotId.Value))
+            .Select(x=>new{x.StockLotId,x.Direction,x.Quantity}).ToListAsync(ct);
+        var reservations=await _context.PrdStockReservations.AsNoTracking()
+            .Where(x=>x.IsDelete!=true&&lotIds.Contains(x.StockLotId)&&
+                (x.Status==PrdReservationStatus.Active||x.Status==PrdReservationStatus.PartiallyUsed))
+            .Select(x=>new{x.StockLotId,x.ReservedQuantity,x.UsedQuantity,x.ReleasedQuantity}).ToListAsync(ct);
+        foreach(var lotId in lotIds)
+        {
+            var currentBalance=allMovements.Where(x=>x.StockLotId==lotId).Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity);
+            var contribution=movements.Where(x=>x.StockLotId==lotId).Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity);
+            var balance=currentBalance-contribution;
+            var reserved=reservations.Where(x=>x.StockLotId==lotId).Sum(x=>Math.Max(0,x.ReservedQuantity-x.UsedQuantity-x.ReleasedQuantity));
+            if(balance<0||reserved>balance)
+            {
+                TempData["error"]=$"{line.Sequence}. satır silinemez: Lot #{lotId} bakiyesi silme sonrası {balance:0.######}, aktif rezervasyon {reserved:0.######} olur. Önce bağlı tüketim veya rezervasyonu geri alınız.";
+                return RedirectToAction(nameof(Duzenle),new{id});
+            }
+        }
+
+        var now=DateTime.Now;
+        var actor=User.Identity?.Name??"Admin";
+        MarkDeleted(movements,now,actor);
+        MarkDeleted([line],now,actor);
+        document.TotalCost=lines.Where(x=>x.IsDelete!=true).Sum(x=>x.TotalCost);
+        document.UpdateDate=now;
+        document.UpdateUserID=actor;
+        _context.UserActivityLog.Add(new UserActivityLog
+        {
+            DateTime=now,UserName=Limit(actor,100),ControllerName=nameof(ProductionInventoryController),ActionName=nameof(SatirSil),
+            Parameters=Limit(JsonSerializer.Serialize(new{InventoryDocumentId=id,document.DocumentNumber,LineId=line.ID,line.Sequence,line.MaterialId,line.LotNumber,line.Quantity,line.TotalCost,Reason=reason,MovementIds=movements.Select(x=>x.ID)}),4096),
+            Info="InventoryDocumentLineAdminSoftDelete"
+        });
+        await _context.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        TempData["success"]=$"{document.DocumentNumber} belgesinin {line.Sequence}. satırı silindi; bağlı {movements.Count} stok hareketi bakiyeden çıkarıldı.";
+        return RedirectToAction(nameof(Duzenle),new{id});
+    }
+
+    private static bool CanDeleteDocumentLines(PrdInventoryDocument document)=>
+        (document.Type==PrdInventoryDocumentType.Opening||document.Type==PrdInventoryDocumentType.WarehouseTransfer)&&
+        (document.Status==PrdInventoryDocumentStatus.Draft||document.Status==PrdInventoryDocumentStatus.Posted)&&
+        string.IsNullOrWhiteSpace(document.SourceDocumentType)&&!document.SourceDocumentId.HasValue&&!document.ReversalDocumentId.HasValue;
+
     [HttpPost,ValidateAntiForgeryToken]
     public async Task<IActionResult> StokaIsle(int id,CancellationToken ct)
     {
+        if(await FindConsumptionDocumentIdAsync(id,ct) is int consumptionId)return ConsumptionWorkflowRedirect(consumptionId);
         var document=await _context.PrdInventoryDocuments.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(document==null)return NotFound();if(document.Status!=PrdInventoryDocumentStatus.Draft){TempData["error"]="Yalnızca taslak belge stoka işlenebilir.";return RedirectToAction(nameof(Detay),new{id});}
         var lines=await _context.PrdInventoryDocumentLines.Where(x=>x.InventoryDocumentId==id&&x.IsDelete!=true).OrderBy(x=>x.Sequence).ToListAsync(ct);if(lines.Count==0){TempData["error"]="Belgede kalem bulunmuyor.";return RedirectToAction(nameof(Detay),new{id});}
         try
@@ -339,12 +428,14 @@ public sealed class ProductionInventoryController : Controller
     [HttpPost,ValidateAntiForgeryToken]
     public async Task<IActionResult> TaslagiIptalEt(int id,CancellationToken ct)
     {
+        if(await FindConsumptionDocumentIdAsync(id,ct) is int consumptionId)return ConsumptionWorkflowRedirect(consumptionId);
         var document=await _context.PrdInventoryDocuments.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(document==null)return NotFound();if(document.Status!=PrdInventoryDocumentStatus.Draft){TempData["error"]="Yalnızca taslak belge iptal edilebilir.";return RedirectToAction(nameof(Detay),new{id});}document.Status=PrdInventoryDocumentStatus.Cancelled;document.IsActive=false;document.UpdateDate=DateTime.Now;document.UpdateUserID=User.Identity?.Name;await _context.SaveChangesAsync(ct);TempData["success"]="Taslak stok belgesi iptal edildi.";return RedirectToAction(nameof(Detay),new{id});
     }
 
     [HttpPost,ValidateAntiForgeryToken,Authorize(Policy=InventoryDocumentDeletePolicy)]
     public async Task<IActionResult> Sil(int id,string? confirmationDocumentNumber,string? reason,bool confirmStockRollback,CancellationToken ct)
     {
+        if(await FindConsumptionDocumentIdAsync(id,ct) is int consumptionId)return ConsumptionWorkflowRedirect(consumptionId);
         reason=reason?.Trim();
         if(string.IsNullOrWhiteSpace(reason)||reason.Length<5||reason.Length>500)
         {
@@ -503,7 +594,7 @@ public sealed class ProductionInventoryController : Controller
     {
         var document=await _context.PrdInventoryDocuments.AsNoTracking().Where(x=>x.ID==id&&x.IsDelete!=true).Select(x=>new
         {
-            x.ID,x.DocumentNumber,x.Type,x.Status,x.DocumentDate,x.CurrencyCode,x.ExchangeRate,x.Notes,
+            x.ID,x.DocumentNumber,x.Type,x.Status,x.DocumentDate,x.CurrencyCode,x.ExchangeRate,x.Notes,x.SourceDocumentType,x.SourceDocumentId,x.ReversalDocumentId,
             SourceWarehouse=_context.PrdWarehouses.Where(w=>w.ID==x.SourceWarehouseId).Select(w=>w.Code+" - "+w.Name).FirstOrDefault()??"-",
             TargetWarehouse=_context.PrdWarehouses.Where(w=>w.ID==x.TargetWarehouseId).Select(w=>w.Code+" - "+w.Name).FirstOrDefault()??"-"
         }).FirstOrDefaultAsync(ct);
@@ -513,7 +604,8 @@ public sealed class ProductionInventoryController : Controller
         {
             Id=document.ID,DocumentNumber=document.DocumentNumber,Type=document.Type,Status=document.Status,
             DocumentDate=document.DocumentDate,SourceWarehouse=document.SourceWarehouse,TargetWarehouse=document.TargetWarehouse,
-            CurrencyCode=document.CurrencyCode,ExchangeRate=document.ExchangeRate.ToString("0.######",culture),Notes=document.Notes
+            CurrencyCode=document.CurrencyCode,ExchangeRate=document.ExchangeRate.ToString("0.######",culture),Notes=document.Notes,
+            CanDeleteLines=CanDeleteDocumentLines(new PrdInventoryDocument{Type=document.Type,Status=document.Status,SourceDocumentType=document.SourceDocumentType,SourceDocumentId=document.SourceDocumentId,ReversalDocumentId=document.ReversalDocumentId})
         };
         var lineRows=await(from line in _context.PrdInventoryDocumentLines.AsNoTracking()
                            join material in _context.PrdMaterials.AsNoTracking() on line.MaterialId equals material.ID
@@ -559,6 +651,22 @@ public sealed class ProductionInventoryController : Controller
     private static bool TryParseDecimal(string? value,out decimal result)
     {
         result=0;if(string.IsNullOrWhiteSpace(value))return false;var normalized=value.Trim().Replace(" ",string.Empty);if(normalized.Contains(',')&&normalized.Contains('.'))normalized=normalized.LastIndexOf(',')>normalized.LastIndexOf('.')?normalized.Replace(".",string.Empty).Replace(',','.'):normalized.Replace(",",string.Empty);else if(normalized.Contains(','))normalized=normalized.Replace(',','.');return decimal.TryParse(normalized,NumberStyles.AllowLeadingSign|NumberStyles.AllowDecimalPoint,CultureInfo.InvariantCulture,out result);
+    }
+
+    private async Task<int?> FindConsumptionDocumentIdAsync(int id,CancellationToken ct)
+    {
+        var document=await _context.PrdInventoryDocuments.AsNoTracking().FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);
+        if(document==null)return null;
+        if(document.Type==PrdInventoryDocumentType.RawMaterialConsumption||document.SourceDocumentType==Ekomers.Web.Services.RawMaterialConsumptionService.SourceType)return id;
+        if(document.SourceDocumentType=="PrdInventoryDocumentReversal"&&document.SourceDocumentId.HasValue&&
+            await _context.PrdInventoryDocuments.AnyAsync(x=>x.ID==document.SourceDocumentId&&x.Type==PrdInventoryDocumentType.RawMaterialConsumption,ct))return document.SourceDocumentId;
+        return null;
+    }
+
+    private IActionResult ConsumptionWorkflowRedirect(int id)
+    {
+        TempData["error"]="Hammadde sarfı ve ters kayıtları genel stok belgesi ekranından değiştirilemez/silinemez. Hammadde Sarf ekranındaki kontrollü işlemleri kullanınız.";
+        return RedirectToAction("Detay","HammaddeSarf",new{id});
     }
 
     private static void MarkDeleted<T>(IEnumerable<T> rows,DateTime now,string actor) where T:BaseEntity

@@ -16,7 +16,7 @@
         </div>
         <div class="card-body">
             <div asp-validation-summary="ModelOnly" class="alert alert-light-danger"></div>
-            <div class="alert alert-light-info">İrsaliye zorunlu, fatura isteğe bağlıdır. Bu kayıt siparişin teslim miktarını günceller; karantina ve kullanılabilir stok hareketi sonraki aşamada oluşturulacaktır.</div>
+            <div class="alert alert-light-info">İrsaliye zorunlu, fatura isteğe bağlıdır. Bu kayıt siparişin teslim miktarını günceller. Sonraki aşamada kalite kontrol gerekliliğine göre doğrudan kullanılabilir stok veya karantina girişi yapılır.</div>
             <div class="row">
                 <div class="col-md-3 form-group"><label asp-for="ReceiptDate"></label><input asp-for="ReceiptDate" type="date" class="form-control" /><span asp-validation-for="ReceiptDate" class="text-danger"></span></div>
                 <div class="col-md-3 form-group"><label asp-for="DispatchNumber"></label><input asp-for="DispatchNumber" class="form-control" /><span asp-validation-for="DispatchNumber" class="text-danger"></span></div>
@@ -53,6 +53,7 @@
     <div class="card card-custom">
         <div class="card-header"><div class="card-title"><h3 class="card-label">Teslim Alınan Malzemeler<span class="d-block text-muted pt-2 font-size-sm">Yalnızca bu irsaliyede gelen satırları işaretleyip gerçek miktar, lot, üretim tarihi ve SKT giriniz</span></h3></div></div>
         <div class="card-body">
+            <p class="text-muted">Teslim alınan miktarı siparişin kalan miktarından bağımsız olarak girebilirsiniz.</p>
             <div class="table-responsive">
                 <table class="table table-separate table-head-custom align-middle">
                     <thead><tr><th>Dahil</th><th>Malzeme</th><th>Sipariş / Önceki / Kalan</th><th>Teslim Alınan</th><th>Lot</th><th>Üretim Tarihi</th><th>SKT</th><th>Not</th></tr></thead>
@@ -60,12 +61,11 @@
                     @for (var i = 0; i < Model.Lines.Count; i++)
                     {
                         var line = Model.Lines[i];
-                        var unavailable = line.RemainingQuantity <= 0 && !line.Include;
-                        <tr class="receipt-line @(unavailable ? "opacity-50" : "")">
+                        <tr class="receipt-line">
                             <td>
                                 <input asp-for="Lines[i].PurchaseOrderLineId" type="hidden" />
                                 <input asp-for="Lines[i].Id" type="hidden" />
-                                <label class="checkbox checkbox-lg"><input asp-for="Lines[i].Include" class="include-line" disabled="@unavailable" /><span></span></label>
+                                <label class="checkbox checkbox-lg"><input asp-for="Lines[i].Include" class="include-line" /><span></span></label>
                             </td>
                             <td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span><small class="text-muted">@line.Unit</small></td>
                             <td>@line.OrderedQuantity.ToString("0.######") / @line.PreviouslyReceivedQuantity.ToString("0.######") / <strong>@line.RemainingQuantity.ToString("0.######") @line.Unit</strong></td>

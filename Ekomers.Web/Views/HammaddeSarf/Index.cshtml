@@ -1,0 +1,26 @@
+@model List<Ekomers.Models.ViewModels.Production.RawMaterialConsumptionListVM>
+@{ ViewData["Title"]="Hammadde Sarf"; var canManage=User.IsInRole("Admin")||User.HasClaim("Authorize","HammaddeSarfYonet"); }
+@if(TempData["error"] is string error){<div class="alert alert-danger">@error</div>}
+@if(TempData["success"] is string success){<div class="alert alert-success">@success</div>}
+<div class="card card-custom">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">Hammadde Sarf<span class="d-block text-muted pt-2 font-size-sm">Üretim emrine bağlı olmayan, portal depo stoklarından lot bazında sarf işlemleri</span></h3></div>
+        <div class="card-toolbar">@if(canManage){<a asp-action="Yeni" class="btn btn-primary">Yeni Hammadde Sarf</a>}</div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light-info">Taslak kayıt stok düşmez. “Stoktan Düş” sonrasında rezerve olmayan kullanılabilir miktar azalır. Logo'ya fiş gönderilmez.</div>
+        @if(Model.Count==0){<p class="text-muted">Henüz hammadde sarf kaydı yok.</p>}
+        else{
+            <p class="text-muted">En yeni @Model.Count kayıt gösteriliyor (en fazla 1.000).</p>
+            <div class="table-responsive"><table class="table table-separate table-head-custom">
+                <thead><tr><th>Fiş No / Açıklama</th><th>Tarih</th><th>Depo</th><th>Kalem</th><th>Maliyet</th><th>Oluşturan</th><th>Durum</th><th></th></tr></thead>
+                <tbody>@foreach(var item in Model){<tr>
+                    <td><strong>@item.Number</strong><span class="d-block text-muted">@item.Notes</span></td>
+                    <td>@item.Date.ToString("dd.MM.yyyy")</td><td>@item.Warehouse</td><td>@item.LineCount</td><td>@item.TotalCost.ToString("N2") ₺</td><td>@item.CreatedBy</td>
+                    <td><span class="badge @(item.Status==PrdInventoryDocumentStatus.Posted?"badge-success":"badge-secondary")">@item.Status.ToTurkish()</span></td>
+                    <td><a asp-action="Detay" asp-route-id="@item.Id" class="btn btn-sm btn-light-primary">Detay</a></td>
+                </tr>}</tbody>
+            </table></div>
+        }
+    </div>
+</div>

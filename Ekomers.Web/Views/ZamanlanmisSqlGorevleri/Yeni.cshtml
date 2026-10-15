@@ -1,0 +1,153 @@
+@model ScheduledSqlTaskCreateVM
+@{
+    var isEdit = Model.Id.HasValue;
+    var formAction = isEdit ? "Duzenle" : "Kaydet";
+    var minStartDate = isEdit ? null : DateTime.Today.ToString("yyyy-MM-dd");
+    ViewData["Title"] = isEdit ? "Zamanlanmış SQL Görevini Düzenle" : "Yeni Zamanlanmış SQL Görevi";
+    var days = new[]
+    {
+        (Value: 1, Text: "Pazartesi"), (Value: 2, Text: "Salı"), (Value: 3, Text: "Çarşamba"),
+        (Value: 4, Text: "Perşembe"), (Value: 5, Text: "Cuma"), (Value: 6, Text: "Cumartesi"),
+        (Value: 0, Text: "Pazar")
+    };
+}
+
+@section CSSection {
+    <style>
+        .sql-task-form-card { border-radius: 16px; overflow: hidden; }
+        .sql-editor { min-height: 320px; resize: vertical; font-family: Consolas, "Courier New", monospace; line-height: 1.55; }
+        .day-selector { display: flex; flex-wrap: wrap; gap: .75rem; }
+        .day-option { min-width: 132px; border: 1px solid #e4e6ef; border-radius: 9px; padding: .8rem 1rem; background: #fafcfb; }
+    </style>
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-6">
+    <div>
+        <h2 class="font-weight-bolder mb-1">@(isEdit ? "Zamanlanmış SQL Görevini Düzenle" : "Yeni Zamanlanmış SQL Görevi")</h2>
+        <span class="text-muted">Betiğin çalışacağı bağlantıyı, günleri ve günlük tekrar düzenini belirleyin.</span>
+    </div>
+    <a asp-action="Index" class="btn btn-light font-weight-bold"><i class="la la-arrow-left"></i> Listeye Dön</a>
+</div>
+
+<div class="alert alert-custom alert-light-warning" role="alert">
+    <div class="alert-icon"><i class="flaticon-warning text-warning"></i></div>
+    <div class="alert-text">Bu ekran yalnızca yöneticilere açıktır. SQL doğrudan seçilen veritabanında çalışır. <strong>GO</strong> kullanmayın.</div>
+</div>
+
+<div class="card card-custom sql-task-form-card">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Görev Bilgileri</h3></div></div>
+    <form asp-action="@formAction" method="post">
+        @Html.AntiForgeryToken()
+        <input asp-for="Id" type="hidden" />
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="row">
+                <div class="col-lg-8 form-group">
+                    <label asp-for="Name" class="font-weight-bold">Görev adı</label>
+                    <input asp-for="Name" class="form-control" maxlength="150" placeholder="Örn. Gece stok düzeltme betiği" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="col-lg-4 form-group">
+                    <label asp-for="ConnectionTarget" class="font-weight-bold">Hedef bağlantı</label>
+                    <select asp-for="ConnectionTarget" class="form-control">
+                        <option value="1">Portal veritabanı</option>
+                        <option value="2">Logo veritabanı</option>
+                    </select>
+                    <span asp-validation-for="ConnectionTarget" class="text-danger"></span>
+                </div>
+                <div class="col-12 form-group">
+                    <label asp-for="Description" class="font-weight-bold">Açıklama</label>
+                    <textarea asp-for="Description" class="form-control" rows="2" maxlength="1000" placeholder="Görevin amacı ve beklenen sonucu"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+                <div class="col-12 form-group">
+                    <label asp-for="SqlScript" class="font-weight-bold">SQL sorgu / betik</label>
+                    <textarea asp-for="SqlScript" class="form-control sql-editor" spellcheck="false" placeholder="UPDATE ...;"></textarea>
+                    <div class="form-text text-muted">Birden fazla komutu noktalı virgülle ayırabilirsiniz. SSMS'e özel GO ayıracı desteklenmez.</div>
+                    <span asp-validation-for="SqlScript" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="separator separator-dashed my-6"></div>
+            <h5 class="font-weight-bolder mb-5">Çalışma Zamanı</h5>
+            <div class="row align-items-end">
+                <div class="col-lg-3 col-md-6 form-group">
+                    <label asp-for="StartDate" class="font-weight-bold">Başlangıç tarihi</label>
+                    <input asp-for="StartDate" type="date" class="form-control" min="@minStartDate" />
+                    <span asp-validation-for="StartDate" class="text-danger"></span>
+                </div>
+                <div class="col-lg-3 col-md-6 form-group">
+                    <label asp-for="FirstRunTime" class="font-weight-bold">İlk çalışma saati</label>
+                    <input asp-for="FirstRunTime" type="time" step="60" class="form-control" />
+                    <span asp-validation-for="FirstRunTime" class="text-danger"></span>
+                </div>
+                <div class="col-lg-3 col-md-6 form-group">
+                    <label asp-for="CommandTimeoutSeconds" class="font-weight-bold">Zaman aşımı (saniye)</label>
+                    <input asp-for="CommandTimeoutSeconds" type="number" min="30" max="3600" class="form-control" />
+                    <span asp-validation-for="CommandTimeoutSeconds" class="text-danger"></span>
+                </div>
+                <div class="col-lg-3 col-md-6 form-group">
+                    <div class="checkbox-inline pb-3">
+                        <label class="checkbox checkbox-lg"><input asp-for="IsEnabled" type="checkbox" /><span></span>Kaydedince aktif olsun</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox checkbox-lg font-weight-bold"><input asp-for="IsRecurring" type="checkbox" id="is-recurring" /><span></span>Bu görev tekrarlı çalışsın</label>
+            </div>
+
+            <div id="recurring-settings">
+                <label class="font-weight-bold d-block mb-3">Çalışacağı günler</label>
+                <div class="day-selector mb-5">
+                    @foreach (var day in days)
+                    {
+                        <label class="checkbox day-option">
+                            <input type="checkbox" name="SelectedDays" value="@day.Value" checked="@(Model.SelectedDays.Contains(day.Value) ? "checked" : null)" />
+                            <span></span>@day.Text
+                        </label>
+                    }
+                </div>
+                <span asp-validation-for="SelectedDays" class="text-danger d-block mb-3"></span>
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 form-group">
+                        <label asp-for="RunsPerDay" class="font-weight-bold">Günde kaç kez çalışacak?</label>
+                        <input asp-for="RunsPerDay" id="runs-per-day" type="number" min="1" max="24" class="form-control" />
+                        <span asp-validation-for="RunsPerDay" class="text-danger"></span>
+                    </div>
+                    <div class="col-lg-3 col-md-6 form-group" id="last-run-time-group">
+                        <label asp-for="LastRunTime" class="font-weight-bold">Son çalışma saati</label>
+                        <input asp-for="LastRunTime" type="time" step="60" class="form-control" />
+                        <span asp-validation-for="LastRunTime" class="text-danger"></span>
+                    </div>
+                    <div class="col-lg-6 form-group d-flex align-items-center">
+                        <div class="alert alert-light mb-0 w-100">Birden fazla çalışma seçildiğinde saatler, ilk ve son saat arasına eşit aralıklarla dağıtılır.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-end" style="gap:.75rem">
+            <a asp-action="Index" class="btn btn-light">Vazgeç</a>
+            <button type="submit" class="btn btn-primary font-weight-bold"><i class="la la-save"></i> @(isEdit ? "Değişiklikleri Kaydet" : "Görevi Kaydet")</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const recurring = document.getElementById('is-recurring');
+            const settings = document.getElementById('recurring-settings');
+            const runs = document.getElementById('runs-per-day');
+            const lastTime = document.getElementById('last-run-time-group');
+            function refresh() {
+                settings.style.display = recurring.checked ? '' : 'none';
+                lastTime.style.display = recurring.checked && Number(runs.value) > 1 ? '' : 'none';
+            }
+            recurring.addEventListener('change', refresh);
+            runs.addEventListener('input', refresh);
+            refresh();
+        })();
+    </script>
+}

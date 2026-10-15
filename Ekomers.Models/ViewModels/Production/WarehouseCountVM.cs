@@ -1,9 +1,17 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Ekomers.Models.Entity.Production;
 
 namespace Ekomers.Models.ViewModels.Production;
 
 public sealed class WarehouseCountVM
 {
+    public int DraftId { get; set; }
+    public int Revision { get; set; }
+    public Guid RequestId { get; set; } = Guid.NewGuid();
+    public PrdWarehouseCountDraftStatus Status { get; set; }
+    public bool IsReadOnly => Status != PrdWarehouseCountDraftStatus.Draft;
+    public int? InventoryDocumentId { get; set; }
+    public List<WarehouseCountHistoryVM> History { get; set; } = [];
     public int? SourceDocumentId { get; set; }
     public string? SourceDocumentNumber { get; set; }
     public bool IsCorrection => SourceDocumentId.HasValue;
@@ -21,6 +29,7 @@ public sealed class WarehouseCountVM
 
 public sealed class WarehouseCountRowVM
 {
+    public List<WarehouseCountEntryVM> Entries { get; set; } = [];
     public int MaterialId { get; set; }
     public string MaterialCode { get; set; } = string.Empty;
     public string MaterialName { get; set; } = string.Empty;
@@ -33,4 +42,23 @@ public sealed class WarehouseCountRowVM
     public bool StockChanged => CurrentQuantity != SnapshotCurrentQuantity;
     public string SnapshotQuantity { get; set; } = string.Empty;
     public string? CountedQuantity { get; set; }
+}
+
+public sealed class WarehouseCountEntryVM
+{
+    public int Id { get; set; }
+    public string CountedQuantity { get; set; } = "";
+    public string? Location { get; set; }
+    public string? Notes { get; set; }
+    public string? User { get; set; }
+    public DateTime? CreatedAt { get; set; }
+}
+
+public sealed class WarehouseCountHistoryVM
+{
+    public int Id { get; set; }
+    public DateTime CountDate { get; set; }
+    public PrdWarehouseCountDraftStatus Status { get; set; }
+    public int? InventoryDocumentId { get; set; }
+    public string? Notes { get; set; }
 }

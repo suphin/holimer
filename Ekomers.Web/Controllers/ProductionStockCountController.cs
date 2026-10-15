@@ -13,7 +13,7 @@ using System.Text.Json;
 namespace Ekomers.Web.Controllers;
 
 [Authorize(Policy = "AdminOrUretim")]
-public sealed class ProductionStockCountController : Controller
+public sealed partial class ProductionStockCountController : Controller
 {
     private readonly ApplicationDbContext _context;
 
@@ -26,9 +26,18 @@ public sealed class ProductionStockCountController : Controller
     public async Task<IActionResult> Index(
         int? warehouseId,
         int? sourceDocumentId = null,
+        int? draftId = null,
         CancellationToken ct = default)
     {
         ViewBag.Modul = "YeniUretim";
+        PrdWarehouseCountDraft? selectedDraft = null;
+        if (draftId.HasValue)
+        {
+            selectedDraft = await _context.PrdWarehouseCountDrafts.AsNoTracking().FirstOrDefaultAsync(x => x.ID == draftId && x.OwnerUserId == CountOwner && x.IsDelete != true, ct);
+            if (selectedDraft == null) return NotFound();
+            warehouseId = selectedDraft.WarehouseId;
+            sourceDocumentId = selectedDraft.SourceDocumentId;
+        }
 
         var warehouses = await _context.PrdWarehouses
             .AsNoTracking()
@@ -42,14 +51,15 @@ public sealed class ProductionStockCountController : Controller
         List<int>? correctionMaterialIds = null;
         if (sourceDocumentId.HasValue)
         {
+            var archived = selectedDraft != null && selectedDraft.Status != PrdWarehouseCountDraftStatus.Draft;
             sourceDocument = await _context.PrdInventoryDocuments
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x =>
                     x.ID == sourceDocumentId.Value &&
-                    x.Type == PrdInventoryDocumentType.Adjustment &&
+                    (archived || (x.Type == PrdInventoryDocumentType.Adjustment &&
                     x.Status == PrdInventoryDocumentStatus.Posted &&
                     (x.SourceDocumentType == "WarehouseCount" || x.SourceDocumentType == "WarehouseCountCorrection") &&
-                    x.IsDelete != true,
+                    x.IsDelete != true)),
                     ct);
 
             if (sourceDocument == null || (!sourceDocument.SourceWarehouseId.HasValue && !sourceDocument.TargetWarehouseId.HasValue))
@@ -58,7 +68,7 @@ public sealed class ProductionStockCountController : Controller
                 return RedirectToAction(nameof(Index));
             }
 
-            warehouseId = sourceDocument.TargetWarehouseId ?? sourceDocument.SourceWarehouseId;
+            warehouseId = selectedDraft?.WarehouseId ?? sourceDocument.TargetWarehouseId ?? sourceDocument.SourceWarehouseId;
             correctionMaterialIds = await _context.PrdInventoryDocumentLines
                 .AsNoTracking()
                 .Where(x => x.InventoryDocumentId == sourceDocument.ID && x.IsDelete != true)
@@ -84,36 +94,14 @@ public sealed class ProductionStockCountController : Controller
         if (!warehouseId.HasValue)
             return View(model);
 
-        var sessionRows = ReadCountList(warehouseId.Value, sourceDocument?.ID);
-        if (sessionRows == null)
-        {
-            sessionRows = [];
-            if (correctionMaterialIds is { Count: > 0 })
-            {
-                var correctionMaterials = await _context.PrdMaterials
-                    .AsNoTracking()
-                    .Where(x => correctionMaterialIds.Contains(x.ID) && x.IsActive != false && x.IsDelete != true)
-                    .OrderBy(x => x.Code)
-                    .Select(x => new { x.ID, x.Code })
-                    .ToListAsync(ct);
-                var correctionBalances = await CurrentBalancesAsync(warehouseId.Value, correctionMaterialIds, ct);
-                sessionRows = correctionMaterials.Select(x =>
-                {
-                    var current = correctionBalances.GetValueOrDefault(x.ID);
-                    return new WarehouseCountSessionItem
-                    {
-                        MaterialId = x.ID,
-                        MaterialCode = x.Code,
-                        SnapshotQuantity = current.ToString("0.######", CultureInfo.InvariantCulture),
-                        CountedQuantity = current.ToString("0.######", CultureInfo.GetCultureInfo("tr-TR"))
-                    };
-                }).ToList();
-            }
-            SaveCountList(warehouseId.Value, sourceDocument?.ID, sessionRows);
-        }
-
-        model.Rows = await BuildRowsAsync(warehouseId.Value, sessionRows, ct);
+        var draft = selectedDraft ?? await GetOrCreateCountDraftAsync(warehouseId.Value, sourceDocument?.ID, correctionMaterialIds, ct);
+        model.DraftId = draft.ID; model.Revision = draft.Revision; model.Status = draft.Status;
+        model.CountDate = draft.CountDate; model.Notes = draft.Notes; model.InventoryDocumentId = draft.InventoryDocumentId;
+        var entries = await _context.PrdWarehouseCountEntries.AsNoTracking().Where(x => x.DraftId == draft.ID && x.IsDelete != true).OrderBy(x => x.ID).ToListAsync(ct);
+        model.Rows = await BuildRowsAsync(warehouseId.Value, entries, ct);
         model.TotalCount = model.Rows.Count;
+        model.History = await _context.PrdWarehouseCountDrafts.AsNoTracking().Where(x => x.OwnerUserId == CountOwner && x.WarehouseId == warehouseId && x.IsDelete != true)
+            .OrderByDescending(x => x.ID).Take(10).Select(x => new WarehouseCountHistoryVM { Id = x.ID, CountDate = x.CountDate, Status = x.Status, InventoryDocumentId = x.InventoryDocumentId, Notes = x.Notes }).ToListAsync(ct);
 
         return View(model);
     }
@@ -155,9 +143,14 @@ public sealed class ProductionStockCountController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddItem(
+        int draftId,
+        int revision,
+        Guid requestId,
         int warehouseId,
         int materialId,
         string? countedQuantity,
+        string? location,
+        string? entryNotes,
         int? sourceDocumentId,
         CancellationToken ct)
     {
@@ -166,16 +159,16 @@ public sealed class ProductionStockCountController : Controller
             TempData["error"] = "Geçerli ve aktif bir depo seçiniz.";
             return RedirectToAction(nameof(Index));
         }
-        if (!TryParseDecimal(countedQuantity, out var counted) || counted < 0)
+        if (!TryCount(countedQuantity, out var counted) || requestId == Guid.Empty || location?.Trim().Length > 100 || entryNotes?.Trim().Length > 250)
         {
-            TempData["error"] = "Sayım stoku sıfır veya sıfırdan büyük bir sayı olmalıdır.";
+            TempData["error"] = "Geçerli bir sayım miktarı giriniz (en fazla 6 ondalık). Raf/alan en fazla 100, not 250 karakter olabilir. Sayfayı yenileyerek tekrar deneyiniz.";
             return RedirectToAction(nameof(Index), new { warehouseId, sourceDocumentId });
         }
 
         var material = await _context.PrdMaterials
             .AsNoTracking()
             .Where(x => x.ID == materialId && x.IsActive != false && x.IsDelete != true)
-            .Select(x => new { x.ID, x.Code })
+            .Select(x => new { x.ID, x.Code, x.Name, x.UnitId })
             .FirstOrDefaultAsync(ct);
         if (material == null)
         {
@@ -192,74 +185,146 @@ public sealed class ProductionStockCountController : Controller
             return RedirectToAction(nameof(Index), new { warehouseId, sourceDocumentId });
         }
 
-        var rows = ReadCountList(warehouseId, sourceDocumentId) ?? [];
-        var existing = rows.FirstOrDefault(x => x.MaterialId == material.ID);
-        if (existing == null)
+        try
         {
-            var balances = await CurrentBalancesAsync(warehouseId, [material.ID], ct);
-            rows.Add(new WarehouseCountSessionItem
+            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            var draft = await LoadCountDraftAsync(draftId, warehouseId, sourceDocumentId, ct);
+            if (await _context.PrdWarehouseCountEntries.AnyAsync(x => x.DraftId == draftId && x.RequestId == requestId, ct))
             {
-                MaterialId = material.ID,
-                MaterialCode = material.Code,
-                SnapshotQuantity = balances.GetValueOrDefault(material.ID).ToString("0.######", CultureInfo.InvariantCulture),
-                CountedQuantity = counted.ToString("0.######", CultureInfo.GetCultureInfo("tr-TR"))
-            });
-            TempData["success"] = $"{material.Code} sayım listesine eklendi.";
+                TempData["success"] = "Bu sayım girişi daha önce kaydedildi; ikinci kez eklenmedi.";
+                return RedirectToAction(nameof(Index), new { warehouseId, sourceDocumentId, draftId });
+            }
+            // Appending cannot overwrite existing entries; stale tabs may safely add a new request.
+            // Updates, removals and posting still require the current revision.
+            if (draft.Status != PrdWarehouseCountDraftStatus.Draft) throw new InvalidOperationException("Tamamlanmış veya iptal edilmiş sayıma giriş eklenemez.");
+            var entries = await _context.PrdWarehouseCountEntries.Where(x => x.DraftId == draft.ID && x.IsDelete != true).ToListAsync(ct);
+            if (entries.Count >= 2000) throw new InvalidOperationException("Bir sayımda en fazla 2.000 giriş tutulabilir.");
+            var unit = await _context.PrdUnits.AsNoTracking().FirstOrDefaultAsync(x => x.ID == material.UnitId && x.IsDelete != true && x.IsActive != false, ct)
+                ?? throw new InvalidOperationException("Malzemenin stok birimi aktif değil.");
+            var previous = entries.FirstOrDefault(x => x.MaterialId == material.ID);
+            var balances = previous == null ? await CurrentBalancesAsync(warehouseId, [material.ID], ct) : null;
+            var entry = new PrdWarehouseCountEntry
+            {
+                DraftId = draft.ID, RequestId = requestId, MaterialId = material.ID, UnitId = previous?.UnitId ?? material.UnitId,
+                MaterialCode = material.Code, MaterialName = material.Name, UnitName = previous?.UnitName ?? Ekomers.Data.Services.ProductionUnitNormalizer.DisplayName(unit.Code, unit.Name),
+                SnapshotQuantity = previous?.SnapshotQuantity ?? balances!.GetValueOrDefault(material.ID), CountedQuantity = counted,
+                Location = location?.Trim(), Notes = entryNotes?.Trim(), IsActive = true, IsDelete = false, CreateDate = DateTime.Now, CreateUserID = CountActor
+            };
+            await ValidateCountUnitsAsync([entry], warehouseId, ct);
+            CheckCountTotals(entries.Append(entry));
+            _context.PrdWarehouseCountEntries.Add(entry); TouchCountDraft(draft);
+            CountAudit(nameof(AddItem), draft, new { material.ID, Counted = counted, entry.Location, requestId });
+            await _context.SaveChangesAsync(ct); await tx.CommitAsync(ct);
+            TempData["success"] = $"{material.Code}: {counted:0.######} {entry.UnitName} ayrı bir sayım girişi olarak eklendi; ürün toplamı güncellendi.";
         }
-        else
-        {
-            existing.CountedQuantity = counted.ToString("0.######", CultureInfo.GetCultureInfo("tr-TR"));
-            TempData["success"] = $"{material.Code} sayım değeri güncellendi.";
-        }
-        SaveCountList(warehouseId, sourceDocumentId, rows);
-        return RedirectToAction(nameof(Index), new { warehouseId, sourceDocumentId });
+        catch (InvalidOperationException e) { _context.ChangeTracker.Clear(); TempData["error"] = e.Message; }
+        return RedirectToAction(nameof(Index), new { warehouseId, sourceDocumentId, draftId });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult UpdateItem(WarehouseCountVM model, int materialId)
+    public async Task<IActionResult> UpdateItem(WarehouseCountVM model, int entryId, string? countedQuantity, string? location, string? entryNotes, CancellationToken ct)
     {
-        var postedRow = model.Rows.LastOrDefault(x => x.MaterialId == materialId);
-        if (postedRow == null || !TryParseDecimal(postedRow.CountedQuantity, out var counted) || counted < 0)
+        try
         {
-            TempData["error"] = "Sayım stoku sıfır veya sıfırdan büyük bir sayı olmalıdır.";
-            return RedirectToAction(nameof(Index), new { warehouseId = model.WarehouseId, sourceDocumentId = model.SourceDocumentId });
+            if (!TryCount(countedQuantity, out var counted) || location?.Trim().Length > 100 || entryNotes?.Trim().Length > 250) throw new InvalidOperationException("Miktar geçersiz veya raf/not bilgisi çok uzun.");
+            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            var draft = await LoadCountDraftAsync(model.DraftId, model.WarehouseId, model.SourceDocumentId, ct); EnsureCountRevision(draft, model.Revision);
+            var entries = await _context.PrdWarehouseCountEntries.Where(x => x.DraftId == draft.ID && x.IsDelete != true).ToListAsync(ct);
+            var entry = entries.FirstOrDefault(x => x.ID == entryId && x.CountedQuantity.HasValue) ?? throw new InvalidOperationException("Güncellenecek sayım girişi bulunamadı.");
+            var before = new { entry.CountedQuantity, entry.Location, entry.Notes };
+            entry.CountedQuantity = counted; entry.Location = location?.Trim(); entry.Notes = entryNotes?.Trim(); entry.UpdateDate = DateTime.Now; entry.UpdateUserID = CountActor;
+            CheckCountTotals(entries); TouchCountDraft(draft); CountAudit(nameof(UpdateItem), draft, new { entryId, Before = before, Counted = counted, entry.Location, entry.Notes });
+            await _context.SaveChangesAsync(ct); await tx.CommitAsync(ct);
+            TempData["success"] = "Seçilen giriş güncellendi; ürün toplamı yeniden hesaplandı.";
         }
-        var rows = ReadCountList(model.WarehouseId, model.SourceDocumentId) ?? [];
-        var row = rows.FirstOrDefault(x => x.MaterialId == materialId);
-        if (row == null)
-            TempData["error"] = "Güncellenecek ürün geçici sayım listesinde bulunamadı.";
-        else
+        catch (InvalidOperationException e) { _context.ChangeTracker.Clear(); TempData["error"] = e.Message; }
+        return RedirectToAction(nameof(Index), new { warehouseId = model.WarehouseId, sourceDocumentId = model.SourceDocumentId, draftId = model.DraftId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveItem(WarehouseCountVM model, int entryId, CancellationToken ct)
+    {
+        try
         {
-            row.CountedQuantity = counted.ToString("0.######", CultureInfo.GetCultureInfo("tr-TR"));
-            SaveCountList(model.WarehouseId, model.SourceDocumentId, rows);
-            TempData["success"] = $"{row.MaterialCode} sayım değeri güncellendi.";
+            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            var draft = await LoadCountDraftAsync(model.DraftId, model.WarehouseId, model.SourceDocumentId, ct); EnsureCountRevision(draft, model.Revision);
+            var entry = await _context.PrdWarehouseCountEntries.FirstOrDefaultAsync(x => x.ID == entryId && x.DraftId == draft.ID && x.IsDelete != true, ct)
+                ?? throw new InvalidOperationException("Kaldırılacak giriş bulunamadı.");
+            DeleteCountEntry(entry, CountActor); TouchCountDraft(draft); CountAudit(nameof(RemoveItem), draft, new { entryId, entry.CountedQuantity, entry.Location });
+            await _context.SaveChangesAsync(ct); await tx.CommitAsync(ct);
+            TempData["success"] = "Yalnızca seçilen giriş kaldırıldı; diğer girişler korunarak toplam güncellendi.";
         }
+        catch (InvalidOperationException e) { _context.ChangeTracker.Clear(); TempData["error"] = e.Message; }
+        return RedirectToAction(nameof(Index), new { warehouseId = model.WarehouseId, sourceDocumentId = model.SourceDocumentId, draftId = model.DraftId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveProduct(WarehouseCountVM model, int materialId, CancellationToken ct)
+    {
+        try
+        {
+            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            var draft = await LoadCountDraftAsync(model.DraftId, model.WarehouseId, model.SourceDocumentId, ct); EnsureCountRevision(draft, model.Revision);
+            var entries = await _context.PrdWarehouseCountEntries.Where(x => x.DraftId == draft.ID && x.MaterialId == materialId && x.IsDelete != true).ToListAsync(ct);
+            if (entries.Count == 0) throw new InvalidOperationException("Kaldırılacak ürün bulunamadı.");
+            foreach (var entry in entries) DeleteCountEntry(entry, CountActor);
+            TouchCountDraft(draft); CountAudit(nameof(RemoveProduct), draft, new { materialId, EntryIds = entries.Select(x => x.ID) });
+            await _context.SaveChangesAsync(ct); await tx.CommitAsync(ct); TempData["success"] = "Bu ürünün tüm girişleri taslaktan kaldırıldı; diğer ürünler korunmuştur.";
+        }
+        catch (InvalidOperationException e) { _context.ChangeTracker.Clear(); TempData["error"] = e.Message; }
+        return RedirectToAction(nameof(Index), new { warehouseId = model.WarehouseId, sourceDocumentId = model.SourceDocumentId, draftId = model.DraftId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Clear(WarehouseCountVM model, CancellationToken ct)
+    {
+        try
+        {
+            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            var draft = await LoadCountDraftAsync(model.DraftId, model.WarehouseId, model.SourceDocumentId, ct); EnsureCountRevision(draft, model.Revision);
+            draft.Status = PrdWarehouseCountDraftStatus.Cancelled; draft.IsActive = false; draft.CompletedAt = DateTime.Now; TouchCountDraft(draft);
+            CountAudit(nameof(Clear), draft); await _context.SaveChangesAsync(ct); await tx.CommitAsync(ct);
+            TempData["success"] = "Taslak iptal edilerek geçmişte saklandı. Yeni sayım taslağı açıldı; stok değişmedi.";
+        }
+        catch (InvalidOperationException e) { _context.ChangeTracker.Clear(); return CountError(model, e.Message); }
         return RedirectToAction(nameof(Index), new { warehouseId = model.WarehouseId, sourceDocumentId = model.SourceDocumentId });
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult RemoveItem(int warehouseId, int materialId, int? sourceDocumentId)
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateDraft(WarehouseCountVM model, CancellationToken ct)
     {
-        var rows = ReadCountList(warehouseId, sourceDocumentId) ?? [];
-        var row = rows.FirstOrDefault(x => x.MaterialId == materialId);
-        if (row != null)
+        try
         {
-            rows.Remove(row);
-            SaveCountList(warehouseId, sourceDocumentId, rows);
-            TempData["success"] = $"{row.MaterialCode} sayım listesinden kaldırıldı.";
+            if (model.CountDate.Year < 1900 || model.CountDate.Date > DateTime.Today || model.Notes?.Trim().Length > 500) throw new InvalidOperationException("Sayım tarihi veya notu geçersiz.");
+            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            var draft = await LoadCountDraftAsync(model.DraftId, model.WarehouseId, model.SourceDocumentId, ct); EnsureCountRevision(draft, model.Revision);
+            draft.CountDate = model.CountDate.Date; draft.Notes = model.Notes?.Trim(); TouchCountDraft(draft); CountAudit(nameof(UpdateDraft), draft);
+            await _context.SaveChangesAsync(ct); await tx.CommitAsync(ct); TempData["success"] = "Sayım tarihi ve notu taslağa kaydedildi; stok değişmedi.";
         }
-        return RedirectToAction(nameof(Index), new { warehouseId, sourceDocumentId });
+        catch (InvalidOperationException e) { _context.ChangeTracker.Clear(); TempData["error"] = e.Message; }
+        return RedirectToAction(nameof(Index), new { warehouseId = model.WarehouseId, sourceDocumentId = model.SourceDocumentId, draftId = model.DraftId });
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult Clear(int warehouseId, int? sourceDocumentId)
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> RefreshSnapshots(WarehouseCountVM model, CancellationToken ct)
     {
-        SaveCountList(warehouseId, sourceDocumentId, []);
-        TempData["success"] = "Geçici sayım listesi temizlendi.";
-        return RedirectToAction(nameof(Index), new { warehouseId, sourceDocumentId });
+        try
+        {
+            await using var tx = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            var draft = await LoadCountDraftAsync(model.DraftId, model.WarehouseId, model.SourceDocumentId, ct); EnsureCountRevision(draft, model.Revision);
+            var entries = await _context.PrdWarehouseCountEntries.Where(x => x.DraftId == draft.ID && x.IsDelete != true).ToListAsync(ct);
+            await ValidateCountUnitsAsync(entries, model.WarehouseId, ct);
+            var balances = await CurrentBalancesAsync(model.WarehouseId, entries.Select(x => x.MaterialId).Distinct().ToList(), ct);
+            var before = entries.GroupBy(x => x.MaterialId).Select(g => new { MaterialId = g.Key, Old = g.First().SnapshotQuantity, New = balances.GetValueOrDefault(g.Key) }).ToList();
+            foreach (var entry in entries) { entry.SnapshotQuantity = balances.GetValueOrDefault(entry.MaterialId); entry.UpdateDate = DateTime.Now; entry.UpdateUserID = CountActor; }
+            TouchCountDraft(draft); CountAudit(nameof(RefreshSnapshots), draft, before); await _context.SaveChangesAsync(ct); await tx.CommitAsync(ct);
+            TempData["success"] = "Sistem stok referansları yenilendi; sayım miktarlarınız değişmedi. Farkları kontrol edip stoka işleyiniz.";
+        }
+        catch (InvalidOperationException e) { _context.ChangeTracker.Clear(); TempData["error"] = e.Message; }
+        return RedirectToAction(nameof(Index), new { warehouseId = model.WarehouseId, sourceDocumentId = model.SourceDocumentId, draftId = model.DraftId });
     }
 
     [HttpPost]
@@ -267,6 +332,20 @@ public sealed class ProductionStockCountController : Controller
     public async Task<IActionResult> Save(WarehouseCountVM model, CancellationToken ct)
     {
         ViewBag.Modul = "YeniUretim";
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        PrdWarehouseCountDraft draft;
+        try
+        {
+            draft = await LoadCountDraftAsync(model.DraftId, model.WarehouseId, model.SourceDocumentId, ct);
+            if (draft.Status == PrdWarehouseCountDraftStatus.Posted)
+                return draft.InventoryDocumentId.HasValue
+                    ? RedirectToAction("Detay", "ProductionInventory", new { id = draft.InventoryDocumentId.Value })
+                    : RedirectToAction(nameof(Index), new { draftId = draft.ID });
+            EnsureCountRevision(draft, model.Revision);
+        }
+        catch (InvalidOperationException e) { return CountError(model, e.Message); }
+        if (_context.Database.IsSqlServer())
+            await _context.Database.ExecuteSqlInterpolatedAsync($"SELECT [ID] FROM [dbo].[PrdWarehouse] WITH(UPDLOCK,HOLDLOCK) WHERE [ID]={model.WarehouseId}", ct);
         var warehouse = await _context.PrdWarehouses
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.ID == model.WarehouseId && x.IsActive != false && x.IsDelete != true, ct);
@@ -292,35 +371,20 @@ public sealed class ProductionStockCountController : Controller
                 return CountError(model, "Düzeltilecek sayım belgesi bu depoya ait değil veya artık kullanılamıyor.");
         }
 
-        if (model.CountDate.Date > DateTime.Today)
-            return CountError(model, "Sayım tarihi gelecekte olamaz.");
-
-        var sessionRows = ReadCountList(model.WarehouseId, model.SourceDocumentId) ?? [];
-        var postedQuantities = model.Rows
-            .GroupBy(x => x.MaterialId)
-            .ToDictionary(x => x.Key, x => x.Last().CountedQuantity);
-        foreach (var sessionRow in sessionRows)
-        {
-            if (postedQuantities.TryGetValue(sessionRow.MaterialId, out var postedQuantity))
-                sessionRow.CountedQuantity = postedQuantity?.Trim() ?? string.Empty;
-        }
-        SaveCountList(model.WarehouseId, model.SourceDocumentId, sessionRows);
-        var enteredRows = sessionRows
-            .Where(x => !string.IsNullOrWhiteSpace(x.CountedQuantity))
-            .Select(x => new WarehouseCountRowVM
+        if (model.CountDate.Year < 1900 || model.CountDate.Date > DateTime.Today || model.Notes?.Trim().Length > 500)
+            return CountError(model, "Sayım tarihi veya notu geçersiz.");
+        var entries = await _context.PrdWarehouseCountEntries.AsNoTracking().Where(x => x.DraftId == draft.ID && x.IsDelete != true && x.CountedQuantity.HasValue).ToListAsync(ct);
+        if (entries.GroupBy(x => x.MaterialId).Any(g => g.Select(x => x.SnapshotQuantity).Distinct().Count() != 1 || g.Sum(x => x.CountedQuantity!.Value) > MaximumCount))
+            return CountError(model, "Sayım girişlerinde stok referansı veya toplam tutarsızlığı var; taslağı kontrol ediniz.");
+        var enteredRows = entries.GroupBy(x => x.MaterialId).Select(group => new WarehouseCountRowVM
             {
-                MaterialId = x.MaterialId,
-                MaterialCode = x.MaterialCode,
-                SnapshotQuantity = x.SnapshotQuantity,
-                CountedQuantity = x.CountedQuantity
-            })
-            .ToList();
+                MaterialId = group.Key, MaterialCode = group.First().MaterialCode,
+                SnapshotQuantity = group.First().SnapshotQuantity.ToString(CultureInfo.InvariantCulture),
+                CountedQuantity = group.Sum(x => x.CountedQuantity!.Value).ToString(CultureInfo.InvariantCulture)
+            }).ToList();
 
         if (enteredRows.Count == 0)
             return CountError(model, "En az bir ürün için sayım stoku giriniz.");
-
-        if (enteredRows.GroupBy(x => x.MaterialId).Any(x => x.Count() > 1))
-            return CountError(model, "Aynı ürün sayım listesinde birden fazla kez gönderilemez.");
 
         var countedValues = new Dictionary<int, decimal>();
         var snapshotValues = new Dictionary<int, decimal>();
@@ -345,7 +409,7 @@ public sealed class ProductionStockCountController : Controller
 
         try
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            await ValidateCountUnitsAsync(entries, warehouse.ID, ct);
 
             var stockMovements = await _context.PrdStockMovements
                 .AsNoTracking()
@@ -374,7 +438,7 @@ public sealed class ProductionStockCountController : Controller
                 var current = currentByMaterial.GetValueOrDefault(materialId);
                 if (current != snapshotValues[materialId])
                     throw new InvalidOperationException(
-                        $"{materials[materialId].Code} stok miktarı ekran açıldıktan sonra değişti. Sayım listesini yenileyip tekrar deneyiniz.");
+                        $"{materials[materialId].Code} stok miktarı sayım başladıktan sonra değişti. Sistem Stok Referanslarını Yenile işlemini uygulayıp farkları kontrol ediniz; sayım girişleri korunmuştur.");
             }
 
             var differences = materialIds
@@ -390,15 +454,17 @@ public sealed class ProductionStockCountController : Controller
 
             if (differences.Count == 0)
             {
-                await transaction.RollbackAsync(ct);
-                HttpContext.Session.Remove(CountSessionKey(model.WarehouseId, model.SourceDocumentId));
+                draft.CountDate = model.CountDate.Date; draft.Notes = model.Notes?.Trim(); draft.Status = PrdWarehouseCountDraftStatus.Posted;
+                draft.CompletedAt = DateTime.Now; draft.IsActive = false; TouchCountDraft(draft); CountAudit(nameof(Save), draft, new { NoDifference = true, Products = materialIds.Count });
+                await _context.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
                 TempData["success"] = "Girilen sayım stokları mevcut stoklarla aynı; stok hareketi oluşturulmadı.";
-                return RedirectToAction(nameof(Index), new { warehouseId = model.WarehouseId, sourceDocumentId = model.SourceDocumentId });
+                return RedirectToAction(nameof(Index), new { draftId = draft.ID });
             }
 
             var now = DateTime.Now;
             var user = User.Identity?.Name;
-            var documentNumber = $"SAY-{now:yyyyMMddHHmmssfff}";
+            var documentNumber = $"SAY-{now:yyyyMMddHHmmssfff}-{Guid.NewGuid().ToString("N")[..8]}";
             var document = new PrdInventoryDocument
             {
                 DocumentNumber = documentNumber,
@@ -555,9 +621,11 @@ public sealed class ProductionStockCountController : Controller
             }
 
             document.TotalCost = lineMovements.Sum(x => x.Line.TotalCost);
+            draft.CountDate = model.CountDate.Date; draft.Notes = model.Notes?.Trim(); draft.Status = PrdWarehouseCountDraftStatus.Posted;
+            draft.InventoryDocumentId = document.ID; draft.CompletedAt = now; draft.IsActive = false; TouchCountDraft(draft);
+            CountAudit(nameof(Save), draft, new { document.ID, Products = materialIds.Count, EntryCount = entries.Count });
             await _context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
-            HttpContext.Session.Remove(CountSessionKey(model.WarehouseId, model.SourceDocumentId));
 
             TempData["success"] = sourceDocument == null
                 ? $"{document.DocumentNumber} numaralı sayım belgesi işlendi. {differences.Count} ürünün toplam stoku sayım değerine getirildi."
@@ -566,13 +634,14 @@ public sealed class ProductionStockCountController : Controller
         }
         catch (InvalidOperationException ex)
         {
+            await transaction.RollbackAsync(ct); _context.ChangeTracker.Clear();
             return CountError(model, ex.Message);
         }
     }
 
     private async Task<List<WarehouseCountRowVM>> BuildRowsAsync(
         int warehouseId,
-        IReadOnlyCollection<WarehouseCountSessionItem> sessionRows,
+        IReadOnlyCollection<PrdWarehouseCountEntry> sessionRows,
         CancellationToken ct)
     {
         if (sessionRows.Count == 0) return [];
@@ -581,7 +650,7 @@ public sealed class ProductionStockCountController : Controller
         var materials = await (
             from material in _context.PrdMaterials.AsNoTracking()
             join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID
-            where materialIds.Contains(material.ID) && material.IsActive != false && material.IsDelete != true
+            where materialIds.Contains(material.ID)
             select new
             {
                 material.ID,
@@ -609,26 +678,27 @@ public sealed class ProductionStockCountController : Controller
             .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity, ct);
 
         var rows = new List<WarehouseCountRowVM>();
-        foreach (var sessionRow in sessionRows)
+        foreach (var group in sessionRows.GroupBy(x => x.MaterialId).OrderBy(g => g.First().MaterialCode))
         {
+            var sessionRow = group.First();
             if (!materials.TryGetValue(sessionRow.MaterialId, out var material)) continue;
             var current = balances.GetValueOrDefault(material.ID);
-            var snapshot = TryParseDecimal(sessionRow.SnapshotQuantity, out var parsedSnapshot)
-                ? parsedSnapshot
-                : current;
+            var snapshot = sessionRow.SnapshotQuantity;
             rows.Add(new WarehouseCountRowVM
             {
                 MaterialId = material.ID,
                 MaterialCode = material.Code,
                 MaterialName = material.Name,
                 MaterialType = material.Type.ToTurkish(),
-                Unit = material.Unit,
+                Unit = sessionRow.UnitName,
                 CurrentQuantity = current,
                 ReservedQuantity = reservations.GetValueOrDefault(material.ID),
                 CriticalQuantity = material.CriticalQuantity,
                 SnapshotCurrentQuantity = snapshot,
                 SnapshotQuantity = snapshot.ToString("0.######", CultureInfo.InvariantCulture),
-                CountedQuantity = sessionRow.CountedQuantity
+                CountedQuantity = group.Any(x => x.CountedQuantity.HasValue) ? group.Sum(x => x.CountedQuantity ?? 0).ToString("0.######", CultureInfo.GetCultureInfo("tr-TR")) : null,
+                Entries = group.Where(x => x.CountedQuantity.HasValue).OrderBy(x => x.ID).Select(x => new WarehouseCountEntryVM
+                { Id = x.ID, CountedQuantity = x.CountedQuantity!.Value.ToString("0.######", CultureInfo.GetCultureInfo("tr-TR")), Location = x.Location, Notes = x.Notes, User = x.CreateUserID, CreatedAt = x.CreateDate }).ToList()
             });
         }
         return rows;
@@ -659,7 +729,8 @@ public sealed class ProductionStockCountController : Controller
 
     private List<WarehouseCountSessionItem>? ReadCountList(int warehouseId, int? sourceDocumentId)
     {
-        var json = HttpContext.Session.GetString(CountSessionKey(warehouseId, sourceDocumentId));
+        var session = HttpContext.Features.Get<Microsoft.AspNetCore.Http.Features.ISessionFeature>()?.Session;
+        var json = session?.GetString(CountSessionKey(warehouseId, sourceDocumentId));
         if (json == null) return null;
         try
         {
@@ -667,15 +738,10 @@ public sealed class ProductionStockCountController : Controller
         }
         catch (JsonException)
         {
-            HttpContext.Session.Remove(CountSessionKey(warehouseId, sourceDocumentId));
+            session?.Remove(CountSessionKey(warehouseId, sourceDocumentId));
             return null;
         }
     }
-
-    private void SaveCountList(int warehouseId, int? sourceDocumentId, List<WarehouseCountSessionItem> rows) =>
-        HttpContext.Session.SetString(
-            CountSessionKey(warehouseId, sourceDocumentId),
-            JsonSerializer.Serialize(rows));
 
     private static string CountSessionKey(int warehouseId, int? sourceDocumentId) =>
         $"ProductionStockCount:Draft:{warehouseId}:{sourceDocumentId?.ToString(CultureInfo.InvariantCulture) ?? "New"}";
@@ -683,7 +749,7 @@ public sealed class ProductionStockCountController : Controller
     private IActionResult CountError(WarehouseCountVM model, string message)
     {
         TempData["error"] = message;
-        return RedirectToAction(nameof(Index), new { warehouseId = model.WarehouseId, sourceDocumentId = model.SourceDocumentId });
+        return RedirectToAction(nameof(Index), new { warehouseId = model.WarehouseId, sourceDocumentId = model.SourceDocumentId, draftId = model.DraftId > 0 ? (int?)model.DraftId : null });
     }
 
     private static PrdInventoryDocumentLine CreateLine(

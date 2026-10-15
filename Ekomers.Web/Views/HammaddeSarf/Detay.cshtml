@@ -1,0 +1,30 @@
+@model Ekomers.Models.ViewModels.Production.RawMaterialConsumptionDetailVM
+@{ViewData["Title"]="Hammadde Sarf Detayı";var canManage=User.IsInRole("Admin")||User.HasClaim("Authorize","HammaddeSarfYonet");var canReverse=User.IsInRole("Admin")||User.HasClaim("Authorize","HammaddeSarfGeriAl");}
+@if(TempData["error"] is string error){<div class="alert alert-danger">@error</div>}
+@if(TempData["success"] is string success){<div class="alert alert-success">@success</div>}
+<div class="card card-custom mb-5">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">@Model.Number<span class="d-block text-muted pt-2 font-size-sm">Hammadde Sarf · @Model.Date.ToString("dd.MM.yyyy")</span></h3></div><div class="card-toolbar"><span class="badge badge-secondary mr-3">@Model.Status.ToTurkish()</span><a asp-action="Index" class="btn btn-light">Listeye Dön</a></div></div>
+    <div class="card-body"><div class="row">
+        <div class="col-md-3 mb-3"><strong>Kaynak Depo</strong><div>@Model.Warehouse</div></div><div class="col-md-3 mb-3"><strong>Oluşturan</strong><div>@Model.CreatedBy</div></div>
+        <div class="col-md-3 mb-3"><strong>Stoktan Düşen / Tarih</strong><div>@(Model.PostedBy??"-") · @(Model.PostingDate?.ToString("dd.MM.yyyy HH:mm")??"-")</div></div><div class="col-md-3 mb-3"><strong>@(Model.Status==PrdInventoryDocumentStatus.Draft?"Tahmini Maliyet":"Sarf Maliyeti")</strong><div>@Model.TotalCost.ToString("N2") ₺</div></div>
+        <div class="col-12"><strong>Açıklama</strong><div>@Model.Notes</div></div>
+    </div><div class="alert alert-light-info mt-4 mb-0">Bu kayıt üretim emrine bağlı değildir ve Logo'ya gönderilmez. Taslakta stok değişmez; işleme sırasında güncel stok ve lot maliyetleri tekrar kontrol edilir.</div></div>
+    @if(Model.Status==PrdInventoryDocumentStatus.Draft&&canManage){
+        <div class="card-footer d-flex flex-wrap align-items-center">
+            <form asp-action="StoktanDus" method="post" class="mr-3" onsubmit="return confirm('Seçilen hammaddeler depodaki lot stoklarından düşülecek. Devam edilsin mi?');"><input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="confirm" value="true" /><button class="btn btn-danger">Stoktan Düş</button></form>
+            <form asp-action="TaslagiIptalEt" method="post" onsubmit="return confirm('Taslak iptal edilsin mi? Stok etkilenmeyecek.');"><input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-light-danger">Taslağı İptal Et</button></form>
+        </div>
+    }
+    @if(Model.ReversalDocumentId.HasValue){<div class="card-footer">Geri alma ters belge numarası: <a asp-controller="ProductionInventory" asp-action="Detay" asp-route-id="@Model.ReversalDocumentId">#@Model.ReversalDocumentId</a></div>}
+</div>
+<div class="card card-custom mb-5"><div class="card-header"><div class="card-title"><h3 class="card-label">Sarf Satırları (@Model.Lines.Count)</h3></div></div><div class="card-body"><div class="table-responsive"><table class="table table-separate table-head-custom">
+<thead><tr><th>#</th><th>Hammadde</th><th>Lot</th><th>Üretim / SKT</th><th>Miktar</th><th>Birim Maliyet</th><th>Toplam</th><th>Not</th></tr></thead><tbody>
+@foreach(var line in Model.Lines){<tr><td>@line.Sequence</td><td><strong>@line.MaterialCode</strong><span class="d-block text-muted">@line.MaterialName</span></td><td>@line.LotNumber</td><td>@(line.ProductionDate?.ToString("dd.MM.yyyy")??"-")<span class="d-block text-muted">SKT: @(line.ExpirationDate?.ToString("dd.MM.yyyy")??"-")</span></td><td>@line.Quantity.ToString("0.######") @line.Unit</td><td>@line.UnitCost.ToString("N6") ₺</td><td>@line.TotalCost.ToString("N2") ₺</td><td>@line.Notes</td></tr>}
+</tbody></table></div></div></div>
+@if(Model.Status==PrdInventoryDocumentStatus.Posted&&canReverse){
+<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Sarfı Geri Al</h3></div></div><div class="card-body">
+    <form asp-action="GeriAl" method="post"><input type="hidden" name="id" value="@Model.Id" /><div class="alert alert-light-warning">Satırlar silinmez. Ters stok hareketi ile sarf edilen miktar ve maliyet aynı lotlara geri eklenir. Bu işlemi yalnızca hatalı sarf kaydını düzeltmek için kullanınız.</div>
+        <div class="form-group"><label for="reverseReason">Geri Alma Gerekçesi</label><textarea id="reverseReason" name="reason" class="form-control" rows="2" minlength="5" maxlength="500" required></textarea></div>
+        <label class="checkbox mb-4"><input type="checkbox" name="confirm" value="true" required /><span></span>Miktarların aynı lotlara geri ekleneceğini onaylıyorum.</label><button type="submit" class="btn btn-warning">Sarfı Geri Al</button>
+    </form>
+</div></div>}

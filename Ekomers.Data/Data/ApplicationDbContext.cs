@@ -55,6 +55,8 @@ namespace Ekomers.Data
         public DbSet<LogoBankMovementReportSchedule> LogoBankMovementReportSchedules { get; set; }
         public DbSet<LogoBankMovementReportDelivery> LogoBankMovementReportDeliveries { get; set; }
         public DbSet<LogoRestApiSetting> LogoRestApiSettings { get; set; }
+        public DbSet<ScheduledSqlTask> ScheduledSqlTasks { get; set; }
+        public DbSet<ScheduledSqlTaskRun> ScheduledSqlTaskRuns { get; set; }
         public DbSet<CrmActivityLog> CrmActivityLog { get; set; }
 
 
@@ -205,6 +207,8 @@ namespace Ekomers.Data
 		public DbSet<PrdStockMovement> PrdStockMovements { get; set; }
 		public DbSet<PrdInventoryDocument> PrdInventoryDocuments { get; set; }
 		public DbSet<PrdInventoryDocumentLine> PrdInventoryDocumentLines { get; set; }
+		public DbSet<PrdWarehouseCountDraft> PrdWarehouseCountDrafts { get; set; }
+		public DbSet<PrdWarehouseCountEntry> PrdWarehouseCountEntries { get; set; }
 		public DbSet<PrdRecipe> PrdRecipes { get; set; }
 		public DbSet<PrdRecipeVersion> PrdRecipeVersions { get; set; }
 		public DbSet<PrdRecipeItem> PrdRecipeItems { get; set; }
@@ -392,6 +396,27 @@ namespace Ekomers.Data
 				.HasForeignKey(x => x.ScheduleId)
 				.OnDelete(DeleteBehavior.SetNull);
 
+			modelBuilder.Entity<ScheduledSqlTask>().ToTable("ScheduledSqlTask");
+			modelBuilder.Entity<ScheduledSqlTask>().Property(x => x.Name).HasMaxLength(150).IsRequired();
+			modelBuilder.Entity<ScheduledSqlTask>().Property(x => x.Description).HasMaxLength(1000);
+			modelBuilder.Entity<ScheduledSqlTask>().Property(x => x.SqlScript).IsRequired();
+			modelBuilder.Entity<ScheduledSqlTask>().Property(x => x.FirstRunTime).HasColumnType("time");
+			modelBuilder.Entity<ScheduledSqlTask>().Property(x => x.LastRunTime).HasColumnType("time");
+			modelBuilder.Entity<ScheduledSqlTask>().Property(x => x.LastError).HasMaxLength(4000);
+			modelBuilder.Entity<ScheduledSqlTask>().HasIndex(x => new { x.IsEnabled, x.IsDelete, x.NextRunAt });
+
+			modelBuilder.Entity<ScheduledSqlTaskRun>().ToTable("ScheduledSqlTaskRun");
+			modelBuilder.Entity<ScheduledSqlTaskRun>().Property(x => x.ErrorMessage).HasMaxLength(4000);
+			modelBuilder.Entity<ScheduledSqlTaskRun>().Property(x => x.TriggerType).HasMaxLength(30).IsRequired();
+			modelBuilder.Entity<ScheduledSqlTaskRun>().Property(x => x.TriggeredBy).HasMaxLength(256);
+			modelBuilder.Entity<ScheduledSqlTaskRun>().HasIndex(x => x.StartedAt);
+			modelBuilder.Entity<ScheduledSqlTaskRun>().HasIndex(x => x.TaskId);
+			modelBuilder.Entity<ScheduledSqlTaskRun>()
+				.HasOne<ScheduledSqlTask>()
+				.WithMany()
+				.HasForeignKey(x => x.TaskId)
+				.OnDelete(DeleteBehavior.Restrict);
+
 			modelBuilder.Entity<LogoRestApiSetting>().ToTable("LogoRestApiSetting");
 			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.ServerAddress).HasMaxLength(255).IsRequired();
 			modelBuilder.Entity<LogoRestApiSetting>().Property(x => x.Protocol).HasMaxLength(5).IsRequired();
@@ -542,6 +567,7 @@ namespace Ekomers.Data
 				typeof(PrdMaterialSpecificationItem), typeof(PrdMaterialSpecificationHistory),
 				typeof(PrdWarehouse), typeof(PrdStockLot),
 				typeof(PrdStockMovement), typeof(PrdInventoryDocument), typeof(PrdInventoryDocumentLine),
+				typeof(PrdWarehouseCountDraft), typeof(PrdWarehouseCountEntry),
 				typeof(PrdRecipe), typeof(PrdRecipeVersion), typeof(PrdRecipeItem), typeof(PrdRecipeHistory),
 				typeof(PrdRecipeCostScenario), typeof(PrdRecipeCostScenarioLine),
 				typeof(PrdProductionPlanHeader), typeof(PrdProductionPlan), typeof(PrdProductionPlanRequirement),
@@ -626,6 +652,19 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdInventoryDocumentLine>().HasIndex(x => new { x.MaterialId, x.SourceStockLotId });
 			modelBuilder.Entity<PrdInventoryDocumentLine>().Property(x => x.LotNumber).HasMaxLength(100);
 			modelBuilder.Entity<PrdInventoryDocumentLine>().Property(x => x.CurrencyCode).HasMaxLength(3);
+			modelBuilder.Entity<PrdWarehouseCountDraft>().Property(x => x.OwnerUserId).HasMaxLength(450);
+			modelBuilder.Entity<PrdWarehouseCountDraft>().Property(x => x.Notes).HasMaxLength(500);
+			modelBuilder.Entity<PrdWarehouseCountDraft>().Property(x => x.Revision).IsConcurrencyToken();
+			modelBuilder.Entity<PrdWarehouseCountDraft>().HasIndex(x => new { x.OwnerUserId, x.WarehouseId, x.SourceDocumentId })
+				.IsUnique().HasFilter("[Status] = 0 AND [IsDelete] = 0");
+			modelBuilder.Entity<PrdWarehouseCountDraft>().HasIndex(x => x.InventoryDocumentId);
+			modelBuilder.Entity<PrdWarehouseCountEntry>().HasIndex(x => new { x.DraftId, x.RequestId }).IsUnique();
+			modelBuilder.Entity<PrdWarehouseCountEntry>().HasIndex(x => new { x.DraftId, x.MaterialId });
+			modelBuilder.Entity<PrdWarehouseCountEntry>().Property(x => x.MaterialCode).HasMaxLength(100);
+			modelBuilder.Entity<PrdWarehouseCountEntry>().Property(x => x.MaterialName).HasMaxLength(250);
+			modelBuilder.Entity<PrdWarehouseCountEntry>().Property(x => x.UnitName).HasMaxLength(100);
+			modelBuilder.Entity<PrdWarehouseCountEntry>().Property(x => x.Location).HasMaxLength(100);
+			modelBuilder.Entity<PrdWarehouseCountEntry>().Property(x => x.Notes).HasMaxLength(250);
 			modelBuilder.Entity<PrdRecipe>().HasIndex(x => x.Code).IsUnique();
 			modelBuilder.Entity<PrdRecipe>().Property(x => x.Code).HasMaxLength(100);
 			modelBuilder.Entity<PrdRecipe>().Property(x => x.Name).HasMaxLength(250);
@@ -714,6 +753,12 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdInventoryDocument>().HasOne<PrdWarehouse>().WithMany().HasForeignKey(x => x.SourceWarehouseId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdInventoryDocument>().HasOne<PrdWarehouse>().WithMany().HasForeignKey(x => x.TargetWarehouseId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdInventoryDocument>().HasOne<PrdInventoryDocument>().WithMany().HasForeignKey(x => x.ReversalDocumentId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdWarehouseCountDraft>().HasOne<PrdWarehouse>().WithMany().HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdWarehouseCountDraft>().HasOne<PrdInventoryDocument>().WithMany().HasForeignKey(x => x.SourceDocumentId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdWarehouseCountDraft>().HasOne<PrdInventoryDocument>().WithMany().HasForeignKey(x => x.InventoryDocumentId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdWarehouseCountEntry>().HasOne<PrdWarehouseCountDraft>().WithMany().HasForeignKey(x => x.DraftId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdWarehouseCountEntry>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PrdWarehouseCountEntry>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdInventoryDocumentLine>().HasOne<PrdInventoryDocument>().WithMany().HasForeignKey(x => x.InventoryDocumentId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdInventoryDocumentLine>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdInventoryDocumentLine>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);

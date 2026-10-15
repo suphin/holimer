@@ -292,6 +292,11 @@ builder.Services.AddAuthorization(options =>
 		  context.User.IsInRole("Admin") ||
 		  context.User.HasClaim("Authorize", "StokBelgesiSil")));
 
+	options.AddPolicy("HammaddeSarfYonet", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "HammaddeSarfYonet")));
+	options.AddPolicy("HammaddeSarfGeriAl", policy => policy.RequireAssertion(context =>
+		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "HammaddeSarfGeriAl")));
+
 	options.AddPolicy("AdminOrEnvanter", policy =>
 	  policy.RequireAssertion(context =>
 		  context.User.IsInRole("Admin") ||
@@ -435,6 +440,7 @@ builder.Services.AddScoped<ISmsSender, SmsSenderTuraCell>();
 builder.Services.AddScoped<IEmailSenderService, EmailSenderService>(); 
 builder.Services.AddScoped<LogoBankMovementReportService>();
 builder.Services.AddScoped<LogoBankMovementReportJob>();
+builder.Services.AddScoped<ScheduledSqlTaskJob>();
 builder.Services.AddScoped<LogoClientReadService>();
 builder.Services.AddScoped<IDynamicTableService, DynamicTableService>(); 
 builder.Services.AddScoped<ISehirlerService, SehirlerService>();
@@ -464,6 +470,7 @@ builder.Services.AddScoped<ProductionCatalogSyncService>();
 builder.Services.AddScoped<IProductionOrderCleanupService, ProductionOrderCleanupService>();
 builder.Services.AddScoped<PurchasingSupplierImportService>();
 builder.Services.AddScoped<Ekomers.Web.Services.PurchasingInventoryReversalService>();
+builder.Services.AddScoped<Ekomers.Web.Services.RawMaterialConsumptionService>();
 builder.Services.AddScoped<IMalzemeFiyatService, MalzemeFiyatService>();
 builder.Services.AddScoped<ISiparisService, SiparisService>();
 builder.Services.AddScoped<ISiparisIadeService, SiparisIadeService>();
@@ -529,6 +536,11 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 RecurringJob.AddOrUpdate<LogoBankMovementReportJob>(
 	"logo-bank-movement-report-dispatcher",
 	job => job.ProcessDueSchedulesAsync(),
+	Cron.Minutely);
+
+RecurringJob.AddOrUpdate<ScheduledSqlTaskJob>(
+	"scheduled-sql-task-dispatcher",
+	job => job.ProcessDueTasksAsync(),
 	Cron.Minutely);
 
 

@@ -408,7 +408,7 @@
 
 <!--end::CRM-->
 <!--begin::FW-->
-@if (User.HasClaim("Modul", "FW") || User.IsInRole("Admin"))
+@if (User.HasClaim("Modul", "_FW") || User.IsInRole("_Admin"))
 {
 	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "FW" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 		<a href="javascript:;" class="menu-link menu-toggle">
@@ -649,7 +649,7 @@
 
 <!--end::Destek Hizmetleri-->
 <!--begin::stok sayım-->
-@if (User.HasClaim("Modul", "Stok") || User.IsInRole("Admin"))
+@if (User.HasClaim("Modul", "_Stok") || User.IsInRole("_Admin"))
 {
 	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "Stok" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 		<a href="javascript:;" class="menu-link menu-toggle">
@@ -984,6 +984,12 @@
 						<span class="menu-text">Entegrasyon Logları</span>
 					</a>
 				</li>
+				<li class="menu-item @(controllerName == "ZamanlanmisSqlGorevleri" ? "menu-item-active" : "")" aria-haspopup="true">
+					<a asp-controller="ZamanlanmisSqlGorevleri" asp-action="Index" class="menu-link">
+						<i class="menu-bullet menu-bullet-dot"><span></span></i>
+						<span class="menu-text">Zamanlanmış SQL Görevleri</span>
+					</a>
+				</li>
 				<li class="menu-item @(controllerName == "HataKayitlari" ? "menu-item-active" : "")" aria-haspopup="true">
 					<a asp-controller="HataKayitlari" asp-action="Index" class="menu-link">
 						<i class="menu-bullet menu-bullet-dot"><span></span></i>
@@ -1056,6 +1062,7 @@
 			</li>
 			<li class="menu-item @(controllerName == "UretimYonetimi" && (actionName == "Stoklar" || actionName == "MevcutStokAktar") ? "menu-item-active" : "")"><a asp-controller="UretimYonetimi" asp-action="Stoklar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Üretim Stokları</span></a></li>
 			<li class="menu-item @(controllerName == "ProductionStockCount" ? "menu-item-active" : "")"><a asp-controller="ProductionStockCount" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Depo Sayımı</span></a></li>
+			<li class="menu-item @(controllerName == "HammaddeSarf" ? "menu-item-active" : "")"><a asp-controller="HammaddeSarf" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Hammadde Sarf</span></a></li>
 			<li class="menu-item @(controllerName == "ProductionInventory" ? "menu-item-active" : "")"><a asp-controller="ProductionInventory" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Stok Hareketleri</span></a></li>
 			<li class="menu-item @(controllerName == "ReceteMaliyetleri" && actionName == "Index" ? "menu-item-active" : "")"><a asp-controller="ReceteMaliyetleri" asp-action="Index" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Reçete Maliyet Hesabı</span></a></li>
 			<li class="menu-item @(controllerName == "ReceteMaliyetleri" && (actionName == "KayitliHesaplar" || actionName == "KayitDetay") ? "menu-item-active" : "")"><a asp-controller="ReceteMaliyetleri" asp-action="KayitliHesaplar" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Kayıtlı Maliyet Hesapları</span></a></li>

@@ -350,7 +350,7 @@ public sealed class UretimYonetimiController : Controller
                          join warehouse in _context.PrdWarehouses.AsNoTracking() on warehouseId equals warehouse.ID
                          join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID
                          where material.ID==materialId&&material.IsDelete!=true&&warehouse.IsDelete!=true
-                         select new{Material=material,Warehouse=warehouse,Unit=unit.Name}).FirstOrDefaultAsync(ct);
+                         select new{Material=material,Warehouse=warehouse,UnitCode=unit.Code,UnitName=unit.Name}).FirstOrDefaultAsync(ct);
         if(header==null)return NotFound();
 
         var totals=await _context.PrdStockMovements.AsNoTracking()
@@ -362,7 +362,7 @@ public sealed class UretimYonetimiController : Controller
                 Outgoing=g.Where(x=>x.Direction==PrdStockDirection.Out).Sum(x=>x.Quantity)
             }).FirstOrDefaultAsync(ct);
 
-        var movements=await(from movement in _context.PrdStockMovements.AsNoTracking()
+        var movementRows=await(from movement in _context.PrdStockMovements.AsNoTracking()
                             join unit in _context.PrdUnits.AsNoTracking() on movement.UnitId equals unit.ID
                             join lot0 in _context.PrdStockLots.AsNoTracking() on movement.StockLotId equals lot0.ID into lotJoin
                             from lot in lotJoin.DefaultIfEmpty()
@@ -372,7 +372,7 @@ public sealed class UretimYonetimiController : Controller
                             from document in documentJoin.DefaultIfEmpty()
                             where movement.MaterialId==materialId&&movement.WarehouseId==warehouseId&&movement.IsDelete!=true
                             orderby movement.MovementDate descending,movement.ID descending
-                            select new ProductionStockMovementHistoryItemVM
+                            select new { UnitCode=unit.Code,UnitName=unit.Name,Item=new ProductionStockMovementHistoryItemVM
                             {
                                 Id=movement.ID,
                                 MovementDate=movement.MovementDate,
@@ -390,7 +390,12 @@ public sealed class UretimYonetimiController : Controller
                                 MovementDescription=movement.Description,
                                 LineNotes=line==null?null:line.Notes,
                                 DocumentNotes=document==null?null:document.Notes
-                            }).Take(10).ToListAsync(ct);
+                            }}).Take(10).ToListAsync(ct);
+        var movements=movementRows.Select(x=>
+        {
+            x.Item.Unit=ProductionUnitNormalizer.DisplayName(x.UnitCode,x.UnitName);
+            return x.Item;
+        }).ToList();
 
         return View(new ProductionStockMovementHistoryVM
         {
@@ -400,7 +405,7 @@ public sealed class UretimYonetimiController : Controller
             MaterialName=header.Material.Name,
             WarehouseCode=header.Warehouse.Code,
             WarehouseName=header.Warehouse.Name,
-            Unit=header.Unit,
+            Unit=ProductionUnitNormalizer.DisplayName(header.UnitCode,header.UnitName),
             IncomingQuantity=totals?.Incoming??0,
             OutgoingQuantity=totals?.Outgoing??0,
             Movements=movements
@@ -499,7 +504,7 @@ public sealed class UretimYonetimiController : Controller
         code=code?.Trim();name=name?.Trim();
         var model=new ProductionStockReportVM{Code=code,Name=name,WarehouseId=warehouseId};
         if(includeWarehouseOptions)model.Warehouses=await _context.PrdWarehouses.AsNoTracking().Where(x=>x.IsDelete!=true&&x.IsActive!=false).OrderBy(x=>x.Type).ThenBy(x=>x.Code).Select(x=>new SelectListItem(x.Code+" - "+x.Name,x.ID.ToString())).ToListAsync(ct);
-        var rows=await(from movement in _context.PrdStockMovements.AsNoTracking()
+        var rawRows=await(from movement in _context.PrdStockMovements.AsNoTracking()
                        join material in _context.PrdMaterials.AsNoTracking() on movement.MaterialId equals material.ID
                        join warehouse in _context.PrdWarehouses.AsNoTracking() on movement.WarehouseId equals warehouse.ID
                        join unit in _context.PrdUnits.AsNoTracking() on movement.UnitId equals unit.ID
@@ -509,7 +514,9 @@ public sealed class UretimYonetimiController : Controller
                          &&(!warehouseId.HasValue||movement.WarehouseId==warehouseId.Value)
                          &&(string.IsNullOrEmpty(code)||EF.Functions.Like(material.Code,"%"+code+"%"))
                          &&(string.IsNullOrEmpty(name)||EF.Functions.Like(material.Name,"%"+name+"%"))
-                       select new{movement.MaterialId,movement.WarehouseId,MaterialCode=material.Code,MaterialName=material.Name,material.CriticalQuantity,WarehouseCode=warehouse.Code,WarehouseName=warehouse.Name,LotNumber=lot==null?string.Empty:lot.LotNumber,ExpirationDate=lot==null?(DateTime?)null:lot.ExpirationDate,movement.Direction,movement.Quantity,movement.TotalCost,Unit=unit.Name}).ToListAsync(ct);
+                       select new{movement.MaterialId,movement.WarehouseId,MaterialCode=material.Code,MaterialName=material.Name,material.CriticalQuantity,WarehouseCode=warehouse.Code,WarehouseName=warehouse.Name,LotNumber=lot==null?string.Empty:lot.LotNumber,ExpirationDate=lot==null?(DateTime?)null:lot.ExpirationDate,movement.Direction,movement.Quantity,movement.TotalCost,UnitCode=unit.Code,UnitName=unit.Name}).ToListAsync(ct);
+        // Normalize only equivalent labels (AD/ADET/PCS etc.), never physical unit conversions.
+        var rows=rawRows.Select(x=>new{x.MaterialId,x.WarehouseId,x.MaterialCode,x.MaterialName,x.CriticalQuantity,x.WarehouseCode,x.WarehouseName,x.LotNumber,x.ExpirationDate,x.Direction,x.Quantity,x.TotalCost,Unit=ProductionUnitNormalizer.DisplayName(x.UnitCode,x.UnitName)}).ToList();
         model.Items=rows.GroupBy(x=>new{x.MaterialId,x.WarehouseId,x.MaterialCode,x.MaterialName,x.CriticalQuantity,x.WarehouseCode,x.WarehouseName,x.Unit}).Select(g=>
         {
             var incoming=g.Where(x=>x.Direction==PrdStockDirection.In).Sum(x=>x.Quantity);var outgoing=g.Where(x=>x.Direction==PrdStockDirection.Out).Sum(x=>x.Quantity);var remaining=incoming-outgoing;var totalCost=g.Sum(x=>x.Direction==PrdStockDirection.In?x.TotalCost:-x.TotalCost);

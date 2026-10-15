@@ -123,21 +123,28 @@ public sealed class KaliteYonetimiController : Controller
             {
                 model.SpecificationCode = specification.SpecificationCode;
                 model.SpecificationVersion = specification.VersionNumber;
-                model.SpecificationResults = await (from result in _context.PurQualityInspectionSpecificationResults.AsNoTracking()
-                                                      join item in _context.PrdMaterialSpecificationItems.AsNoTracking() on result.SpecificationItemId equals item.ID
-                                                      where result.QualityInspectionId == id && result.IsDelete != true && item.IsDelete != true
-                                                      orderby item.Sequence
-                                                      select new QualityInspectionSpecificationResultVM
-                                                      {
-                                                          ResultId = result.ID, SpecificationItemId = item.ID, Sequence = item.Sequence,
-                                                          Code = item.Code, Name = item.Name, DataType = item.DataType, UnitName = item.UnitName,
-                                                          TargetValue = item.TargetValue, MinimumValue = item.MinimumValue, MaximumValue = item.MaximumValue,
-                                                          ExpectedText = item.ExpectedText, ExpectedBoolean = item.ExpectedBoolean, AllowedValues = item.AllowedValues,
-                                                          TestMethod = item.TestMethod, IsRequired = item.IsRequired, Criticality = item.Criticality,
-                                                          NumericValue = result.NumericValue.HasValue ? result.NumericValue.Value.ToString("0.########", CultureInfo.GetCultureInfo("tr-TR")) : null,
-                                                          TextValue = result.TextValue, BooleanValue = result.BooleanValue, Status = result.Status,
-                                                          EvaluationNote = result.EvaluationNote
-                                                      }).ToListAsync(ct);
+                var specificationResults = await (from result in _context.PurQualityInspectionSpecificationResults.AsNoTracking()
+                                                  join item in _context.PrdMaterialSpecificationItems.AsNoTracking() on result.SpecificationItemId equals item.ID
+                                                  where result.QualityInspectionId == id && result.IsDelete != true && item.IsDelete != true
+                                                  orderby item.Sequence
+                                                  select new { Result = result, Item = item }).ToListAsync(ct);
+                var numericCulture = CultureInfo.GetCultureInfo("tr-TR");
+                model.SpecificationResults = specificationResults.Select(row =>
+                {
+                    var result = row.Result;
+                    var item = row.Item;
+                    return new QualityInspectionSpecificationResultVM
+                    {
+                        ResultId = result.ID, SpecificationItemId = item.ID, Sequence = item.Sequence,
+                        Code = item.Code, Name = item.Name, DataType = item.DataType, UnitName = item.UnitName,
+                        TargetValue = item.TargetValue, MinimumValue = item.MinimumValue, MaximumValue = item.MaximumValue,
+                        ExpectedText = item.ExpectedText, ExpectedBoolean = item.ExpectedBoolean, AllowedValues = item.AllowedValues,
+                        TestMethod = item.TestMethod, IsRequired = item.IsRequired, Criticality = item.Criticality,
+                        NumericValue = result.NumericValue?.ToString("0.########", numericCulture),
+                        TextValue = result.TextValue, BooleanValue = result.BooleanValue, Status = result.Status,
+                        EvaluationNote = result.EvaluationNote
+                    };
+                }).ToList();
             }
         }
         var disposition = await _context.PrdInventoryDocuments.AsNoTracking()
@@ -870,93 +877,11 @@ public sealed class KaliteYonetimiController : Controller
         CreateUserID = CurrentUser
     };
 
-    private async Task RecalculateGoodsReceiptDispositionStatusAsync(int receiptId, DateTime now, CancellationToken ct)
-    {
-        var receipt = await _context.PurGoodsReceipts.FirstAsync(x => x.ID == receiptId && x.IsDelete != true, ct);
-        var inspections = await _context.PurQualityInspections.AsNoTracking()
-            .Where(x => x.GoodsReceiptId == receiptId && x.IsDelete != true)
-            .Select(x => new { x.ID, x.Status })
-            .ToListAsync(ct);
+    private Task RecalculateGoodsReceiptDispositionStatusAsync(int receiptId, DateTime now, CancellationToken ct) =>
+        GoodsReceiptStockWorkflow.RecalculateAsync(_context, receiptId, now, CurrentUser, ct);
 
-        if (inspections.Count == 0 || inspections.Any(x => !IsFinal(x.Status)))
-        {
-            receipt.Status = PurGoodsReceiptStatus.InQuarantine;
-        }
-        else
-        {
-            var inspectionIds = inspections.Select(x => x.ID).ToList();
-            var dispositions = await _context.PrdInventoryDocuments.AsNoTracking()
-                .Where(x => x.SourceDocumentType == DispositionSourceDocumentType && x.SourceDocumentId.HasValue &&
-                            inspectionIds.Contains(x.SourceDocumentId.Value) && x.Status == PrdInventoryDocumentStatus.Posted &&
-                            x.IsDelete != true)
-                .Select(x => new { InspectionId = x.SourceDocumentId!.Value, x.Type })
-                .ToListAsync(ct);
-            var latestByInspection = dispositions
-                .GroupBy(x => x.InspectionId)
-                .Select(x => x.Last())
-                .ToList();
-
-            if (latestByInspection.Count < inspections.Count)
-            {
-                receipt.Status = PurGoodsReceiptStatus.StockPartiallyCompleted;
-            }
-            else if (latestByInspection.All(x => x.Type == PrdInventoryDocumentType.WarehouseTransfer))
-            {
-                receipt.Status = PurGoodsReceiptStatus.TransferredToStock;
-            }
-            else if (latestByInspection.All(x => x.Type == PrdInventoryDocumentType.SupplierReturn))
-            {
-                receipt.Status = PurGoodsReceiptStatus.Returned;
-            }
-            else if (latestByInspection.All(x => x.Type == PrdInventoryDocumentType.ScrapTransfer))
-            {
-                receipt.Status = PurGoodsReceiptStatus.Scrapped;
-            }
-            else
-            {
-                receipt.Status = PurGoodsReceiptStatus.CompletedWithMixedDisposition;
-            }
-        }
-
-        receipt.UpdateDate = now;
-        receipt.UpdateUserID = CurrentUser;
-        await _context.SaveChangesAsync(ct);
-    }
-
-    private async Task RecalculateGoodsReceiptQualityStatusAsync(int receiptId, DateTime now, CancellationToken ct)
-    {
-        var receipt = await _context.PurGoodsReceipts.FirstAsync(x => x.ID == receiptId, ct);
-        var statuses = await _context.PurQualityInspections.AsNoTracking()
-            .Where(x => x.GoodsReceiptId == receiptId && x.IsDelete != true)
-            .Select(x => x.Status)
-            .ToListAsync(ct);
-        if (statuses.Count == 0 || statuses.Any(x => x is PrdQualityControlStatus.Pending or PrdQualityControlStatus.Sampled))
-            receipt.Status = PurGoodsReceiptStatus.InQuarantine;
-        else if (statuses.All(x => x is PrdQualityControlStatus.Approved or PrdQualityControlStatus.ConditionalApproval))
-            receipt.Status = PurGoodsReceiptStatus.QualityApproved;
-        else if (statuses.All(x => x == PrdQualityControlStatus.Rejected))
-            receipt.Status = PurGoodsReceiptStatus.QualityRejected;
-        else
-            receipt.Status = PurGoodsReceiptStatus.QualityPartiallyDecided;
-        receipt.UpdateDate = now;
-        receipt.UpdateUserID = CurrentUser;
-        await _context.SaveChangesAsync(ct);
-    }
-
-    private async Task RecalculateGoodsReceiptWorkflowStatusAsync(int receiptId, DateTime now, CancellationToken ct)
-    {
-        var inspectionIds = await _context.PurQualityInspections.AsNoTracking()
-            .Where(x => x.GoodsReceiptId == receiptId && x.IsDelete != true)
-            .Select(x => x.ID)
-            .ToListAsync(ct);
-        var hasActiveDisposition = inspectionIds.Count > 0 && await _context.PrdInventoryDocuments.AsNoTracking().AnyAsync(x =>
-            x.SourceDocumentType == DispositionSourceDocumentType && x.SourceDocumentId.HasValue &&
-            inspectionIds.Contains(x.SourceDocumentId.Value) && x.Status == PrdInventoryDocumentStatus.Posted && x.IsDelete != true, ct);
-        if (hasActiveDisposition)
-            await RecalculateGoodsReceiptDispositionStatusAsync(receiptId, now, ct);
-        else
-            await RecalculateGoodsReceiptQualityStatusAsync(receiptId, now, ct);
-    }
+    private Task RecalculateGoodsReceiptWorkflowStatusAsync(int receiptId, DateTime now, CancellationToken ct) =>
+        GoodsReceiptStockWorkflow.RecalculateAsync(_context, receiptId, now, CurrentUser, ct);
 
     private string CurrentUser => User.Identity?.Name ?? "system";
     private static bool IsFinal(PrdQualityControlStatus status) => status is PrdQualityControlStatus.Approved or PrdQualityControlStatus.ConditionalApproval or PrdQualityControlStatus.Rejected;
