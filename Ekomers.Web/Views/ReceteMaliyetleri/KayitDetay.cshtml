@@ -37,6 +37,19 @@
 <div class="card card-custom">
     <div class="card-header"><div class="card-title"><h3 class="card-label">Ürün Maliyetleri (@Model.Lines.Count)</h3></div></div>
     <div class="card-body">
+        <div class="row align-items-end mb-4">
+            <div class="col-lg-7 col-md-9">
+                <label for="recipeCostProductSearch">Ürün kodu veya adı ara</label>
+                <div class="input-group">
+                    <input id="recipeCostProductSearch" type="search" class="form-control" placeholder="Örn. 152MM.01.02.001 veya yeşil çay" aria-controls="recipeCostProductRows" aria-describedby="recipeCostProductSearchHelp" autocomplete="off" />
+                    <div class="input-group-append"><button id="recipeCostProductSearchClear" type="button" class="btn btn-light">Temizle</button></div>
+                </div>
+                <small id="recipeCostProductSearchHelp" class="text-muted d-block mt-2">Arama yalnızca ürün listesini süzer; çalışma toplamları ve Excel çıktısı değişmez.</small>
+            </div>
+            <div class="col-lg-5 col-md-3 mt-3 text-md-right">
+                <span id="recipeCostProductSearchCount" class="text-muted" role="status" aria-live="polite">@Model.Lines.Count / @Model.Lines.Count ürün gösteriliyor</span>
+            </div>
+        </div>
         <div class="table-responsive">
             <table class="table table-separate table-head-custom">
                 <thead>
@@ -51,10 +64,10 @@
                         <th>Birim Toplam</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="recipeCostProductRows">
                 @foreach (var line in Model.Lines)
                 {
-                    <tr>
+                    <tr data-product-search="@(line.ProductCode + " " + line.ProductName)">
                         <td><strong>@line.ProductCode</strong><span class="d-block text-muted">@line.ProductName</span></td>
                         <td>@line.ProductionQuantity.ToString("N6") @line.ProductionUnit</td>
                         <td>
@@ -69,8 +82,13 @@
                         <td><strong>@line.TotalUnitCost.ToString("N4") TRY</strong><span class="d-block text-muted">/@line.ProductionUnit</span></td>
                     </tr>
                 }
+                    <tr id="recipeCostProductSearchEmpty" style="display: none;"><td colspan="8" class="text-center text-muted py-6">Aramanızla eşleşen ürün bulunamadı.</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+@section JSSection {
+    <script src="~/js/recipe-cost-detail-search.js" asp-append-version="true"></script>
+}

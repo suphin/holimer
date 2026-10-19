@@ -80,6 +80,17 @@ namespace Ekomers.Web.Controllers
 			return View(model);
 		}
 
+		[HttpGet]
+		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+		public async Task<IActionResult> CariHareketler(string? cariKod, int page = 1, CancellationToken cancellationToken = default)
+		{
+			if (string.IsNullOrWhiteSpace(cariKod) || cariKod.Trim().Length > 100 || page < 1)
+				return BadRequest(new { message = "Cari kodu veya sayfa bilgisi geçersiz." });
+			var model = await _service.CariHareketler(cariKod, page, cancellationToken);
+			Response.Headers["X-Report-Partial"] = "CariHareketler";
+			return PartialView("_CariHareketler", model);
+		}
+
 		public async Task<IActionResult> BankaKredileri()
 		{
 			ViewBag.Modul = "Rapor";

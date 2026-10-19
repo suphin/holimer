@@ -7312,6 +7312,140 @@ namespace Ekomers.Data.Migrations
                     b.ToTable("PrdWarehouseTaskLot", (string)null);
                 });
 
+            modelBuilder.Entity("Ekomers.Models.Entity.Profitability.RptAccountingExpenseGroup", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<int>("Behavior")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreateUserID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeleteDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeleteUserID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DosyaID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("IsDelete")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PresetKey")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("Stage")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdateUserID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("[IsDelete] = 0");
+
+                    b.HasIndex("PresetKey")
+                        .IsUnique()
+                        .HasFilter("[PresetKey] IS NOT NULL AND [IsDelete] = 0");
+
+                    b.ToTable("RptAccountingExpenseGroup", (string)null);
+                });
+
+            modelBuilder.Entity("Ekomers.Models.Entity.Profitability.RptAccountingExpenseRule", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("AccountCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreateUserID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeleteDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeleteUserID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DosyaID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ExpenseGroupId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FirmNumber")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("IsDelete")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("UpdateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdateUserID")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ValidFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("ValidTo")
+                        .HasColumnType("date");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("ExpenseGroupId");
+
+                    b.HasIndex("FirmNumber", "AccountCode", "ValidFrom")
+                        .IsUnique()
+                        .HasFilter("[IsDelete] = 0");
+
+                    b.ToTable("RptAccountingExpenseRule", (string)null);
+                });
+
             modelBuilder.Entity("Ekomers.Models.Entity.Profitability.RptProductCostVersion", b =>
                 {
                     b.Property<int>("ID")
@@ -13418,6 +13552,15 @@ namespace Ekomers.Data.Migrations
                     b.HasOne("Ekomers.Models.Entity.Production.PrdWarehouseTaskItem", null)
                         .WithMany()
                         .HasForeignKey("WarehouseTaskItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ekomers.Models.Entity.Profitability.RptAccountingExpenseRule", b =>
+                {
+                    b.HasOne("Ekomers.Models.Entity.Profitability.RptAccountingExpenseGroup", null)
+                        .WithMany()
+                        .HasForeignKey("ExpenseGroupId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

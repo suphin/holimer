@@ -1,0 +1,45 @@
+@model CariHareketDetayVM
+@{
+    Layout = null;
+    var culture = CultureInfo.GetCultureInfo("tr-TR");
+    string Amount(decimal value) => decimal.Round(value, 2, MidpointRounding.ToEven).ToString("N2", culture);
+    string Text(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
+    var net = Model.AlacakToplami - Model.BorcToplami;
+}
+<div class="ba-movement-identity"><strong>@Model.CariKod</strong><span>@Model.CariUnvan</span></div>
+<div class="ba-movement-totals">
+    <div><span>Hareket Borç Toplamı</span><strong class="ba-debit">@Amount(Model.BorcToplami)</strong></div>
+    <div><span>Hareket Alacak Toplamı</span><strong class="ba-credit">@Amount(Model.AlacakToplami)</strong></div>
+    <div><span>Net Fark · Alacak − Borç</span><strong>@Amount(net)</strong></div>
+</div>
+<p class="ba-movement-note">İptal edilmemiş hareketler · En yeni tarih önce · Toplamlar tüm hareketleri kapsar.
+    Ana listedeki net bakiyeler ile buradaki borç/alacak hareket toplamları farklı kavramlardır.</p>
+<div class="ba-movement-table-wrap">
+    <table class="ba-movement-table">
+        <caption class="ba-visually-hidden">@Model.CariKod cari hesap hareketleri</caption>
+        <thead><tr><th scope="col">Tarih</th><th scope="col">Fiş No / Türü</th><th scope="col">Açıklama</th><th scope="col" class="ba-number">Borç</th><th scope="col" class="ba-number">Alacak</th><th scope="col">Döviz / Kur</th></tr></thead>
+        <tbody>
+        @foreach (var item in Model.Rows)
+        {
+            <tr>
+                <td>@(item.FisTarihi?.ToString("dd.MM.yyyy", culture) ?? "-")</td>
+                <td><strong>@Text(item.FisNo)</strong><span>@(string.IsNullOrWhiteSpace(item.FisTuru) ? $"Fiş kodu: {item.FisKod}" : item.FisTuru.Trim())</span><small>İşyeri: @item.Isyeri</small></td>
+                <td class="ba-movement-description">@Text(item.Aciklama1)
+                    @if (!string.IsNullOrWhiteSpace(item.Aciklama2) && item.Aciklama2.Trim() != item.Aciklama1?.Trim()) { <span>@item.Aciklama2</span> }
+                </td>
+                <td class="ba-number ba-debit">@Amount(item.Borc)</td>
+                <td class="ba-number ba-credit">@Amount(item.Alacak)</td>
+                <td><strong>@Text(item.DovizKodu)</strong><small>Kur: @item.DovizKuru.ToString("N6", culture)</small><small>B: @Amount(item.DovizBorc) · A: @Amount(item.DovizAlacak)</small></td>
+            </tr>
+        }
+        @if (Model.Rows.Count == 0) { <tr><td colspan="6" class="ba-empty">@(Model.TotalCount == 0 ? "Bu cari hesap için hareket bulunamadı." : "Bu sayfada hareket yok. Önceki sayfaya dönebilirsiniz.")</td></tr> }
+        </tbody>
+    </table>
+</div>
+<nav class="ba-pagination ba-movement-pagination" aria-label="Cari hareket sayfaları">
+    <span>@Model.TotalCount.ToString("N0", culture) hareket · Sayfa @Model.Page / @Model.TotalPages</span>
+    <div>
+        <button type="button" class="btn ba-page-button" data-movement-page="@(Model.Page - 1)" disabled="@(Model.Page <= 1)">Önceki</button>
+        <button type="button" class="btn ba-page-button" data-movement-page="@(Model.Page + 1L)" disabled="@(Model.Page >= Model.TotalPages)">Sonraki</button>
+    </div>
+</nav>

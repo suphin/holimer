@@ -24,6 +24,8 @@ public sealed class SalesProfitabilityPreviewVM
     public decimal NetProfit { get; set; }
     public decimal NetProfitRate { get; set; }
     public int MissingCostLineCount { get; set; }
+    public int ManualCostLineCount { get; set; }
+    public int RecipeCostLineCount { get; set; }
     public int PageCount { get; set; }
     public IReadOnlyList<string> PriceStatuses { get; set; } = [];
     public IReadOnlyList<SalesProfitabilityGroupRowVM> CustomerSummaries { get; set; } = [];
@@ -31,6 +33,12 @@ public sealed class SalesProfitabilityPreviewVM
     public IReadOnlyList<SalesProfitabilityGroupRowVM> ChannelSummaries { get; set; } = [];
     public IReadOnlyList<SalesProfitabilityGroupRowVM> SalesRepresentativeSummaries { get; set; } = [];
     public IReadOnlyList<SalesProfitabilityPreviewRowVM> Rows { get; set; } = [];
+    public AccountingExpenseSummaryVM? AccountingExpenses { get; set; }
+    public bool HasSalesFilter => !string.IsNullOrWhiteSpace(Filter.Search) || !string.IsNullOrWhiteSpace(Filter.PriceStatus);
+    public bool CanShowPeriodResult => !HasSalesFilter && MissingCostLineCount == 0 && AccountingExpenses?.IsComplete == true;
+    public decimal? OperatingResult => CanShowPeriodResult ? NetProfit - AccountingExpenses!.TotalOperating : null;
+    public decimal? FinancingResult => CanShowPeriodResult ? NetProfit - AccountingExpenses!.TotalIncluded : null;
+    public decimal? CostMarkupRate => KnownCostAmount == 0 ? null : NetProfit * 100m / KnownCostAmount;
 }
 
 public sealed class SalesProfitabilityGroupRowVM
@@ -49,6 +57,7 @@ public sealed class SalesProfitabilityGroupRowVM
     public decimal NetProfit { get; set; }
     public decimal NetProfitRate { get; set; }
     public int MissingCostLineCount { get; set; }
+    public decimal? CostMarkupRate => KnownCostAmount == 0 || MissingCostLineCount > 0 ? null : NetProfit * 100m / KnownCostAmount;
 }
 
 public sealed class SalesProfitabilityPreviewRowVM
@@ -76,5 +85,9 @@ public sealed class SalesProfitabilityPreviewRowVM
     public decimal? NetProfit { get; set; }
     public decimal? NetProfitRate { get; set; }
     public string CostStatus { get; set; } = string.Empty;
+    public string? CostSource { get; set; }
+    public string? CostSourceDetail { get; set; }
+    public int? RecipeCostScenarioId { get; set; }
     public string PriceStatus { get; set; } = string.Empty;
+    public decimal? CostMarkupRate => CostAmount is null or 0 ? null : NetProfit * 100m / CostAmount;
 }

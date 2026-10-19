@@ -457,6 +457,7 @@ builder.Services.AddScoped<ISirketlerService, SirketlerService>();
 builder.Services.AddScoped<IUserShortCutFieldService, UserShortCutFieldService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<ISalesProfitabilityReportService, SalesProfitabilityReportService>();
+builder.Services.AddScoped<IAccountingExpenseService, AccountingExpenseService>();
 builder.Services.AddScoped<ICustomerReceivablesService, CustomerReceivablesService>();
 builder.Services.AddScoped<IChannelBalancingService, ChannelBalancingService>();
 builder.Services.AddScoped<IYetkilendirmeService, YetkilendirmeService>();

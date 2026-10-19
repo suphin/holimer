@@ -8,13 +8,14 @@
         <div class="card-title">
             <div>
                 <h3 class="card-label mb-1">Satış Kârlılık Veri Kontrolü</h3>
-                <span class="text-muted">Logo: VW_RPT_SATIS_KARLILIK_100 · salt okunur</span>
+               @*  <span class="text-muted">Logo: VW_RPT_SATIS_KARLILIK_100 · salt okunur</span> *@
             </div>
         </div>
         @if (User.IsInRole("Admin") || User.IsInRole("Yönetici"))
         {
             <div class="card-toolbar">
                 <a asp-controller="UrunMaliyetleri" asp-action="Index" target="_blank" class="btn btn-light-primary">Ürün Maliyetleri</a>
+                <a asp-controller="SatisKarlilikGiderleri" asp-action="Index" asp-route-startDate="@Model.Filter.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.Filter.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light-primary ml-2">Muhasebe Giderleri / Gruplar</a>
             </div>
         }
     </div>
@@ -60,17 +61,53 @@
 </div>
 
 <div class="row">
-    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Bilinen Satış Maliyeti</div><div class="font-size-h5 font-weight-bold">@Model.KnownCostAmount.ToString("N2") ₺</div></div></div></div>
-    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Brüt Kâr</div><div class="font-size-h5 font-weight-bold">@Model.GrossProfit.ToString("N2") ₺</div></div></div></div>
-    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Net Kâr</div><div class="font-size-h5 font-weight-bold @(Model.NetProfit < 0 ? "text-danger" : "text-success")">@Model.NetProfit.ToString("N2") ₺</div></div></div></div>
-    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Net Kâr Oranı</div><div class="font-size-h5 font-weight-bold @(Model.NetProfitRate < 0 ? "text-danger" : "text-success")">%@Model.NetProfitRate.ToString("N2")</div></div></div></div>
+    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Hammadde + Ambalaj</div><div class="font-size-h5 font-weight-bold">@Model.KnownCostAmount.ToString("N2") ₺</div></div></div></div>
+    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Referans Fiyata Göre Kâr</div><div class="font-size-h5 font-weight-bold">@Model.GrossProfit.ToString("N2") ₺</div></div></div></div>
+    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Ürün Malzeme Maliyeti Sonrası Kâr</div><div class="font-size-h5 font-weight-bold @(Model.NetProfit < 0 ? "text-danger" : "text-success")">@Model.NetProfit.ToString("N2") ₺</div></div></div></div>
+    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Satış Üzerinden Marj</div><div class="font-size-h5 font-weight-bold">@(Model.NetRevenue == 0 || Model.MissingCostLineCount > 0 ? "-" : $"%{Model.NetProfitRate:N2}")</div></div></div></div>
+    <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Maliyet Üzerinden Kâr Oranı</div><div class="font-size-h5 font-weight-bold">@(Model.MissingCostLineCount > 0 || !Model.CostMarkupRate.HasValue ? "-" : $"%{Model.CostMarkupRate:N2}")</div></div></div></div>
     <div class="col-md"><div class="card card-custom gutter-b"><div class="card-body"><div class="text-muted">Maliyeti Eksik Satır</div><div class="font-size-h4 font-weight-bold text-warning">@Model.MissingCostLineCount</div></div></div></div>
 </div>
+
+<div class="alert alert-light-info">
+    <strong>Maliyet kaynağı:</strong> Önce fatura tarihini kapsayan manuel ürün maliyeti; yoksa o tarihe kadar kaydedilmiş en son reçete hesabı kullanılır.
+    Ürün maliyetine yalnızca hammadde + ambalaj alınır. Manuel kaydın malzeme kalemi kullanılır; işçilik, nakliye, genel gider ve diğer kalemler dışarıda kalır.
+    Reçete hesabının sabit/değişken gider payları da alınmaz. Güncel reçete yeniden hesaplanmaz.
+    Kayıtlı hesaplardaki olası bileşen eksikleri geriye dönük doğrulanmaz; kaynak hesabı kontrol ediniz.
+    <div class="mt-2">Manuel maliyet: <strong>@Model.ManualCostLineCount satır</strong> · Kayıtlı reçete: <strong>@Model.RecipeCostLineCount satır</strong>.
+        Birimler eşanlamlı veya dönüşümü tanımlı olmalıdır. Gelecek tarihli hesaplar geçmiş satışlara uygulanmaz.</div>
+</div>
+
+@if (Model.AccountingExpenses is { } expenses)
+{
+    <div class="card card-custom gutter-b"><div class="card-header"><div class="card-title"><h3 class="card-label">Muhasebe Giderleri ve Dönem Sonucu</h3></div>
+        <div class="card-toolbar"><a asp-controller="SatisKarlilikGiderleri" asp-action="Index" asp-route-startDate="@Model.Filter.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.Filter.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light-primary">Gider Hesaplarını İncele</a></div></div>
+        <div class="card-body">
+            <p class="text-muted">Logo 100 / 01 · @expenses.StartDate.ToString("dd.MM.yyyy") – @expenses.EndDate.ToString("dd.MM.yyyy") · Giderler dönem genelidir; ürün/müşteri/kanal satırlarına keyfî dağıtım yapılmaz.</p>
+            <div class="row">
+                <div class="col-md-3 mb-4"><div class="text-muted">İşletme · Sabit</div><strong>@expenses.OperatingFixed.ToString("N2") ₺</strong></div>
+                <div class="col-md-3 mb-4"><div class="text-muted">İşletme · Değişken</div><strong>@expenses.OperatingVariable.ToString("N2") ₺</strong></div>
+                <div class="col-md-3 mb-4"><div class="text-muted">Finansman · Sabit / Değişken</div><strong>@expenses.FinancingFixed.ToString("N2") / @expenses.FinancingVariable.ToString("N2") ₺</strong></div>
+                <div class="col-md-3 mb-4"><div class="text-muted">Dahil Edilen Gider Toplamı</div><strong>@expenses.TotalIncluded.ToString("N2") ₺</strong></div>
+            </div>
+            @if (Model.CanShowPeriodResult)
+            {
+                <div class="row border-top pt-4"><div class="col-md-6"><div class="text-muted">İşletme Giderleri Sonrası Sonuç</div><strong>@Model.OperatingResult?.ToString("N2") ₺</strong></div><div class="col-md-6"><div class="text-muted">Finansman Sonrası Sonuç</div><strong>@Model.FinancingResult?.ToString("N2") ₺</strong></div></div>
+                <p class="text-muted mt-3 mb-0">Rapor kapsamındaki satışlar ve seçilmiş muhasebe giderleri için yönetim göstergesidir; yasal net kâr değildir.</p>
+            }
+            else
+            {
+                <div class="alert alert-light-warning mb-0">Dönem sonucu gösterilmiyor: @(Model.HasSalesFilter ? "Cari/ürün/fiyat filtresi açık; şirket dönemi giderleri filtreli cirodan düşülmez." : Model.MissingCostLineCount > 0 ? "Ürün maliyetleri eksik." : expenses.MovementCount == 0 ? "Seçilen dönemde muhasebe gider hareketi bulunamadı; sıfır gider varsayılmadı." : $"{expenses.UnmappedAccountCount} hesap sınıflandırma ve {expenses.ReviewMovementCount} hareket kaynak/fiş türü incelemesi bekliyor.")</div>
+            }
+            <div class="text-muted mt-3">Hariç hareket: @expenses.ExcludedMovementCount · Sınıflandırılmamış tutar: @expenses.UnmappedAmount.ToString("N2") ₺</div>
+        </div>
+    </div>
+}
 
 @if (Model.MissingCostLineCount > 0)
 {
     <div class="alert alert-light-warning">
-        <strong>Dikkat:</strong> @Model.MissingCostLineCount satış satırında fatura tarihini kapsayan ürün maliyeti bulunamadı.
+        <strong>Dikkat:</strong> @Model.MissingCostLineCount satış satırında tarihe ve birime uygun kullanılabilir maliyet bulunamadı. Ayrıntı satırındaki maliyet açıklamasını kontrol ediniz.
         Kâr toplamları yalnızca maliyeti tanımlı satırların maliyetini içerir.
     </div>
 }
@@ -78,8 +115,8 @@
 @{
     var profitabilityTabs = new[]
     {
-        new { Id = "customer-profit", Title = "Müşteri", Rows = Model.CustomerSummaries, ShowQuantity = false },
         new { Id = "product-profit", Title = "Ürün", Rows = Model.ProductSummaries, ShowQuantity = true },
+        new { Id = "customer-profit", Title = "Müşteri", Rows = Model.CustomerSummaries, ShowQuantity = false },        
         new { Id = "channel-profit", Title = "Satış Kanalı", Rows = Model.ChannelSummaries, ShowQuantity = false },
         new { Id = "representative-profit", Title = "Satış Temsilcisi", Rows = Model.SalesRepresentativeSummaries, ShowQuantity = false }
     };
@@ -133,15 +170,16 @@
                         <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
+                                    <th>Sıra No</th>
                                     <th>@tab.Title</th>
                                     <th class="text-right">@(tab.ShowQuantity ? "Satış Miktarı" : "Satır")</th>
                                     <th class="text-right">Referans Brüt</th>
                                     <th class="text-right">İskonto</th>
                                     <th class="text-right">Net Ciro</th>
                                     <th class="text-right">Maliyet</th>
-                                    <th class="text-right">Brüt Kâr</th>
-                                    <th class="text-right">Net Kâr</th>
-                                    <th class="text-right">Kâr Oranı</th>
+                                    <th class="text-right">Referans Kâr</th>
+                                    <th class="text-right">Malzeme Sonrası Kâr</th>
+                                    <th class="text-right">Marj / Maliyet Oranı</th>
                                     <th class="text-right">Eksik Maliyet</th>
                                 </tr>
                             </thead>
@@ -151,10 +189,12 @@
                                 <tr><td colspan="10" class="text-center text-muted py-8">Bu kırılım için veri bulunamadı.</td></tr>
                             }
                             else
-                            {
-                                @foreach (var item in tab.Rows)
+                                {
+                                    var number = 1;
+                                    @foreach (var item in tab.Rows)
                                 {
                                     <tr>
+                                        <td>@number</td>
                                         <td>
                                             <div class="font-weight-bold">@item.Code</div>
                                             @if (!string.Equals(item.Code, item.Name, StringComparison.OrdinalIgnoreCase))
@@ -181,7 +221,7 @@
                                         <td class="text-right">@item.KnownCostAmount.ToString("N2")</td>
                                         <td class="text-right">@item.GrossProfit.ToString("N2")</td>
                                         <td class="text-right font-weight-bold @(item.NetProfit < 0 ? "text-danger" : "text-success")">@item.NetProfit.ToString("N2")</td>
-                                        <td class="text-right @(item.NetProfitRate < 0 ? "text-danger" : "text-success")">%@item.NetProfitRate.ToString("N2")</td>
+                                        <td class="text-right">@(item.NetRevenue == 0 || item.MissingCostLineCount > 0 ? "-" : $"%{item.NetProfitRate:N2}")<div class="text-muted">Maliyet: @(item.CostMarkupRate.HasValue ? $"%{item.CostMarkupRate:N2}" : "-")</div></td>
                                         <td class="text-right">
                                             @if (item.MissingCostLineCount > 0)
                                             {
@@ -193,7 +233,8 @@
                                             }
                                         </td>
                                     </tr>
-                                }
+                                        number = number + 1;
+                                    }
                             }
                             </tbody>
                         </table>
@@ -230,7 +271,7 @@
                         <th class="text-right">Net</th>
                         <th class="text-right">İskonto</th>
                         <th class="text-right">Maliyet</th>
-                        <th class="text-right">Net Kâr</th>
+                        <th class="text-right">Malzeme Sonrası Kâr</th>
                         <th>Durum</th>
                     </tr>
                 </thead>
@@ -264,10 +305,19 @@
                             <td class="text-right">
                                 <div>@(row.CostAmount?.ToString("N2") ?? "-")</div>
                                 <div class="text-muted">@(row.UnitCostTry.HasValue ? $"{row.UnitCostTry:N6} ₺ · {row.CostStatus}" : row.CostStatus)</div>
+                                @if (!string.IsNullOrWhiteSpace(row.CostSourceDetail))
+                                {
+                                    <div class="text-muted font-size-sm">@row.CostSourceDetail</div>
+                                }
+                                @if (row.RecipeCostScenarioId.HasValue && User.IsInRole("Admin"))
+                                {
+                                    <a asp-controller="ReceteMaliyetleri" asp-action="KayitDetay" asp-route-id="@row.RecipeCostScenarioId" target="_blank" rel="noopener">Kaynak hesabı aç</a>
+                                }
                             </td>
                             <td class="text-right">
                                 <div class="font-weight-bold @(row.NetProfit < 0 ? "text-danger" : "text-success")">@(row.NetProfit?.ToString("N2") ?? "-")</div>
                                 <div class="text-muted">@(row.NetProfitRate.HasValue ? $"%{row.NetProfitRate:N2}" : "-")</div>
+                                <div class="text-muted">Maliyet oranı: @(row.CostMarkupRate.HasValue ? $"%{row.CostMarkupRate:N2}" : "-")</div>
                             </td>
                             <td><span class="label label-inline @(row.PriceStatus == "HESAPLANABILIR" ? "label-light-success" : "label-light-warning")">@row.PriceStatus</span></td>
                         </tr>

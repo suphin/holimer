@@ -378,7 +378,7 @@ public sealed class UrunMaliyetleriController : Controller
             }
             row.NewUnitCost = total;
             parsedCosts[row.LogoMaterialRef] = new BulkCostValues(
-                total, 0m, 0m, 0m, 0m, total, "BulkTotal");
+                total, 0m, 0m, 0m, 0m, total, "BulkMaterial");
         }
 
         var materialRefs = parsedCosts.Keys.ToList();

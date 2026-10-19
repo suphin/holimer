@@ -261,6 +261,49 @@ ORDER BY
 		}
 
 
+		public async Task<CariHareketDetayVM> CariHareketler(string cariKod, int page, CancellationToken cancellationToken)
+		{
+			if (string.IsNullOrWhiteSpace(cariKod) || cariKod.Trim().Length > 100)
+				throw new ArgumentException("Geçerli bir cari kodu giriniz.", nameof(cariKod));
+			if (page < 1) throw new ArgumentOutOfRangeException(nameof(page));
+			const int pageSize = 50;
+			var code = cariKod.Trim();
+			// The view already excludes cancelled movements. No writes or dynamic SQL identifiers.
+			const string query = """
+                SELECT COUNT_BIG(*) AS TotalCount, MAX(CHUNVAN) AS CariUnvan,
+                       COALESCE(SUM(CAST(BORC AS decimal(28,6))), 0) AS BorcToplami,
+                       COALESCE(SUM(CAST(ALACAK AS decimal(28,6))), 0) AS AlacakToplami
+                FROM TIGER3ENT.dbo.VW_100_CARIHAREKET
+                WHERE CHKOD = @CariKod;
+
+                SELECT FISTARIHI AS FisTarihi, FISNO AS FisNo, [FIS TÜRÜ] AS FisTuru,
+                       FISKOD AS FisKod, ISYERI AS Isyeri,
+                       ACIKLAMA1 AS Aciklama1, ACIKLAMA2 AS Aciklama2,
+                       COALESCE(CAST(BORC AS decimal(28,6)), 0) AS Borc,
+                       COALESCE(CAST(ALACAK AS decimal(28,6)), 0) AS Alacak,
+                       [ID.KODU] AS DovizKodu,
+                       COALESCE(CAST([ID.KUR] AS decimal(28,6)), 0) AS DovizKuru,
+                       COALESCE(CAST([ID.BORC] AS decimal(28,6)), 0) AS DovizBorc,
+                       COALESCE(CAST([ID.ALACAK] AS decimal(28,6)), 0) AS DovizAlacak
+                FROM TIGER3ENT.dbo.VW_100_CARIHAREKET
+                WHERE CHKOD = @CariKod
+                ORDER BY FISTARIHI DESC, FISNO DESC, SOURCEFREF DESC, MODULENR, TRCODE,
+                         ISYERI, SIGN, BORC, ALACAK, ACIKLAMA1, ACIKLAMA2
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+                """;
+			await using var conn = new SqlConnection(connstr);
+			await conn.OpenAsync(cancellationToken);
+			using var result = await conn.QueryMultipleAsync(new CommandDefinition(query,
+				new { CariKod = new DbString { Value = code, IsAnsi = true, Length = 100 }, Offset = ((long)page - 1) * pageSize, PageSize = pageSize },
+				commandTimeout: 60, cancellationToken: cancellationToken));
+			var model = await result.ReadSingleAsync<CariHareketDetayVM>();
+			model.CariKod = code;
+			model.Page = page;
+			model.PageSize = pageSize;
+			model.Rows = (await result.ReadAsync<CariHareketSatirVM>()).ToList();
+			return model;
+		}
+
 		public async Task<List<BankaKrediVM>> BankaKredileri()
 		{
 			using var conn = new SqlConnection(connstr);

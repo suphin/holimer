@@ -11,15 +11,18 @@ public sealed class SatisKarlilikController : Controller
     private readonly ISalesProfitabilityReportService _reportService;
     private readonly ICustomerReceivablesService _receivablesService;
     private readonly IChannelBalancingService _channelBalancingService;
+    private readonly IAccountingExpenseService _expenses;
 
     public SatisKarlilikController(
         ISalesProfitabilityReportService reportService,
         ICustomerReceivablesService receivablesService,
-        IChannelBalancingService channelBalancingService)
+        IChannelBalancingService channelBalancingService,
+        IAccountingExpenseService expenses)
     {
         _reportService = reportService;
         _receivablesService = receivablesService;
         _channelBalancingService = channelBalancingService;
+        _expenses = expenses;
     }
 
     [HttpGet]
@@ -45,6 +48,7 @@ public sealed class SatisKarlilikController : Controller
         };
 
         var model = await _reportService.GetPreviewAsync(filter, ct);
+        model.AccountingExpenses = await _expenses.GetSummaryAsync(model.Filter.StartDate, model.Filter.EndDate, ct);
         return View(model);
     }
 

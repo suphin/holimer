@@ -15,6 +15,7 @@ namespace Ekomers.Data.Services.IServices
 		Task<BankaHesapVM> BankaHesaplari(int bankRef);
 		Task<List<BankaHesapEkstreVM>> BankaHesapEkstresi(int cardRef);
 		Task<List<BorcAlacakVM>> BorcAlacakRaporu();
+		Task<CariHareketDetayVM> CariHareketler(string cariKod, int page, CancellationToken cancellationToken);
 		Task<List<BankaKrediVM>> BankaKredileri();
 		Task<List<KrediOdemePlaniVM>> KrediOdemePlani();
 	}

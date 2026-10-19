@@ -38,7 +38,7 @@ public sealed class ProductCostFormVM
     public string UnitCode { get; set; } = "Adet";
 
     [Range(typeof(decimal), "0", "999999999999", ErrorMessage = "Malzeme maliyeti negatif olamaz.")]
-    [Display(Name = "Malzeme maliyeti")]
+    [Display(Name = "Hammadde + ambalaj maliyeti")]
     public decimal MaterialCost { get; set; }
 
     [Range(typeof(decimal), "0", "999999999999", ErrorMessage = "İşçilik maliyeti negatif olamaz.")]

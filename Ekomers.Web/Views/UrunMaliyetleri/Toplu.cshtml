@@ -103,8 +103,9 @@
                 </div>
             </div>
             <div class="alert alert-light-primary mb-0">
-                Toplu girişte ürünün <strong>yeni toplam birim maliyetini</strong> giriniz.
-                Malzeme, işçilik ve diğer bileşenleri ayrı kaydetmek için tek ürün maliyet ekranını kullanabilirsiniz.
+                Toplu girişte yalnızca ürünün <strong>hammadde + ambalaj birim maliyetini</strong> giriniz.
+                İşçilik, nakliye, sabit/değişken ve finansman giderlerini bu tutara eklemeyiniz; kârlılık modülü bunları muhasebeden ayrı alır.
+                Eski toplam maliyet kayıtları ayrıştırılmış sayılmaz; yeni kayıt BulkMaterial kaynağıyla saklanır.
             </div>
         </div>
     </div>
@@ -135,8 +136,8 @@
                             <th class="sticky-name">Ürün Adı</th>
                             <th>Birim</th>
                             <th>Son Güncelleme</th>
-                            <th class="text-right">Mevcut Maliyet</th>
-                            <th>Yeni Birim Maliyet</th>
+                            <th class="text-right">Önceki Kayıt Toplamı</th>
+                            <th>Yeni Hammadde + Ambalaj Birim Maliyeti</th>
                             <th class="text-right">TRY Karşılığı</th>
                         </tr>
                     </thead>

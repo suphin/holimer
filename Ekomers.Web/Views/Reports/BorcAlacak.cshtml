@@ -1,115 +1,136 @@
-﻿@model List<BorcAlacakVM>
-
+@model List<BorcAlacakVM>
 @{
     ViewData["Title"] = "Borç / Alacak Durum Raporu";
+    var culture = CultureInfo.GetCultureInfo("tr-TR");
+    string Amount(decimal value) => decimal.Round(value, 2, MidpointRounding.ToEven).ToString("N2", culture);
+    string Raw(decimal value) => value.ToString("0.############################", CultureInfo.InvariantCulture);
+    string GroupCode(string? code)
+    {
+        var trimmed = (code ?? "").Trim();
+        return trimmed.Length >= 3 && trimmed.Take(3).All(c => c >= '0' && c <= '9') ? trimmed[..3] : "Diger";
+    }
+    var rows = Model ?? new List<BorcAlacakVM>();
+    var groups = new[] { "120", "320", "329" }.Concat(rows.Select(x => GroupCode(x.CHKOD)))
+        .Distinct().OrderBy(x => x == "Diger" ? "zzz" : x).ToList();
+    var summaries = new[] { "" }.Concat(groups).Select(group => new
+    {
+        Code = group,
+        Title = group == "" ? "Genel Toplam" : group == "Diger" ? "Diğer Kodlar" : group + " Grubu",
+        Count = rows.Count(x => group == "" || GroupCode(x.CHKOD) == group),
+        Debit = rows.Where(x => group == "" || GroupCode(x.CHKOD) == group).Sum(x => x.BorcToplami),
+        Credit = rows.Where(x => group == "" || GroupCode(x.CHKOD) == group).Sum(x => x.AlacakToplami)
+    }).ToList();
 }
 
-<div class="card shadow-sm">
+@section CSSection {
+    <link rel="stylesheet" href="~/css/reports/borc-alacak.css" asp-append-version="true" />
+}
 
-    <div class="card-header">
-        <h5 class="mb-0">
-            Borç / Alacak Durum Raporu
-        </h5>
+<section class="ba-report" id="borcAlacakReport" aria-labelledby="baTitle">
+    <header class="ba-heading">
+        <div>
+            <span class="ba-eyebrow">FİNANSAL RAPORLAR</span>
+            <h1 id="baTitle">Borç / Alacak Durumu</h1>
+            <p>Cari hesapları kod ve ünvana göre arayın, hesap gruplarını karşılaştırın.</p>
+        </div>
+        <span class="ba-record-count">@rows.Count.ToString("N0", culture) cari hesap</span>
+    </header>
+
+    <div class="ba-summary-heading">
+        <h2>Hesap grubu özetleri</h2>
+        <span>Raporun tamamı · Üst toplamlar filtrelerden etkilenmez</span>
+    </div>
+    <div class="ba-summaries">
+        @foreach (var summary in summaries)
+        {
+            var net = summary.Credit - summary.Debit;
+            <button type="button" class="ba-summary @(summary.Code == "" ? "is-active ba-summary-all" : "")"
+                    data-group="@summary.Code" aria-pressed="@(summary.Code == "" ? "true" : "false")">
+                <span class="ba-summary-top"><strong>@summary.Title</strong><span>@summary.Count.ToString("N0", culture) cari</span></span>
+                <span class="ba-summary-amounts">
+                    <span><span class="ba-caption">Borçlu</span><strong class="ba-debit">@Amount(summary.Debit)</strong></span>
+                    <span><span class="ba-caption">Alacaklı</span><strong class="ba-credit">@Amount(summary.Credit)</strong></span>
+                </span>
+                <span class="ba-summary-net"><span>Net fark <small>(Alacak − Borç)</small></span><strong>@Amount(net)</strong></span>
+                <span class="ba-summary-hint">@(summary.Code == "" ? "Tüm hesapları göster" : "Bu grubu filtrele") <span aria-hidden="true">→</span></span>
+            </button>
+        }
     </div>
 
-    <div class="card-body">
-
-        <table class="table table-striped table-hover table-bordered" id="tblCari">
-
-            <thead class="table-dark">
-                <tr>
-                    <th>Cari Kod</th>
-                    <th>Cari Ünvan</th>
-                    <th class="text-end">Borçlu</th>
-                    <th class="text-end">Alacaklı</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-                @foreach (var item in Model)
-                {
-                    <tr>
-
-                        <td>@item.CHKOD</td>
-
-                        <td>@item.CHUNVAN</td>
-
-                        <td class="text-right text-success fw-bold">
-                            @item.BorcToplami.ToString("N2")
-                        </td>
-
-                        <td class="text-right text-danger fw-bold">
-                            @item.AlacakToplami.ToString("N2")
-                        </td>
-
-                    </tr>
-                }
-
-            </tbody>
-
-            <tfoot class="table-light">
-
-                <tr>
-
-                    <th colspan="2" class="text-right">
-                        TOPLAM
-                    </th>
-
-                    <th class="text-right text-success">
-                        @Model.Sum(x => x.BorcToplami).ToString("N2")
-                    </th>
-
-                    <th class="text-right text-danger">
-                        @Model.Sum(x => x.AlacakToplami).ToString("N2")
-                    </th>
-
-                </tr>
-                <tr>
-
-                    <th colspan="2" class="text-right">
-                        FARK
-                    </th>
-                    @if (Model.Sum(x => x.AlacakToplami - x.BorcToplami)<0)
+    <div class="ba-panel">
+        <div class="ba-toolbar">
+            <div class="ba-search">
+                <label for="baSearch">Cari kod / ünvan ara</label>
+                <input id="baSearch" type="search" class="form-control" placeholder="Örn. 320.10 veya firma adı" autocomplete="off" aria-controls="tblCari" />
+            </div>
+            <div>
+                <label for="baGroup">Hesap grubu</label>
+                <select id="baGroup" class="form-control" aria-controls="tblCari">
+                    <option value="">Tüm gruplar</option>
+                    @foreach (var group in groups) { <option value="@group">@(group == "Diger" ? "Diğer kodlar" : group + " grubu")</option> }
+                </select>
+            </div>
+            <div>
+                <label for="baPageSize">Sayfada göster</label>
+                <select id="baPageSize" class="form-control" aria-controls="tblCari"><option>25</option><option>50</option><option>100</option><option value="all">Tümü</option></select>
+            </div>
+            <button type="button" id="baReset" class="btn ba-reset">Filtreleri Temizle</button>
+        </div>
+        <noscript><p class="ba-notice">Arama ve sayfalama için JavaScript açık olmalıdır. Aşağıda raporun tamamı gösterilmektedir.</p></noscript>
+        <div class="ba-results-bar"><span id="baResultCount" role="status" aria-live="polite">@rows.Count.ToString("N0", culture) cari listeleniyor</span><span>Net fark = Alacaklı − Borçlu</span></div>
+        <div class="ba-table-wrap">
+            <table class="table ba-table" id="tblCari">
+                <caption class="ba-visually-hidden">Cari hesap borç ve alacak raporu. Filtre sonucu toplamları bütün sonuçları kapsar.</caption>
+                <thead><tr>
+                    <th scope="col" aria-sort="ascending"><button type="button" data-sort="code">Cari Kod <span aria-hidden="true">↑</span></button></th>
+                    <th scope="col"><button type="button" data-sort="name">Cari Ünvan <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col" class="ba-number"><button type="button" data-sort="debit">Borçlu <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col" class="ba-number"><button type="button" data-sort="credit">Alacaklı <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col" class="ba-number"><button type="button" data-sort="net">Net Fark <span aria-hidden="true">↕</span></button></th>
+                    <th scope="col" class="ba-detail-column">Detay</th>
+                </tr></thead>
+                <tbody>
+                    @foreach (var item in rows.OrderBy(x => x.CHKOD, StringComparer.Create(culture, false)))
                     {
-                        <th class="text-right text-success">
-                            @Model.Sum(x => x.AlacakToplami - x.BorcToplami).ToString("N2")
-                        </th>
+                        var net = item.AlacakToplami - item.BorcToplami;
+                        <tr data-account-row data-group="@GroupCode(item.CHKOD)" data-code="@item.CHKOD" data-name="@item.CHUNVAN" data-debit="@Raw(item.BorcToplami)" data-credit="@Raw(item.AlacakToplami)">
+                            <td class="ba-code">@item.CHKOD</td>
+                            <td class="ba-name">@item.CHUNVAN</td>
+                            <td class="ba-number ba-debit">@Amount(item.BorcToplami)</td>
+                            <td class="ba-number ba-credit">@Amount(item.AlacakToplami)</td>
+                            <td class="ba-number"><strong>@Amount(net)</strong><span class="ba-net-label">@(net > 0 ? "Alacak fazla" : net < 0 ? "Borç fazla" : "Dengede")</span></td>
+                            <td class="ba-detail-column"><button type="button" class="btn ba-detail-trigger" data-url="@Url.Action("CariHareketler", "Reports", new { cariKod = item.CHKOD })" aria-haspopup="dialog" aria-controls="baMovementDialog" aria-label="@($"{item.CHKOD} cari hareket detayı")">Detay</button></td>
+                        </tr>
                     }
-                    else
-                    {
-                        <th class="text-right text-danger">
-                            @Model.Sum(x => x.AlacakToplami - x.BorcToplami).ToString("N2")
-                        </th>
-                    }
-                  
-
-                </tr>
-            </tfoot>
-
-        </table>
-
+                    <tr id="baEmpty" hidden="@(rows.Count > 0)"><td colspan="6" class="ba-empty">Aramanıza uygun cari hesap bulunamadı.</td></tr>
+                </tbody>
+                <tfoot><tr>
+                    <th colspan="2" scope="row">Filtre Sonucu Toplamı <small>Tüm sonuçlar, yalnızca bu sayfa değil</small></th>
+                    <td id="baDebitTotal" class="ba-number ba-debit">@Amount(rows.Sum(x => x.BorcToplami))</td>
+                    <td id="baCreditTotal" class="ba-number ba-credit">@Amount(rows.Sum(x => x.AlacakToplami))</td>
+                    <td id="baNetTotal" class="ba-number">@Amount(rows.Sum(x => x.AlacakToplami - x.BorcToplami))</td>
+                    <td></td>
+                </tr></tfoot>
+            </table>
+        </div>
+        <nav class="ba-pagination" aria-label="Cari raporu sayfaları">
+            <span id="baPageInfo">Tüm kayıtlar gösteriliyor</span>
+            <div><button type="button" id="baPrevious" class="btn ba-page-button" disabled>Önceki</button><span id="baPageNumber">1</span><button type="button" id="baNext" class="btn ba-page-button" disabled>Sonraki</button></div>
+        </nav>
     </div>
+    <dialog id="baMovementDialog" class="ba-movement-dialog" aria-labelledby="baMovementTitle">
+        <header class="ba-movement-header">
+            <div><h2 id="baMovementTitle">Cari Hesap Hareketleri</h2><span>VW_100_CARIHAREKET · Salt okunur</span></div>
+            <button type="button" class="btn ba-dialog-close" aria-label="Cari hareket penceresini kapat" autofocus>Kapat <span aria-hidden="true">×</span></button>
+        </header>
+        <div class="ba-movement-body">
+            <p id="baMovementStatus" role="status" aria-live="polite" hidden></p>
+            <div id="baMovementContent" aria-busy="false"></div>
+        </div>
+    </dialog>
+</section>
 
-</div>
-
-@section JSSection
-{
-    <script>
-        $(function() {
-
-            $('#tblCari').DataTable({
-
-                pageLength: 25,
-
-                order: [[0, 'asc']],
-
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/tr.json'
-                }
-
-            });
-
-        });
-    </script>
+@section JSSection {
+    <script src="~/js/reports/borc-alacak.js" asp-append-version="true"></script>
+    <script src="~/js/reports/cari-hareket-modal.js" asp-append-version="true"></script>
 }

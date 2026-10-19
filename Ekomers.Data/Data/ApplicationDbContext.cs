@@ -257,6 +257,8 @@ namespace Ekomers.Data
 		// Satış ve kârlılık raporu uygulama tabloları (EkomerDB)
 		public DbSet<RptProductCostVersion> RptProductCostVersions { get; set; }
 		public DbSet<RptProductScopePrefix> RptProductScopePrefixes { get; set; }
+		public DbSet<RptAccountingExpenseGroup> RptAccountingExpenseGroups { get; set; }
+		public DbSet<RptAccountingExpenseRule> RptAccountingExpenseRules { get; set; }
 
 
 
@@ -557,6 +559,22 @@ namespace Ekomers.Data
 			prefix.HasIndex(x => x.Prefix).IsUnique();
 			prefix.Property(x => x.Prefix).HasMaxLength(50).IsRequired();
 			prefix.Property(x => x.Description).HasMaxLength(250);
+
+			var expenseGroup = modelBuilder.Entity<RptAccountingExpenseGroup>();
+			expenseGroup.ToTable(nameof(RptAccountingExpenseGroup));
+			expenseGroup.Property(x => x.Name).HasMaxLength(150).IsRequired();
+			expenseGroup.Property(x => x.PresetKey).HasMaxLength(80);
+			expenseGroup.HasIndex(x => x.PresetKey).IsUnique().HasFilter("[PresetKey] IS NOT NULL AND [IsDelete] = 0");
+			expenseGroup.Property(x => x.Notes).HasMaxLength(500);
+			expenseGroup.HasIndex(x => x.Name).IsUnique().HasFilter("[IsDelete] = 0");
+			var expenseRule = modelBuilder.Entity<RptAccountingExpenseRule>();
+			expenseRule.ToTable(nameof(RptAccountingExpenseRule));
+			expenseRule.Property(x => x.AccountCode).HasMaxLength(100).IsRequired();
+			expenseRule.Property(x => x.Notes).HasMaxLength(500);
+			expenseRule.Property(x => x.ValidFrom).HasColumnType("date");
+			expenseRule.Property(x => x.ValidTo).HasColumnType("date");
+			expenseRule.HasIndex(x => new { x.FirmNumber, x.AccountCode, x.ValidFrom }).IsUnique().HasFilter("[IsDelete] = 0");
+			expenseRule.HasOne<RptAccountingExpenseGroup>().WithMany().HasForeignKey(x => x.ExpenseGroupId).OnDelete(DeleteBehavior.Restrict);
 		}
 
 		private static void ConfigureProductionModel(ModelBuilder modelBuilder)

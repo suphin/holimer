@@ -1,0 +1,13 @@
+@model Ekomers.Models.ViewModels.Profitability.AccountingExpenseMovementsVM
+@{ViewData["Title"]="Muhasebe Gider Hareketleri";}
+<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">@Model.AccountCode · Muhasebe Hareketleri</h3></div><div class="card-toolbar"><a asp-action="Index" asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light">Hesaplara Dön</a></div></div><div class="card-body">
+    <p class="text-muted">Logo 100 / 01 · @Model.StartDate.ToString("dd.MM.yyyy") – @Model.EndDate.ToString("dd.MM.yyyy") · Salt okunur. Borç − alacak esas alınır; grup kuralları ayrıca uygulanır.</p>
+    <div class="table-responsive"><table class="table table-striped"><thead><tr><th>Tarih</th><th>Fiş / Kaynak</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th>Kontrol</th></tr></thead><tbody>
+    @foreach(var row in Model.Rows){<tr><td>@row.Date.ToString("dd.MM.yyyy")</td><td><strong>@row.VoucherNumber</strong><div class="text-muted">Fiş Ref: @row.VoucherRef · Hareket Ref: @row.MovementRef</div></td><td style="white-space:pre-line">@row.Description</td><td class="text-right">@row.Debit.ToString("N2")</td><td class="text-right">@row.Credit.ToString("N2")</td><td>@row.Status</td></tr>}
+    @if(Model.Rows.Count==0){<tr><td colspan="6">Bu sayfada hareket bulunamadı.</td></tr>}
+    </tbody></table></div>
+    <div class="d-flex justify-content-between align-items-center"><span>@Model.TotalCount hareket · Sayfa @Model.Page / @Model.TotalPages</span><div>
+        @if(Model.Page>1){<a asp-action="Hareketler" asp-route-accountCode="@Model.AccountCode" asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")" asp-route-page="@(Model.Page-1)" class="btn btn-light">Önceki</a>}
+        @if(Model.Page<Model.TotalPages){<a asp-action="Hareketler" asp-route-accountCode="@Model.AccountCode" asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")" asp-route-page="@(Model.Page+1L)" class="btn btn-light">Sonraki</a>}
+    </div></div>
+</div></div>

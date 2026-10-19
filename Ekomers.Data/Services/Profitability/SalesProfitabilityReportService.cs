@@ -1,7 +1,6 @@
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
-using Ekomers.Models.Entity.Profitability;
 using Ekomers.Models.ViewModels.Profitability;
 using Microsoft.EntityFrameworkCore;
 
@@ -64,26 +63,13 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
                 availableColumns, ct);
             var statuses = await ReadStatusesAsync(connection, ct);
 
-            var materialRefs = costQuantities.Select(x => x.LogoMaterialRef)
-                .Concat(rows.Select(x => x.LogoMaterialRef))
-                .Concat(analysisRows.Select(x => x.LogoMaterialRef))
-                .Where(x => x > 0)
-                .Distinct()
-                .ToList();
-            var costVersions = await _context.RptProductCostVersions.AsNoTracking()
-                .Where(x => materialRefs.Contains(x.LogoMaterialRef) &&
-                            x.IsDelete != true &&
-                            x.ValidFrom <= endDate &&
-                            (x.ValidTo == null || x.ValidTo >= startDate))
-                .OrderByDescending(x => x.ValidFrom)
-                .ThenByDescending(x => x.VersionNumber)
-                .ToListAsync(ct);
-            var costsByMaterial = costVersions
-                .GroupBy(x => x.LogoMaterialRef)
-                .ToDictionary(x => x.Key, x => x.ToList());
-            var costSummary = CalculateCosts(costQuantities, costsByMaterial);
-            ApplyRowCosts(rows, costsByMaterial);
-            ApplyAnalysisCosts(analysisRows, costsByMaterial);
+            var costProducts = costQuantities.Select(x => new SalesCostProduct(x.LogoMaterialRef, x.ProductCode))
+                .Concat(rows.Where(x => x.LineType == "Malzeme").Select(x => new SalesCostProduct(x.LogoMaterialRef, x.ProductCode)))
+                .Concat(analysisRows.Where(x => x.LineType == "Malzeme").Select(x => new SalesCostProduct(x.LogoMaterialRef, x.ProductCode)));
+            var costCatalog = await SalesProfitabilityCostCatalog.LoadAsync(_context, costProducts, startDate, endDate, ct);
+            var costSummary = CalculateCosts(costQuantities, costCatalog);
+            ApplyRowCosts(rows, costCatalog);
+            ApplyAnalysisCosts(analysisRows, costCatalog);
 
             return new SalesProfitabilityPreviewVM
             {
@@ -111,6 +97,8 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
                     ? 0m
                     : (summary.NetRevenue - costSummary.KnownCostAmount) * 100m / summary.NetRevenue,
                 MissingCostLineCount = costSummary.MissingCostLineCount,
+                ManualCostLineCount = costSummary.ManualCostLineCount,
+                RecipeCostLineCount = costSummary.RecipeCostLineCount,
                 PageCount = summary.TotalCount == 0
                     ? 0
                     : (int)Math.Ceiling(summary.TotalCount / (decimal)pageSize),
@@ -271,13 +259,15 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
         command.CommandText = $"""
             SELECT
                 MalzemeRef,
+                MalzemeKod,
+                Birim,
                 CONVERT(date, FaturaTarihi) AS SalesDate,
                 SUM(CONVERT(decimal(38, 6), Miktar)) AS Quantity,
                 COUNT(1) AS LineCount
             FROM {ViewName}
             {whereSql}
               AND SatirTuru = N'Malzeme'
-            GROUP BY MalzemeRef, CONVERT(date, FaturaTarihi);
+            GROUP BY MalzemeRef, MalzemeKod, Birim, CONVERT(date, FaturaTarihi);
             """;
         AddFilterParameters(command, startDate, endExclusive, search, priceStatus);
 
@@ -288,6 +278,8 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
             rows.Add(new CostQuantityRow
             {
                 LogoMaterialRef = ReadInt32(reader, "MalzemeRef"),
+                ProductCode = ReadString(reader, "MalzemeKod"),
+                Unit = ReadString(reader, "Birim"),
                 SalesDate = ReadDateTime(reader, "SalesDate").Date,
                 Quantity = ReadDecimal(reader, "Quantity"),
                 LineCount = ReadInt32(reader, "LineCount")
@@ -341,6 +333,10 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
         var representativeNameExpression = BuildTextColumnExpression(
             availableColumns,
             "SatisTemsilciAdi", "Satış Temsilci Adı");
+        // Missing optional dimensions are SELECT literals, not valid standalone GROUP BY expressions on SQL Server.
+        var optionalGroups = new[] { channelExpression, representativeCodeExpression, representativeNameExpression }
+            .Where(x => x != "N'Tanımsız'").Distinct().ToList();
+        var optionalGroupSql = optionalGroups.Count == 0 ? string.Empty : ", " + string.Join(", ", optionalGroups);
 
         await using var command = connection.CreateCommand();
         command.CommandText = $"""
@@ -371,10 +367,7 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
                 MalzemeKod,
                 MalzemeAdi,
                 Birim,
-                {channelExpression},
-                {representativeCodeExpression},
-                {representativeNameExpression},
-                CONVERT(date, FaturaTarihi);
+                CONVERT(date, FaturaTarihi){optionalGroupSql};
             """;
         AddFilterParameters(command, startDate, endExclusive, search, priceStatus);
 
@@ -421,7 +414,7 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
 
     private static void ApplyAnalysisCosts(
         IReadOnlyList<AnalysisSourceRow> rows,
-        IReadOnlyDictionary<int, List<RptProductCostVersion>> costsByMaterial)
+        SalesProfitabilityCostCatalog costCatalog)
     {
         foreach (var row in rows)
         {
@@ -430,13 +423,13 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
                 continue;
             }
 
-            var cost = ResolveCost(costsByMaterial, row.LogoMaterialRef, row.SalesDate);
-            if (cost == null)
+            var cost = costCatalog.Resolve(row.LogoMaterialRef, row.ProductCode, row.Unit, row.SalesDate);
+            if (!cost.UnitCostTry.HasValue)
             {
                 row.MissingCostLineCount = row.LineCount;
                 continue;
             }
-            row.KnownCostAmount = row.Quantity * cost.TotalUnitCostTry;
+            row.KnownCostAmount = row.Quantity * cost.UnitCostTry.Value;
         }
     }
 
@@ -493,19 +486,21 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
 
     private static CostSummaryResult CalculateCosts(
         IReadOnlyList<CostQuantityRow> quantities,
-        IReadOnlyDictionary<int, List<RptProductCostVersion>> costsByMaterial)
+        SalesProfitabilityCostCatalog costCatalog)
     {
         var result = new CostSummaryResult();
         foreach (var quantity in quantities)
         {
-            var cost = ResolveCost(costsByMaterial, quantity.LogoMaterialRef, quantity.SalesDate);
-            if (cost == null)
+            var cost = costCatalog.Resolve(quantity.LogoMaterialRef, quantity.ProductCode, quantity.Unit, quantity.SalesDate);
+            if (!cost.UnitCostTry.HasValue)
             {
                 result.MissingCostLineCount += quantity.LineCount;
                 continue;
             }
 
-            result.KnownCostAmount += quantity.Quantity * cost.TotalUnitCostTry;
+            result.KnownCostAmount += quantity.Quantity * cost.UnitCostTry.Value;
+            if (cost.Source == "Manual") result.ManualCostLineCount += quantity.LineCount;
+            if (cost.Source == "Recipe") result.RecipeCostLineCount += quantity.LineCount;
         }
 
         return result;
@@ -513,7 +508,7 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
 
     private static void ApplyRowCosts(
         IReadOnlyList<SalesProfitabilityPreviewRowVM> rows,
-        IReadOnlyDictionary<int, List<RptProductCostVersion>> costsByMaterial)
+        SalesProfitabilityCostCatalog costCatalog)
     {
         foreach (var row in rows)
         {
@@ -523,15 +518,18 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
                 continue;
             }
 
-            var cost = ResolveCost(costsByMaterial, row.LogoMaterialRef, row.InvoiceDate.Date);
-            if (cost == null)
+            var cost = costCatalog.Resolve(row.LogoMaterialRef, row.ProductCode, row.Unit, row.InvoiceDate.Date);
+            row.CostStatus = cost.Status;
+            row.CostSource = cost.Source;
+            row.CostSourceDetail = cost.Description;
+            row.RecipeCostScenarioId = cost.ScenarioId;
+            if (!cost.UnitCostTry.HasValue)
             {
-                row.CostStatus = "Maliyet bulunamadı";
                 continue;
             }
 
-            row.UnitCostTry = cost.TotalUnitCostTry;
-            row.CostAmount = row.Quantity * cost.TotalUnitCostTry;
+            row.UnitCostTry = cost.UnitCostTry.Value;
+            row.CostAmount = row.Quantity * cost.UnitCostTry.Value;
             row.GrossProfit = row.ReferenceGrossRevenue.HasValue
                 ? row.ReferenceGrossRevenue.Value - row.CostAmount.Value
                 : null;
@@ -539,23 +537,7 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
             row.NetProfitRate = row.NetRevenue == 0m
                 ? null
                 : row.NetProfit.Value * 100m / row.NetRevenue;
-            row.CostStatus = $"v{cost.VersionNumber}";
         }
-    }
-
-    private static RptProductCostVersion? ResolveCost(
-        IReadOnlyDictionary<int, List<RptProductCostVersion>> costsByMaterial,
-        int logoMaterialRef,
-        DateTime salesDate)
-    {
-        if (!costsByMaterial.TryGetValue(logoMaterialRef, out var versions))
-        {
-            return null;
-        }
-
-        return versions.FirstOrDefault(x =>
-            x.ValidFrom.Date <= salesDate &&
-            (!x.ValidTo.HasValue || x.ValidTo.Value.Date >= salesDate));
     }
 
     private static async Task<IReadOnlyList<string>> ReadStatusesAsync(
@@ -683,6 +665,8 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
     private sealed class CostQuantityRow
     {
         public int LogoMaterialRef { get; set; }
+        public string? ProductCode { get; set; }
+        public string? Unit { get; set; }
         public DateTime SalesDate { get; set; }
         public decimal Quantity { get; set; }
         public int LineCount { get; set; }
@@ -692,6 +676,8 @@ public sealed class SalesProfitabilityReportService : ISalesProfitabilityReportS
     {
         public decimal KnownCostAmount { get; set; }
         public int MissingCostLineCount { get; set; }
+        public int ManualCostLineCount { get; set; }
+        public int RecipeCostLineCount { get; set; }
     }
 
     private sealed class AnalysisSourceRow

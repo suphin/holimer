@@ -1,0 +1,83 @@
+@model Ekomers.Models.ViewModels.Profitability.AccountingExpenseManagementVM
+@using Ekomers.Models.Entity.Profitability
+@{
+    ViewData["Title"] = "Muhasebe Gider Grupları";
+    var edit = User.IsInRole("Admin") || User.IsInRole("Yönetici");
+    var s = Model.Summary;
+    string Behavior(RptExpenseBehavior value) => value == RptExpenseBehavior.Fixed ? "Sabit" : value == RptExpenseBehavior.Variable ? "Değişken" : "Hariç";
+    string Stage(RptExpenseStage value) => value == RptExpenseStage.Financing ? "Finansman" : "İşletme";
+}
+@if(TempData["error"] is string error){<div class="alert alert-danger">@error</div>}
+@if(TempData["success"] is string success){<div class="alert alert-success">@success</div>}
+<div class="card card-custom gutter-b">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Muhasebe Gider Grupları</h3></div><div class="card-toolbar"><a asp-controller="SatisKarlilik" asp-action="Index" asp-route-startDate="@s.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@s.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light-primary">Kârlılık Raporuna Dön</a></div></div>
+    <div class="card-body">
+        <div class="alert alert-light-info">Kaynak Logo <strong>100 / 01</strong>. Tutar girilmez; muhasebe hareketleri yalnızca SELECT ile okunur. Portalda yalnızca gider grupları ve tarihli hesap eşleştirmeleri saklanır.
+            <div class="mt-2">İncelemede doğrulanan fiş türü <strong>4</strong> işlenir. Diğer fiş türleri inceleme bekler. İptal, hammadde/ambalaj ve bağlantı/yansıtma/fark hesapları dışarıda kalır. Yansıtma karşı hesabı bulunan fişin tamamı gider hesabında da hariç tutulur; normal düzeltme/iade alacakları düşülür.</div></div>
+        <form method="get" class="row"><div class="col-md-4 form-group"><label>Başlangıç</label><input type="date" name="startDate" value="@s.StartDate.ToString("yyyy-MM-dd")" class="form-control" required /></div><div class="col-md-4 form-group"><label>Bitiş</label><input type="date" name="endDate" value="@s.EndDate.ToString("yyyy-MM-dd")" class="form-control" required /></div><div class="col-md-4 d-flex align-items-center"><button class="btn btn-primary">Hesapları Getir</button></div></form>
+        <div class="row">
+            <div class="col-md-3"><span class="text-muted">İşletme Sabit / Değişken</span><div class="font-weight-bold">@s.OperatingFixed.ToString("N2") / @s.OperatingVariable.ToString("N2") ₺</div></div>
+            <div class="col-md-3"><span class="text-muted">Finansman Sabit / Değişken</span><div class="font-weight-bold">@s.FinancingFixed.ToString("N2") / @s.FinancingVariable.ToString("N2") ₺</div></div>
+            <div class="col-md-3"><span class="text-muted">Sınıflandırılmamış Hesap / Tutar</span><div class="font-weight-bold text-warning">@s.UnmappedAccountCount / @s.UnmappedAmount.ToString("N2") ₺</div></div>
+            <div class="col-md-3"><span class="text-muted">İnceleme / Hariç Hareket</span><div class="font-weight-bold">@s.ReviewMovementCount / @s.ExcludedMovementCount</div></div>
+        </div>
+    </div>
+</div>
+@if(edit){
+<div class="card card-custom gutter-b"><div class="card-body">
+    <h4>Hazır Kategoriler ve Hesap Önerileri</h4>
+    <p>Fabrika, operasyon ve finansman alt gruplarını sabit/değişken seçenekleriyle oluşturun. Ardından seçilen dönemin hesap önerilerini inceleyip yalnızca seçtiklerinizi onaylayın. Mevcut eşleştirmeler değişmez.</p>
+    <form asp-action="HazirGruplariOlustur" method="post" class="d-inline-block mr-3 mb-2" onsubmit="return confirm('Eksik hazır gider grupları oluşturulsun mu? Hesaplar otomatik bağlanmaz; mevcut gruplar değiştirilmez.');">
+        <partial name="_PeriodFields" model="s" /><button class="btn btn-light-primary">Hazır Grupları Oluştur</button>
+    </form>
+    <a asp-action="Oneriler" asp-route-startDate="@s.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@s.EndDate.ToString("yyyy-MM-dd")" class="btn btn-primary mb-2">Hesap Önerilerini İncele</a>
+</div></div>
+<div class="card card-custom gutter-b"><div class="card-header"><div class="card-title"><h3 class="card-label">Gider Grubu Oluştur</h3></div></div><div class="card-body">
+    <form asp-action="GrupKaydet" method="post"><partial name="_PeriodFields" model="s" /><div class="row align-items-end">
+        <div class="col-md-3 form-group"><label>Grup Adı</label><input name="Name" class="form-control" maxlength="150" placeholder="Örn. Fabrika kira gideri" required /></div>
+        <div class="col-md-2 form-group"><label>Tür</label><select name="Behavior" class="form-control" required><option value="" selected disabled>Seçiniz</option><option value="1">Sabit</option><option value="2">Değişken</option><option value="0">Hariç</option></select></div>
+        <div class="col-md-2 form-group"><label>Aşama</label><select name="Stage" class="form-control"><option value="1">İşletme</option><option value="2">Finansman</option></select></div>
+        <div class="col-md-3 form-group"><label>Açıklama</label><input name="Notes" maxlength="500" class="form-control" /></div>
+        <div class="col-md-2 form-group"><button class="btn btn-primary btn-block">Grup Ekle</button></div>
+    </div></form>
+</div></div>}
+<div class="card card-custom gutter-b"><div class="card-header"><div class="card-title"><h3 class="card-label">Gider Grupları (@Model.Groups.Count)</h3></div></div><div class="card-body">
+    @if(Model.Groups.Count==0){<p>Henüz grup yok. Sabit/değişken ayrımı otomatik tahmin edilmez; önce gruplarınızı tanımlayınız.</p>}
+    @foreach(var g in Model.Groups){
+        @if(edit){<form asp-action="GrupKaydet" method="post" class="border rounded p-3 mb-3"><partial name="_PeriodFields" model="s" /><input type="hidden" name="id" value="@g.ID" /><div class="row align-items-end">
+            <div class="col-md-3 form-group"><label>Ad</label><input name="Name" value="@g.Name" maxlength="150" class="form-control" required /></div>
+            <div class="col-md-2 form-group"><label>Tür</label><select name="Behavior" class="form-control"><option value="1" selected="@(g.Behavior==RptExpenseBehavior.Fixed)">Sabit</option><option value="2" selected="@(g.Behavior==RptExpenseBehavior.Variable)">Değişken</option><option value="0" selected="@(g.Behavior==RptExpenseBehavior.Excluded)">Hariç</option></select></div>
+            <div class="col-md-2 form-group"><label>Aşama</label><select name="Stage" class="form-control"><option value="1" selected="@(g.Stage==RptExpenseStage.Operating)">İşletme</option><option value="2" selected="@(g.Stage==RptExpenseStage.Financing)">Finansman</option></select></div>
+            <div class="col-md-3 form-group"><label>Not</label><input name="Notes" value="@g.Notes" maxlength="500" class="form-control" /></div>
+            <div class="col-md-2 form-group"><button class="btn btn-sm btn-light-primary">Güncelle</button><button class="btn btn-sm btn-light-danger" formaction="@Url.Action("GrupSil")" formnovalidate onclick="return confirm('Kullanılmayan grup arşivlensin mi?');">Sil</button></div>
+        </div><small class="text-muted">Hesap bağlandıktan sonra tür/aşama değişmez; yeni tarihli sınıflandırma için yeni grup açınız.</small></form>}
+        else{<div class="border-bottom py-3">@g.Name · @Behavior(g.Behavior) · @Stage(g.Stage)</div>}
+    }
+</div></div>
+<div class="card card-custom gutter-b"><div class="card-header"><div class="card-title"><h3 class="card-label">Muhasebe Hesaplarını Sınıflandır</h3></div></div><div class="card-body">
+    @if(edit){<form id="expenseMappingForm" asp-action="HesaplariBagla" method="post" class="border rounded p-4 mb-4"><partial name="_PeriodFields" model="s" /><div class="row align-items-end">
+        <div class="col-md-4 form-group"><label>Seçilen Hesapların Gider Grubu</label><select name="ExpenseGroupId" class="form-control" required><option value="">Grup seçiniz</option>@foreach(var g in Model.Groups){<option value="@g.ID">@g.Name · @Behavior(g.Behavior) · @Stage(g.Stage)</option>}</select></div>
+        <div class="col-md-3 form-group"><label>Geçerlilik Başlangıcı</label><input name="ValidFrom" type="date" value="@(new DateTime(s.StartDate.Year,1,1).ToString("yyyy-MM-dd"))" class="form-control" required /></div>
+        <div class="col-md-3 form-group"><label>Bitiş (isteğe bağlı)</label><input name="ValidTo" type="date" class="form-control" /></div>
+        <div class="col-md-2 form-group"><button class="btn btn-primary">Seçilenleri Bağla</button></div>
+    </div><input name="Notes" class="form-control mb-2" maxlength="500" placeholder="Sınıflandırma gerekçesi / not" /><small>Yalnızca tam hesap kodu bağlanır; alt hesaplara otomatik yayılmaz. Önceki açık sınıflandırma yeni başlangıçtan önce kapatılır; sonraki dönemler korunur.</small></form>}
+    <label for="expenseAccountSearch">Hesap Kodu / Adı Ara</label><input id="expenseAccountSearch" type="search" class="form-control mb-4" placeholder="Örn. 730 veya kira" />
+    <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>@if(edit){<input type="checkbox" id="expenseSelectVisible" aria-label="Görünen bağlanabilir hesapları seç" />}</th><th>Hesap / Ad</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Ham Net</th><th class="text-right">Dahil Tutar</th><th>Grup / Kontrol</th><th></th></tr></thead><tbody>
+    @foreach(var a in s.Accounts){<tr data-expense-account="@(a.AccountCode+" "+a.AccountName)"><td>@if(edit&&a.CanMap){<input type="checkbox" form="expenseMappingForm" name="AccountCodes" value="@a.AccountCode" aria-label="@($"{a.AccountCode} hesabını seç")" />}</td>
+        <td><strong>@a.AccountCode</strong><div>@a.AccountName</div><small class="text-muted">@a.MovementCount hareket</small></td><td class="text-right">@a.Debit.ToString("N2")</td><td class="text-right">@a.Credit.ToString("N2")</td><td class="text-right">@a.Net.ToString("N2")</td><td class="text-right font-weight-bold">@a.IncludedAmount.ToString("N2")</td><td>@a.Classification @if(a.ProtectedReason!=null){<div class="text-muted">@a.ProtectedReason</div>}</td><td><a target="_blank" asp-action="Hareketler" asp-route-accountCode="@a.AccountCode" asp-route-startDate="@s.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@s.EndDate.ToString("yyyy-MM-dd")" class="btn btn-sm btn-light">Hareketler</a></td></tr>}
+    @if(s.Accounts.Count==0){<tr><td colspan="8">Seçilen dönemde 700'lü hesap hareketi bulunamadı.</td></tr>}
+    </tbody></table></div>
+</div></div>
+<div class="card card-custom gutter-b"><div class="card-header"><div class="card-title"><h3 class="card-label">Tarihli Hesap Kuralları</h3></div></div><div class="card-body">
+    @foreach(var rule in Model.Rules){
+        @if(edit){<form asp-action="KuralDuzenle" method="post" class="border rounded p-3 mb-3"><partial name="_PeriodFields" model="s" /><input type="hidden" name="id" value="@rule.Id" /><div class="row align-items-end">
+            <div class="col-md-2 form-group"><strong>@rule.AccountCode</strong></div><div class="col-md-3 form-group"><label>Grup</label><select name="expenseGroupId" class="form-control">@foreach(var g in Model.Groups){<option value="@g.ID" selected="@(rule.ExpenseGroupId==g.ID)">@g.Name</option>}</select></div>
+            <div class="col-md-2 form-group"><label>Başlangıç</label><input name="validFrom" value="@rule.ValidFrom.ToString("yyyy-MM-dd")" type="date" class="form-control" required /></div><div class="col-md-2 form-group"><label>Bitiş</label><input name="validTo" value="@rule.ValidTo?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
+            <div class="col-md-3 form-group"><button class="btn btn-sm btn-light-primary">Güncelle</button><button class="btn btn-sm btn-light-danger" formaction="@Url.Action("KuralSil")" formnovalidate onclick="return confirm('Kural arşivlensin mi? Geçmiş rapor sınıflandırması etkilenebilir.');">Sil</button></div>
+        </div></form>}
+        else{<div class="border-bottom py-2">@rule.AccountCode · @rule.GroupName · @rule.ValidFrom.ToString("dd.MM.yyyy") – @(rule.ValidTo?.ToString("dd.MM.yyyy")??"Açık")</div>}
+    }
+</div></div>
+@section JSSection {<script>
+(function(){var search=document.getElementById('expenseAccountSearch');var rows=Array.from(document.querySelectorAll('[data-expense-account]'));function normalized(s){return s.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i');}search.addEventListener('input',function(){var value=normalized(search.value);rows.forEach(function(row){row.hidden=!normalized(row.dataset.expenseAccount).includes(value);});});var all=document.getElementById('expenseSelectVisible');if(all)all.addEventListener('change',function(){rows.filter(function(row){return !row.hidden;}).forEach(function(row){var box=row.querySelector('input[name="AccountCodes"]');if(box)box.checked=all.checked;});});})();
+</script>}

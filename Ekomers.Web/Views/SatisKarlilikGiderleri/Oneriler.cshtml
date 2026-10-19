@@ -1,0 +1,67 @@
+@model Ekomers.Models.ViewModels.Profitability.AccountingExpenseSuggestionsVM
+@using Ekomers.Models.Entity.Profitability
+@{
+    ViewData["Title"] = "Gider Hesabı Önerileri";
+    var s = Model.Summary;
+    string Behavior(RptExpenseBehavior value) => value == RptExpenseBehavior.Fixed ? "Sabit" : value == RptExpenseBehavior.Variable ? "Değişken" : "Hariç";
+}
+@if(TempData["error"] is string error){<div class="alert alert-danger">@error</div>}
+@if(TempData["success"] is string success){<div class="alert alert-success">@success</div>}
+<div class="card card-custom gutter-b">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Gider Hesabı Önerileri · Onay Öncesi</h3></div><div class="card-toolbar"><a asp-action="Index" asp-route-startDate="@s.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@s.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light">Gider Yönetimine Dön</a></div></div>
+    <div class="card-body">
+        <div class="alert alert-light-info">Logo <strong>100 / 01</strong> · @s.StartDate.ToString("dd.MM.yyyy") – @s.EndDate.ToString("dd.MM.yyyy") döneminde hareket gören hesaplar taranır. Logo'ya yazılmaz. Bu sayfayı açmak veya grup seçmek kayıt oluşturmaz; yalnızca işaretleyip onayladığınız hesaplar kaydedilir.</div>
+        <p>Hammadde/ambalaj reçeteden gelir; korunan hesaplar önerilmez. Personel, enerji, nakliye ve finansman gibi belirsiz kalemlerde türü siz seçersiniz. Bir hesap karma gider içeriyorsa sistem tutarı kendiliğinden bölmez.</p>
+        <div class="row mb-4">
+            <div class="col-md-4"><strong>@Model.TotalCandidates</strong> yeni eşleştirme adayı</div>
+            <div class="col-md-4"><strong>@Model.AlreadyMappedCount</strong> mevcut eşleştirmesi korunarak atlandı</div>
+            <div class="col-md-4"><strong>@Model.ProtectedCount</strong> korunan/kapsam dışı hesap atlandı</div>
+        </div>
+        <form method="get" class="row align-items-end">
+            <div class="col-md-4 form-group"><label for="suggestionStart">Başlangıç</label><input id="suggestionStart" type="date" name="startDate" value="@s.StartDate.ToString("yyyy-MM-dd")" class="form-control" required /></div>
+            <div class="col-md-4 form-group"><label for="suggestionEnd">Bitiş</label><input id="suggestionEnd" type="date" name="endDate" value="@s.EndDate.ToString("yyyy-MM-dd")" class="form-control" required /></div>
+            <div class="col-md-4 form-group"><button class="btn btn-light-primary">Önerileri Yenile</button></div>
+        </form>
+        <form asp-action="HazirGruplariOlustur" method="post" onsubmit="return confirm('Eksik hazır gruplar oluşturulsun mu? Mevcut gruplar ve eşleştirmeler değiştirilmez.');">
+            <partial name="_PeriodFields" model="s" /><button class="btn btn-light-primary">Eksik Hazır Grupları Oluştur</button>
+        </form>
+    </div>
+</div>
+<div class="card card-custom"><div class="card-body">
+    @if(Model.Groups.Count == 0){<div class="alert alert-warning">Önce hazır grupları oluşturun veya gider yönetiminde kendi gruplarınızı tanımlayın.</div>}
+    <form id="expenseSuggestionApproval" asp-action="OnerileriOnayla" method="post">
+        <partial name="_PeriodFields" model="s" /><input type="hidden" name="page" value="@Model.Page" />
+        <div class="row">
+            <div class="col-md-4 form-group"><label for="suggestionValidFrom">Eşleştirmelerin Geçerlilik Başlangıcı</label><input id="suggestionValidFrom" type="date" name="ValidFrom" value="@s.StartDate.ToString("yyyy-MM-dd")" class="form-control" required /></div>
+            <div class="col-md-4 form-group"><label for="suggestionValidTo">Geçerlilik Bitişi (isteğe bağlı)</label><input id="suggestionValidTo" type="date" name="ValidTo" class="form-control" /></div>
+            <div class="col-md-4 form-group"><label for="suggestionAccountSearch">Bu Sayfada Hesap Ara</label><input id="suggestionAccountSearch" type="search" class="form-control" placeholder="Hesap kodu veya adı" aria-controls="expenseSuggestionRows" /></div>
+        </div>
+        <p class="text-muted">Tarih aralığını kontrol edin: geçmiş tarih seçmek geçmiş dönem raporlarını etkiler. Önceden herhangi bir kuralı bulunan hesap bu işlemle yeniden eşleştirilmez; mevcut dönemleri değiştirmek için gider yönetimini kullanın.</p>
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+            <label class="mb-2"><input id="suggestionSelectVisible" type="checkbox" /> Bu sayfada görünen ve grubu seçili hesapları işaretle</label>
+            <span id="suggestionSelectionCount" role="status" aria-live="polite" class="text-muted">0 hesap seçildi</span>
+        </div>
+        <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Onay</th><th>Hesap Kodu / Adı</th><th>Önerilen Kategori / Gerekçe</th><th>Onaylanacak Grup</th></tr></thead><tbody id="expenseSuggestionRows">
+            @for(var i=0; i<Model.Rows.Count; i++){
+                var row=Model.Rows[i];
+                <tr data-suggestion-account="@(row.AccountCode+" "+row.AccountName)">
+                    <td><input name="Rows[@i].AccountCode" type="hidden" value="@row.AccountCode" /><input name="Rows[@i].Selected" type="checkbox" value="true" data-suggestion-select aria-label="@($"{row.AccountCode} hesabını onay için seç")" /></td>
+                    <td><strong>@row.AccountCode</strong><div>@row.AccountName</div></td>
+                    <td><strong>@row.Category</strong><div class="text-muted mt-2">@row.Reason</div><span class="d-block mt-2 @(row.NeedsReview ? "text-warning" : "text-primary")">@(row.NeedsReview ? "İnceleme ve seçim gerekli" : "Öneri · kullanıcı onayı gerekli")</span></td>
+                    <td style="min-width: 240px;"><select name="Rows[@i].ExpenseGroupId" class="form-control" data-suggestion-group aria-label="@($"{row.AccountCode} için gider grubu")"><option value="">Grup seçiniz</option>
+                        @foreach(var g in Model.Groups){<option value="@g.ID" selected="@(g.ID==row.SuggestedGroupId)">@g.Name · @Behavior(g.Behavior) · @(g.Stage==RptExpenseStage.Financing ? "Finansman" : "İşletme")</option>}
+                    </select></td>
+                </tr>
+            }
+            <tr id="suggestionSearchEmpty" style="display: @(Model.Rows.Count==0 ? "" : "none");"><td colspan="4" class="text-muted text-center py-6">Gösterilecek yeni hesap bulunamadı. Dönemi değiştirebilir veya mevcut kuralları gider yönetiminde inceleyebilirsiniz.</td></tr>
+        </tbody></table></div>
+        <p class="text-muted">Her sayfada en fazla 100 hesap gösterilir. Arama ve toplu seçim yalnızca bu sayfadadır; aramada gizlenen seçimler kaldırılır. Hiçbir hesap başlangıçta işaretli değildir.</p>
+        <button id="suggestionApprove" class="btn btn-primary" disabled="@(Model.Rows.Count==0 || Model.Groups.Count==0)">Seçilen Eşleştirmeleri Onayla</button>
+    </form>
+    <div class="d-flex align-items-center justify-content-between mt-5">
+        @if(Model.Page>1){<a asp-action="Oneriler" asp-route-startDate="@s.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@s.EndDate.ToString("yyyy-MM-dd")" asp-route-page="@(Model.Page-1)" class="btn btn-light">Önceki Sayfa</a>}
+        <span>Sayfa @Model.Page / @Model.TotalPages · @Model.TotalCandidates aday</span>
+        @if(Model.Page<Model.TotalPages){<a asp-action="Oneriler" asp-route-startDate="@s.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@s.EndDate.ToString("yyyy-MM-dd")" asp-route-page="@(Model.Page+1)" class="btn btn-light">Sonraki Sayfa</a>}
+    </div>
+</div></div>
+@section JSSection {<script src="~/js/accounting-expense-suggestions.js" asp-append-version="true"></script>}
