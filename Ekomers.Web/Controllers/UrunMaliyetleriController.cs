@@ -7,10 +7,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using Ekomers.Web.Infrastructure.Auth;
 
 namespace Ekomers.Web.Controllers;
 
-[Authorize(Roles = "Admin,Yönetici")]
+[Authorize(Policy = ReportPermissions.UrunMaliyetleri)]
 public sealed class UrunMaliyetleriController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -69,7 +70,7 @@ public sealed class UrunMaliyetleriController : Controller
         return View(model);
     }
 
-    [HttpGet]
+    [HttpGet, Authorize(Policy = ReportPermissions.UrunMaliyetleriYonet)]
     public async Task<IActionResult> Yeni(int? logoMaterialRef, CancellationToken ct)
     {
         ViewBag.Modul = "Rapor";
@@ -78,7 +79,7 @@ public sealed class UrunMaliyetleriController : Controller
         return View(model);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.UrunMaliyetleriYonet)]
     public async Task<IActionResult> Yeni(ProductCostFormVM model, CancellationToken ct)
     {
         ViewBag.Modul = "Rapor";
@@ -182,7 +183,7 @@ public sealed class UrunMaliyetleriController : Controller
         return RedirectToAction(nameof(Gecmis), new { logoMaterialRef = version.LogoMaterialRef });
     }
 
-    [HttpGet]
+    [HttpGet, Authorize(Policy = ReportPermissions.UrunMaliyetleriYonet)]
     public async Task<IActionResult> OnEkler(CancellationToken ct)
     {
         ViewBag.Modul = "Rapor";
@@ -203,7 +204,7 @@ public sealed class UrunMaliyetleriController : Controller
         return View(new ProductCostPrefixManagementVM { Prefixes = rows });
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.UrunMaliyetleriYonet)]
     public async Task<IActionResult> OnEkEkle(string prefix, string? description, CancellationToken ct)
     {
         prefix = NormalizePrefix(prefix);
@@ -255,7 +256,7 @@ public sealed class UrunMaliyetleriController : Controller
         return RedirectToAction(nameof(OnEkler));
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.UrunMaliyetleriYonet)]
     public async Task<IActionResult> OnEkDurum(int id, CancellationToken ct)
     {
         var row = await _context.RptProductScopePrefixes
@@ -272,7 +273,7 @@ public sealed class UrunMaliyetleriController : Controller
         return RedirectToAction(nameof(OnEkler));
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.UrunMaliyetleriYonet)]
     public async Task<IActionResult> OnEkSil(int id, CancellationToken ct)
     {
         var row = await _context.RptProductScopePrefixes
@@ -290,7 +291,7 @@ public sealed class UrunMaliyetleriController : Controller
         return RedirectToAction(nameof(OnEkler));
     }
 
-    [HttpGet]
+    [HttpGet, Authorize(Policy = ReportPermissions.UrunMaliyetleriYonet)]
     public async Task<IActionResult> Toplu(
         string? search,
         string statusFilter = "all",
@@ -307,7 +308,7 @@ public sealed class UrunMaliyetleriController : Controller
         return View(model);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.UrunMaliyetleriYonet)]
     public async Task<IActionResult> Toplu(ProductCostBulkVM model, CancellationToken ct)
     {
         ViewBag.Modul = "Rapor";

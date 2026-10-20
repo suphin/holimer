@@ -2,7 +2,7 @@
 @using Ekomers.Models.Entity.Profitability
 @{
     ViewData["Title"] = "Muhasebe Gider Grupları";
-    var edit = User.IsInRole("Admin") || User.IsInRole("Yönetici");
+    var edit = ReportPermissions.CanAccess(User, ReportPermissions.MuhasebeGiderleriYonet);
     var s = Model.Summary;
     string Behavior(RptExpenseBehavior value) => value == RptExpenseBehavior.Fixed ? "Sabit" : value == RptExpenseBehavior.Variable ? "Değişken" : "Hariç";
     string Stage(RptExpenseStage value) => value == RptExpenseStage.Financing ? "Finansman" : "İşletme";
@@ -10,7 +10,7 @@
 @if(TempData["error"] is string error){<div class="alert alert-danger">@error</div>}
 @if(TempData["success"] is string success){<div class="alert alert-success">@success</div>}
 <div class="card card-custom gutter-b">
-    <div class="card-header"><div class="card-title"><h3 class="card-label">Muhasebe Gider Grupları</h3></div><div class="card-toolbar"><a asp-controller="SatisKarlilik" asp-action="Index" asp-route-startDate="@s.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@s.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light-primary">Kârlılık Raporuna Dön</a></div></div>
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Muhasebe Gider Grupları</h3></div>@if(ReportPermissions.CanAccess(User, ReportPermissions.SatisKarlilik)){<div class="card-toolbar"><a asp-controller="SatisKarlilik" asp-action="Index" asp-route-startDate="@s.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@s.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light-primary">Kârlılık Raporuna Dön</a></div>}</div>
     <div class="card-body">
         <div class="alert alert-light-info">Kaynak Logo <strong>100 / 01</strong>. Tutar girilmez; muhasebe hareketleri yalnızca SELECT ile okunur. Portalda yalnızca gider grupları ve tarihli hesap eşleştirmeleri saklanır.
             <div class="mt-2">İncelemede doğrulanan fiş türü <strong>4</strong> işlenir. Diğer fiş türleri inceleme bekler. İptal, hammadde/ambalaj ve bağlantı/yansıtma/fark hesapları dışarıda kalır. Yansıtma karşı hesabı bulunan fişin tamamı gider hesabında da hariç tutulur; normal düzeltme/iade alacakları düşülür.</div></div>

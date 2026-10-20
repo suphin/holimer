@@ -1,0 +1,35 @@
+@model Ekomers.Models.ViewModels.Raporlar.LogoCariBelgeVM
+@using Ekomers.Models.ViewModels.Raporlar
+@{
+    Layout=null;var s=Model.Scope;var culture=CultureInfo.GetCultureInfo("tr-TR");
+    string Amount(decimal v)=>v.ToString("N2",culture);
+    string PageUrl(int page)=>Url.Action("BelgeDetay",new{firmNumber=s.Company.Number,periodNumber=s.Period.Number,clientRef=Model.Client.ClientRef,movementRef=Model.Movement.MovementRef,startDate=s.StartDate.ToString("yyyy-MM-dd"),endDate=s.EndDate.ToString("yyyy-MM-dd"),page})!;
+}
+<div class="cs-context">@s.Company.Number.ToString("000") · @s.Company.Name · Dönem @s.Period.Number.ToString("00") · Cari hareket ref: @Model.Movement.MovementRef</div>
+<partial name="_Client" model="Model.Client" />
+<div class="cs-heading"><div><h4>@Model.Kind · @Model.Number</h4><span>@Model.Date?.ToString("dd.MM.yyyy") · Belge no: @Model.DocumentNumber</span></div>@if(Model.Cancelled==true){<strong class="text-danger">Kaynak belge iptal</strong>}</div>
+<p class="cs-description">@Model.Description</p>
+@if(Model.Notice!=null){<div class="alert alert-light-warning">@Model.Notice</div>}
+<div class="cs-summary mb-4"><div><span>Cari Hareket Borcu</span><strong>@Amount(Model.Movement.Debit) @s.Currency</strong></div><div><span>Cari Hareket Alacağı</span><strong>@Amount(Model.Movement.Credit) @s.Currency</strong></div><div><span>İşlem Dövizi</span><strong>@Amount(Model.Movement.CurrencyAmount) @LogoCariLabels.Currency(Model.Movement.CurrencyType)</strong></div><div><span>Kur</span><strong>@Model.Movement.ExchangeRate.ToString("N6",culture)</strong></div></div>
+@if(Model.NetTotal.HasValue){<p class="cs-note">Belge toplamı: <strong>@Amount(Model.NetTotal.Value) @s.Currency</strong>@if(Model.DiscountTotal.HasValue){<span> · İskonto: @Amount(Model.DiscountTotal.Value)</span>}@if(Model.VatTotal.HasValue){<span> · KDV: @Amount(Model.VatTotal.Value)</span>} · Cari hareket tutarıyla belge toplamı peşin ödeme, iade veya diğer işlemler nedeniyle farklı olabilir.</p>}
+@if(Model.LineMode!="generic"){
+<div class="cs-table-wrap"><table class="cs-table"><thead><tr><th>#</th><th>@(Model.LineMode=="invoice" ? "Malzeme / Hizmet" : Model.LineMode=="cheque" ? "Portföy / Banka / Seri" : "Hesap / Açıklama")</th>
+    @if(Model.LineMode=="invoice"){<th class="cs-number">Miktar</th><th class="cs-number">Birim Fiyat</th><th class="cs-number">Net</th><th class="cs-number">KDV</th>}
+    else if(Model.LineMode=="client"){<th class="cs-number">Borç</th><th class="cs-number">Alacak</th><th>Döviz / Kur</th>}
+    else{<th>@(Model.LineMode=="cheque" ? "Vade" : "Hesap Yönü")</th><th class="cs-number">Yerel Tutar</th><th>Döviz / Kur</th>}
+</tr></thead><tbody>
+@foreach(var r in Model.Rows){<tr><td>@r.LineNumber</td><td><strong>@r.Code · @r.Name</strong><span class="cs-secondary cs-description">@r.Description</span>
+    @if(Model.LineMode=="invoice"){<small>@LogoCariLabels.InvoiceLine(r.LineType)</small>}
+    @if(Model.LineMode=="cheque"){<span class="cs-secondary">Seri: @r.SerialNumber</span>@if(r.Cancelled){<strong class="text-danger">Kart iptal</strong>}}
+</td>
+    @if(Model.LineMode=="invoice"){<td class="cs-number">@r.Quantity.ToString("N6",culture) @r.Unit</td><td class="cs-number">@r.Price.ToString("N6",culture)<span class="cs-secondary">@(r.VatIncluded ? "KDV dahil" : "KDV hariç")</span></td><td class="cs-number">@Amount(r.Net)</td><td class="cs-number">%@r.Vat.ToString("N2",culture)<span class="cs-secondary">@Amount(r.VatAmount)</span></td>}
+    else if(Model.LineMode=="client"){<td class="cs-number">@Amount(r.Debit)</td><td class="cs-number">@Amount(r.Credit)</td><td>@Amount(r.CurrencyAmount) @LogoCariLabels.Currency(r.CurrencyType)<span class="cs-secondary">Kur: @r.ExchangeRate.ToString("N6",culture)</span></td>}
+    else{<td>@(Model.LineMode=="cheque" ? r.DueDate?.ToString("dd.MM.yyyy") : r.Direction)</td><td class="cs-number">@Amount(r.Net)</td><td>@Amount(r.CurrencyAmount) @LogoCariLabels.Currency(r.CurrencyType)<span class="cs-secondary">Kur: @r.ExchangeRate.ToString("N6",culture)</span></td>}
+</tr>}
+@if(Model.Rows.Count==0){<tr><td colspan="@(Model.LineMode=="invoice" ? 6 : 5)" class="cs-empty">Bu sayfada belge satırı bulunamadı.</td></tr>}
+</tbody></table></div>
+<nav class="cs-pagination" aria-label="Belge satırı sayfaları"><span>@Model.TotalCount.ToString("N0",culture) satır · Sayfa @Model.Page / @Model.TotalPages</span><div>
+@if(Model.Page>1){<a class="btn btn-light btn-sm" data-cs-page href="@PageUrl(Model.Page-1)">Önceki</a>}
+@if(Model.Page<Model.TotalPages){<a class="btn btn-light btn-sm" data-cs-page href="@PageUrl(Model.Page+1)">Sonraki</a>}
+</div></nav>
+}

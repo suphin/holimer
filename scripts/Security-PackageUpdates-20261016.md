@@ -21,3 +21,9 @@ Sürümleri `dotnet --list-runtimes` ile kontrol edin. DLL ürün sürümünü k
 - PKCS imza/şifreleme ve XML SHA256 imza roundtrip; ImageSharp PNG/JPEG/resize ve 1×1 TIFF Group3/Group4 roundtrip testleri geçti. Bunlar işlev uyumluluk testleridir; eski paylaşımlı XML runtime'ının yamalandığı iddiası değildir.
 
 Kaynaklar: [PKCS duyurusu](https://github.com/advisories/GHSA-2fmv-rv2c-59x7), [XML duyurusu](https://github.com/advisories/GHSA-7hqp-7c5m-4vq6), [ImageSharp düzeltmesi](https://github.com/advisories/GHSA-j9gm-c75j-xc9q), [NuGet NU1510](https://learn.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu1510).
+
+## 19.10.2026 — Kullanılmayan ImageSharp referansının kaldırılması
+
+Sonraki paket güncellemelerinde Web referansı 4.1.3 olmuş ve Six Labors lisans anahtarı bulunamadığı için derleme durmuştur. Birinci taraf C#/Razor kodunda ImageSharp kullanımı bulunmadı; `dotnet nuget why` çıktısı da başka bir paket ihtiyacı olmadan yalnızca Web'in doğrudan referansını gösterdi. Bu nedenle kullanılmayan doğrudan ImageSharp referansı kaldırıldı. Uygulama görsel işleme kodu değiştirilmedi, diğer paket güncellemeleri korundu.
+
+Lisans doğrulamasını kapatan ayar, geçersiz lisans anahtarı veya eski/açık bulunan sürüme dönüş eklenmedi. İleride ImageSharp gerçekten kullanılacaksa geçerli lisans koşulları değerlendirilmeli; gereken lisans edinilmeden paketi tekrar eklemek derlemeyi yeniden durdurabilir. [Six Labors lisanslama açıklaması](https://sixlabors.com/pricing/)

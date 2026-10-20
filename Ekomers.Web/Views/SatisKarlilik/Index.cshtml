@@ -11,11 +11,11 @@
                @*  <span class="text-muted">Logo: VW_RPT_SATIS_KARLILIK_100 · salt okunur</span> *@
             </div>
         </div>
-        @if (User.IsInRole("Admin") || User.IsInRole("Yönetici"))
+        @if (ReportPermissions.CanAccess(User, ReportPermissions.UrunMaliyetleri) || ReportPermissions.CanAccess(User, ReportPermissions.MuhasebeGiderleri))
         {
             <div class="card-toolbar">
-                <a asp-controller="UrunMaliyetleri" asp-action="Index" target="_blank" class="btn btn-light-primary">Ürün Maliyetleri</a>
-                <a asp-controller="SatisKarlilikGiderleri" asp-action="Index" asp-route-startDate="@Model.Filter.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.Filter.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light-primary ml-2">Muhasebe Giderleri / Gruplar</a>
+                @if (ReportPermissions.CanAccess(User, ReportPermissions.UrunMaliyetleri)) {<a asp-controller="UrunMaliyetleri" asp-action="Index" target="_blank" class="btn btn-light-primary">Ürün Maliyetleri</a>}
+                @if (ReportPermissions.CanAccess(User, ReportPermissions.MuhasebeGiderleri)) {<a asp-controller="SatisKarlilikGiderleri" asp-action="Index" asp-route-startDate="@Model.Filter.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.Filter.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light-primary ml-2">Muhasebe Giderleri / Gruplar</a>}
             </div>
         }
     </div>
@@ -81,7 +81,7 @@
 @if (Model.AccountingExpenses is { } expenses)
 {
     <div class="card card-custom gutter-b"><div class="card-header"><div class="card-title"><h3 class="card-label">Muhasebe Giderleri ve Dönem Sonucu</h3></div>
-        <div class="card-toolbar"><a asp-controller="SatisKarlilikGiderleri" asp-action="Index" asp-route-startDate="@Model.Filter.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.Filter.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light-primary">Gider Hesaplarını İncele</a></div></div>
+        @if (ReportPermissions.CanAccess(User, ReportPermissions.MuhasebeGiderleri)) {<div class="card-toolbar"><a asp-controller="SatisKarlilikGiderleri" asp-action="Index" asp-route-startDate="@Model.Filter.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.Filter.EndDate.ToString("yyyy-MM-dd")" class="btn btn-light-primary">Gider Hesaplarını İncele</a></div>}</div>
         <div class="card-body">
             <p class="text-muted">Logo 100 / 01 · @expenses.StartDate.ToString("dd.MM.yyyy") – @expenses.EndDate.ToString("dd.MM.yyyy") · Giderler dönem genelidir; ürün/müşteri/kanal satırlarına keyfî dağıtım yapılmaz.</p>
             <div class="row">

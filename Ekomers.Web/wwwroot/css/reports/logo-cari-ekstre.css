@@ -1,0 +1,31 @@
+.cs-report { color:#243b3a; }
+.cs-filter { display:grid;grid-template-columns:2fr 1.6fr 1fr 1fr;gap:18px;align-items:end; }
+.cs-filter label { display:block;margin-bottom:8px; }
+.cs-filter .cs-filter-search { grid-column:span 2; }
+.cs-filter-options label { margin:6px 0; }
+.cs-summary { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px; }
+.cs-summary>div { border:1px solid #dfe9e7;border-radius:12px;background:#f5faf8;padding:18px; }
+.cs-summary span { display:block;color:#6f8381;font-size:12px;margin-bottom:8px; }
+.cs-summary strong { display:block;font-size:17px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere; }
+.cs-heading,.cs-pagination { display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;margin:14px 0; }
+.cs-heading>span,.cs-pagination>span,.cs-context { color:#687d79;font-size:12px; }
+.cs-table-wrap { overflow-x:auto;max-width:100%; }
+.cs-table { width:100%;border-collapse:collapse;font-size:13px; }
+.cs-table th { background:#f3f7f6;color:#677d78;font-size:11px;letter-spacing:.3px; }
+.cs-table td,.cs-table th { padding:13px 12px;border-bottom:1px solid #e5eeeb;vertical-align:top; }
+.cs-table td:not(.cs-number) { overflow-wrap:anywhere;max-width:360px; }
+.cs-table tbody tr:hover { background:#f8fbfa; }
+.cs-table .cs-number { text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums; }
+.cs-secondary,.cs-table small { display:block;color:#6d817c;font-size:12px;margin-top:5px; }
+.cs-debit { color:#216b62;font-weight:600; }.cs-credit { color:#a34348;font-weight:600; }
+.cs-note { color:#6b7d78;font-size:12px;line-height:1.7; }
+.cs-empty { text-align:center;padding:32px!important;color:#718780; }
+.cs-dialog { border:1px solid #dbe6e2;border-radius:16px;padding:0;width:min(1440px,96vw);max-width:96vw;max-height:92vh;box-shadow:0 25px 90px #17382d40;color:#243b3a; }
+.cs-dialog::backdrop { background:rgba(17,35,30,.48); }
+.cs-dialog-header { position:sticky;top:0;z-index:1;background:white;display:flex;align-items:center;justify-content:space-between;padding:18px 24px;gap:20px;border-bottom:1px solid #e5eeeb; }
+.cs-dialog-header h3 { font-size:18px;margin:0; }.cs-dialog-body { padding:24px; }
+.cs-dialog [data-cs-status] { border-radius:8px;background:#f0f6f3;padding:20px; }.cs-dialog [data-cs-status].is-error { background:#fff1ef;color:#9c3431; }
+.cs-client { display:grid;grid-template-columns:1fr 1fr;gap:18px;border-bottom:1px solid #e5eeeb;padding:14px 0;margin-bottom:18px; }
+.cs-client strong { font-size:16px; }.cs-description { white-space:pre-wrap;overflow-wrap:anywhere; }
+@media(max-width:1000px) { .cs-filter { grid-template-columns:1fr 1fr; }.cs-summary { grid-template-columns:1fr 1fr; } }
+@media(max-width:600px) { .cs-filter,.cs-client { grid-template-columns:1fr; }.cs-filter .cs-filter-search { grid-column:auto; }.cs-summary>div { padding:12px; }.cs-summary strong { font-size:14px; }.cs-dialog-body { padding:14px; }.cs-dialog-header { padding:14px; } }

@@ -1,11 +1,12 @@
 using Ekomers.Data.Services.Profitability;
 using Ekomers.Models.ViewModels.Profitability;
+using Ekomers.Web.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ekomers.Web.Controllers;
 
-[Authorize(Roles = "Admin,Yönetici,Rapor")]
+[Authorize(Policy = ReportPermissions.SatisKarlilik)]
 public sealed class SatisKarlilikController : Controller
 {
     private readonly ISalesProfitabilityReportService _reportService;

@@ -11,10 +11,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Ekomers.Web.Infrastructure.Auth;
 
 namespace Ekomers.Web.Controllers;
 
-[Authorize(Roles = "Admin,Yönetici,Rapor")]
+[Authorize(Policy = ReportPermissions.MuhasebeGiderleri)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed partial class SatisKarlilikGiderleriController(ApplicationDbContext context, LogoContext logoContext, IAccountingExpenseService expenses) : Controller
 {
@@ -43,7 +44,7 @@ public sealed partial class SatisKarlilikGiderleriController(ApplicationDbContex
         return View(await expenses.GetMovementsAsync(accountCode.Trim(), startDate, endDate, page, ct));
     }
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin,Yönetici")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.MuhasebeGiderleriYonet)]
     public async Task<IActionResult> GrupKaydet(AccountingExpenseGroupInputVM input, int? id, DateTime startDate, DateTime endDate, CancellationToken ct)
     {
         if (!ModelState.IsValid || !Enum.IsDefined(input.Behavior) || !Enum.IsDefined(input.Stage) || string.IsNullOrWhiteSpace(input.Name))
@@ -64,7 +65,7 @@ public sealed partial class SatisKarlilikGiderleriController(ApplicationDbContex
         TempData["success"] = "Gider grubu kaydedildi."; return Back(startDate, endDate);
     }
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin,Yönetici")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.MuhasebeGiderleriYonet)]
     public async Task<IActionResult> GrupSil(int id, DateTime startDate, DateTime endDate, CancellationToken ct)
     {
         await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
@@ -77,7 +78,7 @@ public sealed partial class SatisKarlilikGiderleriController(ApplicationDbContex
         TempData["success"] = "Grup arşivlendi; denetim kaydı korunuyor."; return Back(startDate, endDate);
     }
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin,Yönetici")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.MuhasebeGiderleriYonet)]
     public async Task<IActionResult> HesaplariBagla(AccountingExpenseMappingInputVM input, DateTime startDate, DateTime endDate, CancellationToken ct)
     {
         var codes = (input.AccountCodes ?? []).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -115,7 +116,7 @@ public sealed partial class SatisKarlilikGiderleriController(ApplicationDbContex
         return Back(startDate, endDate);
     }
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin,Yönetici")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.MuhasebeGiderleriYonet)]
     public async Task<IActionResult> KuralDuzenle(int id, int expenseGroupId, DateTime validFrom, DateTime? validTo, DateTime startDate, DateTime endDate, CancellationToken ct)
     {
         if (!ValidDates(validFrom, validTo)) return Error("Tarih aralığı geçersiz.", startDate, endDate);
@@ -133,7 +134,7 @@ public sealed partial class SatisKarlilikGiderleriController(ApplicationDbContex
         TempData["success"] = "Kural güncellendi. Geçmiş raporlar yeni tarih aralığına göre hesaplanır."; return Back(startDate, endDate);
     }
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin,Yönetici")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.MuhasebeGiderleriYonet)]
     public async Task<IActionResult> KuralSil(int id, DateTime startDate, DateTime endDate, CancellationToken ct)
     {
         await using var tx = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);

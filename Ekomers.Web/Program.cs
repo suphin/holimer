@@ -97,6 +97,7 @@ builder.Services.AddScoped<ApiRequestAuditFilter>();
 // role ve roleclaim
 builder.Services.AddAuthorization(options =>
 {
+    ReportPermissions.AddPolicies(options);
 	options.AddPolicy("Edit", policy =>
 		policy.RequireClaim("Authorize", "Edit"));
 
@@ -456,6 +457,7 @@ builder.Services.AddScoped<IEczaneService, EczaneService>();
 builder.Services.AddScoped<ISirketlerService, SirketlerService>();
 builder.Services.AddScoped<IUserShortCutFieldService, UserShortCutFieldService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<Ekomers.Data.Services.Reports.ILogoCustomerStatementService, Ekomers.Data.Services.Reports.LogoCustomerStatementService>();
 builder.Services.AddScoped<ISalesProfitabilityReportService, SalesProfitabilityReportService>();
 builder.Services.AddScoped<IAccountingExpenseService, AccountingExpenseService>();
 builder.Services.AddScoped<ICustomerReceivablesService, CustomerReceivablesService>();

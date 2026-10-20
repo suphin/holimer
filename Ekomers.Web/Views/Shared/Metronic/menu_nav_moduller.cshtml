@@ -467,7 +467,7 @@
 
 <!--end::FW-->
 <!--begin::FW-->
-@if (User.HasClaim("Modul", "Rapor") || User.IsInRole("Admin") || User.IsInRole("Yönetici"))
+@if (ReportPermissions.CanSeeModule(User))
 {
 	<li class="menu-item menu-item-submenu @(ViewBag.Modul == "Rapor" ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 		<a href="javascript:;" class="menu-link menu-toggle">
@@ -493,7 +493,7 @@
 					</span>
 				</li>
 
-				@if (User.HasClaim("Rapor", "Bankalar") || User.IsInRole("Admin"))
+				@if (ReportPermissions.CanAccess(User, ReportPermissions.Bankalar) || ReportPermissions.CanAccess(User, ReportPermissions.BankaKredileri) || ReportPermissions.CanAccess(User, ReportPermissions.LogoBankaHareketleri))
 				{
 					<li class="menu-item menu-item-submenu  @(((controllerName == "Reports" && (actionName == "Bankalar" || actionName == "BankaKredileri")) || controllerName == "LogoBankaHareketleri") ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 						<a href="javascript:;" class="menu-link menu-toggle">
@@ -506,6 +506,7 @@
 						<div class="menu-submenu">
 							<i class="menu-arrow"></i>
 							<ul class="menu-subnav">
+								@if (ReportPermissions.CanAccess(User, ReportPermissions.Bankalar)) {
 								<li class="menu-item @( (controllerName == "Reports" && actionName == "Bankalar") ? "menu-item-active" : "" )" aria-haspopup="true">
 									<a href="Reports/Bankalar" class="menu-link">
 										<i class="menu-bullet menu-bullet-dot">
@@ -514,6 +515,8 @@
 										<span class="menu-text">Bankalar</span>
 									</a>
 								</li>
+								}
+								@if (ReportPermissions.CanAccess(User, ReportPermissions.BankaKredileri)) {
 								<li class="menu-item @( (controllerName == "Reports" && actionName == "BankaKredileri") ? "menu-item-active" : "" )" aria-haspopup="true">
 									<a href="Reports/BankaKredileri" class="menu-link">
 										<i class="menu-bullet menu-bullet-dot">
@@ -522,17 +525,20 @@
 										<span class="menu-text">Banka Kredileri</span>
 									</a>
 								</li>
+								}
+								@if (ReportPermissions.CanAccess(User, ReportPermissions.LogoBankaHareketleri)) {
 								<li class="menu-item @(controllerName == "LogoBankaHareketleri" ? "menu-item-active" : "")" aria-haspopup="true">
 									<a asp-controller="LogoBankaHareketleri" asp-action="Index" class="menu-link">
 										<i class="menu-bullet menu-bullet-dot"><span></span></i>
 										<span class="menu-text">Havale / EFT Hareketleri</span>
 									</a>
 								</li>
+								}
 							</ul>
 						</div>
 					</li>
 				}
-				@if (User.HasClaim("Rapor", "SatisKarlilik") || User.IsInRole("Admin") || User.IsInRole("Yönetici"))
+				@if (ReportPermissions.CanAccess(User, ReportPermissions.SatisKarlilik))
 				{
 					<li class="menu-item @(controllerName == "SatisKarlilik" ? "menu-item-active" : "")" aria-haspopup="true">
 						<a asp-controller="SatisKarlilik" asp-action="Index" class="menu-link">
@@ -541,7 +547,7 @@
 						</a>
 					</li>
 				}
-				@if (User.IsInRole("Admin") || User.IsInRole("Yönetici"))
+				@if (ReportPermissions.CanAccess(User, ReportPermissions.UrunMaliyetleri))
 				{
 					<li class="menu-item @(controllerName == "UrunMaliyetleri" ? "menu-item-active" : "")" aria-haspopup="true">
 						<a asp-controller="UrunMaliyetleri" asp-action="Index" class="menu-link">
@@ -550,9 +556,18 @@
 						</a>
 					</li>
 				}
-				@if (User.HasClaim("Rapor", "BorcAlacak") || User.IsInRole("Admin"))
+				@if (ReportPermissions.CanAccess(User, ReportPermissions.MuhasebeGiderleri))
 				{
-					<li class="menu-item menu-item-submenu  @((controllerName == "Reports" && actionName == "BorcAlacak") ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
+					<li class="menu-item @(controllerName == "SatisKarlilikGiderleri" ? "menu-item-active" : "")" aria-haspopup="true">
+						<a asp-controller="SatisKarlilikGiderleri" asp-action="Index" class="menu-link">
+							<i class="menu-bullet menu-bullet-dot"><span></span></i>
+							<span class="menu-text">Muhasebe Giderleri / Gruplar</span>
+						</a>
+					</li>
+				}
+				@if (ReportPermissions.CanAccess(User, ReportPermissions.BorcAlacak) || ReportPermissions.CanAccess(User, ReportPermissions.LogoCariEkstre))
+				{
+					<li class="menu-item menu-item-submenu  @(((controllerName == "Reports" && actionName == "BorcAlacak") || controllerName == "LogoCariEkstre") ? "menu-item-open" : "")" aria-haspopup="true" data-menu-toggle="hover">
 						<a href="javascript:;" class="menu-link menu-toggle">
 							<i class="menu-bullet menu-bullet-line">
 								<span></span>
@@ -563,6 +578,7 @@
 						<div class="menu-submenu">
 							<i class="menu-arrow"></i>
 							<ul class="menu-subnav">
+								@if (ReportPermissions.CanAccess(User, ReportPermissions.BorcAlacak)) {
 								<li class="menu-item @( (controllerName == "Reports" && actionName == "BorcAlacak") ? "menu-item-active" : "" )" aria-haspopup="true">
 									<a href="Reports/BorcAlacak" class="menu-link">
 										<i class="menu-bullet menu-bullet-dot">
@@ -571,6 +587,15 @@
 										<span class="menu-text">Borç / Alacak</span>
 									</a>
 								</li>
+								}
+								@if (ReportPermissions.CanAccess(User, ReportPermissions.LogoCariEkstre)) {
+								<li class="menu-item @(controllerName == "LogoCariEkstre" ? "menu-item-active" : "")" aria-haspopup="true">
+									<a asp-controller="LogoCariEkstre" asp-action="Index" class="menu-link">
+										<i class="menu-bullet menu-bullet-dot"><span></span></i>
+										<span class="menu-text">Cari Ekstre · Firma Bazlı</span>
+									</a>
+								</li>
+								}
 							</ul>
 						</div>
 					</li>

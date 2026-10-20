@@ -12,7 +12,7 @@
             </div>
         </div>
         <div class="card-toolbar">
-            <a asp-action="Yeni" asp-route-logoMaterialRef="@Model.LogoMaterialRef" class="btn btn-primary mr-2">Yeni Versiyon</a>
+            @if(ReportPermissions.CanAccess(User, ReportPermissions.UrunMaliyetleriYonet)){<a asp-action="Yeni" asp-route-logoMaterialRef="@Model.LogoMaterialRef" class="btn btn-primary mr-2">Yeni Versiyon</a>}
             <a asp-action="Index" class="btn btn-light">Listeye Dön</a>
         </div>
     </div>

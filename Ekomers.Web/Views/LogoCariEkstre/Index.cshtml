@@ -1,0 +1,54 @@
+@model Ekomers.Models.ViewModels.Raporlar.LogoCariRaporVM
+@{
+    ViewData["Title"]="Cari Ekstre · Firma Bazlı";
+    var s=Model.Scope;
+    var culture=CultureInfo.GetCultureInfo("tr-TR");
+    string Amount(decimal value)=>value.ToString("N2",culture);
+}
+<link href="~/css/reports/logo-cari-ekstre.css" rel="stylesheet" asp-append-version="true" />
+<div id="logoCariReport" class="cs-report" data-statement-path="@Url.Action("Ekstre")" data-document-path="@Url.Action("BelgeDetay")">
+    <div class="card card-custom mb-5"><div class="card-header"><div class="card-title"><h3 class="card-label">Cari Ekstre Raporu<span class="d-block text-muted mt-2 font-size-sm">Logo firma ve dönemine göre cari bakiyeler, ekstre ve kaynak belge detayları</span></h3></div></div><div class="card-body">
+        @if(Model.Error!=null){<div class="alert alert-warning" role="alert">@Model.Error</div>}
+        <form method="get" id="csFilter" class="cs-filter">
+            <div><label for="csCompany">Logo Firması</label><select id="csCompany" name="firmNumber" class="form-control" required>
+                @foreach(var c in Model.Companies){<option value="@c.Number" selected="@(c.Number==(s?.Company.Number ?? Model.FirmNumber))">@c.Number.ToString("000") · @c.Name</option>}
+            </select></div>
+            <div><label for="csPeriod">Logo Dönemi</label><select id="csPeriod" name="periodNumber" class="form-control" required>
+                @foreach(var p in Model.Periods){<option value="@p.Number" selected="@(p.Number==(s?.Period.Number ?? Model.PeriodNumber))">@p.Number.ToString("00") · @p.BeginDate.ToString("dd.MM.yyyy") – @p.EndDate.ToString("dd.MM.yyyy")</option>}
+            </select></div>
+            <div><label for="csStart">Başlangıç</label><input id="csStart" name="startDate" type="date" class="form-control" value="@((s?.StartDate ?? Model.StartDate)?.ToString("yyyy-MM-dd"))" /></div>
+            <div><label for="csEnd">Bitiş</label><input id="csEnd" name="endDate" type="date" class="form-control" value="@((s?.EndDate ?? Model.EndDate)?.ToString("yyyy-MM-dd"))" /></div>
+            <div class="cs-filter-search"><label for="csSearch">Cari Kodu / Ünvan / Vergi No</label><input id="csSearch" name="search" type="search" class="form-control" maxlength="150" value="@Model.Search" placeholder="Cari hesap ara" /></div>
+            <div class="cs-filter-options"><label><input type="checkbox" name="includePassive" value="true" checked="@Model.IncludePassive" /> Pasif cariler dahil</label><label><input type="checkbox" name="onlyBalance" value="true" checked="@Model.OnlyBalance" /> Yalnızca bakiyesi olanlar</label></div>
+            <button class="btn btn-primary">Raporu Getir</button>
+        </form>
+        <p class="cs-note mt-4 mb-0">LogoConnection üzerinden yalnızca SELECT yapılır. Borç/alacak cari hesap bakışıdır: borç bakiyesi cariden alacağımızı, alacak bakiyesi cariye borcumuzu gösterir. İptal hareketleri dahil değildir. Yerel para tutarları ile işlem dövizleri birbirine eklenmez.</p>
+    </div></div>
+    @if(s!=null && Model.Error==null){
+    <div class="cs-summary mb-5">
+        <div><span>Dönem Borç</span><strong>@Amount(Model.TotalDebit) @s.Currency</strong></div>
+        <div><span>Dönem Alacak</span><strong>@Amount(Model.TotalCredit) @s.Currency</strong></div>
+        <div><span>Borç Bakiyesi · Alacağımız</span><strong>@Amount(Model.DebitBalance) @s.Currency</strong></div>
+        <div><span>Alacak Bakiyesi · Borcumuz</span><strong>@Amount(Model.CreditBalance) @s.Currency</strong></div>
+    </div>
+    <div class="card card-custom"><div class="card-body">
+        <div class="cs-heading"><h4>Cari Hesaplar</h4><span>@Model.TotalCount.ToString("N0",culture) cari · Toplamlar tüm filtrelenmiş sonuçları kapsar</span></div>
+        <div class="cs-table-wrap"><table class="cs-table"><thead><tr><th>Cari Hesap</th><th>Vergi / İletişim</th><th class="cs-number">Devir B − A</th><th class="cs-number">Dönem Borç</th><th class="cs-number">Dönem Alacak</th><th class="cs-number">Borç Bakiyesi</th><th class="cs-number">Alacak Bakiyesi</th><th>Detay</th></tr></thead><tbody>
+        @foreach(var r in Model.Rows){<tr>
+            <td><strong>@r.Code</strong><span class="cs-secondary">@r.Name</span>@if(!r.IsActive){<span class="text-warning">Pasif</span>}</td>
+            <td><span>@r.TaxNumber</span><span class="cs-secondary">@r.TaxOffice</span><span class="cs-secondary">@r.City · @r.Phone</span></td>
+            <td class="cs-number">@Amount(r.OpeningBalance)</td><td class="cs-number">@Amount(r.Debit)</td><td class="cs-number">@Amount(r.Credit)</td><td class="cs-number cs-debit">@Amount(r.DebitBalance)</td><td class="cs-number cs-credit">@Amount(r.CreditBalance)</td>
+            <td><a class="btn btn-sm btn-light-primary" data-cs-statement href="@Url.Action("Ekstre",new{firmNumber=s.Company.Number,periodNumber=s.Period.Number,clientRef=r.ClientRef,startDate=s.StartDate.ToString("yyyy-MM-dd"),endDate=s.EndDate.ToString("yyyy-MM-dd")})">Detay</a></td>
+        </tr>}
+        @if(Model.Rows.Count==0){<tr><td colspan="8" class="cs-empty">Bu filtre/sayfada cari hesap bulunamadı.</td></tr>}
+        </tbody></table></div>
+        <nav class="cs-pagination" aria-label="Cari hesap sayfaları"><span>Sayfa @Model.Page / @Model.TotalPages</span><div>
+            @if(Model.Page>1){<a class="btn btn-light btn-sm" asp-action="Index" asp-route-firmNumber="@s.Company.Number" asp-route-periodNumber="@s.Period.Number" asp-route-startDate="@s.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@s.EndDate.ToString("yyyy-MM-dd")" asp-route-search="@Model.Search" asp-route-includePassive="@Model.IncludePassive" asp-route-onlyBalance="@Model.OnlyBalance" asp-route-page="@(Model.Page-1)">Önceki</a>}
+            @if(Model.Page<Model.TotalPages){<a class="btn btn-light btn-sm" asp-action="Index" asp-route-firmNumber="@s.Company.Number" asp-route-periodNumber="@s.Period.Number" asp-route-startDate="@s.StartDate.ToString("yyyy-MM-dd")" asp-route-endDate="@s.EndDate.ToString("yyyy-MM-dd")" asp-route-search="@Model.Search" asp-route-includePassive="@Model.IncludePassive" asp-route-onlyBalance="@Model.OnlyBalance" asp-route-page="@(Model.Page+1)">Sonraki</a>}
+        </div></nav>
+    </div></div>
+    }
+    <dialog id="csStatementDialog" class="cs-dialog" aria-labelledby="csStatementTitle"><div class="cs-dialog-header"><h3 id="csStatementTitle">Cari Hesap Ekstresi</h3><button type="button" class="btn btn-light btn-sm" data-cs-close aria-label="Ekstreyi kapat">Kapat ×</button></div><div class="cs-dialog-body"><p data-cs-status role="status" aria-live="polite" hidden></p><div data-cs-content></div></div></dialog>
+    <dialog id="csDocumentDialog" class="cs-dialog" aria-labelledby="csDocumentTitle"><div class="cs-dialog-header"><h3 id="csDocumentTitle">Kaynak Belge Detayı</h3><button type="button" class="btn btn-light btn-sm" data-cs-close aria-label="Belge detayını kapat">Kapat ×</button></div><div class="cs-dialog-body"><p data-cs-status role="status" aria-live="polite" hidden></p><div data-cs-content></div></div></dialog>
+</div>
+@section JSSection {<script src="~/js/reports/logo-cari-ekstre.js" asp-append-version="true"></script>}

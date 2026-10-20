@@ -2,6 +2,7 @@
 using Ekomers.Data.Services;
 using Ekomers.Data.Services.IServices;
 using Ekomers.Filters;
+using Ekomers.Web.Infrastructure.Auth;
 using Ekomers.Models;
 using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity;
@@ -15,7 +16,7 @@ using System.Security.Claims;
 
 namespace Ekomers.Web.Controllers
 {
-	[Authorize(Roles = "Admin,Rapor")]
+	[Authorize]
 	[TypeFilter(typeof(ActionFilter))]
 	[TypeFilter(typeof(ErrorFilter))]
 	 
@@ -42,12 +43,14 @@ namespace Ekomers.Web.Controllers
 
 		}
 		[HttpGet]
+		[Authorize(Policy = ReportPermissions.BorcAlacak)]
 		public IActionResult Index()
 		{
 			ViewBag.Modul = "Rapor";
 			return View(); // filtre formu
 		}
 		[HttpGet]
+		[Authorize(Policy = ReportPermissions.Bankalar)]
 		public async Task<IActionResult> Bankalar()
 		{
 			ViewBag.Modul = "Rapor";
@@ -59,6 +62,7 @@ namespace Ekomers.Web.Controllers
 			return View(vm); // filtre formu
 		}
 
+		[Authorize(Policy = ReportPermissions.Bankalar)]
 		public async Task<IActionResult> Hesaplar(int bankRef)
 		{
 			ViewBag.Modul = "Rapor";
@@ -67,11 +71,13 @@ namespace Ekomers.Web.Controllers
 			return View(model);
 		}
 
+		[Authorize(Policy = ReportPermissions.Bankalar)]
 		public async Task<PartialViewResult> HesaplarEkstre(int cardRef)
 		{
 			var model = await _service.BankaHesapEkstresi(cardRef);
 			return PartialView("HesaplarEkstre", model);
 		}
+		[Authorize(Policy = ReportPermissions.BorcAlacak)]
 		public async Task<IActionResult> BorcAlacak()
 		{
 			ViewBag.Modul = "Rapor";
@@ -82,6 +88,7 @@ namespace Ekomers.Web.Controllers
 
 		[HttpGet]
 		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+		[Authorize(Policy = ReportPermissions.BorcAlacak)]
 		public async Task<IActionResult> CariHareketler(string? cariKod, int page = 1, CancellationToken cancellationToken = default)
 		{
 			if (string.IsNullOrWhiteSpace(cariKod) || cariKod.Trim().Length > 100 || page < 1)
@@ -91,6 +98,7 @@ namespace Ekomers.Web.Controllers
 			return PartialView("_CariHareketler", model);
 		}
 
+		[Authorize(Policy = ReportPermissions.BankaKredileri)]
 		public async Task<IActionResult> BankaKredileri()
 		{
 			ViewBag.Modul = "Rapor";
@@ -99,6 +107,7 @@ namespace Ekomers.Web.Controllers
 			return View(model);
 		}
 
+		[Authorize(Policy = ReportPermissions.BankaKredileri)]
 		public async Task<IActionResult> KrediOdemePlani()
 		{
 			ViewBag.Modul = "Rapor";
@@ -110,6 +119,7 @@ namespace Ekomers.Web.Controllers
 		[HttpPost]
 		public async Task<IActionResult> Run(ReportRequest request, CancellationToken ct)
 		{
+			if (!ReportPermissions.CanRun(User, request.ReportKey)) return Forbid();
 			// Basit param örneği: boş değerleri atabilirsiniz
 			request.Parameters = request.Parameters
 				.Where(kv => !string.IsNullOrWhiteSpace(kv.Key))
@@ -122,6 +132,7 @@ namespace Ekomers.Web.Controllers
 		[HttpPost]
 		public async Task<IActionResult> ExportCsv(ReportRequest request, CancellationToken ct)
 		{
+			if (!ReportPermissions.CanRun(User, request.ReportKey)) return Forbid();
 			var vm = await _service.RunAsync(request, ct);
 			if (vm.Table is null) return NoContent();
 
@@ -142,6 +153,7 @@ namespace Ekomers.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> ExportXlsx(ReportRequest request, CancellationToken ct)
 		{
+			if (!ReportPermissions.CanRun(User, request.ReportKey)) return Forbid();
 			// İstersen tüm kayıtları export et:
 			// request.PageIndex = 1;
 			// request.PageSize  = int.MaxValue;

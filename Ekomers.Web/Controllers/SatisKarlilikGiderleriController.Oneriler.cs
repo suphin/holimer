@@ -6,12 +6,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Ekomers.Web.Infrastructure.Auth;
 
 namespace Ekomers.Web.Controllers;
 
 public sealed partial class SatisKarlilikGiderleriController
 {
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin,Yönetici")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.MuhasebeGiderleriYonet)]
     public async Task<IActionResult> HazirGruplariOlustur(DateTime startDate, DateTime endDate, CancellationToken ct)
     {
         try
@@ -59,7 +60,7 @@ public sealed partial class SatisKarlilikGiderleriController
         { return Error("Eşzamanlı kategori değişikliği algılandı. Sayfayı yenileyiniz; mevcut gruplar korunuyor.", startDate, endDate); }
     }
 
-    [HttpGet, Authorize(Roles = "Admin,Yönetici")]
+    [HttpGet, Authorize(Policy = ReportPermissions.MuhasebeGiderleriYonet)]
     public async Task<IActionResult> Oneriler(DateTime? startDate, DateTime? endDate, int page = 1, CancellationToken ct = default)
     {
         var start = startDate ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
@@ -87,7 +88,7 @@ public sealed partial class SatisKarlilikGiderleriController
             AlreadyMappedCount = summary.Accounts.Count(x => x.CanMap && mapped.Contains(x.AccountCode)), ProtectedCount = summary.Accounts.Count(x => !x.CanMap) });
     }
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = "Admin,Yönetici")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = ReportPermissions.MuhasebeGiderleriYonet)]
     public async Task<IActionResult> OnerileriOnayla(AccountingExpenseSuggestionApprovalVM input, DateTime startDate, DateTime endDate, int page = 1, CancellationToken ct = default)
     {
         var selected = (input.Rows ?? []).Where(x => x.Selected).ToList();

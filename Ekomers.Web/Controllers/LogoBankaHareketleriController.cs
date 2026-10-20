@@ -5,13 +5,14 @@ using Ekomers.Filters;
 using Ekomers.Models.Entity;
 using Ekomers.Models.ViewModels;
 using Ekomers.Web.Services;
+using Ekomers.Web.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ekomers.Web.Controllers;
 
-[Authorize(Roles = "Admin,Rapor")]
+[Authorize(Policy = ReportPermissions.LogoBankaHareketleri)]
 [TypeFilter(typeof(ActionFilter))]
 [TypeFilter(typeof(ErrorFilter))]
 public sealed class LogoBankaHareketleriController : Controller

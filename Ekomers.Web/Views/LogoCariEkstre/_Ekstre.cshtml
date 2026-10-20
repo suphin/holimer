@@ -1,0 +1,24 @@
+@model Ekomers.Models.ViewModels.Raporlar.LogoCariEkstreVM
+@using Ekomers.Models.ViewModels.Raporlar
+@{
+    Layout=null;var s=Model.Scope;var culture=CultureInfo.GetCultureInfo("tr-TR");
+    string Amount(decimal v)=>v.ToString("N2",culture);
+    string PageUrl(int page)=>Url.Action("Ekstre",new{firmNumber=s.Company.Number,periodNumber=s.Period.Number,clientRef=Model.Client.ClientRef,startDate=s.StartDate.ToString("yyyy-MM-dd"),endDate=s.EndDate.ToString("yyyy-MM-dd"),page})!;
+}
+<div class="cs-context">@s.Company.Number.ToString("000") · @s.Company.Name · Dönem @s.Period.Number.ToString("00") · @s.StartDate.ToString("dd.MM.yyyy") – @s.EndDate.ToString("dd.MM.yyyy")</div>
+<partial name="_Client" model="Model.Client" />
+<div class="cs-summary"><div><span>Devir · Borç − Alacak</span><strong>@Amount(Model.OpeningBalance) @s.Currency</strong></div><div><span>Dönem Borç</span><strong>@Amount(Model.Debit) @s.Currency</strong></div><div><span>Dönem Alacak</span><strong>@Amount(Model.Credit) @s.Currency</strong></div><div><span>Kapanış · Borç − Alacak</span><strong>@Amount(Model.ClosingBalance) @s.Currency</strong></div></div>
+<p class="cs-note">Devir, seçilen Logo dönemindeki başlangıç tarihinden önceki iptal edilmemiş hareketleri kapsar. Yürüyen bakiye sayfalar arasında sıfırlanmaz. Sıra: tarih, Logo işlem zamanı, hareket referansı. Pozitif bakiye alacağımız, negatif bakiye borcumuzdur. Geçmiş dönemler ayrıca birleştirilmez; varsa Logo devir kaydı esas alınır.</p>
+<div class="cs-table-wrap"><table class="cs-table"><thead><tr><th>Tarih</th><th>İşlem / Fiş</th><th>Açıklama</th><th class="cs-number">Borç</th><th class="cs-number">Alacak</th><th class="cs-number">Bakiye B − A</th><th>İşlem Dövizi</th><th>Detay</th></tr></thead><tbody>
+@foreach(var r in Model.Rows){<tr>
+    <td>@r.Date.ToString("dd.MM.yyyy")</td><td><strong>@r.Kind</strong><span class="cs-secondary">@r.Number · @r.DocumentNumber</span><small>Modül: @r.Module / İşlem: @r.TransactionCode · Ref: @r.MovementRef</small></td><td>@r.Description</td>
+    <td class="cs-number">@Amount(r.Debit)</td><td class="cs-number">@Amount(r.Credit)</td><td class="cs-number"><strong>@Amount(r.Balance)</strong></td>
+    <td><span>@Amount(r.CurrencyAmount) @LogoCariLabels.Currency(r.CurrencyType)</span><span class="cs-secondary">Kur: @r.ExchangeRate.ToString("N6",culture)</span></td>
+    <td><a class="btn btn-sm btn-light-primary" data-cs-document href="@Url.Action("BelgeDetay",new{firmNumber=s.Company.Number,periodNumber=s.Period.Number,clientRef=Model.Client.ClientRef,movementRef=r.MovementRef,startDate=s.StartDate.ToString("yyyy-MM-dd"),endDate=s.EndDate.ToString("yyyy-MM-dd")})">Detay</a></td>
+</tr>}
+@if(Model.Rows.Count==0){<tr><td colspan="8" class="cs-empty">Seçilen tarih aralığı/sayfada hareket bulunamadı. Devir bakiyesi varsa yukarıda gösterilir.</td></tr>}
+</tbody></table></div>
+<nav class="cs-pagination" aria-label="Ekstre sayfaları"><span>@Model.TotalCount.ToString("N0",culture) hareket · Sayfa @Model.Page / @Model.TotalPages</span><div>
+@if(Model.Page>1){<a class="btn btn-light btn-sm" data-cs-page href="@PageUrl(Model.Page-1)">Önceki</a>}
+@if(Model.Page<Model.TotalPages){<a class="btn btn-light btn-sm" data-cs-page href="@PageUrl(Model.Page+1)">Sonraki</a>}
+</div></nav>
