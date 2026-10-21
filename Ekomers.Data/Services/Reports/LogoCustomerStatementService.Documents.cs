@@ -19,7 +19,7 @@ public sealed partial class LogoCustomerStatementService
         switch(item.Module)
         {
             case 4:
-                header=await connection.QuerySingleOrDefaultAsync<DocumentHeader>(Command($"SELECT FICHENO AS Number,DOCODE AS DocumentNumber,DATE_ AS [Date],NETTOTAL AS NetTotal,TOTALVAT AS VatTotal,TOTALDISCOUNTS AS DiscountTotal,CAST(CANCELLED AS bit) AS Cancelled,{Notes("I")} AS Description FROM {Table(scope,"INVOICE")} I WHERE I.LOGICALREF=@source AND I.CLIENTREF=@client",p,ct));
+                header=await connection.QuerySingleOrDefaultAsync<DocumentHeader>(Command($"SELECT FICHENO AS Number,DOCODE AS DocumentNumber,DATE_ AS [Date],NETTOTAL AS NetTotal,TOTALVAT AS VatTotal,TOTALDISCOUNTS AS DiscountTotal,CAST(CANCELLED AS bit) AS Cancelled,CAST(COALESCE(I.EINVOICE,0) AS bit) AS IsEInvoice,COALESCE(CONVERT(nvarchar(100),I.GUID),N'') AS EInvoiceGuid,{Notes("I")} AS Description FROM {Table(scope,"INVOICE")} I WHERE I.LOGICALREF=@source AND I.CLIENTREF=@client",p,ct));
                 if(header==null) break;
                 model.Kind="Fatura";model.LineMode="invoice";
                 await DocumentRows(model,$"""
@@ -100,6 +100,7 @@ public sealed partial class LogoCustomerStatementService
         if(header==null) { model.Notice="Kaynak belge bulunamadı veya cari bağlantısı doğrulanamadı. Belge silinmiş/taşınmış olabilir; yalnızca cari hareket özeti gösteriliyor."; return model; }
         model.Number=header.Number;model.DocumentNumber=header.DocumentNumber;model.Date=header.Date;model.Description=header.Description;
         model.NetTotal=header.NetTotal;model.VatTotal=header.VatTotal;model.DiscountTotal=header.DiscountTotal;model.Cancelled=header.Cancelled;
+        model.IsEInvoice=header.IsEInvoice;model.EInvoiceGuid=header.EInvoiceGuid.Trim();
         return model;
     }
 
@@ -116,6 +117,7 @@ public sealed partial class LogoCustomerStatementService
     {
         public string Number {get;set;}=""; public string DocumentNumber {get;set;}="";public DateTime? Date {get;set;}
         public string Description {get;set;}="";public decimal? NetTotal {get;set;}public decimal? VatTotal {get;set;}public decimal? DiscountTotal {get;set;}public bool? Cancelled {get;set;}
+        public bool IsEInvoice {get;set;} public string EInvoiceGuid {get;set;}="";
     }
     private sealed class DocumentRow : LogoCariBelgeSatirVM { public long TotalCount {get;set;} }
 }

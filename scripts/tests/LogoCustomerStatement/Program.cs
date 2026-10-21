@@ -6,6 +6,7 @@ using Ekomers.Data.Services.Reports;
 using Ekomers.Models.ViewModels.Raporlar;
 using Ekomers.Web.Controllers;
 using Ekomers.Web.Infrastructure.Auth;
+using Ekomers.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
@@ -48,6 +49,8 @@ try {
         INSERT dbo.LG_100_02_CLFLINE(LOGICALREF,CLIENTREF,SOURCEFREF,DATE_,MODULENR,TRCODE,SIGN,AMOUNT) VALUES(3001,10,0,'20270101',5,14,0,8888);
         INSERT dbo.LG_100_01_INVOICE(LOGICALREF,CLIENTREF,FICHENO,DATE_,NETTOTAL,TOTALVAT,TOTALDISCOUNTS) VALUES(700,10,N'INV-A','20261002',120,20,5),(701,20,N'WRONG CLIENT INVOICE','20261002',7000,0,0);
         INSERT dbo.LG_101_01_INVOICE(LOGICALREF,CLIENTREF,FICHENO,DATE_,NETTOTAL,TOTALVAT,TOTALDISCOUNTS) VALUES(700,10,N'INV-B','20261002',9999,0,0);
+        UPDATE dbo.LG_100_01_INVOICE SET GUID=N'11111111-1111-1111-1111-111111111111',EINVOICE=1 WHERE LOGICALREF=700;
+        UPDATE dbo.LG_101_01_INVOICE SET GUID=N'22222222-2222-2222-2222-222222222222',EINVOICE=1 WHERE LOGICALREF=700;
         INSERT dbo.LG_100_ITEMS(LOGICALREF,CODE,NAME) VALUES(1,N'MAT',N'Malzeme'),(2,N'WRONG',N'Hizmet yerine gelmemeli');
         INSERT dbo.LG_100_SRVCARD(LOGICALREF,CODE,DEFINITION_) VALUES(2,N'SERVICE',N'Hizmet');
         INSERT dbo.LG_100_UNITSETL(LOGICALREF,CODE) VALUES(1,N'ADET');
@@ -105,7 +108,8 @@ try {
     var nextScope=await service.ScopeAsync(100,2,new DateTime(2027,1,1),new DateTime(2027,1,31),default);
     Check((await service.StatementAsync(nextScope,10,1,default)).ClosingBalance==8888,"Period tables remain isolated");
 
-    var controller=new LogoCariEkstreController(service,NullLogger<LogoCariEkstreController>.Instance);
+    var pdfClient=new FakeInvoicePdfClient();
+    var controller=new LogoCariEkstreController(service,NullLogger<LogoCariEkstreController>.Instance,pdfClient);
     var http=new DefaultHttpContext{User=new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Role,"Rapor")],"Fixture"))};
     controller.ControllerContext=new ControllerContext{HttpContext=http};
     var action=new ActionContext(http,new RouteData(),new ActionDescriptor(),new ModelStateDictionary());
@@ -119,6 +123,29 @@ try {
     var result=await controller.Ekstre(100,1,10,begin,end);Check(result is PartialViewResult&&http.Response.Headers["X-Logo-Cari-Partial"]=="Ekstre","Statement endpoint marks authenticated partial response");
     Check(await controller.BelgeDetay(100,1,20,3001,begin,end) is NotFoundResult,"Controller rejects wrong-customer document");
     Check(await controller.Ekstre(100,1,10,begin,end,0) is BadRequestResult,"Bad pagination rejected before querying");
+    Check(invoice.CanOpenInvoiceImage&&invoice.EInvoiceGuid=="11111111-1111-1111-1111-111111111111"&&otherDoc.EInvoiceGuid=="22222222-2222-2222-2222-222222222222","e-Fatura UUID is read from the exact company's linked invoice");
+    var image=await controller.FaturaGorseli(100,1,10,3001,begin,end);
+    Check(image is FileContentResult pdf&&pdf.ContentType=="application/pdf"&&pdf.FileContents.SequenceEqual(FakeInvoicePdfClient.Pdf)&&pdfClient.Calls.Single()==invoice.EInvoiceGuid,"Statement invoice image reuses eLogo PDF client with server-resolved UUID");
+    Check(http.Response.Headers.ContentDisposition.ToString().StartsWith("inline;")&&http.Response.Headers.CacheControl.ToString().Contains("no-store")&&http.Response.Headers["X-Content-Type-Options"]=="nosniff","PDF is inline, non-cacheable and sent with safe content headers");
+    await controller.FaturaGorseli(101,1,10,3001,begin,end);
+    Check(pdfClient.Calls.Last()==otherDoc.EInvoiceGuid,"Same movement/invoice refs in another company resolve that company's UUID, not firm 100");
+    var callsBefore=pdfClient.Calls.Count;
+    foreach(var target in new[]{(client:20,movement:3001),(client:10,movement:3002),(client:10,movement:3009),(client:10,movement:3008),(client:10,movement:3007)})
+        Check(await controller.FaturaGorseli(100,1,target.client,target.movement,begin,end) is ContentResult { StatusCode:404 },"Missing/cancelled/wrong-client/non-invoice image is rejected before eLogo call");
+    Check(await controller.FaturaGorseli(100,1,10,0,begin,end) is ContentResult {StatusCode:400}&&pdfClient.Calls.Count==callsBefore,"Invalid image scope never invokes eLogo");
+    foreach(var uuid in new[]{"","not-a-guid","00000000-0000-0000-0000-000000000000"}) {
+        await fixture.ExecuteAsync("UPDATE dbo.LG_100_01_INVOICE SET GUID=@uuid WHERE LOGICALREF=700",new {uuid});
+        Check(!(await service.DocumentAsync(scope,10,3001,1,default)).CanOpenInvoiceImage&&await controller.FaturaGorseli(100,1,10,3001,begin,end) is ContentResult {StatusCode:404},"Missing/invalid/empty UUID disables and rejects invoice image");
+    }
+    await fixture.ExecuteAsync("UPDATE dbo.LG_100_01_INVOICE SET GUID=@uuid,EINVOICE=0 WHERE LOGICALREF=700",new {uuid=invoice.EInvoiceGuid});
+    Check(await controller.FaturaGorseli(100,1,10,3001,begin,end) is ContentResult {StatusCode:404},"Non-e-Fatura is not sent to the e-Fatura PDF endpoint");
+    await fixture.ExecuteAsync("UPDATE dbo.LG_100_01_INVOICE SET EINVOICE=1,CANCELLED=1 WHERE LOGICALREF=700");
+    Check(await controller.FaturaGorseli(100,1,10,3001,begin,end) is ContentResult {StatusCode:404}&&pdfClient.Calls.Count==callsBefore,"Cancelled invoice is blocked even if its customer movement is not cancelled");
+    await fixture.ExecuteAsync("UPDATE dbo.LG_100_01_INVOICE SET CANCELLED=0 WHERE LOGICALREF=700");
+    pdfClient.Failure=new HttpRequestException("sensitive-service-detail");
+    Check(await controller.FaturaGorseli(100,1,10,3001,begin,end) is ContentResult {StatusCode:502,Content:var errorText}&&!errorText.Contains("sensitive-service-detail"),"eLogo failures show a friendly error without exposing service details");
+    pdfClient.Failure=new OperationCanceledException();
+    await Reject<OperationCanceledException>(()=>controller.FaturaGorseli(100,1,10,3001,begin,end),"Image request cancellation is not swallowed");pdfClient.Failure=null;
     var builder=WebApplication.CreateBuilder(new WebApplicationOptions{ApplicationName=typeof(LogoCariEkstreController).Assembly.GetName().Name,EnvironmentName="Development",Args=[]});
     builder.Logging.ClearProviders();builder.Services.AddControllersWithViews().AddApplicationPart(typeof(LogoCariEkstreController).Assembly);builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
     await using var host=builder.Build();host.MapDefaultControllerRoute();host.Urls.Add("http://127.0.0.1:0");await host.StartAsync();
@@ -126,6 +153,12 @@ try {
         var html=await Render(host,view.Item1,view.Item2);Check(!html.Contains("<script>alert(1)</script>")&&html.Contains("&lt;script&gt;"),"Compiled/encoded Razor "+view.Item1);
     }
     var statementHtml=WebUtility.HtmlDecode(await Render(host,"_Ekstre",first));Check(statementHtml.Contains("clientRef=10")&&statementHtml.Contains("firmNumber=100")&&statementHtml.Contains("data-cs-document"),"Drilldown links preserve company/period/customer scope");
+    var imageHtml=WebUtility.HtmlDecode(await Render(host,"_Belge",invoice));
+    Check(imageHtml.Contains("/LogoCariEkstre/FaturaGorseli?")&&imageHtml.Contains("firmNumber=100")&&imageHtml.Contains("periodNumber=1")&&imageHtml.Contains("clientRef=10")&&imageHtml.Contains("movementRef=3001")&&imageHtml.Contains("target=\"_blank\"")&&!imageHtml.Contains(invoice.EInvoiceGuid),"Image button opens a new tab with scoped refs, never an arbitrary browser-supplied UUID");
+    Check(!(await Render(host,"_Belge",bank)).Contains("/FaturaGorseli?"),"No image button on bank documents");
+    invoice.EInvoiceGuid="";
+    var noImageHtml=WebUtility.HtmlDecode(await Render(host,"_Belge",invoice));
+    Check(!noImageHtml.Contains("/FaturaGorseli?")&&noImageHtml.Contains("ETTN/UUID"),"Invoice without UUID explains why its image is unavailable");
     await host.StopAsync();
     Console.WriteLine("All synthetic SQL/Razor/controller customer statement tests passed; no live configuration was loaded.");
 } finally {
@@ -138,7 +171,7 @@ static string Schema(int firm) {
     CREATE TABLE dbo.{f}_CLCARD(LOGICALREF int PRIMARY KEY,CODE nvarchar(100),DEFINITION_ nvarchar(250),ACTIVE int,TAXNR nvarchar(50),TAXOFFICE nvarchar(100),ADDR1 nvarchar(250),ADDR2 nvarchar(250),TOWN nvarchar(100),CITY nvarchar(100),TELNRS1 nvarchar(50),EMAILADDR nvarchar(250));
     CREATE TABLE dbo.{p}_CLFLINE(LOGICALREF int PRIMARY KEY,CLIENTREF int,SOURCEFREF int DEFAULT 0,DATE_ datetime,FTIME int DEFAULT 0,MODULENR int,TRCODE int,TRANNO nvarchar(100),DOCODE nvarchar(100),LINEEXP nvarchar(500),SIGN int,AMOUNT decimal(28,6),TRCURR int DEFAULT 0,TRNET decimal(28,6) DEFAULT 0,TRRATE decimal(28,8) DEFAULT 1,CANCELLED int DEFAULT 0,LINENR int DEFAULT 0);
     SELECT TOP(0) * INTO dbo.{f}_02_CLFLINE FROM dbo.{p}_CLFLINE;
-    CREATE TABLE dbo.{p}_INVOICE(LOGICALREF int PRIMARY KEY,CLIENTREF int,FICHENO nvarchar(100),DOCODE nvarchar(100),DATE_ datetime,NETTOTAL decimal(28,6),TOTALVAT decimal(28,6),TOTALDISCOUNTS decimal(28,6),CANCELLED int DEFAULT 0,GENEXP1 nvarchar(100),GENEXP2 nvarchar(100),GENEXP3 nvarchar(100),GENEXP4 nvarchar(100),GENEXP5 nvarchar(100),GENEXP6 nvarchar(100));
+    CREATE TABLE dbo.{p}_INVOICE(LOGICALREF int PRIMARY KEY,CLIENTREF int,FICHENO nvarchar(100),DOCODE nvarchar(100),DATE_ datetime,NETTOTAL decimal(28,6),TOTALVAT decimal(28,6),TOTALDISCOUNTS decimal(28,6),CANCELLED int DEFAULT 0,GENEXP1 nvarchar(100),GENEXP2 nvarchar(100),GENEXP3 nvarchar(100),GENEXP4 nvarchar(100),GENEXP5 nvarchar(100),GENEXP6 nvarchar(100),GUID nvarchar(100),EINVOICE int DEFAULT 0);
     CREATE TABLE dbo.{p}_STLINE(LOGICALREF int PRIMARY KEY,INVOICEREF int,INVOICELNNO int,STOCKREF int,LINETYPE int,AMOUNT decimal(28,6),PRICE decimal(28,6),LINENET decimal(28,6),VAT decimal(28,6),VATAMNT decimal(28,6),VATINC int DEFAULT 0,UOMREF int,CANCELLED int DEFAULT 0,LINEEXP nvarchar(500));
     CREATE TABLE dbo.{f}_ITEMS(LOGICALREF int PRIMARY KEY,CODE nvarchar(100),NAME nvarchar(250));
     CREATE TABLE dbo.{f}_SRVCARD(LOGICALREF int PRIMARY KEY,CODE nvarchar(100),DEFINITION_ nvarchar(250));
@@ -161,3 +194,10 @@ static async Task<string> Render(WebApplication host,string name,object model) {
     await view.View.RenderAsync(new ViewContext(action,view.View,new ViewDataDictionary(new EmptyModelMetadataProvider(),action.ModelState){Model=model},new TempDataDictionary(http,new MemoryTempData()),writer,new HtmlHelperOptions()));return writer.ToString();
 }
 sealed class MemoryTempData:ITempDataProvider { public IDictionary<string,object> LoadTempData(HttpContext c)=>new Dictionary<string,object>();public void SaveTempData(HttpContext c,IDictionary<string,object> values){} }
+sealed class FakeInvoicePdfClient:IELogoPostboxClient {
+    public static readonly byte[] Pdf=System.Text.Encoding.ASCII.GetBytes("%PDF-1.4\nfixture");
+    public List<string> Calls {get;}=[]; public Exception? Failure {get;set;}
+    public Task<ELogoDocumentFile> GetIncomingInvoicePdfAsync(string uuid,CancellationToken ct=default) {
+        Calls.Add(uuid);return Failure==null?Task.FromResult(new ELogoDocumentFile(Pdf,"fatura.pdf","application/pdf")):Task.FromException<ELogoDocumentFile>(Failure);
+    }
+}

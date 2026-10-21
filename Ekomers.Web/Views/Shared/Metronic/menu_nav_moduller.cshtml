@@ -558,7 +558,10 @@
 				}
 				@if (ReportPermissions.CanAccess(User, ReportPermissions.MuhasebeGiderleri))
 				{
-					<li class="menu-item @(controllerName == "SatisKarlilikGiderleri" ? "menu-item-active" : "")" aria-haspopup="true">
+					<li class="menu-item @(controllerName == "SatisKarlilikGiderleri" && actionName == "Panel" ? "menu-item-active" : "")" aria-haspopup="true">
+						<a asp-controller="SatisKarlilikGiderleri" asp-action="Panel" class="menu-link"><i class="menu-bullet menu-bullet-dot"><span></span></i><span class="menu-text">Yönetici Gider Paneli</span></a>
+					</li>
+					<li class="menu-item @(controllerName == "SatisKarlilikGiderleri" && actionName != "Panel" ? "menu-item-active" : "")" aria-haspopup="true">
 						<a asp-controller="SatisKarlilikGiderleri" asp-action="Index" class="menu-link">
 							<i class="menu-bullet menu-bullet-dot"><span></span></i>
 							<span class="menu-text">Muhasebe Giderleri / Gruplar</span>

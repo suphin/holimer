@@ -1,0 +1,74 @@
+@model Ekomers.Models.ViewModels.Profitability.AccountingExpenseDashboardVM
+@using Ekomers.Data.Services.Profitability
+@using Ekomers.Models.Entity.Profitability
+@{
+    ViewData["Title"] = "Yönetici Gider Paneli";
+    var f = Model.Filter;
+    var tr = CultureInfo.GetCultureInfo("tr-TR");
+    var today = ViewBag.PanelToday is DateTime d ? d : f.EndDate;
+    var monthStart = new DateTime(today.Year, today.Month, 1);
+    string Money(decimal v) => v.ToString("N2", tr);
+    string Percent(decimal v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+    string Date(DateTime v) => v.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    string PeriodUrl(DateTime start, DateTime end) => Url.Action("Panel",new {startDate=Date(start),endDate=Date(end),category=f.Category,behavior=f.Behavior,search=f.Search,showEmpty=f.ShowEmpty})!;
+}
+<link rel="stylesheet" href="~/css/reports/accounting-expense-dashboard.css" asp-append-version="true" />
+<div class="ed-dashboard">
+    <header class="ed-header">
+        <div><span class="ed-eyebrow">MUHASEBE · LOGO 100 / 01</span><h1>Yönetici Gider Paneli</h1><p>Onayladığınız gider grupları üzerinden dönem özeti ve hesap kırılımı</p></div>
+        <a asp-action="Index" asp-route-startDate="@Date(f.StartDate)" asp-route-endDate="@Date(f.EndDate)" class="btn btn-light-primary">Gider Grupları / Hesap Eşleştirmeleri</a>
+    </header>
+    <section class="ed-surface ed-filter-surface" aria-label="Panel filtreleri">
+        <form method="get" asp-action="Panel" class="ed-filters">
+            <div><label for="edStart">Başlangıç</label><input id="edStart" name="startDate" type="date" value="@Date(f.StartDate)" class="form-control" required /></div>
+            <div><label for="edEnd">Bitiş</label><input id="edEnd" name="endDate" type="date" value="@Date(f.EndDate)" class="form-control" required /></div>
+            <div><label for="edCategory">Kategori</label><select id="edCategory" name="category" class="form-control"><option value="all" selected="@(f.Category=="all")">Tüm kategoriler</option>@foreach(var c in AccountingExpenseDashboard.Categories){<option value="@c.Key" selected="@(f.Category==c.Key)">@c.Value</option>}</select></div>
+            <div><label for="edBehavior">Gider türü</label><select id="edBehavior" name="behavior" class="form-control"><option value="all" selected="@(f.Behavior=="all")">Sabit + Değişken</option><option value="fixed" selected="@(f.Behavior=="fixed")">Sabit</option><option value="variable" selected="@(f.Behavior=="variable")">Değişken</option></select></div>
+            <div class="ed-search"><label for="edSearch">Gider grubu ara</label><input id="edSearch" name="search" type="search" maxlength="150" value="@f.Search" class="form-control" placeholder="Örn. personel, enerji, kira" /></div>
+            <button class="btn btn-primary">Paneli Getir</button>
+            <div class="ed-quick"><a href="@PeriodUrl(monthStart,today)">Bu ay</a><a href="@PeriodUrl(monthStart.AddMonths(-1),monthStart.AddDays(-1))">Önceki ay</a><a href="@PeriodUrl(new DateTime(today.Year,1,1),today)">Yılbaşından bugüne</a><label><input name="showEmpty" value="true" type="checkbox" checked="@f.ShowEmpty" /> Hareketsiz grupları göster</label></div>
+        </form>
+    </section>
+    @if(Model.Error is string error){<div class="alert alert-warning" role="alert">@error</div>}
+    else {
+    <p class="ed-scope">@f.StartDate.ToString("dd.MM.yyyy") – @f.EndDate.ToString("dd.MM.yyyy") · Tüm tutarlar TRY · Kartlar ve grafikler seçili filtreleri kapsar.</p>
+    <section class="ed-kpis" aria-label="Gider göstergeleri">
+        <div class="ed-kpi ed-kpi-main"><span>Net Gider</span><strong>@Money(Model.Total) <small>₺</small></strong><p>Borç @Money(Model.Debit) − Alacak @Money(Model.Credit)</p></div>
+        <div class="ed-kpi"><span>Sabit Gider</span><strong>@Money(Model.Fixed) <small>₺</small></strong><p>Grup tanımlarınızdaki sabit kalemler</p></div>
+        <div class="ed-kpi"><span>Değişken Gider</span><strong>@Money(Model.Variable) <small>₺</small></strong><p>Grup tanımlarınızdaki değişken kalemler</p></div>
+        <div class="ed-kpi"><span>Hareketli Grup</span><strong>@Model.Groups.Count(g=>g.Total.MovementCount>0) <small>/ @Model.Groups.Count görüntülenen</small></strong><p>@Model.MovementCount.ToString("N0",tr) dahil muhasebe hareketi</p></div>
+    </section>
+    <section class="ed-quality @(Model.Summary.IsComplete ? "is-complete" : "needs-review")" aria-label="Veri kontrolü">
+        <div><strong>@(Model.Summary.IsComplete ? "Dönemin sınıflandırma kontrolleri tamam" : Model.Summary.MovementCount==0 ? "Bu dönemde kaynak hareket bulunamadı" : "Gider toplamının dışında kalan kayıtlar var")</strong>
+            <p>@(Model.Summary.MovementCount==0 ? "Sıfır tutar, giderin kesinlikle olmadığı anlamına gelmez. Tarihleri ve Logo dönemini kontrol ediniz." : "Kontrol sayıları kategori/grup filtresinden bağımsız olarak tüm seçili dönemi kapsar. İnceleme bekleyen tutarlar gider toplamına eklenmez.")</p></div>
+        <div class="ed-checks"><span><b>@Model.Summary.UnmappedAccountCount</b> sınıflandırma bekleyen hesap<br /><small>Net @Money(Model.Summary.UnmappedAmount) ₺</small></span><span><b>@Model.Summary.ReviewMovementCount.ToString("N0",tr)</b> inceleme bekleyen hareket</span><span><b>@Model.Summary.ExcludedMovementCount.ToString("N0",tr)</b> hariç hareket</span></div>
+    </section>
+    <div class="ed-charts">
+        <section class="ed-surface"><div class="ed-section-heading"><h2>Kategori Dağılımı</h2><span>Net gider</span></div>
+            @foreach(var c in Model.Categories){<div class="ed-category"><div><strong>@c.Name</strong><span class="ed-money @(c.Amount<0 ? "ed-negative" : "")">@Money(c.Amount) ₺</span></div><div class="ed-meter" aria-hidden="true"><i style="width:@Percent(c.PositiveShare)%"></i></div><small>@c.GroupCount grup · Pozitif grup tutarlarının %@c.PositiveShare.ToString("N1",tr)'i</small></div>}
+            <p class="ed-note">Çubuklar pozitif grup tutarlarının payıdır; negatif düzeltmeler pay hesabına eklenmez. Kategori netleri negatif tutarları da içerir. Sabit + değişken = net gider.</p>
+        </section>
+        <section class="ed-surface"><div class="ed-section-heading"><h2>Aylık Net Gider</h2><span>Seçili tarih aralığı</span></div>
+            <div class="ed-trend-legend"><span>← Net alacak</span><span>Net borç →</span></div>
+            <div class="ed-trend-list">
+            @foreach(var m in Model.Months){var width=Math.Abs(m.Amount)/Model.TrendScale*50;var left=m.Amount<0?50-width:50;
+                <div class="ed-month"><span>@m.Month.ToString("MMM yyyy",tr)</span><div class="ed-trend-track" aria-hidden="true"><i class="@(m.Amount<0?"is-negative":"")" style="left:@Percent(left)%;width:@Percent(width)%"></i></div><strong class="@(m.Amount<0?"ed-negative":"")">@Money(m.Amount) ₺</strong><small>Sabit @Money(m.Fixed) · Değişken @Money(m.Variable)</small></div>
+            }
+            </div><p class="ed-note">Başlangıç/bitiş ayları yalnızca seçtiğiniz günleri içerir. Alacak/düzeltmeler net gideri azaltır; negatif aylar sıfırlanmaz.</p>
+        </section>
+    </div>
+    <section class="ed-surface ed-groups"><div class="ed-section-heading"><div><h2>Gider Grupları</h2><p>Grubu açarak dahil edilen muhasebe hesaplarını görebilirsiniz.</p></div><span>@Model.Groups.Count grup</span></div>
+        @if(Model.Groups.Count==0){<div class="ed-empty">Bu filtrelerde hareketli gider grubu bulunamadı. Filtreleri değiştirin veya hareketsiz grupları gösterin. Sınıflandırma uyarılarını da kontrol edin.</div>}
+        @foreach(var g in Model.Groups){var t=g.Total;
+            <details class="ed-group"><summary><div><strong>@t.Name</strong><span class="ed-group-meta">@g.CategoryName <span class="ed-badge @(t.Behavior==RptExpenseBehavior.Fixed?"is-fixed":"is-variable")">@(t.Behavior==RptExpenseBehavior.Fixed?"Sabit":"Değişken")</span></span></div><div class="ed-group-amount"><strong class="@(t.Amount<0?"ed-negative":"")">@Money(t.Amount) ₺</strong><small>@t.Accounts.Count hesap · @t.MovementCount.ToString("N0",tr) hareket</small></div><span class="ed-open-label">Hesapları gör</span></summary>
+                <div class="ed-group-body"><p class="ed-note">Bu gruba dahil edilen borç @Money(t.Debit) − alacak @Money(t.Credit) = @Money(t.Amount) ₺. Tarihli eşleştirmeler uygulanır; bir hesap dönem içinde farklı gruplara bölünebilir.</p>
+                <div class="ed-table-wrap"><table class="ed-table"><thead><tr><th>Hesap</th><th class="ed-right">Borç</th><th class="ed-right">Alacak</th><th class="ed-right">Net Gider</th><th>Hareketler</th></tr></thead><tbody>
+                @foreach(var a in t.Accounts){<tr><td><strong>@a.AccountCode</strong><span>@a.AccountName</span></td><td class="ed-right">@Money(a.Debit)</td><td class="ed-right">@Money(a.Credit)</td><td class="ed-right @(a.Amount<0?"ed-negative":"")"><strong>@Money(a.Amount)</strong></td><td><a asp-action="Hareketler" asp-route-accountCode="@a.AccountCode" asp-route-startDate="@Date(f.StartDate)" asp-route-endDate="@Date(f.EndDate)" target="_blank" rel="noopener" class="btn btn-sm btn-light-primary">Hesabın Tüm Hareketleri ↗</a></td></tr>}
+                @if(t.Accounts.Count==0){<tr><td colspan="5" class="ed-empty">Bu dönemde gruba dahil hareket yok.</td></tr>}
+                </tbody></table></div><p class="ed-note">Hareketler bağlantısı hesabın seçili dönemdeki <strong>tüm</strong> kayıtlarını yeni sekmede açar; başka gruba ait veya hariç kayıtlar da kontrol bilgisiyle yer alabilir. Yukarıdaki tutarlar yalnızca bu gruba dahil edilen paydır.</p></div>
+            </details>
+        }
+    </section>
+    <p class="ed-note ed-footnote">Kaynak: Logo 100 / 01 muhasebe kayıtları, yalnızca SELECT. Kâr hesabında kullanılan aynı tarihli sınıflandırma ve hariç tutma kuralları uygulanır. Ürün maliyetinden gelen hammadde/ambalaj, iptal ve yansıtma kayıtları yeniden gider sayılmaz. Kategoriler hazır grup anahtarından alınır; özel grup adından bölüm tahmini yapılmaz. Bu panel yasal finansal tablo değil yönetim göstergesidir.</p>
+    }
+</div>

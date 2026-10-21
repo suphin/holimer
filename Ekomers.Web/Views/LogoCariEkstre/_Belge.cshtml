@@ -8,6 +8,13 @@
 <div class="cs-context">@s.Company.Number.ToString("000") · @s.Company.Name · Dönem @s.Period.Number.ToString("00") · Cari hareket ref: @Model.Movement.MovementRef</div>
 <partial name="_Client" model="Model.Client" />
 <div class="cs-heading"><div><h4>@Model.Kind · @Model.Number</h4><span>@Model.Date?.ToString("dd.MM.yyyy") · Belge no: @Model.DocumentNumber</span></div>@if(Model.Cancelled==true){<strong class="text-danger">Kaynak belge iptal</strong>}</div>
+@if(Model.LineMode=="invoice"){
+    @if(Model.CanOpenInvoiceImage){
+        <p><a class="btn btn-light-primary" target="_blank" rel="noopener noreferrer" title="Fatura PDF'ini yeni sekmede aç"
+            href="@Url.Action("FaturaGorseli",new{firmNumber=s.Company.Number,periodNumber=s.Period.Number,clientRef=Model.Client.ClientRef,movementRef=Model.Movement.MovementRef,startDate=s.StartDate.ToString("yyyy-MM-dd"),endDate=s.EndDate.ToString("yyyy-MM-dd")})"><i class="flaticon2-document" aria-hidden="true"></i> Fatura Görselini Aç <small>(yeni sekme)</small></a></p>
+    }
+    else{<p class="cs-note">@(Model.Cancelled==true ? "İptal edilmiş faturanın görseli açılamaz." : "Fatura görseli için geçerli e-Fatura ETTN/UUID bilgisi bulunamadı.")</p>}
+}
 <p class="cs-description">@Model.Description</p>
 @if(Model.Notice!=null){<div class="alert alert-light-warning">@Model.Notice</div>}
 <div class="cs-summary mb-4"><div><span>Cari Hareket Borcu</span><strong>@Amount(Model.Movement.Debit) @s.Currency</strong></div><div><span>Cari Hareket Alacağı</span><strong>@Amount(Model.Movement.Credit) @s.Currency</strong></div><div><span>İşlem Dövizi</span><strong>@Amount(Model.Movement.CurrencyAmount) @LogoCariLabels.Currency(Model.Movement.CurrencyType)</strong></div><div><span>Kur</span><strong>@Model.Movement.ExchangeRate.ToString("N6",culture)</strong></div></div>

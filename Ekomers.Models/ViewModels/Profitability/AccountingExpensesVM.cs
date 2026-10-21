@@ -42,10 +42,36 @@ public sealed class AccountingExpenseAccountVM
 
 public sealed class AccountingExpenseGroupTotalVM
 {
+    public int GroupId { get; set; }
+    public string? PresetKey { get; set; }
     public string Name { get; set; } = "";
     public RptExpenseBehavior Behavior { get; set; }
     public RptExpenseStage Stage { get; set; }
     public decimal Amount { get; set; }
+    public decimal Debit { get; set; }
+    public decimal Credit { get; set; }
+    public long MovementCount { get; set; }
+    public List<AccountingExpenseGroupAccountVM> Accounts { get; set; } = [];
+    public List<AccountingExpenseMonthVM> Months { get; set; } = [];
+}
+
+public sealed class AccountingExpenseGroupAccountVM
+{
+    public string AccountCode { get; set; } = "";
+    public string AccountName { get; set; } = "";
+    public decimal Debit { get; set; }
+    public decimal Credit { get; set; }
+    public decimal Amount => Debit - Credit;
+    public long MovementCount { get; set; }
+}
+
+public sealed class AccountingExpenseMonthVM
+{
+    public DateTime Month { get; set; }
+    public decimal Fixed { get; set; }
+    public decimal Variable { get; set; }
+    public decimal Amount => Fixed + Variable;
+    public long MovementCount { get; set; }
 }
 
 public sealed class AccountingExpenseManagementVM

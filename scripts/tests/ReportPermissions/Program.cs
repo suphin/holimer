@@ -55,13 +55,13 @@ foreach(var action in new[]{"Bankalar","Hesaplar","HesaplarEkstre"}) Add("Report
 foreach(var action in new[]{"BankaKredileri","KrediOdemePlani"}) Add("Reports",action,ReportPermissions.BankaKredileri);
 Add("LogoBankaHareketleri","Index",ReportPermissions.LogoBankaHareketleri);
 foreach(var action in new[]{"PlanKaydet","PlanDurum","PlanSil","SimdiGonder"}) Add("LogoBankaHareketleri",action,ReportPermissions.LogoBankaHareketleri,"POST",true);
-foreach(var action in new[]{"Index","Ekstre","BelgeDetay"}) Add("LogoCariEkstre",action,ReportPermissions.LogoCariEkstre);
+foreach(var action in new[]{"Index","Ekstre","BelgeDetay","FaturaGorseli"}) Add("LogoCariEkstre",action,ReportPermissions.LogoCariEkstre);
 foreach(var action in new[]{"Index","Receivables","ReceivableDetail","ChannelBalance"}) Add("SatisKarlilik",action,ReportPermissions.SatisKarlilik);
 foreach(var action in new[]{"Index","Gecmis"}) Add("UrunMaliyetleri",action,ReportPermissions.UrunMaliyetleri);
 foreach(var action in new[]{"Yeni","Toplu"}) { Add("UrunMaliyetleri",action,ReportPermissions.UrunMaliyetleriYonet);Add("UrunMaliyetleri",action,ReportPermissions.UrunMaliyetleriYonet,"POST"); }
 Add("UrunMaliyetleri","OnEkler",ReportPermissions.UrunMaliyetleriYonet);
 foreach(var action in new[]{"OnEkEkle","OnEkDurum","OnEkSil"}) Add("UrunMaliyetleri",action,ReportPermissions.UrunMaliyetleriYonet,"POST");
-foreach(var action in new[]{"Index","Hareketler"}) Add("SatisKarlilikGiderleri",action,ReportPermissions.MuhasebeGiderleri);
+foreach(var action in new[]{"Index","Hareketler","Panel"}) Add("SatisKarlilikGiderleri",action,ReportPermissions.MuhasebeGiderleri);
 Add("SatisKarlilikGiderleri","Oneriler",ReportPermissions.MuhasebeGiderleriYonet);
 foreach(var action in new[]{"GrupKaydet","GrupSil","HesaplariBagla","KuralDuzenle","KuralSil","HazirGruplariOlustur","OnerileriOnayla"}) Add("SatisKarlilikGiderleri",action,ReportPermissions.MuhasebeGiderleriYonet,"POST");
 var requestCount=0;

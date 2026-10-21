@@ -34,6 +34,12 @@ Diğer modüllerde veya kaynak bağlantısı doğrulanamıyorsa uyarıyla doğru
 
 Detay pencereleri sayfalanır. Yetki/oturum hatası, yönlendirilmiş giriş sayfası veya beklenen partial başlığı olmayan yanıt pencereye eklenmez. Önceki istekler iptal edilir ve geç gelen yanıtın başka cari/firma penceresine yazılması engellenir.
 
+### Fatura görseli
+
+Fatura detayındaki **Fatura Görselini Aç** bağlantısı PDF'yi yeni sekmede açar. `LogoPurchaseInvoiceController` ile aynı `IELogoPostboxClient` ve mevcut eLogo ayarları kullanılır; yeni entegrasyon veya migration gerekmez. Kağıt faturalar, e-Arşiv veya geçerli e-Fatura ETTN/UUID bilgisi olmayan kayıtlar için açıklama gösterilir.
+
+`/LogoCariEkstre/FaturaGorseli` de `Rapor=LogoCariEkstre` yetkisine bağlıdır. URL yalnızca firma/dönem/cari/hareket ve tarih kapsamını taşır; UUID tarayıcıdan kabul edilmez. Hareket ve kaynak fatura tekrar doğrulandıktan sonra seçilen firmanın INVOICE kaydındaki GUID okunur. İptal faturalar açılmaz. Mevcut eLogo hesabının ilgili şirket belgesine erişememesi durumunda açıklayıcı hata gösterilir; başka firmadaki aynı fatura numarası denenmez. PDF yanıtı inline ve no-store'dur. Testlerde eLogo taklidi kullanılır; dış servisten gerçek belge talep edilmez.
+
 ## Doğrulama
 
 ```powershell

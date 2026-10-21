@@ -108,6 +108,10 @@ public sealed class LogoCariBelgeVM
     public decimal? VatTotal { get; set; }
     public decimal? DiscountTotal { get; set; }
     public bool? Cancelled { get; set; }
+    public bool IsEInvoice { get; set; }
+    public string EInvoiceGuid { get; set; } = "";
+    public bool CanOpenInvoiceImage => LineMode == "invoice" && Cancelled != true && IsEInvoice &&
+        Guid.TryParse(EInvoiceGuid, out var uuid) && uuid != Guid.Empty;
     public string? Notice { get; set; }
     public string LineMode { get; set; } = "generic";
     public int Page { get; set; } = 1;

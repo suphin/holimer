@@ -72,6 +72,8 @@ public sealed class AccountingExpenseService(ApplicationDbContext context, LogoC
         var summary = new AccountingExpenseSummaryVM { StartDate = startDate, EndDate = endDate, MovementCount = source.Sum(x => x.MovementCount) };
         var unclassified = new HashSet<string>();
         var groups = new Dictionary<int, AccountingExpenseGroupTotalVM>();
+        var groupAccounts = new Dictionary<(int Group, string Code), AccountingExpenseGroupAccountVM>();
+        var groupMonths = new Dictionary<(int Group, DateTime Month), AccountingExpenseMonthVM>();
         foreach (var account in source.GroupBy(x => x.AccountCode))
         {
             var item = new AccountingExpenseAccountVM { AccountCode = account.Key, AccountName = account.First().AccountName,
@@ -100,14 +102,34 @@ public sealed class AccountingExpenseService(ApplicationDbContext context, LogoC
                 if (group.Behavior == RptExpenseBehavior.Excluded) { summary.ExcludedMovementCount += daily.MovementCount; continue; }
                 var amount = daily.Debit - daily.Credit;
                 item.IncludedAmount += amount;
-                if (!groups.TryGetValue(group.ID, out var total)) groups[group.ID] = total = new() { Name = group.Name, Behavior = group.Behavior, Stage = group.Stage };
+                if (!groups.TryGetValue(group.ID, out var total)) groups[group.ID] = total = new() { GroupId = group.ID, PresetKey = group.PresetKey, Name = group.Name, Behavior = group.Behavior, Stage = group.Stage };
                 total.Amount += amount;
+                total.Debit += daily.Debit; total.Credit += daily.Credit; total.MovementCount += daily.MovementCount;
+                if (!groupAccounts.TryGetValue((group.ID, account.Key), out var detail))
+                {
+                    groupAccounts[(group.ID, account.Key)] = detail = new() { AccountCode = account.Key, AccountName = item.AccountName };
+                    total.Accounts.Add(detail);
+                }
+                detail.Debit += daily.Debit; detail.Credit += daily.Credit; detail.MovementCount += daily.MovementCount;
+                var month = new DateTime(daily.Date.Year, daily.Date.Month, 1);
+                if (!groupMonths.TryGetValue((group.ID, month), out var monthly))
+                {
+                    groupMonths[(group.ID, month)] = monthly = new() { Month = month };
+                    total.Months.Add(monthly);
+                }
+                if (group.Behavior == RptExpenseBehavior.Fixed) monthly.Fixed += amount; else monthly.Variable += amount;
+                monthly.MovementCount += daily.MovementCount;
             }
             item.Classification = string.Join(" · ", labels.OrderBy(x => x));
             summary.Accounts.Add(item);
         }
         summary.UnmappedAccountCount = unclassified.Count;
         summary.Groups = groups.Values.OrderBy(x => x.Stage).ThenBy(x => x.Behavior).ThenBy(x => x.Name).ToList();
+        foreach (var total in summary.Groups)
+        {
+            total.Accounts = total.Accounts.OrderBy(x => x.AccountCode).ToList();
+            total.Months = total.Months.OrderBy(x => x.Month).ToList();
+        }
         summary.Accounts = summary.Accounts.OrderBy(x => x.AccountCode).ToList();
         summary.OperatingFixed = groups.Values.Where(x => x.Stage == RptExpenseStage.Operating && x.Behavior == RptExpenseBehavior.Fixed).Sum(x => x.Amount);
         summary.OperatingVariable = groups.Values.Where(x => x.Stage == RptExpenseStage.Operating && x.Behavior == RptExpenseBehavior.Variable).Sum(x => x.Amount);

@@ -8,6 +8,7 @@ using Ekomers.Models.Ekomers;
 using Ekomers.Models.Entity.Profitability;
 using Ekomers.Models.ViewModels.Profitability;
 using Ekomers.Web.Controllers;
+using Ekomers.Web.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
@@ -54,9 +55,9 @@ foreach (var test in cases) { var result = AccountingExpenseSuggestions.Suggest(
 Check(AccountingExpenseSuggestions.Normalize("KİRA / ŞİŞE-ÇÖĞÜ") == "kira sise cogu", "Turkish normalization");
 foreach (var action in new[] { "HazirGruplariOlustur", "OnerileriOnayla" }) {
     var method = typeof(SatisKarlilikGiderleriController).GetMethod(action)!;
-    Check(method.IsDefined(typeof(HttpPostAttribute)) && method.IsDefined(typeof(ValidateAntiForgeryTokenAttribute)) && method.GetCustomAttribute<AuthorizeAttribute>()?.Roles == "Admin,Yönetici", action + " has POST/CSRF/admin authorization");
+    Check(method.IsDefined(typeof(HttpPostAttribute)) && method.IsDefined(typeof(ValidateAntiForgeryTokenAttribute)) && method.GetCustomAttribute<AuthorizeAttribute>()?.Policy == ReportPermissions.MuhasebeGiderleriYonet, action + " has POST/CSRF/expense-management authorization");
 }
-Check(typeof(SatisKarlilikGiderleriController).GetMethod("Oneriler")!.GetCustomAttribute<AuthorizeAttribute>()?.Roles == "Admin,Yönetici", "Preview is configuration-admin only");
+Check(typeof(SatisKarlilikGiderleriController).GetMethod("Oneriler")!.GetCustomAttribute<AuthorizeAttribute>()?.Policy == ReportPermissions.MuhasebeGiderleriYonet, "Preview requires expense-management permission");
 if (!args.Contains("--sqlserver")) { Console.WriteLine("Pure proposal tests complete; add --sqlserver for isolated migration/controller/Razor integration tests."); return; }
 
 using (var metadata = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=__METADATA_ONLY_NEVER_OPEN__;Integrated Security=true").Options))

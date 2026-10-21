@@ -1,6 +1,8 @@
 using Ekomers.Data.Services.Reports;
 using Ekomers.Models.ViewModels.Raporlar;
 using Ekomers.Web.Infrastructure.Auth;
+using Ekomers.Web.Services;
+using Microsoft.Net.Http.Headers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -10,7 +12,7 @@ namespace Ekomers.Web.Controllers;
 
 [Authorize(Policy = ReportPermissions.LogoCariEkstre)]
 [ResponseCache(NoStore=true,Location=ResponseCacheLocation.None)]
-public sealed class LogoCariEkstreController(ILogoCustomerStatementService reports,ILogger<LogoCariEkstreController> logger) : Controller
+public sealed class LogoCariEkstreController(ILogoCustomerStatementService reports,ILogger<LogoCariEkstreController> logger,IELogoPostboxClient eLogoPostboxClient) : Controller
 {
     public override Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
@@ -67,6 +69,38 @@ public sealed class LogoCariEkstreController(ILogoCustomerStatementService repor
         catch(KeyNotFoundException) { return NotFound(); }
         catch(SqlException ex) { logger.LogError(ex,"Logo kaynak belge okunamadı; firma {Firm}, cari {Client}, hareket {Movement}",firmNumber,clientRef,movementRef);return StatusCode(503); }
     }
+    [HttpGet]
+    public async Task<IActionResult> FaturaGorseli(int firmNumber,int periodNumber,int clientRef,int movementRef,DateTime startDate,DateTime endDate,CancellationToken ct=default)
+    {
+        if(movementRef<=0 || !ValidRequest(firmNumber,periodNumber,clientRef,startDate,endDate,1))
+            return ImageError("Fatura bilgileri geçersiz.",StatusCodes.Status400BadRequest);
+        try
+        {
+            // Resolve UUID from the validated movement, never from a client-supplied UUID or invoice number.
+            var scope=await reports.ScopeAsync(firmNumber,periodNumber,startDate,endDate,ct);
+            var invoice=await reports.DocumentAsync(scope,clientRef,movementRef,1,ct);
+            if(!invoice.CanOpenInvoiceImage)
+                return ImageError("Bu hareket için görüntülenebilir e-Fatura ETTN/UUID bilgisi bulunamadı veya kaynak fatura iptal edilmiş.",StatusCodes.Status404NotFound);
+
+            // Reuse the PDF service already used by LogoPurchaseInvoiceController.
+            var document=await eLogoPostboxClient.GetIncomingInvoicePdfAsync(invoice.EInvoiceGuid,ct);
+            var disposition=new ContentDispositionHeaderValue("inline");
+            disposition.SetHttpFileName(document.FileName);
+            Response.Headers.ContentDisposition=disposition.ToString();
+            Response.Headers.CacheControl="private, no-store, max-age=0";
+            Response.Headers["X-Content-Type-Options"]="nosniff";
+            return File(document.Content,document.ContentType);
+        }
+        catch(ArgumentException) { return ImageError("Fatura filtre bilgileri geçersiz.",StatusCodes.Status400BadRequest); }
+        catch(KeyNotFoundException) { return ImageError("Seçilen firma, dönem, cari ve tarih aralığında fatura bulunamadı.",StatusCodes.Status404NotFound); }
+        catch(SqlException ex) { logger.LogError(ex,"Cari ekstre fatura görseli için Logo kaydı okunamadı; firma {Firm}, hareket {Movement}",firmNumber,movementRef);return ImageError("Logo fatura kaydı okunamadı. Lütfen tekrar deneyiniz.",StatusCodes.Status503ServiceUnavailable); }
+        catch(Exception ex) when(ex is not OperationCanceledException)
+        {
+            logger.LogError(ex,"Cari ekstre fatura PDF'i eLogo üzerinden alınamadı; firma {Firm}, hareket {Movement}",firmNumber,movementRef);
+            return ImageError("Fatura görseli eLogo servisinden alınamadı. Seçilen firmanın belgesine erişimi ve eLogo bağlantı ayarlarını kontrol ediniz.",StatusCodes.Status502BadGateway);
+        }
+    }
+    private static ContentResult ImageError(string message,int statusCode) => new() { StatusCode=statusCode,ContentType="text/plain; charset=utf-8",Content="Fatura görseli açılamadı.\n\n"+message };
     private bool ValidRequest(int firm,int period,int client,DateTime start,DateTime end,int page) =>
         ModelState.IsValid && firm is >=1 and <=999 && period is >=1 and <=99 && client>0 && page is >=1 and <=1000000 && start>=new DateTime(1900,1,1) && end>=start && end<DateTime.MaxValue.Date;
 }
