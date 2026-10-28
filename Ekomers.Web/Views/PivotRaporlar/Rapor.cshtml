@@ -1,0 +1,16 @@
+@model Ekomers.Models.ViewModels.Raporlar.PivotPageVM
+@using System.Text.Json
+@{ ViewData["Title"] = Model.Name; }
+<link href="~/css/reports/pivot-reports.css" rel="stylesheet" asp-append-version="true" />
+<div class="pv" id="pivotApp" data-mode="report" data-run-url="@Url.Action("Veri",new{id=Model.Id})">
+<div class="card card-custom mb-5"><div class="card-header"><div class="card-title"><h3>@Model.Name</h3></div><div class="card-toolbar"><a asp-action="Index" class="btn btn-light">Raporlara Dön</a></div></div><div class="card-body">
+<p class="text-muted">@Model.Source · LogoConnection · Yalnızca SELECT · Tarihler gün bazında gruplanır.</p>
+@if(Model.Error!=null){<div class="alert alert-warning" role="alert">@Model.Error</div>}else{
+@Html.AntiForgeryToken()<div id="pvBuilder"></div><div class="pv-toolbar"><button type="button" class="btn btn-primary" id="pvRun">Pivotu Hesapla</button><button type="button" class="btn btn-light" id="pvReset">Varsayılan Düzen</button></div>
+<p class="text-muted mb-0">Toplam / ortalama / en az / en çok yalnızca sayısal alanlar içindir. Adet seçilen alanın dolu kayıtlarını sayar. Farklı para birimi veya ölçü birimi tutarlarını birleştirmeden önce ilgili alanı filtreleyin ya da gruplamaya ekleyin.</p>
+<p class="text-muted mt-3 mb-0">Bu ekran view verisini özetler; iptal kayıtlarını otomatik çıkarmaz, iade işaretini değiştirmez. Yalnızca ay ile gruplayacaksanız önce yılı filtreleyin. Tekrarlanan fatura başlığı toplamları yerine satır bazlı tutar alanlarını kullanın.</p>
+}
+</div></div><p id="pvStatus" role="status" aria-live="polite"></p><div id="pvOutput"></div>
+<script id="pvBootstrap" type="application/json">@Html.Raw(JsonSerializer.Serialize(new { columns=Model.Columns,settings=Model.Settings },new JsonSerializerOptions(JsonSerializerDefaults.Web)))</script>
+</div>
+@section JSSection {<script src="~/js/reports/pivot-reports.js" asp-append-version="true"></script>}

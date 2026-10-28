@@ -1,0 +1,9 @@
+@model List<Ekomers.Models.Entity.RptPivotReport>
+@using Ekomers.Web.Infrastructure.Auth
+@{ ViewData["Title"] = "Pivot Raporlar"; }
+<div class="card card-custom"><div class="card-header"><div class="card-title"><h3>Pivot Raporlar</h3></div><div class="card-toolbar">
+@if(ReportPermissions.CanAccess(User,ReportPermissions.PivotRaporlarYonet)){<a asp-action="Yonetim" class="btn btn-light-primary">Rapor Tanımları / Yönetim</a>}
+</div></div><div class="card-body"><p class="text-muted">LogoConnection view verilerini satır, sütun ve değer alanlarına göre özetleyin. Yalnızca aktif raporlar gösterilir.</p>
+@if(Model.Count==0){<div class="alert alert-info">Henüz aktif rapor yok. Yönetici, Fatura Dökümü tanımının alanlarını seçip raporu aktif hale getirebilir.</div>}
+<div class="row">@foreach(var r in Model){<div class="col-lg-4 mb-4"><div class="border rounded p-6 h-100"><h4>@r.Name</h4><p class="text-muted">@r.SchemaName.@r.ViewName</p><a class="btn btn-primary" asp-action="Rapor" asp-route-id="@r.ID">Pivotu Aç</a></div></div>}</div>
+</div></div>

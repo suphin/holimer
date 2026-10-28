@@ -48,6 +48,7 @@ public class ProductionOrderListVM
 
 public sealed class ProductionOrderDetailVM : ProductionOrderListVM
 {
+    public string? StockError { get; set; }
     public int SourceWarehouseId { get; set; }
     public int ProductionWarehouseId { get; set; }
     public string SourceWarehouse { get; set; } = string.Empty;

@@ -384,11 +384,20 @@ public sealed class SatinalmaYonetimiController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Tedarikciler(CancellationToken ct)
+    public async Task<IActionResult> Tedarikciler(CancellationToken ct, string? search = null)
     {
         ViewBag.Modul = "YeniSatinalma";
-        var model = await _context.PurSuppliers.AsNoTracking()
-            .Where(x => x.IsDelete != true)
+        search = search?.Trim();
+        ViewBag.SupplierSearch = search;
+        var suppliers = _context.PurSuppliers.AsNoTracking().Where(x => x.IsDelete != true);
+        if (!string.IsNullOrEmpty(search))
+            suppliers = suppliers.Where(x => x.Code.Contains(search) || x.Name.Contains(search) ||
+                x.TaxNumber != null && x.TaxNumber.Contains(search) ||
+                x.LogoCode != null && x.LogoCode.Contains(search) ||
+                x.ContactName != null && x.ContactName.Contains(search) ||
+                x.Phone != null && x.Phone.Contains(search) ||
+                x.Email != null && x.Email.Contains(search));
+        var model = await suppliers
             .OrderBy(x => x.Code)
             .Select(x => new SupplierListVM
             {

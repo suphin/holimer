@@ -17,43 +17,21 @@ public sealed class RawMaterialConsumptionService(ApplicationDbContext context)
 
     public async Task<List<RawMaterialConsumptionLotVM>> LoadLotsAsync(int warehouseId, CancellationToken ct)
     {
-        var rows = await (from movement in context.PrdStockMovements.AsNoTracking()
-                          join lot in context.PrdStockLots.AsNoTracking() on movement.StockLotId equals (int?)lot.ID
-                          join material in context.PrdMaterials.AsNoTracking() on lot.MaterialId equals material.ID
-                          join unit in context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID
-                          join movementUnit in context.PrdUnits.AsNoTracking() on movement.UnitId equals movementUnit.ID
-                          where lot.WarehouseId == warehouseId && movement.WarehouseId == warehouseId && movement.IsDelete != true &&
-                              lot.IsDelete != true && lot.IsActive != false && material.IsDelete != true && material.IsActive != false &&
-                              material.Type == PrdMaterialType.RawMaterial
-                          select new { Lot = lot, Material = material, Unit = unit, MovementUnit = movementUnit,
-                              movement.MaterialId, movement.Direction, movement.Quantity, movement.TotalCost }).ToListAsync(ct);
-        var lotIds = rows.Select(x => x.Lot.ID).Distinct().ToList();
-        var reservations = await context.PrdStockReservations.AsNoTracking()
-            .Where(x => x.IsDelete != true && lotIds.Contains(x.StockLotId) &&
-                (x.Status == PrdReservationStatus.Active || x.Status == PrdReservationStatus.PartiallyUsed))
-            .Select(x => new { x.StockLotId, x.ReservedQuantity, x.UsedQuantity, x.ReleasedQuantity }).ToListAsync(ct);
-        return rows.GroupBy(x => x.Lot.ID).Select(group =>
+        var rows = await ProductionStockLotReader.LoadAsync(context, warehouseId, ct, rawMaterialsOnly: true);
+        return rows.Select(first =>
         {
-            var first = group.First();
-            var unitKey = ProductionUnitNormalizer.CanonicalCode(first.Unit.Code, first.Unit.Name);
-            var mixedUnits = group.Any(x => ProductionUnitNormalizer.CanonicalCode(x.MovementUnit.Code, x.MovementUnit.Name) != unitKey);
-            var invalidMaterial = group.Any(x => x.MaterialId != first.Material.ID);
             var balance = new RawMaterialConsumptionLotVM
             {
                 StockLotId = first.Lot.ID, MaterialId = first.Material.ID, MaterialCode = first.Material.Code, MaterialName = first.Material.Name,
-                UnitId = first.Unit.ID, Unit = ProductionUnitNormalizer.DisplayName(first.Unit.Code, first.Unit.Name), LotNumber = first.Lot.LotNumber,
+                UnitId = first.UnitId, Unit = first.Unit, LotNumber = first.Lot.LotNumber,
                 ProductionDate = first.Lot.ProductionDate, ExpirationDate = first.Lot.ExpirationDate,
-                PhysicalQuantity = group.Sum(x => x.Direction == PrdStockDirection.In ? x.Quantity : -x.Quantity),
-                StockValue = group.Sum(x => x.Direction == PrdStockDirection.In ? x.TotalCost : -x.TotalCost),
-                ReservedQuantity = reservations.Where(x => x.StockLotId == group.Key).Sum(x => Math.Max(0, x.ReservedQuantity - x.UsedQuantity - x.ReleasedQuantity))
+                PhysicalQuantity = first.PhysicalQuantity, StockValue = first.StockValue, ReservedQuantity = first.ReservedQuantity
             };
-            balance.BlockReason = invalidMaterial ? "Lot ile hareket malzemesi uyuşmuyor." : mixedUnits ? "Lot hareketlerinde farklı birimler var; önce birimleri düzeltiniz." :
-                first.Unit.IsDelete == true || first.Unit.IsActive == false ? "Malzemenin stok birimi aktif değil." :
+            balance.BlockReason = first.BlockReason ?? (
                 first.Lot.ExpirationDate.HasValue && first.Lot.ExpirationDate.Value.Date < DateTime.Today ? "Lotun son kullanma tarihi geçmiş." :
-                first.Material.RequiresExpirationDate && !first.Lot.ExpirationDate.HasValue ? "Lotun zorunlu SKT bilgisi eksik." :
-                balance.StockValue < 0 ? "Lot maliyet bakiyesi negatif." : null;
+                first.Material.RequiresExpirationDate && !first.Lot.ExpirationDate.HasValue ? "Lotun zorunlu SKT bilgisi eksik." : null);
             return balance;
-        }).Where(x => x.PhysicalQuantity > 0).OrderBy(x => x.MaterialCode).ThenBy(x => x.ExpirationDate ?? DateTime.MaxValue).ThenBy(x => x.LotNumber).ToList();
+        }).OrderBy(x => x.MaterialCode).ThenBy(x => x.ExpirationDate ?? DateTime.MaxValue).ThenBy(x => x.LotNumber).ToList();
     }
 
     public async Task<List<PrdInventoryDocumentLine>> PrepareLinesAsync(int warehouseId, IReadOnlyCollection<RawMaterialConsumptionInputVM> inputs, CancellationToken ct)
@@ -75,7 +53,7 @@ public sealed class RawMaterialConsumptionService(ApplicationDbContext context)
             {
                 Sequence = lines.Count + 1, MaterialId = lot.MaterialId, UnitId = lot.UnitId, SourceStockLotId = lot.StockLotId,
                 LotNumber = lot.LotNumber, ProductionDate = lot.ProductionDate, ExpirationDate = lot.ExpirationDate, Quantity = quantity,
-                OriginalUnitCost = lot.UnitCost, UnitCost = lot.UnitCost, TotalCost = decimal.Round(quantity * lot.StockValue / lot.PhysicalQuantity, 6),
+                OriginalUnitCost = lot.UnitCost, UnitCost = lot.UnitCost, TotalCost = quantity == lot.PhysicalQuantity ? lot.StockValue : decimal.Round(quantity / lot.PhysicalQuantity * lot.StockValue, 6),
                 CurrencyCode = "TRY", ExchangeRate = 1, CostSource = PrdStockCostSource.Manual, Notes = input.Notes?.Trim(), IsActive = true, IsDelete = false
             });
         }

@@ -1,6 +1,7 @@
 @model Ekomers.Models.ViewModels.Production.ProductionStockReportVM
 @{ ViewData["Title"]="Malzeme Stok Durumu"; }
 
+@if(Model.Error==null){
 <div class="row">
     <div class="col-md mb-4"><div class="card card-custom h-100"><div class="card-body py-5"><span class="text-muted">Malzeme Çeşidi</span><div class="font-size-h3 font-weight-bold text-primary">@Model.MaterialCount</div></div></div></div>
     <div class="col-md mb-4"><div class="card card-custom h-100"><div class="card-body py-5"><span class="text-muted">Stok Maliyeti</span><div class="font-size-h3 font-weight-bold text-success">@Model.TotalStockValue.ToString("N2") ₺</div></div></div></div>
@@ -8,6 +9,7 @@
     <div class="col-md mb-4"><div class="card card-custom h-100"><div class="card-body py-5"><span class="text-muted">Toplam Çıkış</span><div class="font-size-h3 font-weight-bold text-warning">@Model.TotalOutgoing.ToString("N2")</div></div></div></div>
     <div class="col-md mb-4"><div class="card card-custom h-100"><div class="card-body py-5"><span class="text-muted">Kritik Stok Malzemesi</span><div class="font-size-h3 font-weight-bold text-danger">@Model.CriticalMaterialCount</div></div></div></div>
 </div>
+}
 
 @if(Model.UnitSummaries.Count>0)
 {
@@ -34,7 +36,9 @@
 <div class="card card-custom mb-5">
     <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Malzeme Stok Durum Raporu<span class="d-block text-muted pt-2 font-size-sm">Depo ve malzeme bazında miktar ile maliyet görünümü</span></h3></div><div class="card-toolbar"><a asp-action="StoklariExcelAktar" asp-route-code="@Model.Code" asp-route-name="@Model.Name" asp-route-warehouseId="@Model.WarehouseId" class="btn btn-light-success mr-2"><i class="flaticon2-download"></i> Excel'e Aktar</a>@if(User.IsInRole("Admin")){<a asp-action="MevcutStokAktar" class="btn btn-light-primary">Mevcut Stokları Aktar</a>}</div></div>
     <div class="card-body">
-    @if(Model.Items.Count==0){<div class="alert alert-light-primary mb-0">Seçilen ölçütlere uygun stok bakiyesi bulunmuyor.</div>}
+    <p class="text-muted">Miktarlar ürünün ana stok birimine dönüştürülür; toplam maliyet korunur. Geçmiş hareketler değiştirilmez.</p>
+    @if(Model.Error!=null){<div class="alert alert-danger" role="alert">@Model.Error Eksik veya kısmi toplam gösterilmedi.</div>}
+    else if(Model.Items.Count==0){<div class="alert alert-light-primary mb-0">Seçilen ölçütlere uygun stok bakiyesi bulunmuyor.</div>}
     else
     {
         <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Depo</th><th>Malzeme</th><th>Giren</th><th>Çıkan</th><th>Kalan</th><th>Birim Maliyet</th><th>Toplam Maliyet</th><th>Kritik Miktar</th></tr></thead><tbody>

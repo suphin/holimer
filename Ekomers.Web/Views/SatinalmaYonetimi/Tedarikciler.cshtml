@@ -3,13 +3,38 @@
     ViewData["Title"] = "Tedarikçiler";
     var canManage = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaTedarikciYonet");
     var canDelete = User.IsInRole("Admin") || User.HasClaim("Authorize", "SatinalmaKayitSil");
+    var search = ViewBag.SupplierSearch as string;
 }
 <div class="card card-custom">
     <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Tedarikçiler<span class="d-block text-muted pt-2 font-size-sm">Satınalma tekliflerinde kullanılacak firma kartları</span></h3></div>@if (canManage) { <div class="card-toolbar"><a asp-action="TedarikciAktar" class="btn btn-light-primary mr-2">Portal ve Logo'dan Aktar</a><a asp-action="TedarikciYeni" class="btn btn-primary">Yeni Tedarikçi</a></div> }</div>
     <div class="card-body">
-        @if (Model.Count == 0) { <div class="alert alert-light-primary mb-0">Henüz tedarikçi kartı oluşturulmadı.</div> }
-        else { <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Kod</th><th>Firma</th><th>Vergi No</th><th>Yetkili</th><th>İletişim</th><th>Logo Kodu</th><th>Teklif</th><th>Durum</th><th></th></tr></thead><tbody>
-        @foreach (var item in Model) { <tr><td><strong>@item.Code</strong></td><td>@item.Name</td><td>@(item.TaxNumber ?? "-")</td><td>@(item.ContactName ?? "-")</td><td>@(item.Phone ?? item.Email ?? "-")</td><td>@(item.LogoCode ?? "-")</td><td>@item.QuotationCount</td><td><span class="label @(item.IsActive ? "label-light-success" : "label-light-danger") label-inline">@(item.IsActive ? "Aktif" : "Pasif")</span></td><td class="text-right">@if (canManage) { <a asp-action="TedarikciDuzenle" asp-route-id="@item.Id" class="btn btn-sm btn-light-primary mr-2">Düzenle</a> } @if (canDelete) { <form asp-action="TedarikciSil" method="post" class="d-inline" onsubmit="return confirm('Tedarikçi silinecek; geçmiş teklif ve siparişler korunacak. Devam edilsin mi?');"><input type="hidden" name="id" value="@item.Id" /><button class="btn btn-sm btn-light-danger">Sil</button></form> }</td></tr> }
+        <form asp-action="Tedarikciler" method="get" class="mb-5">
+            <label for="supplierSearch">Tedarikçi ara</label>
+            <div class="row align-items-center">
+                <div class="col-lg-8 mb-3 mb-lg-0"><input id="supplierSearch" name="search" value="@search" class="form-control" type="search" maxlength="250" placeholder="Firma kodu, unvan, vergi no, Logo kodu veya iletişim bilgisi" /></div>
+                <div class="col-lg-4"><button type="submit" class="btn btn-primary mr-2">Ara</button><a asp-action="Tedarikciler" class="btn btn-light">Temizle</a></div>
+            </div>
+        </form>
+        <div class="text-muted mb-4">@Model.Count tedarikçi@(string.IsNullOrEmpty(search) ? "" : " bulundu")</div>
+        @if (Model.Count == 0) { <div class="alert alert-light-primary mb-0">@(string.IsNullOrEmpty(search) ? "Henüz tedarikçi kartı oluşturulmadı." : "Aramanızla eşleşen tedarikçi bulunamadı.")</div> }
+        else { <div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Kod</th><th>Firma</th><th>Vergi No</th><th>Yetkili</th><th>İletişim</th><th>Logo Kodu</th><th>Teklif</th><th>Durum</th><th class="text-right">İşlemler</th></tr></thead><tbody>
+        @foreach (var item in Model) {
+            <tr>
+                <td><strong>@item.Code</strong></td><td>@item.Name</td><td>@(item.TaxNumber ?? "-")</td><td>@(item.ContactName ?? "-")</td><td>@(item.Phone ?? item.Email ?? "-")</td><td>@(item.LogoCode ?? "-")</td><td>@item.QuotationCount</td>
+                <td><span class="label @(item.IsActive ? "label-light-success" : "label-light-danger") label-inline">@(item.IsActive ? "Aktif" : "Pasif")</span></td>
+                <td class="text-right align-middle" style="width:1%">
+                    <div class="d-inline-flex align-items-center flex-nowrap" style="gap:0.5rem" role="group" aria-label="@(item.Name + " işlemleri")">
+                        @if (canManage) { <a asp-action="TedarikciDuzenle" asp-route-id="@item.Id" class="btn btn-sm btn-light-primary text-nowrap">Düzenle</a> }
+                        @if (canDelete) {
+                            <form asp-action="TedarikciSil" method="post" class="d-inline-flex m-0" onsubmit="return confirm('Tedarikçi silinecek; geçmiş teklif ve siparişler korunacak. Devam edilsin mi?');">
+                                <input type="hidden" name="id" value="@item.Id" /><button type="submit" class="btn btn-sm btn-light-danger text-nowrap">Sil</button>
+                            </form>
+                        }
+                        <a asp-controller="SatinalmaArama" asp-action="Index" asp-route-run="true" asp-route-supplierId="@item.Id" class="btn btn-sm btn-light-primary text-nowrap" aria-label="@(item.Name + " satınalma geçmişi")">Geçmiş</a>
+                    </div>
+                </td>
+            </tr>
+        }
         </tbody></table></div> }
     </div>
 </div>

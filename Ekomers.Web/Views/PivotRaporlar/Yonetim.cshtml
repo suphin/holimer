@@ -1,0 +1,9 @@
+@model List<Ekomers.Models.Entity.RptPivotReport>
+@{ ViewData["Title"] = "Pivot Rapor Tanımları"; }
+<div class="card card-custom"><div class="card-header"><div class="card-title"><h3>Pivot Rapor Tanımları</h3></div><div class="card-toolbar"><a asp-action="Index" class="btn btn-light mr-3">Raporlara Dön</a><a asp-action="Duzenle" class="btn btn-primary">Yeni Rapor Tanımı</a></div></div><div class="card-body">
+@if(TempData["PivotSuccess"] is string message){<div class="alert alert-success">@message</div>}
+<p>Bağlantı: <strong>LogoConnection</strong> · Kaynak yalnızca view olabilir. SQL sorgusu veya farklı bağlantı bilgisi girilmez.</p>
+<div class="table-responsive"><table class="table table-hover"><thead><tr><th>Rapor</th><th>Kaynak View</th><th>Durum</th><th>Son Düzenleyen</th><th>İşlem</th></tr></thead><tbody>
+@foreach(var r in Model){<tr><td>@r.Name</td><td>@r.SchemaName.@r.ViewName</td><td>@(r.IsActive?"Aktif":"Pasif / Hazırlanıyor")</td><td>@r.UpdatedBy</td><td><a class="btn btn-sm btn-light-primary" asp-action="Duzenle" asp-route-id="@r.ID">Düzenle</a></td></tr>}
+</tbody></table></div><p class="text-muted">Görüntüleme: Rapor.PivotRaporlar · Yönetim: Rapor.PivotRaporlarYonet. Admin tüm tanımlara erişir; yönetim yetkisi görüntülemeyi de kapsar. Görüntüleme yetkisi olan kullanıcılar tüm aktif pivot raporlarını açabilir.</p>
+</div></div>

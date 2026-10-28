@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Globalization;
 using System.Net;
 using Ekomers.Data;
+using Ekomers.Data.Services;
 using Ekomers.Models.ViewModels.Purchasing;
 using Ekomers.Web.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -12,16 +13,18 @@ using Microsoft.EntityFrameworkCore;
 namespace Ekomers.Web.Controllers;
 
 [Authorize(Policy = "AdminOrPurchasingOrUretim")]
-public sealed class LogoPurchaseInvoiceController : Controller
+public sealed partial class LogoPurchaseInvoiceController : Controller
 {
     private const int DefaultPageSize = 25;
     private readonly LogoContext _logoContext;
     private readonly IELogoPostboxClient _eLogoPostboxClient;
+    private readonly PortalLogoCompanyService _portalCompanies;
 
-    public LogoPurchaseInvoiceController(LogoContext logoContext, IELogoPostboxClient eLogoPostboxClient)
+    public LogoPurchaseInvoiceController(LogoContext logoContext, IELogoPostboxClient eLogoPostboxClient, PortalLogoCompanyService portalCompanies)
     {
         _logoContext = logoContext;
         _eLogoPostboxClient = eLogoPostboxClient;
+        _portalCompanies = portalCompanies;
     }
 
     [HttpGet]
@@ -34,12 +37,14 @@ public sealed class LogoPurchaseInvoiceController : Controller
         bool run = false,
         int page = 1,
         int pageSize = DefaultPageSize,
+        int firmNumber = 0,
         CancellationToken ct = default)
     {
         ViewBag.Modul = "YeniSatinalma";
         var today = DateTime.Today;
         var model = new LogoPurchaseInvoiceQueryVM
         {
+            FirmNumber = firmNumber,
             ProductSearch = Clean(productSearch),
             InvoiceNumber = Clean(invoiceNumber),
             SupplierSearch = Clean(supplierSearch),
@@ -50,6 +55,18 @@ public sealed class LogoPurchaseInvoiceController : Controller
             PageSize = pageSize is >= 10 and <= 100 ? pageSize : DefaultPageSize
         };
 
+        try
+        {
+            model.Companies = await CompaniesAsync(ct);
+            if(model.Companies.Count==0){model.Error="Portal Şirketler sayfasında geçerli Logo firma kodu bulunan aktif şirket tanımlı değil veya tanımlı firma Logo'da bulunamadı.";return View(model);}
+            if(firmNumber==0)firmNumber=model.Companies.FirstOrDefault(c=>c.HasInvoiceView)?.Number??model.Companies[0].Number;
+            model.FirmNumber=firmNumber;
+            if (!ModelState.IsValid || firmNumber is < 1 or > 999 || !model.Companies.Any(c => c.Number == firmNumber))
+            { model.Error = "Portal Şirketler listesinden geçerli bir firma ve filtre değerleri seçiniz."; return View(model); }
+            model.FirmName = model.Companies.Single(c => c.Number == firmNumber).Name;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        { model.Error = "Portal şirketleri ve Logo firma eşlemeleri okunamadı. Şirketler tanımlarını ve bağlantıları kontrol ediniz."; return View(model); }
         if (!run) return View(model);
         if (model.StartDate.HasValue && model.EndDate.HasValue && model.EndDate < model.StartDate)
         {
@@ -63,7 +80,7 @@ public sealed class LogoPurchaseInvoiceController : Controller
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            model.Error = "Logo satınalma faturaları okunamadı: " + ex.Message;
+            model.Error = ex is ArgumentException ? ex.Message : "Seçilen firmanın satınalma faturaları okunamadı. Firma view'ını, dönem tablolarını ve Logo bağlantısını kontrol ediniz.";
         }
 
         return View(model);
@@ -74,16 +91,18 @@ public sealed class LogoPurchaseInvoiceController : Controller
         string invoiceNumber,
         DateTime invoiceDate,
         string supplierCode,
+        int firmNumber = 100,
         CancellationToken ct = default)
     {
         var model = new LogoPurchaseInvoiceDetailVM
         {
+            FirmNumber = firmNumber,
             InvoiceNumber = Clean(invoiceNumber) ?? string.Empty,
             InvoiceDate = invoiceDate.Date,
             SupplierCode = Clean(supplierCode) ?? string.Empty
         };
 
-        if (string.IsNullOrWhiteSpace(model.InvoiceNumber) || model.InvoiceDate == default)
+        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(model.InvoiceNumber) || model.InvoiceDate == default)
         {
             model.Error = "Fatura bilgileri geçersiz.";
             return PartialView("_Detay", model);
@@ -95,7 +114,7 @@ public sealed class LogoPurchaseInvoiceController : Controller
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            model.Error = "Logo fatura detayı okunamadı: " + ex.Message;
+            model.Error = ex is ArgumentException ? ex.Message : "Seçilen firmanın fatura detayı okunamadı. Logo bağlantısını ve dönem tablolarını kontrol ediniz.";
         }
 
         return PartialView("_Detay", model);
@@ -106,15 +125,17 @@ public sealed class LogoPurchaseInvoiceController : Controller
         string invoiceNumber,
         DateTime invoiceDate,
         string supplierCode,
+        int firmNumber = 100,
         CancellationToken ct = default)
     {
         var invoice = new LogoPurchaseInvoiceDetailVM
         {
+            FirmNumber = firmNumber,
             InvoiceNumber = Clean(invoiceNumber) ?? string.Empty,
             InvoiceDate = invoiceDate.Date,
             SupplierCode = Clean(supplierCode) ?? string.Empty
         };
-        if (string.IsNullOrWhiteSpace(invoice.InvoiceNumber) || invoice.InvoiceDate == default)
+        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(invoice.InvoiceNumber) || invoice.InvoiceDate == default)
             return PdfError("Fatura bilgileri geçersiz.", StatusCodes.Status400BadRequest);
 
         try
@@ -125,14 +146,14 @@ public sealed class LogoPurchaseInvoiceController : Controller
             if (!invoice.IsEInvoice || string.IsNullOrWhiteSpace(invoice.EInvoiceGuid))
                 return PdfError("Bu kayıt için e-Fatura ETTN/UUID bilgisi bulunamadı.", StatusCodes.Status404NotFound);
 
-            var document = await _eLogoPostboxClient.GetIncomingInvoicePdfAsync(invoice.EInvoiceGuid, ct);
+            var document = await _eLogoPostboxClient.GetIncomingInvoicePdfAsync(invoice.FirmNumber, invoice.EInvoiceGuid, ct);
             Response.Headers.ContentDisposition = $"inline; filename=\"{document.FileName}\"";
             Response.Headers.CacheControl = "private, no-store, max-age=0";
             return File(document.Content, document.ContentType);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return PdfError(ex.Message, StatusCodes.Status502BadGateway);
+            return PdfError(ex is ArgumentException or ELogoConfigurationException ? ex.Message : "Seçilen firmanın fatura görseli alınamadı. Firma bilgilerini ve eLogo hesabının bu belgeye erişimini kontrol ediniz.", StatusCodes.Status502BadGateway);
         }
     }
 
@@ -148,8 +169,10 @@ public sealed class LogoPurchaseInvoiceController : Controller
 
     private async Task LoadInvoicesAsync(LogoPurchaseInvoiceQueryVM model, CancellationToken ct)
     {
-        const string sql = """
-            WITH MatchingInvoices AS
+        var source = await ResolveSourceAsync(model.FirmNumber,model.StartDate!.Value,model.EndDate!.Value,ct);
+        model.FirmName=source.CompanyName;
+        var sql = $"""
+            WITH InvoiceMetadata AS ({source.InvoiceSource}), MatchingInvoices AS
             (
                 SELECT
                     CONVERT(date, [Tarihi]) AS [InvoiceDate],
@@ -166,14 +189,14 @@ public sealed class LogoPurchaseInvoiceController : Controller
                     MAX(ISNULL(ei.[ESTATUS], 0)) AS [EInvoiceStatusCode],
                     MAX(ISNULL([Fatura GİB Durumu], N'')) AS [GibStatus],
                     MAX(ISNULL([Doküman İzleme Numarası], N'')) AS [DocumentTrackingNumber]
-                FROM [dbo].[FATURA_DOKUMU_100] f WITH (NOLOCK)
+                FROM {source.View} f
                 OUTER APPLY
                 (
                     SELECT TOP (1) i.[GUID], i.[EINVOICE], i.[ESTATUS]
-                    FROM [dbo].[LG_100_01_INVOICE] i WITH (NOLOCK)
+                    FROM InvoiceMetadata i
                     WHERE i.[FICHENO] = f.[Fatura Numarası]
                       AND CONVERT(date, i.[DATE_]) = CONVERT(date, f.[Tarihi])
-                      AND i.[CANCELLED] = 0
+                      AND i.SupplierCode = f.[Cari Hesap Kodu]
                     ORDER BY i.[LOGICALREF] DESC
                 ) ei
                 WHERE [TUR] = N'Satınalma'
@@ -246,7 +269,10 @@ public sealed class LogoPurchaseInvoiceController : Controller
 
     private async Task LoadInvoiceDetailAsync(LogoPurchaseInvoiceDetailVM model, CancellationToken ct)
     {
-        const string sql = """
+        var source = await ResolveSourceAsync(model.FirmNumber,model.InvoiceDate,model.InvoiceDate,ct);
+        model.FirmName=source.CompanyName;
+        var sql = $"""
+            WITH InvoiceMetadata AS ({source.InvoiceSource})
             SELECT
                 CONVERT(date, [Tarihi]) AS [InvoiceDate], [Fatura Numarası], [Fatura Belge Numarası],
                 [Cari Hesap Kodu], [Cari Hesap Unvanı], [Hizmet Kodu], [Hizmet Açıklaması],
@@ -260,14 +286,14 @@ public sealed class LogoPurchaseInvoiceController : Controller
                 ISNULL(ei.[ESTATUS], 0) AS [EInvoiceStatusCode],
                 ISNULL([Fatura GİB Durumu], N'') AS [GibStatus],
                 ISNULL([Doküman İzleme Numarası], N'') AS [DocumentTrackingNumber]
-            FROM [dbo].[FATURA_DOKUMU_100] f WITH (NOLOCK)
+            FROM {source.View} f
             OUTER APPLY
             (
                 SELECT TOP (1) i.[GUID], i.[EINVOICE], i.[ESTATUS]
-                FROM [dbo].[LG_100_01_INVOICE] i WITH (NOLOCK)
+                FROM InvoiceMetadata i
                 WHERE i.[FICHENO] = f.[Fatura Numarası]
                   AND CONVERT(date, i.[DATE_]) = CONVERT(date, f.[Tarihi])
-                  AND i.[CANCELLED] = 0
+                  AND i.SupplierCode = f.[Cari Hesap Kodu]
                 ORDER BY i.[LOGICALREF] DESC
             ) ei
             WHERE [TUR] = N'Satınalma'
@@ -288,6 +314,8 @@ public sealed class LogoPurchaseInvoiceController : Controller
             command.CommandText = sql;
             command.CommandTimeout = 20;
             AddParameter(command, "@invoiceNumber", DbType.String, model.InvoiceNumber);
+            AddParameter(command, "@startDate", DbType.DateTime2, model.InvoiceDate);
+            AddParameter(command, "@endExclusive", DbType.DateTime2, model.InvoiceDate.AddDays(1));
             AddParameter(command, "@invoiceDate", DbType.Date, model.InvoiceDate);
             AddParameter(command, "@supplierCode", DbType.String, DbValue(model.SupplierCode));
 

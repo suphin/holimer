@@ -1,8 +1,46 @@
 @model IReadOnlyList<Ekomers.Models.ViewModels.Production.InventoryDocumentListVM>
-@{ ViewData["Title"]="Stok Hareket Belgeleri"; var canDelete=User.IsInRole("Admin")||User.HasClaim("Authorize","StokBelgesiSil"); }
+@{ ViewData["Title"]="Stok Hareket Belgeleri"; var canDelete=User.IsInRole("Admin")||User.HasClaim("Authorize","StokBelgesiSil"); var productSearch=ViewBag.ProductSearch as string; var hasSearch=!string.IsNullOrEmpty(productSearch); }
 <div class="card card-custom"><div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">Stok Hareket Belgeleri<span class="d-block text-muted pt-2 font-size-sm">Maliyetli giriş, çıkış ve depolar arası transfer belgeleri</span></h3></div><div class="card-toolbar"><a asp-action="Yeni" asp-route-type="@PrdInventoryDocumentType.Opening" class="btn btn-primary mr-2">Devir Girişi</a><a asp-action="Yeni" asp-route-type="@PrdInventoryDocumentType.WarehouseTransfer" class="btn btn-light-primary">Depolar Arası Transfer</a></div></div><div class="card-body">
-@if(Model.Count==0){<div class="alert alert-light-primary mb-0">Henüz stok hareket belgesi oluşturulmadı.</div>}
-else{<div class="table-responsive"><table class="table table-separate table-head-custom"><thead><tr><th>Belge No</th><th>Tarih</th><th>Hareket</th><th>Kaynak</th><th>Hedef</th><th>Kalem</th><th>Toplam Maliyet</th><th>Durum</th><th class="text-right">İşlem</th></tr></thead><tbody>@foreach(var item in Model){<tr><td><strong>@item.DocumentNumber</strong></td><td>@item.DocumentDate.ToString("dd.MM.yyyy")</td><td>@item.Type.ToTurkish()</td><td>@item.SourceWarehouse</td><td>@item.TargetWarehouse</td><td>@item.LineCount</td><td>@item.TotalCost.ToString("N2") ₺</td><td><span class="label label-light-primary label-inline">@item.Status.ToTurkish()</span></td><td class="text-right text-nowrap"><a asp-action="Detay" asp-route-id="@item.Id" class="btn btn-sm btn-light-primary">Detay</a>@if(canDelete&&(User.IsInRole("Admin")||item.CanDeleteFromInventory)){<button type="button" class="btn btn-sm btn-light-danger ml-1" data-toggle="modal" data-target="#deleteInventoryDocumentModal" data-document-id="@item.Id" data-document-number="@item.DocumentNumber" onclick="prepareInventoryDelete(this)">Sil</button>}</td></tr>}</tbody></table></div>}
+<form asp-action="Index" method="get" class="mb-5">
+    <div class="row align-items-end">
+        <div class="col-md-7 col-lg-6 mb-3">
+            <label for="inventoryProductSearch">Ürün Kodu veya Adı</label>
+            <input id="inventoryProductSearch" name="productSearch" value="@productSearch" class="form-control" placeholder="Ürün kodu veya adını yazınız" aria-describedby="inventoryProductSearchHelp"/>
+        </div>
+        <div class="col-md-auto mb-3 d-flex">
+            <button type="submit" class="btn btn-primary mr-2">Ara</button>
+            <a asp-action="Index" class="btn btn-light">Temizle</a>
+        </div>
+    </div>
+    <div id="inventoryProductSearchHelp" class="text-muted">Arama belge içindeki ürün satırlarında yapılır; eşleşen ürünün bulunduğu belgeler listelenir.</div>
+</form>
+@if(hasSearch&&Model.Count>0){<div class="text-muted mb-4">@Model.Count belge bulundu. Eşleşen ürün miktarları belgedeki birimlerle gösterilir; aynı ürün ve birimdeki satırlar toplanır. Kalem sayısı ve toplam maliyet belgenin tamamına aittir.</div>}
+@if(Model.Count==0){<div class="alert alert-light-primary mb-0">@(hasSearch?"Aradığınız ürün kodu veya adına ait stok hareket belgesi bulunamadı.":"Henüz stok hareket belgesi oluşturulmadı.")</div>}
+else
+{
+    <div class="table-responsive"><table class="table table-separate table-head-custom">
+        <thead><tr><th>Belge No</th><th>Tarih</th><th>Hareket</th><th>Kaynak</th><th>Hedef</th>@if(hasSearch){<th>Eşleşen Ürün / Miktar</th>}<th>Kalem</th><th>Toplam Maliyet</th><th>Durum</th><th class="text-right">İşlem</th></tr></thead>
+        <tbody>
+        @foreach(var item in Model)
+        {
+            <tr>
+                <td><strong>@item.DocumentNumber</strong></td><td>@item.DocumentDate.ToString("dd.MM.yyyy")</td><td>@item.Type.ToTurkish()</td><td>@item.SourceWarehouse</td><td>@item.TargetWarehouse</td>
+                @if(hasSearch)
+                {
+                    <td>
+                    @foreach(var product in item.MatchingProducts)
+                    {
+                        <div class="mb-2"><strong>@product.MaterialCode</strong><span class="d-block text-muted">@product.MaterialName</span><span class="d-block font-weight-bold text-nowrap">@product.Quantity.ToString("#,0.######") @product.Unit</span></div>
+                    }
+                    </td>
+                }
+                <td>@item.LineCount</td><td>@item.TotalCost.ToString("N2") ₺</td><td><span class="label label-light-primary label-inline">@item.Status.ToTurkish()</span></td>
+                <td class="text-right text-nowrap"><a asp-action="Detay" asp-route-id="@item.Id" class="btn btn-sm btn-light-primary">Detay</a>@if(canDelete&&(User.IsInRole("Admin")||item.CanDeleteFromInventory)){<button type="button" class="btn btn-sm btn-light-danger ml-1" data-toggle="modal" data-target="#deleteInventoryDocumentModal" data-document-id="@item.Id" data-document-number="@item.DocumentNumber" onclick="prepareInventoryDelete(this)">Sil</button>}</td>
+            </tr>
+        }
+        </tbody>
+    </table></div>
+}
 </div></div>
 @if(canDelete){
 <div class="modal fade" id="deleteInventoryDocumentModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">

@@ -6,10 +6,10 @@
             <span class="d-block text-muted pt-2 font-size-sm">@(transfer?"Lot, SKT ve maliyet hedef depoya aynen taşınır.":"Başlangıç stoklarını lot ve birim maliyet bilgisiyle girin.")</span></h3></div><div class="card-toolbar"><a asp-action="Index" class="btn btn-sm btn-light">Belgelere Dön</a></div></div>
 @if(transfer)
 {
-<div class="card-body border-bottom"><form asp-action="Yeni" method="get"><input type="hidden" name="type" value="@((int)Model.Type)"/><div class="row"><div class="col-md-5 form-group mb-0"><label>Kaynak Depo</label><select asp-for="SourceWarehouseId" asp-items="Model.Warehouses" class="form-control">
+<div class="card-body border-bottom"><form asp-action="Yeni" method="get"><input type="hidden" name="type" value="@((int)Model.Type)"/><div class="row"><div class="col-md-5 form-group mb-0"><label for="transferSourceWarehouse">Kaynak Depo</label><select asp-for="SourceWarehouseId" id="transferSourceWarehouse" asp-items="Model.Warehouses" class="form-control transfer-warehouse" data-placeholder="Kaynak depo seçiniz">
     <option value="">Kaynak depo seçiniz</option></select></div><div class="col-md-5 form-group mb-0">
-        <label>Hedef Depo</label>
-        <select asp-for="TargetWarehouseId" asp-items="Model.Warehouses" class="form-control">
+        <label for="transferTargetWarehouse">Hedef Depo</label>
+        <select asp-for="TargetWarehouseId" id="transferTargetWarehouse" asp-items="Model.Warehouses" class="form-control transfer-warehouse" data-placeholder="Hedef depo seçiniz">
             <option value="">Hedef depo seçiniz</option></select></div>
             <div class="col-md-2 d-flex align-items-end">
             
@@ -22,6 +22,8 @@
 <form asp-action="Yeni" method="post"><input asp-for="Type" type="hidden"/><input asp-for="SourceWarehouseId" type="hidden"/><div class="card card-custom"><div class="card-body"><div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div><div class="row">
 @if(ViewBag.PrefillInfo!=null){<div class="col-12"><div class="alert alert-light-info">@ViewBag.PrefillInfo</div></div>}
 @if(ViewBag.PrefillWarning!=null){<div class="col-12"><div class="alert alert-light-warning">@ViewBag.PrefillWarning</div></div>}
+@if(transfer){<div class="col-12"><div class="alert alert-light-info">Lot stokları tanımlı dönüşümlerle ürünün ana biriminde birleştirilir. Transfer miktarını seçilen lotta gösterilen ana birimde giriniz. Kaynak ve hedefte aynı miktar ve toplam maliyet kullanılır.</div></div>}
+@if(Model.LotWarnings.Count>0){<div class="col-12"><details class="alert alert-warning"><summary>Transfer edilemeyen lotlar (@Model.LotWarnings.Count)</summary><ul>@foreach(var warning in Model.LotWarnings){<li>@warning</li>}</ul></details></div>}
 @if(!transfer){
     <div class="col-md-6 form-group"><label>Hedef Depo</label>
     <select asp-for="TargetWarehouseId" asp-items="Model.Warehouses" class="form-control">
@@ -36,8 +38,15 @@
 <div class="table-responsive"><table class="table table-separate table-head-custom"><thead>@if(transfer){<tr><th style="min-width:520px">Kaynak Lot / Kullanılabilir Stok / Maliyet</th><th style="min-width:150px">Transfer Miktarı</th><th style="min-width:220px">Not</th></tr>}else{<tr><th style="min-width:300px">Malzeme</th><th style="min-width:150px">Lot</th><th>Üretim Tarihi</th><th>SKT</th><th style="min-width:130px">Miktar</th><th style="min-width:150px">Birim Maliyet</th><th style="min-width:180px">Not</th></tr>}</thead><tbody>
 @for(var i=0;i<Model.Lines.Count;i++)
 {
-if(transfer){<tr><td><select asp-for="Lines[i].SourceStockLotId" asp-items="Model.SourceLots" class="form-control kt_select2" data-live-search="true" data-size="5"><option value="">Lot seçiniz</option></select></td><td><input asp-for="Lines[i].Quantity" class="form-control" inputmode="decimal"/></td><td><input asp-for="Lines[i].Notes" class="form-control" maxlength="250"/></td></tr>}
+if(transfer){<tr><td><select asp-for="Lines[i].SourceStockLotId" asp-items="Model.SourceLots" class="form-control transfer-lot" aria-label="Transfer ürünü / lot" data-placeholder="Kod, ad veya lot numarasıyla arayın"><option value="">Lot seçiniz</option>
+    @if(Model.Lines[i].SourceStockLotId is int oldId&&!Model.SourceLots.Any(x=>x.Value==oldId.ToString())){
+        <option value="@oldId" disabled>Lot #@oldId · Artık kullanılamıyor; başka lot seçiniz</option>
+    }
+</select></td><td><input asp-for="Lines[i].Quantity" class="form-control" inputmode="decimal" aria-label="Transfer miktarı"/></td><td><input asp-for="Lines[i].Notes" class="form-control" maxlength="250" aria-label="Transfer satır notu"/></td></tr>}
 else{<tr><td><select asp-for="Lines[i].MaterialId" asp-items="Model.Materials" class="form-control kt_select2" data-live-search="true" data-size="5"><option value="">Malzeme seçiniz</option></select></td><td><input asp-for="Lines[i].LotNumber" class="form-control" maxlength="100"/></td><td><input asp-for="Lines[i].ProductionDate" type="date" class="form-control"/></td><td><input asp-for="Lines[i].ExpirationDate" type="date" class="form-control"/></td><td><input asp-for="Lines[i].Quantity" class="form-control" inputmode="decimal"/></td><td><input asp-for="Lines[i].UnitCost" class="form-control" inputmode="decimal"/></td><td><input asp-for="Lines[i].Notes" class="form-control" maxlength="250"/></td></tr>}
 }
 </tbody></table></div></div><div class="card-footer text-right"><button type="submit" class="btn btn-primary">Taslak Belgeyi Kaydet</button></div></div></form>
+}
+@section JSSection {
+    @if(transfer){<script src="~/js/production/warehouse-transfer.js" asp-append-version="true"></script>}
 }

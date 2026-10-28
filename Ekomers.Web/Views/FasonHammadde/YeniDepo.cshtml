@@ -1,0 +1,6 @@
+@model Ekomers.Models.ViewModels.Production.FasonWarehouseFormVM
+@{ViewData["Title"]="Yeni Fason Firma Deposu";}
+<partial name="_Navigation"/>
+<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Yeni Fason Firma / Depo</h3></div></div><form asp-action="YeniDepo" method="post"><div class="card-body"><div asp-validation-summary="All" class="text-danger mb-4"></div><div class="row">
+<div class="col-md-4 form-group"><label asp-for="CustomerCode">Müşteri Firma Kodu</label><input asp-for="CustomerCode" class="form-control" maxlength="50" required/></div><div class="col-md-8 form-group"><label asp-for="CustomerName">Müşteri Firma Unvanı</label><input asp-for="CustomerName" class="form-control" maxlength="250" required/></div><div class="col-12 form-group"><label asp-for="Notes">Not</label><textarea asp-for="Notes" class="form-control" maxlength="500"></textarea></div></div>
+<div class="text-muted">Firma kaydedildiğinde otomatik depo kodu ve firmaya özel fason depo oluşturulur. Aynı firma koduyla ikinci depo açılmaz. Firma/depo sahipliği giriş belgeleri üzerinde sonradan değiştirilemez.</div></div><div class="card-footer d-flex justify-content-between"><a asp-action="Depolar" class="btn btn-light">Vazgeç</a><button class="btn btn-primary">Firma Deposunu Oluştur</button></div></form></div>

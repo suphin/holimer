@@ -12,7 +12,7 @@
         <form method="get" id="csFilter" class="cs-filter">
             <div><label for="csCompany">Logo Firması</label><select id="csCompany" name="firmNumber" class="form-control" required>
                 @foreach(var c in Model.Companies){<option value="@c.Number" selected="@(c.Number==(s?.Company.Number ?? Model.FirmNumber))">@c.Number.ToString("000") · @c.Name</option>}
-            </select></div>
+            </select><span class="form-text text-muted">Portal Şirketler listesindeki aktif şirketler</span></div>
             <div><label for="csPeriod">Logo Dönemi</label><select id="csPeriod" name="periodNumber" class="form-control" required>
                 @foreach(var p in Model.Periods){<option value="@p.Number" selected="@(p.Number==(s?.Period.Number ?? Model.PeriodNumber))">@p.Number.ToString("00") · @p.BeginDate.ToString("dd.MM.yyyy") – @p.EndDate.ToString("dd.MM.yyyy")</option>}
             </select></div>

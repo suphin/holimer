@@ -16,7 +16,7 @@ using System.Globalization;
 namespace Ekomers.Web.Controllers;
 
 [Authorize(Policy = "AdminOrUretim")]
-public sealed class UretimYonetimiController : Controller
+public sealed partial class UretimYonetimiController : Controller
 {
     private const string PlanningSessionKey="PrdProductionPlanningList";
     private const string EditingPlanHeaderSessionKey="PrdEditingPlanHeaderId";
@@ -353,14 +353,18 @@ public sealed class UretimYonetimiController : Controller
                          select new{Material=material,Warehouse=warehouse,UnitCode=unit.Code,UnitName=unit.Name}).FirstOrDefaultAsync(ct);
         if(header==null)return NotFound();
 
-        var totals=await _context.PrdStockMovements.AsNoTracking()
+        var totalRows=await _context.PrdStockMovements.AsNoTracking()
             .Where(x=>x.MaterialId==materialId&&x.WarehouseId==warehouseId&&x.IsDelete!=true)
-            .GroupBy(x=>1)
-            .Select(g=>new
-            {
-                Incoming=g.Where(x=>x.Direction==PrdStockDirection.In).Sum(x=>x.Quantity),
-                Outgoing=g.Where(x=>x.Direction==PrdStockDirection.Out).Sum(x=>x.Quantity)
-            }).FirstOrDefaultAsync(ct);
+            .Select(x=>new{x.UnitId,x.Direction,x.Quantity}).ToListAsync(ct);
+        decimal incoming=0,outgoing=0;string? conversionError=null;
+        try
+        {
+            var converter=await ProductionStockUnitConverter.LoadAsync(_context,[materialId],ct);
+            incoming=totalRows.Where(x=>x.Direction==PrdStockDirection.In).Sum(x=>converter.Quantity(materialId,x.UnitId,x.Quantity));
+            outgoing=totalRows.Where(x=>x.Direction==PrdStockDirection.Out).Sum(x=>converter.Quantity(materialId,x.UnitId,x.Quantity));
+        }
+        catch(InvalidOperationException ex){conversionError=ex.Message;}
+        catch(OverflowException){conversionError="Stok miktarı desteklenen aralığı aşıyor.";}
 
         var movementRows=await(from movement in _context.PrdStockMovements.AsNoTracking()
                             join unit in _context.PrdUnits.AsNoTracking() on movement.UnitId equals unit.ID
@@ -406,8 +410,9 @@ public sealed class UretimYonetimiController : Controller
             WarehouseCode=header.Warehouse.Code,
             WarehouseName=header.Warehouse.Name,
             Unit=ProductionUnitNormalizer.DisplayName(header.UnitCode,header.UnitName),
-            IncomingQuantity=totals?.Incoming??0,
-            OutgoingQuantity=totals?.Outgoing??0,
+            Error=conversionError,
+            IncomingQuantity=incoming,
+            OutgoingQuantity=outgoing,
             Movements=movements
         });
     }
@@ -416,6 +421,7 @@ public sealed class UretimYonetimiController : Controller
     public async Task<IActionResult> StoklariExcelAktar(string? code,string? name,int? warehouseId,CancellationToken ct)
     {
         var model=await BuildStockReportModel(code,name,warehouseId,true,ct);
+        if(model.Error!=null)return BadRequest(model.Error);
         using var workbook=new XLWorkbook();
 
         var summarySheet=workbook.Worksheets.Add("Özet");
@@ -507,23 +513,27 @@ public sealed class UretimYonetimiController : Controller
         var rawRows=await(from movement in _context.PrdStockMovements.AsNoTracking()
                        join material in _context.PrdMaterials.AsNoTracking() on movement.MaterialId equals material.ID
                        join warehouse in _context.PrdWarehouses.AsNoTracking() on movement.WarehouseId equals warehouse.ID
-                       join unit in _context.PrdUnits.AsNoTracking() on movement.UnitId equals unit.ID
                        join lot0 in _context.PrdStockLots.AsNoTracking() on movement.StockLotId equals lot0.ID into lotJoin
                        from lot in lotJoin.DefaultIfEmpty()
                        where movement.IsDelete!=true&&material.IsDelete!=true&&warehouse.IsDelete!=true
                          &&(!warehouseId.HasValue||movement.WarehouseId==warehouseId.Value)
                          &&(string.IsNullOrEmpty(code)||EF.Functions.Like(material.Code,"%"+code+"%"))
                          &&(string.IsNullOrEmpty(name)||EF.Functions.Like(material.Name,"%"+name+"%"))
-                       select new{movement.MaterialId,movement.WarehouseId,MaterialCode=material.Code,MaterialName=material.Name,material.CriticalQuantity,WarehouseCode=warehouse.Code,WarehouseName=warehouse.Name,LotNumber=lot==null?string.Empty:lot.LotNumber,ExpirationDate=lot==null?(DateTime?)null:lot.ExpirationDate,movement.Direction,movement.Quantity,movement.TotalCost,UnitCode=unit.Code,UnitName=unit.Name}).ToListAsync(ct);
-        // Normalize only equivalent labels (AD/ADET/PCS etc.), never physical unit conversions.
-        var rows=rawRows.Select(x=>new{x.MaterialId,x.WarehouseId,x.MaterialCode,x.MaterialName,x.CriticalQuantity,x.WarehouseCode,x.WarehouseName,x.LotNumber,x.ExpirationDate,x.Direction,x.Quantity,x.TotalCost,Unit=ProductionUnitNormalizer.DisplayName(x.UnitCode,x.UnitName)}).ToList();
+                       select new{movement.MaterialId,movement.WarehouseId,movement.UnitId,MaterialCode=material.Code,MaterialName=material.Name,material.CriticalQuantity,WarehouseCode=warehouse.Code,WarehouseName=warehouse.Name,LotNumber=lot==null?string.Empty:lot.LotNumber,ExpirationDate=lot==null?(DateTime?)null:lot.ExpirationDate,movement.Direction,movement.Quantity,movement.TotalCost}).ToListAsync(ct);
+        try
+        {
+        var converter=await ProductionStockUnitConverter.LoadAsync(_context,rawRows.Select(x=>x.MaterialId).Distinct().ToList(),ct);
+        var rows=rawRows.Select(x=>new{x.MaterialId,x.WarehouseId,x.MaterialCode,x.MaterialName,x.CriticalQuantity,x.WarehouseCode,x.WarehouseName,x.LotNumber,x.ExpirationDate,x.Direction,Quantity=converter.Quantity(x.MaterialId,x.UnitId,x.Quantity),x.TotalCost,Unit=converter.BaseUnitName(x.MaterialId)}).ToList();
         model.Items=rows.GroupBy(x=>new{x.MaterialId,x.WarehouseId,x.MaterialCode,x.MaterialName,x.CriticalQuantity,x.WarehouseCode,x.WarehouseName,x.Unit}).Select(g=>
         {
             var incoming=g.Where(x=>x.Direction==PrdStockDirection.In).Sum(x=>x.Quantity);var outgoing=g.Where(x=>x.Direction==PrdStockDirection.Out).Sum(x=>x.Quantity);var remaining=incoming-outgoing;var totalCost=g.Sum(x=>x.Direction==PrdStockDirection.In?x.TotalCost:-x.TotalCost);
             return new ProductionStockReportItemVM{MaterialId=g.Key.MaterialId,WarehouseId=g.Key.WarehouseId,MaterialCode=g.Key.MaterialCode,MaterialName=g.Key.MaterialName,CriticalQuantity=g.Key.CriticalQuantity,WarehouseCode=g.Key.WarehouseCode,WarehouseName=g.Key.WarehouseName,Unit=g.Key.Unit,IncomingQuantity=incoming,OutgoingQuantity=outgoing,RemainingQuantity=remaining,TotalCost=totalCost,UnitCost=remaining==0?0:totalCost/remaining};
-        }).Where(x=>x.RemainingQuantity!=0).OrderBy(x=>x.WarehouseCode).ThenBy(x=>x.MaterialCode).ToList();
+        }).Where(x=>x.RemainingQuantity!=0||x.TotalCost!=0).OrderBy(x=>x.WarehouseCode).ThenBy(x=>x.MaterialCode).ToList();
         model.UnitSummaries=model.Items.GroupBy(x=>x.Unit).Select(g=>new ProductionStockUnitSummaryVM{Unit=g.Key,Quantity=g.Sum(x=>x.RemainingQuantity)}).OrderBy(x=>x.Unit).ToList();
-        model.Lots=rows.GroupBy(x=>new{x.MaterialId,x.MaterialCode,x.MaterialName,x.WarehouseCode,x.WarehouseName,x.LotNumber,x.ExpirationDate,x.Unit}).Select(g=>{var quantity=g.Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity);var totalCost=g.Sum(x=>x.Direction==PrdStockDirection.In?x.TotalCost:-x.TotalCost);return new ProductionStockBalanceVM{MaterialId=g.Key.MaterialId,MaterialCode=g.Key.MaterialCode,MaterialName=g.Key.MaterialName,WarehouseCode=g.Key.WarehouseCode,WarehouseName=g.Key.WarehouseName,LotNumber=g.Key.LotNumber,ExpirationDate=g.Key.ExpirationDate,Unit=g.Key.Unit,Quantity=quantity,TotalCost=totalCost,UnitCost=quantity==0?0:totalCost/quantity};}).Where(x=>x.Quantity!=0).OrderBy(x=>x.WarehouseCode).ThenBy(x=>x.MaterialCode).ThenBy(x=>x.ExpirationDate).ToList();
+        model.Lots=rows.GroupBy(x=>new{x.MaterialId,x.MaterialCode,x.MaterialName,x.WarehouseCode,x.WarehouseName,x.LotNumber,x.ExpirationDate,x.Unit}).Select(g=>{var quantity=g.Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity);var totalCost=g.Sum(x=>x.Direction==PrdStockDirection.In?x.TotalCost:-x.TotalCost);return new ProductionStockBalanceVM{MaterialId=g.Key.MaterialId,MaterialCode=g.Key.MaterialCode,MaterialName=g.Key.MaterialName,WarehouseCode=g.Key.WarehouseCode,WarehouseName=g.Key.WarehouseName,LotNumber=g.Key.LotNumber,ExpirationDate=g.Key.ExpirationDate,Unit=g.Key.Unit,Quantity=quantity,TotalCost=totalCost,UnitCost=quantity==0?0:totalCost/quantity};}).Where(x=>x.Quantity!=0||x.TotalCost!=0).OrderBy(x=>x.WarehouseCode).ThenBy(x=>x.MaterialCode).ThenBy(x=>x.ExpirationDate).ToList();
+        }
+        catch(InvalidOperationException ex){model.Error=ex.Message;model.Items=[];model.Lots=[];model.UnitSummaries=[];}
+        catch(OverflowException){model.Error="Dönüştürülmüş stok toplamları desteklenen aralığı aşıyor.";model.Items=[];model.Lots=[];model.UnitSummaries=[];}
         return model;
     }
 
@@ -997,7 +1007,8 @@ public sealed class UretimYonetimiController : Controller
         ViewBag.Modul="YeniUretim";
         var model=await(from order in _context.PrdProductionOrders.AsNoTracking() join plan in _context.PrdProductionPlans.AsNoTracking() on order.ProductionPlanId equals plan.ID join header in _context.PrdProductionPlanHeaders.AsNoTracking() on plan.ProductionPlanHeaderId equals header.ID join product in _context.PrdMaterials.AsNoTracking() on order.ProductMaterialId equals product.ID join unit in _context.PrdUnits.AsNoTracking() on order.UnitId equals unit.ID join source in _context.PrdWarehouses.AsNoTracking() on order.SourceWarehouseId equals source.ID join target in _context.PrdWarehouses.AsNoTracking() on order.ProductionWarehouseId equals target.ID join version in _context.PrdRecipeVersions.AsNoTracking() on order.RecipeVersionId equals version.ID where order.ID==id&&order.IsDelete!=true select new ProductionOrderDetailVM{Id=order.ID,OrderNumber=order.OrderNumber,PlanNumber=header.PlanNumber,ProductCode=product.Code,ProductName=product.Name,PlannedQuantity=order.PlannedQuantity,Unit=unit.Name,BatchNumber=order.BatchNumber,PlannedProductionDate=order.PlannedProductionDate,Status=order.Status,RequirementCount=_context.PrdMaterialRequirements.Count(x=>x.ProductionOrderId==order.ID&&x.IsDelete!=true),SourceWarehouseId=source.ID,ProductionWarehouseId=target.ID,SourceWarehouse=source.Code+" - "+source.Name,ProductionWarehouse=target.Code+" - "+target.Name,RecipeVersionNumber=version.VersionNumber,Notes=order.Notes}).FirstOrDefaultAsync(ct);
         if(model==null)return NotFound();
-        model.Requirements=await BuildOrderRequirementsAsync(id,model.SourceWarehouseId,model.ProductionWarehouseId,ct);model.TotalShortageQuantity=model.Requirements.Sum(x=>x.ShortageQuantity);model.StockCalculationDate=DateTime.Now;
+        try{model.Requirements=await BuildOrderRequirementsAsync(id,model.SourceWarehouseId,model.ProductionWarehouseId,ct);model.TotalShortageQuantity=model.Requirements.Sum(x=>x.ShortageQuantity);model.StockCalculationDate=DateTime.Now;}
+        catch(InvalidOperationException ex){model.StockError=ex.Message;}
         var warehouseTask=await _context.PrdWarehouseTasks.AsNoTracking().Where(x=>x.ProductionOrderId==id&&x.IsDelete!=true&&x.Status!=PrdWarehouseTaskStatus.Cancelled).OrderByDescending(x=>x.ID).Select(x=>new{x.ID,x.TaskNumber,x.Status}).FirstOrDefaultAsync(ct);if(warehouseTask!=null){model.WarehouseTaskId=warehouseTask.ID;model.WarehouseTaskNumber=warehouseTask.TaskNumber;model.WarehouseTaskStatus=warehouseTask.Status;}
         return View(model);
     }
@@ -1005,28 +1016,39 @@ public sealed class UretimYonetimiController : Controller
     [HttpPost,ValidateAntiForgeryToken]
     public async Task<IActionResult> EmirStokDurumunuGuncelle(int id,CancellationToken ct)
     {
+        try
+        {
         var order=await _context.PrdProductionOrders.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(order==null)return NotFound();
         if(order.Status!=PrdProductionOrderStatus.Draft&&order.Status!=PrdProductionOrderStatus.MaterialWaiting){TempData["error"]="Yalnızca taslak veya malzeme bekleyen emrin stok durumu güncellenebilir.";return RedirectToAction(nameof(EmirDetay),new{id});}
         var requirements=await BuildOrderRequirementsAsync(id,order.SourceWarehouseId,order.ProductionWarehouseId,ct);var shortage=requirements.Sum(x=>x.ShortageQuantity);order.Status=shortage>0?PrdProductionOrderStatus.MaterialWaiting:PrdProductionOrderStatus.Draft;order.UpdateDate=DateTime.Now;order.UpdateUserID=User.Identity?.Name;await _context.SaveChangesAsync(ct);
         TempData[shortage>0?"error":"success"]=shortage>0?$"Güncel stok kontrolünde toplam {shortage:0.######} eksik miktar bulunuyor.":"Güncel stok yeterli; emir malzeme toplama aşamasına hazır.";return RedirectToAction(nameof(EmirDetay),new{id});
+        }
+        catch(InvalidOperationException ex){TempData["error"]=ex.Message;return RedirectToAction(nameof(EmirDetay),new{id});}
     }
     [HttpPost,ValidateAntiForgeryToken]
     public async Task<IActionResult> DepoGoreviOlustur(int id,CancellationToken ct)
     {
+        try
+        {
+        await using var transaction=await BeginMaterialFlowAsync(id,false,ct);
         var order=await _context.PrdProductionOrders.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(order==null)return NotFound();
         if(order.Status!=PrdProductionOrderStatus.Draft&&order.Status!=PrdProductionOrderStatus.MaterialWaiting&&order.Status!=PrdProductionOrderStatus.WarehousePreparing){TempData["error"]="Bu üretim emri için malzeme ayırma işlemi yapılamaz.";return RedirectToAction(nameof(EmirDetay),new{id});}
         var requirements=await _context.PrdMaterialRequirements.Where(x=>x.ProductionOrderId==id&&x.IsDelete!=true).OrderBy(x=>x.ID).ToListAsync(ct);if(requirements.Count==0){TempData["error"]="Üretim emrinde malzeme ihtiyacı bulunmuyor.";return RedirectToAction(nameof(EmirDetay),new{id});}
-        var lots=await GetReservableLotsAsync(order.SourceWarehouseId,order.ProductionWarehouseId,requirements.Select(x=>x.MaterialId).Distinct().ToList(),ct);var unitIds=requirements.Select(x=>x.UnitId).Concat(lots.Select(x=>x.UnitId)).Distinct().ToList();var units=await _context.PrdUnits.AsNoTracking().Where(x=>unitIds.Contains(x.ID)).Select(x=>new{x.ID,x.Code,x.Name}).ToDictionaryAsync(x=>x.ID,ct);
+        var lots=await GetReservableLotsAsync(order.SourceWarehouseId,order.ProductionWarehouseId,requirements.Select(x=>x.MaterialId).Distinct().ToList(),ct);
+        var converter=await ProductionStockUnitConverter.LoadAsync(_context,requirements.Select(x=>x.MaterialId).Distinct().ToList(),ct);
         var now=DateTime.Now;var user=User.Identity?.Name;var newReservations=new List<PrdStockReservation>();var sourceAllocations=new List<(int RequirementId,PrdStockReservation Reservation,decimal RequirementQuantity)>();
-        await using var transaction=await _context.Database.BeginTransactionAsync(ct);
         foreach(var requirement in requirements)
         {
-            if(!units.TryGetValue(requirement.UnitId,out var requirementUnit))continue;var remaining=Math.Max(0,requirement.TheoreticalQuantity-requirement.ReservedQuantity);if(remaining<=0)continue;
+            converter.Factor(requirement.MaterialId,requirement.UnitId);
+            var remaining=Math.Max(0,requirement.TheoreticalQuantity-requirement.ReservedQuantity);if(remaining<=0)continue;
             foreach(var lot in lots.Where(x=>x.MaterialId==requirement.MaterialId&&x.AvailableQuantity>0).OrderBy(x=>x.WarehouseId==order.ProductionWarehouseId?0:1).ThenBy(x=>x.ExpirationDate??DateTime.MaxValue).ThenBy(x=>x.StockLotId))
             {
-                if(remaining<=0)break;if(!units.TryGetValue(lot.UnitId,out var lotUnit))continue;var availableInRequirementUnit=ConvertProductionQuantity(lot.AvailableQuantity,lot.UnitId,lotUnit.Code,lotUnit.Name,requirement.UnitId,requirementUnit.Code,requirementUnit.Name);if(availableInRequirementUnit<=0)continue;
-                var takeInRequirementUnit=Math.Min(remaining,availableInRequirementUnit);var takeInLotUnit=ConvertProductionQuantity(takeInRequirementUnit,requirement.UnitId,requirementUnit.Code,requirementUnit.Name,lot.UnitId,lotUnit.Code,lotUnit.Name);if(takeInLotUnit<=0)continue;takeInLotUnit=Math.Min(takeInLotUnit,lot.AvailableQuantity);
+                if(remaining<=0)break;
+                var availableInRequirementUnit=converter.ConvertQuantity(requirement.MaterialId,lot.UnitId,requirement.UnitId,lot.AvailableQuantity);
+                var takeInLotUnit=Math.Min(lot.AvailableQuantity,converter.ConvertQuantity(requirement.MaterialId,requirement.UnitId,lot.UnitId,Math.Min(remaining,availableInRequirementUnit)));
+                var takeInRequirementUnit=converter.ConvertQuantity(requirement.MaterialId,lot.UnitId,requirement.UnitId,takeInLotUnit);
                 var reservation=new PrdStockReservation{MaterialRequirementId=requirement.ID,MaterialId=requirement.MaterialId,WarehouseId=lot.WarehouseId,StockLotId=lot.StockLotId,ReservedQuantity=takeInLotUnit,UsedQuantity=0,ReleasedQuantity=0,Status=PrdReservationStatus.Active,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};newReservations.Add(reservation);if(lot.WarehouseId==order.SourceWarehouseId)sourceAllocations.Add((requirement.ID,reservation,takeInRequirementUnit));
+                ProductionReservationUnits.Stamp(reservation,requirement,lot.UnitId,converter);
                 requirement.ReservedQuantity+=takeInRequirementUnit;remaining-=takeInRequirementUnit;lot.AvailableQuantity-=takeInLotUnit;
             }
         }
@@ -1054,6 +1076,10 @@ public sealed class UretimYonetimiController : Controller
         order.Status=hasShortage?PrdProductionOrderStatus.MaterialWaiting:(task==null?PrdProductionOrderStatus.Ready:PrdProductionOrderStatus.WarehousePreparing);order.UpdateDate=now;order.UpdateUserID=user;await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);
         if(task==null){TempData["success"]="Gerekli malzemeler üretim deposunda emre ayrıldı; emir üretime hazır.";return RedirectToAction(nameof(EmirDetay),new{id});}
         TempData[hasShortage?"error":"success"]=hasShortage?"Mevcut stoklar ayrıldı; bulunamayan miktarlar depo görevinde açık bırakıldı.":"Malzemeler ayrıldı ve depo hazırlama görevi oluşturuldu.";return RedirectToAction(nameof(DepoGorevDetay),new{id=task.ID});
+        }
+        catch(InvalidOperationException ex){_context.ChangeTracker.Clear();TempData["error"]=ex.Message;}
+        catch(OverflowException){_context.ChangeTracker.Clear();TempData["error"]="Rezervasyon miktarı desteklenen aralığı aşıyor; işlem geri alındı.";}
+        return RedirectToAction(nameof(EmirDetay),new{id});
     }
 
     [HttpGet]
@@ -1088,22 +1114,48 @@ public sealed class UretimYonetimiController : Controller
                        join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID
                        join taskUnit in _context.PrdUnits.AsNoTracking() on taskItem.UnitId equals taskUnit.ID
                        where itemIds.Contains(taskLot.WarehouseTaskItemId)&&taskLot.IsDelete!=true
-                       select new{taskLot.ID,taskLot.WarehouseTaskItemId,stockLot.LotNumber,stockLot.ExpirationDate,taskLot.Quantity,PreparedQuantity=taskLot.PreparedQuantity??(taskItem.PreparedQuantity>0?taskLot.Quantity:0),ShippedQuantity=taskLot.ShippedQuantity??(taskItem.ShippedQuantity>0?taskLot.Quantity:0),SourceUnitId=unit.ID,SourceUnitCode=unit.Code,SourceUnit=unit.Name,TaskUnitId=taskUnit.ID,TaskUnitCode=taskUnit.Code,TaskUnit=taskUnit.Name}).ToListAsync(ct);
-        foreach(var item in model.Items)
-            item.Lots=lots.Where(x=>x.WarehouseTaskItemId==item.Id).Select(x=>{var factor=ConvertProductionQuantity(1,x.SourceUnitId,x.SourceUnitCode,x.SourceUnit,x.TaskUnitId,x.TaskUnitCode,x.TaskUnit);var canConvert=factor>0;return new ProductionWarehouseTaskLotVM{Id=x.ID,LotNumber=x.LotNumber,ExpirationDate=x.ExpirationDate,Quantity=x.Quantity,PreparedQuantity=x.PreparedQuantity,ShippedQuantity=x.ShippedQuantity,Unit=x.SourceUnit,TaskQuantity=canConvert?x.Quantity*factor:x.Quantity,TaskPreparedQuantity=canConvert?x.PreparedQuantity*factor:x.PreparedQuantity,TaskShippedQuantity=canConvert?x.ShippedQuantity*factor:x.ShippedQuantity,TaskUnitConversionFactor=canConvert?factor:1,TaskUnit=canConvert?x.TaskUnit:x.SourceUnit};}).ToList();
+                       select new{taskLot.ID,taskLot.StockReservationId,taskLot.StockLotId,taskItem.MaterialRequirementId,MaterialId=material.ID,taskLot.WarehouseTaskItemId,stockLot.LotNumber,stockLot.ExpirationDate,taskLot.Quantity,PreparedQuantity=taskLot.PreparedQuantity??(taskItem.PreparedQuantity>0?taskLot.Quantity:0),ShippedQuantity=taskLot.ShippedQuantity??(taskItem.ShippedQuantity>0?taskLot.Quantity:0),TaskUnitId=taskUnit.ID,TaskUnit=taskUnit.Name}).ToListAsync(ct);
+        try
+        {
+            var reservationIds=lots.Select(x=>x.StockReservationId).ToList();
+            var reservations=await _context.PrdStockReservations.AsNoTracking().Where(x=>reservationIds.Contains(x.ID)).ToDictionaryAsync(x=>x.ID,ct);
+            var requirementIds=lots.Select(x=>x.MaterialRequirementId).ToList();
+            var requirements=await _context.PrdMaterialRequirements.AsNoTracking().Where(x=>requirementIds.Contains(x.ID)).ToDictionaryAsync(x=>x.ID,ct);
+            var sourceId=await _context.PrdWarehouseTasks.Where(x=>x.ID==id).Select(x=>x.SourceWarehouseId).SingleAsync(ct);
+            var balances=(await ProductionStockLotReader.LoadAsync(_context,sourceId,ct,materialIds:lots.Select(x=>x.MaterialId).Distinct().ToList(),includeEmpty:true)).ToDictionary(x=>x.Lot.ID);
+            var converter=await ProductionStockUnitConverter.LoadAsync(_context,lots.Select(x=>x.MaterialId).Distinct().ToList(),ct);
+            foreach(var item in model.Items)
+                item.Lots=lots.Where(x=>x.WarehouseTaskItemId==item.Id).Select(x=>
+                {
+                    if(!reservations.TryGetValue(x.StockReservationId,out var reservation)||!requirements.TryGetValue(x.MaterialRequirementId,out var requirement)||!balances.TryGetValue(x.StockLotId,out var balance))throw new InvalidOperationException("Görev lotunun rezervasyon/birim bağlantısı bulunamadı.");
+                    var sourceUnit=FlowUnit(reservation,requirement,balance,converter);var factor=converter.FactorBetween(reservation.MaterialId,sourceUnit,x.TaskUnitId);
+                    return new ProductionWarehouseTaskLotVM{Id=x.ID,LotNumber=x.LotNumber,ExpirationDate=x.ExpirationDate,Quantity=x.Quantity,PreparedQuantity=x.PreparedQuantity,ShippedQuantity=x.ShippedQuantity,Unit=converter.UnitName(reservation.MaterialId,sourceUnit),TaskQuantity=converter.ConvertQuantity(reservation.MaterialId,sourceUnit,x.TaskUnitId,x.Quantity),TaskPreparedQuantity=converter.ConvertQuantity(reservation.MaterialId,sourceUnit,x.TaskUnitId,x.PreparedQuantity),TaskShippedQuantity=converter.ConvertQuantity(reservation.MaterialId,sourceUnit,x.TaskUnitId,x.ShippedQuantity),TaskUnitConversionFactor=factor,TaskUnit=x.TaskUnit};
+                }).ToList();
+        }
+        catch(InvalidOperationException ex){model.UnitError=ex.Message;}
+        catch(OverflowException){model.UnitError="Lot birim dönüşümü desteklenen aralığı aşıyor.";}
         model.ItemCount=model.Items.Count;model.RequestedQuantity=model.Items.Sum(x=>x.RequestedQuantity);model.PreparedQuantity=model.Items.Sum(x=>x.PreparedQuantity);model.ShortageQuantity=model.Items.Sum(x=>x.ShortageQuantity);return View(model);
     }
 
     [HttpPost,ValidateAntiForgeryToken]
     public async Task<IActionResult> DepoGoreviHazirlamayaBasla(int id,CancellationToken ct)
     {
-        var task=await _context.PrdWarehouseTasks.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(task==null)return NotFound();var hasCollectable=await _context.PrdWarehouseTaskItems.AnyAsync(x=>x.WarehouseTaskId==id&&x.IsDelete!=true&&x.RequestedQuantity>x.PreparedQuantity,ct);if(!hasCollectable){TempData["error"]="Bu görevde şu anda toplanabilecek yeni ayrılmış malzeme bulunmuyor.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}task.Status=PrdWarehouseTaskStatus.Preparing;task.AssignedUserId=User.Identity?.Name;task.UpdateDate=DateTime.Now;task.UpdateUserID=User.Identity?.Name;await _context.SaveChangesAsync(ct);TempData["success"]="Depo görevi hazırlanmaya alındı.";return RedirectToAction(nameof(DepoGorevDetay),new{id});
+        try{
+        await using var transaction=await BeginMaterialFlowAsync(id,true,ct);
+        var task=await _context.PrdWarehouseTasks.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(task==null)return NotFound();
+        if(task.Status!=PrdWarehouseTaskStatus.Waiting&&task.Status!=PrdWarehouseTaskStatus.Shortage&&task.Status!=PrdWarehouseTaskStatus.Preparing)throw new InvalidOperationException("Bu depo görevi yeniden hazırlamaya alınamaz.");
+        var hasCollectable=await _context.PrdWarehouseTaskItems.AnyAsync(x=>x.WarehouseTaskId==id&&x.IsDelete!=true&&x.RequestedQuantity>x.PreparedQuantity,ct);if(!hasCollectable){TempData["error"]="Bu görevde şu anda toplanabilecek yeni ayrılmış malzeme bulunmuyor.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}task.Status=PrdWarehouseTaskStatus.Preparing;task.AssignedUserId=User.Identity?.Name;task.UpdateDate=DateTime.Now;task.UpdateUserID=User.Identity?.Name;await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);TempData["success"]="Depo görevi hazırlanmaya alındı.";return RedirectToAction(nameof(DepoGorevDetay),new{id});
+        }
+        catch(InvalidOperationException ex){_context.ChangeTracker.Clear();TempData["error"]=ex.Message;return RedirectToAction(nameof(DepoGorevDetay),new{id});}
     }
 
     [HttpPost,ValidateAntiForgeryToken]
     public async Task<IActionResult> DepoGoreviHazirliginiKaydet(ProductionWarehousePreparationInputVM input,CancellationToken ct)
     {
         var id=input.Id;
+        try
+        {
+        await using var transaction=await BeginMaterialFlowAsync(id,true,ct);
         var task=await _context.PrdWarehouseTasks.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(task==null)return NotFound();
         if(task.Status!=PrdWarehouseTaskStatus.Preparing){TempData["error"]="Miktar girişi için önce depo görevini hazırlamaya başlatınız.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}
         var items=await _context.PrdWarehouseTaskItems.Where(x=>x.WarehouseTaskId==id&&x.IsDelete!=true).ToListAsync(ct);var itemIds=items.Select(x=>x.ID).ToList();var itemById=items.ToDictionary(x=>x.ID);
@@ -1112,33 +1164,45 @@ public sealed class UretimYonetimiController : Controller
                            join stockLot in _context.PrdStockLots on taskLot.StockLotId equals stockLot.ID
                            where itemIds.Contains(taskLot.WarehouseTaskItemId)&&taskLot.IsDelete!=true&&reservation.IsDelete!=true
                            select new{TaskLot=taskLot,Reservation=reservation,StockLot=stockLot}).ToListAsync(ct);
+        if(input.Lots.GroupBy(x=>x.Id).Any(x=>x.Count()>1))throw new InvalidOperationException("Aynı lot miktarı birden fazla kez gönderilemez.");
+        var converter=await ProductionStockUnitConverter.LoadAsync(_context,taskLots.Select(x=>x.Reservation.MaterialId).Distinct().ToList(),ct);
+        var requirements=await _context.PrdMaterialRequirements.Where(x=>items.Select(i=>i.MaterialRequirementId).Contains(x.ID)&&x.IsDelete!=true).ToDictionaryAsync(x=>x.ID,ct);
+        var balances=(await ProductionStockLotReader.LoadAsync(_context,task.SourceWarehouseId,ct,materialIds:taskLots.Select(x=>x.Reservation.MaterialId).Distinct().ToList(),includeEmpty:true)).ToDictionary(x=>x.Lot.ID);
+        var reservationUnits=new Dictionary<int,int>();
         var posted=input.Lots.GroupBy(x=>x.Id).ToDictionary(x=>x.Key,x=>x.First());var parsed=new Dictionary<int,decimal>();var existingShipped=new Dictionary<int,decimal>();
         foreach(var row in taskLots)
         {
-            if(!posted.TryGetValue(row.TaskLot.ID,out var entry)||!TryParseProductionDecimal(entry.PreparedQuantityInput,out var quantity)||quantity<0){TempData["error"]=$"{row.StockLot.LotNumber} lotu için hazırlanan miktar geçersiz.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}
+            if(!balances.TryGetValue(row.StockLot.ID,out var balance)||!requirements.TryGetValue(row.Reservation.MaterialRequirementId,out var requirement))throw new InvalidOperationException("Görev lotu veya malzeme ihtiyacı bulunamadı.");
+            var taskItem=itemById[row.TaskLot.WarehouseTaskItemId];
+            if(taskItem.MaterialRequirementId!=requirement.ID||taskItem.MaterialId!=requirement.MaterialId||taskItem.UnitId!=requirement.UnitId)throw new InvalidOperationException("Görev satırının ihtiyaç/birim bağlantısı değişmiş.");
+            reservationUnits[row.TaskLot.ID]=FlowUnit(row.Reservation,requirement,balance,converter);
+            if(!posted.TryGetValue(row.TaskLot.ID,out var entry)||!TryParseProductionDecimal(entry.PreparedQuantityInput,out var quantity)||quantity<0||quantity>999999999999.999999m||decimal.Round(quantity,6)!=quantity){TempData["error"]=$"{row.StockLot.LotNumber} lotu için hazırlanan miktar geçersiz (en fazla 6 ondalık).";return RedirectToAction(nameof(DepoGorevDetay),new{id});}
             var shipped=row.TaskLot.ShippedQuantity??(itemById[row.TaskLot.WarehouseTaskItemId].ShippedQuantity>0?row.TaskLot.Quantity:0);if(quantity+0.000001m<shipped){TempData["error"]=$"{row.StockLot.LotNumber} lotunda hazırlanan miktar daha önce sevk edilen miktardan az olamaz.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}
             existingShipped[row.TaskLot.ID]=shipped;
             parsed[row.TaskLot.ID]=quantity;
         }
-        var sourceLotIds=taskLots.Select(x=>x.StockLot.ID).Distinct().ToList();var taskReservationIds=taskLots.Select(x=>x.Reservation.ID).Distinct().ToList();
-        var physicalBalances=await _context.PrdStockMovements.AsNoTracking().Where(x=>x.StockLotId.HasValue&&sourceLotIds.Contains(x.StockLotId.Value)&&x.IsDelete!=true).GroupBy(x=>x.StockLotId!.Value).Select(g=>new{StockLotId=g.Key,Quantity=g.Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity)}).ToDictionaryAsync(x=>x.StockLotId,x=>x.Quantity,ct);
-        var otherReservations=await _context.PrdStockReservations.AsNoTracking().Where(x=>sourceLotIds.Contains(x.StockLotId)&&x.IsDelete!=true&&(x.Status==PrdReservationStatus.Active||x.Status==PrdReservationStatus.PartiallyUsed)&&!taskReservationIds.Contains(x.ID)).GroupBy(x=>x.StockLotId).Select(g=>new{StockLotId=g.Key,Quantity=g.Sum(x=>x.ReservedQuantity-x.UsedQuantity-x.ReleasedQuantity)}).ToDictionaryAsync(x=>x.StockLotId,x=>x.Quantity,ct);
         foreach(var group in taskLots.GroupBy(x=>x.StockLot.ID))
         {
-            var outstandingPrepared=group.Sum(x=>parsed[x.TaskLot.ID]-existingShipped[x.TaskLot.ID]);var physical=physicalBalances.TryGetValue(group.Key,out var balance)?balance:0;var available=Math.Max(0,physical-(otherReservations.TryGetValue(group.Key,out var other)?other:0));
-            if(outstandingPrepared>available+0.000001m){TempData["error"]=$"{group.First().StockLot.LotNumber} lotunda hazırlanabilecek en fazla miktar {available:0.######}.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}
+            var balance=balances[group.Key];
+            var own=group.Sum(x=>balance.ReservationQuantities.GetValueOrDefault(x.Reservation.ID));
+            var needed=group.Sum(x=>converter.Quantity(x.Reservation.MaterialId,reservationUnits[x.TaskLot.ID],Math.Max(0,Math.Max(x.TaskLot.Quantity,parsed[x.TaskLot.ID])-x.Reservation.UsedQuantity-x.Reservation.ReleasedQuantity)));
+            var available=Math.Max(0,balance.PhysicalQuantity-balance.ReservedQuantity+own);
+            if(needed>available)throw new InvalidOperationException($"{balance.Lot.LotNumber}: ayrılabilecek stok {available:0.######} {balance.Unit}; hazırlama ve rezervasyon toplamı bu miktarı aşıyor.");
         }
         var now=DateTime.Now;var user=User.Identity?.Name;
         foreach(var row in taskLots)
         {
             var prepared=parsed[row.TaskLot.ID];row.TaskLot.PreparedQuantity=prepared;row.TaskLot.ShippedQuantity=existingShipped[row.TaskLot.ID];row.TaskLot.UpdateDate=now;row.TaskLot.UpdateUserID=user;
+            var oldReserved=row.Reservation.ReservedQuantity;
             row.Reservation.ReservedQuantity=Math.Max(Math.Max(row.TaskLot.Quantity,prepared),row.Reservation.UsedQuantity+row.Reservation.ReleasedQuantity);
+            var requirement=requirements[row.Reservation.MaterialRequirementId];
+            requirement.ReservedQuantity+=converter.ConvertQuantity(requirement.MaterialId,reservationUnits[row.TaskLot.ID],requirement.UnitId,row.Reservation.ReservedQuantity-oldReserved);
+            if(!row.Reservation.UnitId.HasValue)ProductionReservationUnits.Stamp(row.Reservation,requirement,reservationUnits[row.TaskLot.ID],converter);
             row.Reservation.Status=row.Reservation.UsedQuantity+row.Reservation.ReleasedQuantity>=row.Reservation.ReservedQuantity?PrdReservationStatus.Used:(row.Reservation.UsedQuantity>0?PrdReservationStatus.PartiallyUsed:PrdReservationStatus.Active);row.Reservation.UpdateDate=now;row.Reservation.UpdateUserID=user;
         }
-        var materialIds=taskLots.Select(x=>x.Reservation.MaterialId).Distinct().ToList();var materialUnitIds=await _context.PrdMaterials.AsNoTracking().Where(x=>materialIds.Contains(x.ID)).Select(x=>new{x.ID,x.UnitId}).ToDictionaryAsync(x=>x.ID,x=>x.UnitId,ct);var unitIds=items.Select(x=>x.UnitId).Concat(materialUnitIds.Values).Distinct().ToList();var units=await _context.PrdUnits.AsNoTracking().Where(x=>unitIds.Contains(x.ID)).Select(x=>new{x.ID,x.Code,x.Name}).ToDictionaryAsync(x=>x.ID,ct);
         foreach(var item in items)
         {
-            var prepared=0m;foreach(var row in taskLots.Where(x=>x.TaskLot.WarehouseTaskItemId==item.ID)){var sourceUnitId=materialUnitIds[row.Reservation.MaterialId];var sourceUnit=units[sourceUnitId];var itemUnit=units[item.UnitId];prepared+=ConvertProductionQuantity(row.TaskLot.PreparedQuantity??0,sourceUnitId,sourceUnit.Code,sourceUnit.Name,item.UnitId,itemUnit.Code,itemUnit.Name);}item.PreparedQuantity=prepared;item.UpdateDate=now;item.UpdateUserID=user;
+            item.PreparedQuantity=taskLots.Where(x=>x.TaskLot.WarehouseTaskItemId==item.ID).Sum(x=>converter.ConvertQuantity(item.MaterialId,reservationUnits[x.TaskLot.ID],item.UnitId,x.TaskLot.PreparedQuantity??0));item.UpdateDate=now;item.UpdateUserID=user;
         }
         var order=await _context.PrdProductionOrders.FirstAsync(x=>x.ID==task.ProductionOrderId,ct);var hasStockShortage=items.Any(x=>x.ShortageQuantity>0);var hasPreparationShortage=items.Any(x=>x.PreparedQuantity+0.000001m<x.RequestedQuantity);
         if(input.CompletePreparation)
@@ -1147,16 +1211,23 @@ public sealed class UretimYonetimiController : Controller
             task.Status=hasStockShortage||hasPreparationShortage?PrdWarehouseTaskStatus.Shortage:PrdWarehouseTaskStatus.Ready;task.PreparedDate=now;order.Status=hasStockShortage||hasPreparationShortage?PrdProductionOrderStatus.MaterialWaiting:PrdProductionOrderStatus.WarehousePreparing;
         }
         else{task.Status=PrdWarehouseTaskStatus.Preparing;order.Status=PrdProductionOrderStatus.WarehousePreparing;}
-        task.UpdateDate=now;task.UpdateUserID=user;order.UpdateDate=now;order.UpdateUserID=user;await _context.SaveChangesAsync(ct);
+        task.UpdateDate=now;task.UpdateUserID=user;order.UpdateDate=now;order.UpdateUserID=user;await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);
         if(!input.CompletePreparation)TempData["success"]="Girilen hazırlama miktarları kaydedildi.";
         else if(hasStockShortage||hasPreparationShortage)TempData["error"]="Hazırlanan miktarlar kaydedildi; eksikler görev üzerinde açık bırakıldı ve mevcut malzemeler sevk edilebilir.";
         else TempData["success"]="Hazırlama tamamlandı; girilen gerçek miktarlar sevk edilebilir.";
+        return RedirectToAction(nameof(DepoGorevDetay),new{id});
+        }
+        catch(InvalidOperationException ex){_context.ChangeTracker.Clear();TempData["error"]=ex.Message;}
+        catch(OverflowException){_context.ChangeTracker.Clear();TempData["error"]="Hazırlama miktarı desteklenen aralığı aşıyor; işlem geri alındı.";}
         return RedirectToAction(nameof(DepoGorevDetay),new{id});
     }
 
     [HttpPost,ValidateAntiForgeryToken]
     public async Task<IActionResult> DepoGoreviSevkEt(int id,CancellationToken ct)
     {
+        try
+        {
+        await using var transaction=await BeginMaterialFlowAsync(id,true,ct);
         var task=await _context.PrdWarehouseTasks.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(task==null)return NotFound();
         if(task.Status!=PrdWarehouseTaskStatus.Ready&&task.Status!=PrdWarehouseTaskStatus.Shortage){TempData["error"]="Yalnızca hazırlanmış depo görevi sevk edilebilir.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}
         var items=await _context.PrdWarehouseTaskItems.Where(x=>x.WarehouseTaskId==id&&x.IsDelete!=true).ToListAsync(ct);var itemIds=items.Select(x=>x.ID).ToList();
@@ -1168,38 +1239,59 @@ public sealed class UretimYonetimiController : Controller
         if(!items.Any(x=>x.PreparedQuantity>x.ShippedQuantity)){TempData["error"]="Sevk öncesinde ayrılan malzemelerin hazırlandığı onaylanmalıdır.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}
         if(taskLots.Count==0){TempData["error"]="Sevk edilecek hazırlanmış lot bulunmuyor.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}
         var now=DateTime.Now;var user=User.Identity?.Name;
-        try
-        {
-            await using var transaction=await _context.Database.BeginTransactionAsync(ct);
-            var sourceLotIds=taskLots.Select(x=>x.SourceLot.ID).Distinct().ToList();var taskReservationIds=taskLots.Select(x=>x.Reservation.ID).Distinct().ToList();var balanceRows=await _context.PrdStockMovements.Where(x=>x.StockLotId.HasValue&&sourceLotIds.Contains(x.StockLotId.Value)&&x.IsDelete!=true).GroupBy(x=>x.StockLotId!.Value).Select(g=>new{StockLotId=g.Key,Quantity=g.Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity),Value=g.Sum(x=>x.Direction==PrdStockDirection.In?x.TotalCost:-x.TotalCost)}).ToDictionaryAsync(x=>x.StockLotId,ct);
-            var otherReservations=await _context.PrdStockReservations.Where(x=>sourceLotIds.Contains(x.StockLotId)&&x.IsDelete!=true&&(x.Status==PrdReservationStatus.Active||x.Status==PrdReservationStatus.PartiallyUsed)&&!taskReservationIds.Contains(x.ID)).GroupBy(x=>x.StockLotId).Select(g=>new{StockLotId=g.Key,Quantity=g.Sum(x=>x.ReservedQuantity-x.UsedQuantity-x.ReleasedQuantity)}).ToDictionaryAsync(x=>x.StockLotId,x=>x.Quantity,ct);
+            var materialIds=taskLots.Select(x=>x.Reservation.MaterialId).Distinct().ToList();
+            var converter=await ProductionStockUnitConverter.LoadAsync(_context,materialIds,ct);
+            var requirements=await _context.PrdMaterialRequirements.Where(x=>items.Select(i=>i.MaterialRequirementId).Contains(x.ID)&&x.IsDelete!=true).ToDictionaryAsync(x=>x.ID,ct);
+            var balanceRows=(await ProductionStockLotReader.LoadAsync(_context,task.SourceWarehouseId,ct,materialIds:materialIds,includeEmpty:true)).ToDictionary(x=>x.Lot.ID);
+            var reservationUnits=new Dictionary<int,int>();
+            foreach(var row in taskLots)
+            {
+                if(!balanceRows.TryGetValue(row.SourceLot.ID,out var balance)||!requirements.TryGetValue(row.Reservation.MaterialRequirementId,out var requirement))throw new InvalidOperationException("Sevk lotu veya ihtiyaç kaydı bulunamadı.");
+                var taskItem=items.Single(x=>x.ID==row.TaskLot.WarehouseTaskItemId);
+                if(taskItem.MaterialRequirementId!=requirement.ID||taskItem.MaterialId!=requirement.MaterialId||taskItem.UnitId!=requirement.UnitId)throw new InvalidOperationException("Görev satırının ihtiyaç/birim bağlantısı değişmiş.");
+                reservationUnits[row.TaskLot.ID]=FlowUnit(row.Reservation,requirement,balance,converter);
+                var quantity=(row.TaskLot.PreparedQuantity??row.TaskLot.Quantity)-(row.TaskLot.ShippedQuantity??0);
+                if(quantity<=0||quantity>row.Reservation.ReservedQuantity-row.Reservation.UsedQuantity-row.Reservation.ReleasedQuantity)throw new InvalidOperationException("Hazırlanan sevk miktarı aktif rezervasyonu aşıyor; hazırlığı yeniden kontrol ediniz.");
+            }
             foreach(var group in taskLots.GroupBy(x=>x.SourceLot.ID))
             {
-                if(!balanceRows.TryGetValue(group.Key,out var balance))throw new InvalidOperationException("Kaynak lot stok hareketlerinde bulunamadı.");var shipment=group.Sum(x=>(x.TaskLot.PreparedQuantity??x.TaskLot.Quantity)-(x.TaskLot.ShippedQuantity??0));var available=Math.Max(0,balance.Quantity-(otherReservations.TryGetValue(group.Key,out var other)?other:0));if(shipment>available)throw new InvalidOperationException($"{group.First().SourceLot.LotNumber} lotunda sevk için yeterli fiziksel stok kalmadı.");if(balance.Quantity<=0)throw new InvalidOperationException($"{group.First().SourceLot.LotNumber} lotunun bakiyesi bulunmuyor.");
+                var balance=balanceRows[group.Key];
+                var shipment=group.Sum(x=>converter.Quantity(x.Reservation.MaterialId,reservationUnits[x.TaskLot.ID],(x.TaskLot.PreparedQuantity??x.TaskLot.Quantity)-(x.TaskLot.ShippedQuantity??0)));
+                var own=group.Sum(x=>balance.ReservationQuantities.GetValueOrDefault(x.Reservation.ID));var available=Math.Max(0,balance.PhysicalQuantity-balance.ReservedQuantity+own);
+                if(shipment>available||balance.PhysicalQuantity<=0)throw new InvalidOperationException($"{balance.Lot.LotNumber}: sevk için yeterli stok kalmadı ({available:0.######} {balance.Unit}).");
             }
             var document=new PrdInventoryDocument{DocumentNumber=$"USEV-{now:yyyyMMddHHmmssfff}-{task.ID}",Type=PrdInventoryDocumentType.WarehouseTransfer,Status=PrdInventoryDocumentStatus.Posted,DocumentDate=now,PostingDate=now,PostedUserId=user,SourceWarehouseId=task.SourceWarehouseId,TargetWarehouseId=task.TargetWarehouseId,CurrencyCode="TRY",ExchangeRate=1,SourceDocumentType="ProductionOrder",SourceDocumentId=task.ProductionOrderId,Notes=$"{task.TaskNumber} üretim malzemesi sevki",IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};_context.PrdInventoryDocuments.Add(document);await _context.SaveChangesAsync(ct);
-            var materialIds=taskLots.Select(x=>x.Reservation.MaterialId).Distinct().ToList();var materialUnitIds=await _context.PrdMaterials.AsNoTracking().Where(x=>materialIds.Contains(x.ID)).Select(x=>new{x.ID,x.UnitId}).ToDictionaryAsync(x=>x.ID,x=>x.UnitId,ct);var unitIds=items.Select(x=>x.UnitId).Concat(materialUnitIds.Values).Distinct().ToList();var units=await _context.PrdUnits.AsNoTracking().Where(x=>unitIds.Contains(x.ID)).Select(x=>new{x.ID,x.Code,x.Name}).ToDictionaryAsync(x=>x.ID,ct);
             var sequence=0;var shipmentTotalCost=0m;
             foreach(var allocation in taskLots)
             {
-                var sourceLot=allocation.SourceLot;var reservation=allocation.Reservation;var quantity=(allocation.TaskLot.PreparedQuantity??allocation.TaskLot.Quantity)-(allocation.TaskLot.ShippedQuantity??0);var balance=balanceRows[sourceLot.ID];var unitCost=balance.Quantity==0?0:balance.Value/balance.Quantity;var totalCost=quantity*unitCost;shipmentTotalCost+=totalCost;var targetLot=await GetOrCreateProductionTargetLotAsync(sourceLot,task.TargetWarehouseId,now,user,ct);
-                var line=new PrdInventoryDocumentLine{InventoryDocumentId=document.ID,Sequence=++sequence,MaterialId=reservation.MaterialId,UnitId=materialUnitIds[reservation.MaterialId],SourceStockLotId=sourceLot.ID,TargetStockLotId=targetLot.ID,LotNumber=sourceLot.LotNumber,ProductionDate=sourceLot.ProductionDate,ExpirationDate=sourceLot.ExpirationDate,Quantity=quantity,OriginalUnitCost=unitCost,CurrencyCode="TRY",ExchangeRate=1,UnitCost=unitCost,TotalCost=totalCost,CostSource=PrdStockCostSource.Transfer,Notes=task.TaskNumber,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};_context.PrdInventoryDocumentLines.Add(line);await _context.SaveChangesAsync(ct);
+                var sourceLot=allocation.SourceLot;var reservation=allocation.Reservation;
+                var reservedQuantity=(allocation.TaskLot.PreparedQuantity??allocation.TaskLot.Quantity)-(allocation.TaskLot.ShippedQuantity??0);
+                var quantity=converter.Quantity(reservation.MaterialId,reservationUnits[allocation.TaskLot.ID],reservedQuantity);var balance=balanceRows[sourceLot.ID];
+                var unitCost=balance.StockValue/balance.PhysicalQuantity;var totalCost=TakeFlowValue(balance,quantity);shipmentTotalCost+=totalCost;var targetLot=await GetOrCreateProductionTargetLotAsync(sourceLot,task.TargetWarehouseId,now,user,ct);
+                var line=new PrdInventoryDocumentLine{InventoryDocumentId=document.ID,Sequence=++sequence,MaterialId=reservation.MaterialId,UnitId=converter.BaseUnitId(reservation.MaterialId),SourceStockLotId=sourceLot.ID,TargetStockLotId=targetLot.ID,LotNumber=sourceLot.LotNumber,ProductionDate=sourceLot.ProductionDate,ExpirationDate=sourceLot.ExpirationDate,Quantity=quantity,OriginalUnitCost=unitCost,CurrencyCode="TRY",ExchangeRate=1,UnitCost=unitCost,TotalCost=totalCost,CostSource=PrdStockCostSource.Transfer,Notes=task.TaskNumber,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};_context.PrdInventoryDocumentLines.Add(line);await _context.SaveChangesAsync(ct);
                 _context.PrdStockMovements.Add(CreateWarehouseTaskMovement(document,line,task.SourceWarehouseId,sourceLot.ID,PrdStockDirection.Out,now,user));_context.PrdStockMovements.Add(CreateWarehouseTaskMovement(document,line,task.TargetWarehouseId,targetLot.ID,PrdStockDirection.In,now,user));
-                var remainingReservation=Math.Max(0,reservation.ReservedQuantity-reservation.UsedQuantity-reservation.ReleasedQuantity);var used=Math.Min(quantity,remainingReservation);reservation.UsedQuantity+=used;reservation.Status=reservation.UsedQuantity+reservation.ReleasedQuantity>=reservation.ReservedQuantity?PrdReservationStatus.Used:PrdReservationStatus.PartiallyUsed;reservation.UpdateDate=now;reservation.UpdateUserID=user;
-                _context.PrdStockReservations.Add(new PrdStockReservation{MaterialRequirementId=reservation.MaterialRequirementId,MaterialId=reservation.MaterialId,WarehouseId=task.TargetWarehouseId,StockLotId=targetLot.ID,ReservedQuantity=quantity,UsedQuantity=0,ReleasedQuantity=0,Status=PrdReservationStatus.Active,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user});
-                allocation.TaskLot.ShippedQuantity=(allocation.TaskLot.ShippedQuantity??0)+quantity;allocation.TaskLot.UpdateDate=now;allocation.TaskLot.UpdateUserID=user;var item=items.First(x=>x.ID==allocation.TaskLot.WarehouseTaskItemId);if(units.TryGetValue(materialUnitIds[reservation.MaterialId],out var sourceUnit)&&units.TryGetValue(item.UnitId,out var itemUnit))item.ShippedQuantity+=ConvertProductionQuantity(quantity,materialUnitIds[reservation.MaterialId],sourceUnit.Code,sourceUnit.Name,item.UnitId,itemUnit.Code,itemUnit.Name);else item.ShippedQuantity+=quantity;item.UpdateDate=now;item.UpdateUserID=user;
+                reservation.UsedQuantity+=reservedQuantity;reservation.Status=reservation.UsedQuantity+reservation.ReleasedQuantity>=reservation.ReservedQuantity?PrdReservationStatus.Used:PrdReservationStatus.PartiallyUsed;reservation.UpdateDate=now;reservation.UpdateUserID=user;
+                var targetReservation=new PrdStockReservation{MaterialRequirementId=reservation.MaterialRequirementId,MaterialId=reservation.MaterialId,WarehouseId=task.TargetWarehouseId,StockLotId=targetLot.ID,ReservedQuantity=quantity,UsedQuantity=0,ReleasedQuantity=0,Status=PrdReservationStatus.Active,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};
+                ProductionReservationUnits.Stamp(targetReservation,requirements[reservation.MaterialRequirementId],line.UnitId,converter);_context.PrdStockReservations.Add(targetReservation);
+                allocation.TaskLot.ShippedQuantity=(allocation.TaskLot.ShippedQuantity??0)+reservedQuantity;allocation.TaskLot.UpdateDate=now;allocation.TaskLot.UpdateUserID=user;var item=items.First(x=>x.ID==allocation.TaskLot.WarehouseTaskItemId);
+                item.ShippedQuantity+=converter.ConvertQuantity(reservation.MaterialId,reservationUnits[allocation.TaskLot.ID],item.UnitId,reservedQuantity);item.UpdateDate=now;item.UpdateUserID=user;
             }
             document.TotalCost=shipmentTotalCost;var hasShortage=items.Any(x=>x.ShortageQuantity>0||x.PreparedQuantity+0.000001m<x.RequestedQuantity);var hasUnshipped=items.Any(x=>x.PreparedQuantity>x.ShippedQuantity);task.Status=hasShortage?PrdWarehouseTaskStatus.Shortage:(hasUnshipped?PrdWarehouseTaskStatus.Ready:PrdWarehouseTaskStatus.Shipped);task.ShippedDate=now;task.UpdateDate=now;task.UpdateUserID=user;var order=await _context.PrdProductionOrders.FirstAsync(x=>x.ID==task.ProductionOrderId,ct);order.Status=hasShortage?PrdProductionOrderStatus.MaterialWaiting:PrdProductionOrderStatus.WarehousePreparing;order.UpdateDate=now;order.UpdateUserID=user;await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);
             TempData[hasShortage?"error":"success"]=hasShortage?"Hazırlanan malzemeler üretim deposuna sevk edildi; eksikler görevde açık kalmaya devam ediyor.":"Hazırlanan malzemeler üretim deposuna sevk edildi. Şimdi teslim onayı verilebilir.";
         }
-        catch(InvalidOperationException ex){TempData["error"]=ex.Message;}
+        catch(InvalidOperationException ex){_context.ChangeTracker.Clear();TempData["error"]=ex.Message;}
+        catch(OverflowException){_context.ChangeTracker.Clear();TempData["error"]="Sevk miktarı/maliyeti desteklenen aralığı aşıyor; işlem geri alındı.";}
         return RedirectToAction(nameof(DepoGorevDetay),new{id});
     }
 
     [HttpPost,ValidateAntiForgeryToken]
     public async Task<IActionResult> DepoGoreviTeslimAl(int id,CancellationToken ct)
     {
-        var task=await _context.PrdWarehouseTasks.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(task==null)return NotFound();if(task.Status!=PrdWarehouseTaskStatus.Shipped){TempData["error"]="Yalnızca tamamen sevk edilmiş görev teslim alınabilir.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}var items=await _context.PrdWarehouseTaskItems.Where(x=>x.WarehouseTaskId==id&&x.IsDelete!=true).ToListAsync(ct);if(items.Any(x=>x.ShortageQuantity>0||x.ShippedQuantity<x.RequestedQuantity)){TempData["error"]="Görevde eksik veya sevk edilmemiş malzeme bulunuyor.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}var now=DateTime.Now;var user=User.Identity?.Name;task.Status=PrdWarehouseTaskStatus.Delivered;task.DeliveredDate=now;task.UpdateDate=now;task.UpdateUserID=user;var order=await _context.PrdProductionOrders.FirstAsync(x=>x.ID==task.ProductionOrderId,ct);order.Status=PrdProductionOrderStatus.Ready;order.UpdateDate=now;order.UpdateUserID=user;await _context.SaveChangesAsync(ct);TempData["success"]="Malzemeler üretim deposunda teslim alındı; üretim emri üretime hazır.";return RedirectToAction(nameof(DepoGorevDetay),new{id});
+        try{
+        await using var transaction=await BeginMaterialFlowAsync(id,true,ct);
+        var task=await _context.PrdWarehouseTasks.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(task==null)return NotFound();if(task.Status!=PrdWarehouseTaskStatus.Shipped){TempData["error"]="Yalnızca tamamen sevk edilmiş görev teslim alınabilir.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}var items=await _context.PrdWarehouseTaskItems.Where(x=>x.WarehouseTaskId==id&&x.IsDelete!=true).ToListAsync(ct);if(items.Any(x=>x.ShortageQuantity>0||x.ShippedQuantity<x.RequestedQuantity)){TempData["error"]="Görevde eksik veya sevk edilmemiş malzeme bulunuyor.";return RedirectToAction(nameof(DepoGorevDetay),new{id});}var now=DateTime.Now;var user=User.Identity?.Name;task.Status=PrdWarehouseTaskStatus.Delivered;task.DeliveredDate=now;task.UpdateDate=now;task.UpdateUserID=user;var order=await _context.PrdProductionOrders.FirstAsync(x=>x.ID==task.ProductionOrderId,ct);order.Status=PrdProductionOrderStatus.Ready;order.UpdateDate=now;order.UpdateUserID=user;await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);TempData["success"]="Malzemeler üretim deposunda teslim alındı; üretim emri üretime hazır.";return RedirectToAction(nameof(DepoGorevDetay),new{id});
+        }
+        catch(InvalidOperationException ex){_context.ChangeTracker.Clear();TempData["error"]=ex.Message;return RedirectToAction(nameof(DepoGorevDetay),new{id});}
     }
     [HttpGet]
     public async Task<IActionResult> Gerceklesen(CancellationToken ct)
@@ -1227,6 +1319,9 @@ public sealed class UretimYonetimiController : Controller
     [HttpPost,ValidateAntiForgeryToken]
     public async Task<IActionResult> UretimiBaslat(int id,CancellationToken ct)
     {
+        try
+        {
+        await using var transaction=await BeginMaterialFlowAsync(id,false,ct);
         var order=await _context.PrdProductionOrders.FirstOrDefaultAsync(x=>x.ID==id&&x.IsDelete!=true,ct);if(order==null)return NotFound();
         if(order.Status!=PrdProductionOrderStatus.Ready){TempData["error"]="Yalnızca üretime hazır emir başlatılabilir.";return RedirectToAction(nameof(EmirDetay),new{id});}
         if(await _context.PrdProductionMaterialActuals.AnyAsync(x=>x.ProductionOrderId==id&&x.IsDelete!=true,ct)){TempData["error"]="Bu emrin üretime çıkış kayıtları daha önce oluşturulmuş.";return RedirectToAction(nameof(EmirDetay),new{id});}
@@ -1236,26 +1331,39 @@ public sealed class UretimYonetimiController : Controller
                                where requirementIds.Contains(reservation.MaterialRequirementId)&&reservation.WarehouseId==order.ProductionWarehouseId&&reservation.IsDelete!=true&&(reservation.Status==PrdReservationStatus.Active||reservation.Status==PrdReservationStatus.PartiallyUsed)
                                select new{Reservation=reservation,Lot=lot}).ToListAsync(ct);
         if(reservations.Count==0){TempData["error"]="Üretim deposunda bu emre ayrılmış lot bulunmuyor.";return RedirectToAction(nameof(EmirDetay),new{id});}
-        var materialIds=requirements.Select(x=>x.MaterialId).Distinct().ToList();var materialUnitIds=await _context.PrdMaterials.AsNoTracking().Where(x=>materialIds.Contains(x.ID)).Select(x=>new{x.ID,x.UnitId}).ToDictionaryAsync(x=>x.ID,x=>x.UnitId,ct);var unitIds=requirements.Select(x=>x.UnitId).Concat(materialUnitIds.Values).Distinct().ToList();var units=await _context.PrdUnits.AsNoTracking().Where(x=>unitIds.Contains(x.ID)).Select(x=>new{x.ID,x.Code,x.Name}).ToDictionaryAsync(x=>x.ID,ct);
+        var materialIds=requirements.Select(x=>x.MaterialId).Distinct().ToList();
+        var converter=await ProductionStockUnitConverter.LoadAsync(_context,materialIds,ct);
+        var balanceRows=(await ProductionStockLotReader.LoadAsync(_context,order.ProductionWarehouseId,ct,materialIds:materialIds,includeEmpty:true)).ToDictionary(x=>x.Lot.ID);
+        var reservationUnits=new Dictionary<int,int>();
+        foreach(var row in reservations)
+        {
+            if(!balanceRows.TryGetValue(row.Lot.ID,out var balance))throw new InvalidOperationException("Üretime çıkış lotunun hareketleri bulunamadı.");
+            reservationUnits[row.Reservation.ID]=FlowUnit(row.Reservation,requirements.Single(x=>x.ID==row.Reservation.MaterialRequirementId),balance,converter);
+        }
         foreach(var requirement in requirements)
         {
-            if(!materialUnitIds.TryGetValue(requirement.MaterialId,out var materialUnitId)||!units.TryGetValue(materialUnitId,out var sourceUnit)||!units.TryGetValue(requirement.UnitId,out var targetUnit)){TempData["error"]="Malzeme birim dönüşümü yapılamadı.";return RedirectToAction(nameof(EmirDetay),new{id});}
-            var reserved=reservations.Where(x=>x.Reservation.MaterialRequirementId==requirement.ID).Sum(x=>ConvertProductionQuantity(x.Reservation.ReservedQuantity-x.Reservation.UsedQuantity-x.Reservation.ReleasedQuantity,materialUnitId,sourceUnit.Code,sourceUnit.Name,requirement.UnitId,targetUnit.Code,targetUnit.Name));if(reserved+0.000001m<requirement.TheoreticalQuantity){TempData["error"]="Üretim deposundaki emir rezervasyonları ihtiyacı karşılamıyor.";return RedirectToAction(nameof(EmirDetay),new{id});}
+            var reserved=reservations.Where(x=>x.Reservation.MaterialRequirementId==requirement.ID).Sum(x=>converter.ConvertQuantity(requirement.MaterialId,reservationUnits[x.Reservation.ID],requirement.UnitId,x.Reservation.ReservedQuantity-x.Reservation.UsedQuantity-x.Reservation.ReleasedQuantity));if(reserved+0.000001m<requirement.TheoreticalQuantity){TempData["error"]="Üretim deposundaki emir rezervasyonları ihtiyacı karşılamıyor.";return RedirectToAction(nameof(EmirDetay),new{id});}
         }
-        var lotIds=reservations.Select(x=>x.Lot.ID).Distinct().ToList();var balanceRows=await _context.PrdStockMovements.Where(x=>x.StockLotId.HasValue&&lotIds.Contains(x.StockLotId.Value)&&x.IsDelete!=true).GroupBy(x=>x.StockLotId!.Value).Select(g=>new{StockLotId=g.Key,Quantity=g.Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity),Value=g.Sum(x=>x.Direction==PrdStockDirection.In?x.TotalCost:-x.TotalCost)}).ToDictionaryAsync(x=>x.StockLotId,ct);var reservationIds=reservations.Select(x=>x.Reservation.ID).ToList();var otherReservations=await _context.PrdStockReservations.Where(x=>lotIds.Contains(x.StockLotId)&&x.IsDelete!=true&&(x.Status==PrdReservationStatus.Active||x.Status==PrdReservationStatus.PartiallyUsed)&&!reservationIds.Contains(x.ID)).GroupBy(x=>x.StockLotId).Select(g=>new{StockLotId=g.Key,Quantity=g.Sum(x=>x.ReservedQuantity-x.UsedQuantity-x.ReleasedQuantity)}).ToDictionaryAsync(x=>x.StockLotId,x=>x.Quantity,ct);
-        foreach(var group in reservations.GroupBy(x=>x.Lot.ID)){if(!balanceRows.TryGetValue(group.Key,out var balance)||balance.Quantity<=0){TempData["error"]=$"{group.First().Lot.LotNumber} lotunun fiziksel bakiyesi bulunmuyor.";return RedirectToAction(nameof(EmirDetay),new{id});}var issue=group.Sum(x=>x.Reservation.ReservedQuantity-x.Reservation.UsedQuantity-x.Reservation.ReleasedQuantity);var available=Math.Max(0,balance.Quantity-(otherReservations.TryGetValue(group.Key,out var other)?other:0));if(issue>available+0.000001m){TempData["error"]=$"{group.First().Lot.LotNumber} lotunun kullanılabilir miktarı üretime çıkış için yetersiz.";return RedirectToAction(nameof(EmirDetay),new{id});}}
+        foreach(var group in reservations.GroupBy(x=>x.Lot.ID))
+        {
+            var balance=balanceRows[group.Key];var own=group.Sum(x=>balance.ReservationQuantities.GetValueOrDefault(x.Reservation.ID));
+            if(own<=0||own>Math.Max(0,balance.PhysicalQuantity-balance.ReservedQuantity+own))throw new InvalidOperationException($"{balance.Lot.LotNumber}: kullanılabilir stok üretime çıkış için yetersiz.");
+        }
         var now=DateTime.Now;var user=User.Identity?.Name;
-        await using var transaction=await _context.Database.BeginTransactionAsync(ct);
         var document=new PrdInventoryDocument{DocumentNumber=$"UCIK-{now:yyyyMMddHHmmssfff}-{order.ID}",Type=PrdInventoryDocumentType.ProductionIssue,Status=PrdInventoryDocumentStatus.Posted,DocumentDate=now,PostingDate=now,PostedUserId=user,SourceWarehouseId=order.ProductionWarehouseId,CurrencyCode="TRY",ExchangeRate=1,SourceDocumentType="ProductionOrder",SourceDocumentId=order.ID,Notes=$"{order.OrderNumber} üretime malzeme çıkışı",IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};_context.PrdInventoryDocuments.Add(document);await _context.SaveChangesAsync(ct);
         var sequence=0;var totalCost=0m;
         foreach(var group in reservations.GroupBy(x=>new{x.Reservation.MaterialRequirementId,x.Reservation.MaterialId,x.Lot.ID}))
         {
-            var first=group.First();var quantity=group.Sum(x=>x.Reservation.ReservedQuantity-x.Reservation.UsedQuantity-x.Reservation.ReleasedQuantity);if(quantity<=0)continue;var balance=balanceRows[first.Lot.ID];var unitCost=balance.Value/balance.Quantity;var lineTotal=quantity*unitCost;var unitId=materialUnitIds[first.Reservation.MaterialId];
+            var first=group.First();var quantity=group.Sum(x=>converter.Quantity(x.Reservation.MaterialId,reservationUnits[x.Reservation.ID],x.Reservation.ReservedQuantity-x.Reservation.UsedQuantity-x.Reservation.ReleasedQuantity));if(quantity<=0)continue;var balance=balanceRows[first.Lot.ID];var unitCost=balance.StockValue/balance.PhysicalQuantity;var lineTotal=TakeFlowValue(balance,quantity);var unitId=converter.BaseUnitId(first.Reservation.MaterialId);
             var line=new PrdInventoryDocumentLine{InventoryDocumentId=document.ID,Sequence=++sequence,MaterialId=first.Reservation.MaterialId,UnitId=unitId,SourceStockLotId=first.Lot.ID,LotNumber=first.Lot.LotNumber,ProductionDate=first.Lot.ProductionDate,ExpirationDate=first.Lot.ExpirationDate,Quantity=quantity,OriginalUnitCost=unitCost,CurrencyCode="TRY",ExchangeRate=1,UnitCost=unitCost,TotalCost=lineTotal,CostSource=PrdStockCostSource.Production,Notes=order.OrderNumber,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};_context.PrdInventoryDocumentLines.Add(line);await _context.SaveChangesAsync(ct);_context.PrdStockMovements.Add(CreateProductionStockMovement(document,line,order.ProductionWarehouseId,first.Lot.ID,PrdStockDirection.Out,PrdStockMovementType.ProductionIssue,order.ID,now,user));
-            _context.PrdProductionMaterialActuals.Add(new PrdProductionMaterialActual{ProductionOrderId=order.ID,MaterialRequirementId=first.Reservation.MaterialRequirementId,MaterialId=first.Reservation.MaterialId,StockLotId=first.Lot.ID,UnitId=unitId,IssuedQuantity=quantity,ConsumedQuantity=0,ReturnedQuantity=0,WasteQuantity=0,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user});var requirement=requirements.First(x=>x.ID==first.Reservation.MaterialRequirementId);var sourceUnit=units[unitId];var targetUnit=units[requirement.UnitId];requirement.IssuedQuantity+=ConvertProductionQuantity(quantity,unitId,sourceUnit.Code,sourceUnit.Name,requirement.UnitId,targetUnit.Code,targetUnit.Name);totalCost+=lineTotal;
+            _context.PrdProductionMaterialActuals.Add(new PrdProductionMaterialActual{ProductionOrderId=order.ID,MaterialRequirementId=first.Reservation.MaterialRequirementId,MaterialId=first.Reservation.MaterialId,StockLotId=first.Lot.ID,UnitId=unitId,IssuedQuantity=quantity,ConsumedQuantity=0,ReturnedQuantity=0,WasteQuantity=0,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user});var requirement=requirements.First(x=>x.ID==first.Reservation.MaterialRequirementId);requirement.IssuedQuantity+=converter.ConvertQuantity(requirement.MaterialId,unitId,requirement.UnitId,quantity);totalCost+=lineTotal;
             foreach(var allocation in group){var reservation=allocation.Reservation;var remaining=reservation.ReservedQuantity-reservation.UsedQuantity-reservation.ReleasedQuantity;reservation.UsedQuantity+=remaining;reservation.Status=reservation.UsedQuantity+reservation.ReleasedQuantity>=reservation.ReservedQuantity?PrdReservationStatus.Used:PrdReservationStatus.PartiallyUsed;reservation.UpdateDate=now;reservation.UpdateUserID=user;}
         }
         document.TotalCost=totalCost;order.Status=PrdProductionOrderStatus.InProduction;order.StartDate=now;order.UpdateDate=now;order.UpdateUserID=user;await _context.SaveChangesAsync(ct);await transaction.CommitAsync(ct);TempData["success"]="Malzemeler lotlarıyla üretime çıkarıldı; gerçekleşen tüketim, iade ve fire girişi yapılabilir.";return RedirectToAction(nameof(GerceklesenDetay),new{id});
+        }
+        catch(InvalidOperationException ex){_context.ChangeTracker.Clear();TempData["error"]=ex.Message;}
+        catch(OverflowException){_context.ChangeTracker.Clear();TempData["error"]="Üretime çıkış miktarı/maliyeti desteklenen aralığı aşıyor; işlem geri alındı.";}
+        return RedirectToAction(nameof(EmirDetay),new{id});
     }
 
     [HttpGet]
@@ -1286,11 +1394,19 @@ public sealed class UretimYonetimiController : Controller
         if(!ModelState.IsValid){var invalidModel=await BuildProductionExecutionDetailAsync(order.ID,input,ct);return View(nameof(GerceklesenDetay),invalidModel!);}
         var lotIds=actuals.Select(x=>x.StockLotId).Distinct().ToList();var issueCosts=await _context.PrdStockMovements.AsNoTracking().Where(x=>x.DocumentType==PrdStockDocumentType.ProductionOrder&&x.DocumentId==order.ID&&x.MovementType==PrdStockMovementType.ProductionIssue&&x.Direction==PrdStockDirection.Out&&x.StockLotId.HasValue&&lotIds.Contains(x.StockLotId.Value)&&x.IsDelete!=true).GroupBy(x=>x.StockLotId!.Value).Select(g=>new{StockLotId=g.Key,Quantity=g.Sum(x=>x.Quantity),Value=g.Sum(x=>x.TotalCost)}).ToDictionaryAsync(x=>x.StockLotId,ct);if(actuals.Any(x=>!issueCosts.ContainsKey(x.StockLotId)||issueCosts[x.StockLotId].Quantity<=0)){ModelState.AddModelError(string.Empty,"Üretime çıkış maliyetlerinden biri bulunamadı.");var invalidModel=await BuildProductionExecutionDetailAsync(order.ID,input,ct);return View(nameof(GerceklesenDetay),invalidModel!);}
         var requirements=await _context.PrdMaterialRequirements.Where(x=>x.ProductionOrderId==order.ID&&x.IsDelete!=true).ToDictionaryAsync(x=>x.ID,ct);var unitIds=actuals.Select(x=>x.UnitId).Concat(requirements.Values.Select(x=>x.UnitId)).Append(order.UnitId).Distinct().ToList();var units=await _context.PrdUnits.AsNoTracking().Where(x=>unitIds.Contains(x.ID)).Select(x=>new{x.ID,x.Code,x.Name}).ToDictionaryAsync(x=>x.ID,ct);var lots=await _context.PrdStockLots.Where(x=>lotIds.Contains(x.ID)).ToDictionaryAsync(x=>x.ID,ct);var now=DateTime.Now;var user=User.Identity?.Name;
+        var executionConverter=await ProductionStockUnitConverter.LoadAsync(_context,actuals.Select(x=>x.MaterialId).Distinct().ToList(),ct);
+        try
+        {
+            foreach(var actual in actuals)executionConverter.FactorBetween(actual.MaterialId,actual.UnitId,requirements[actual.MaterialRequirementId].UnitId);
+            var usedReservations=await _context.PrdStockReservations.AsNoTracking().Where(x=>requirements.Keys.Contains(x.MaterialRequirementId)&&x.UnitId!=null&&x.IsDelete!=true).ToListAsync(ct);
+            foreach(var reservation in usedReservations)ProductionReservationUnits.Validate(reservation,requirements[reservation.MaterialRequirementId],reservation.UnitId!.Value,executionConverter);
+        }
+        catch(InvalidOperationException ex){ModelState.AddModelError(string.Empty,ex.Message);return View(nameof(GerceklesenDetay),(await BuildProductionExecutionDetailAsync(order.ID,input,ct))!);}
         await using var transaction=await _context.Database.BeginTransactionAsync(ct);PrdInventoryDocument? returnDocument=null;var returnRows=actuals.Where(x=>parsed[x.ID].Returned>0).ToList();if(returnRows.Count>0){returnDocument=new PrdInventoryDocument{DocumentNumber=$"UIAD-{now:yyyyMMddHHmmssfff}-{order.ID}",Type=PrdInventoryDocumentType.ProductionReturn,Status=PrdInventoryDocumentStatus.Posted,DocumentDate=now,PostingDate=now,PostedUserId=user,TargetWarehouseId=order.ProductionWarehouseId,CurrencyCode="TRY",ExchangeRate=1,SourceDocumentType="ProductionOrder",SourceDocumentId=order.ID,Notes=$"{order.OrderNumber} üretimden artan malzeme iadesi",IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};_context.PrdInventoryDocuments.Add(returnDocument);await _context.SaveChangesAsync(ct);}
         var returnSequence=0;var returnTotal=0m;var netMaterialCost=0m;
         foreach(var actual in actuals)
         {
-            var values=parsed[actual.ID];var issueCost=issueCosts[actual.StockLotId];var unitCost=issueCost.Value/issueCost.Quantity;netMaterialCost+=(values.Consumed+values.Waste)*unitCost;actual.ConsumedQuantity=values.Consumed;actual.ReturnedQuantity=values.Returned;actual.WasteQuantity=values.Waste;actual.WasteReason=values.WasteReason;actual.Notes=values.Notes;actual.UpdateDate=now;actual.UpdateUserID=user;var requirement=requirements[actual.MaterialRequirementId];var sourceUnit=units[actual.UnitId];var targetUnit=units[requirement.UnitId];requirement.ConsumedQuantity+=ConvertProductionQuantity(values.Consumed,actual.UnitId,sourceUnit.Code,sourceUnit.Name,requirement.UnitId,targetUnit.Code,targetUnit.Name);requirement.ReturnedQuantity+=ConvertProductionQuantity(values.Returned,actual.UnitId,sourceUnit.Code,sourceUnit.Name,requirement.UnitId,targetUnit.Code,targetUnit.Name);requirement.WasteQuantity+=ConvertProductionQuantity(values.Waste,actual.UnitId,sourceUnit.Code,sourceUnit.Name,requirement.UnitId,targetUnit.Code,targetUnit.Name);requirement.UpdateDate=now;requirement.UpdateUserID=user;
+            var values=parsed[actual.ID];var issueCost=issueCosts[actual.StockLotId];var unitCost=issueCost.Value/issueCost.Quantity;netMaterialCost+=(values.Consumed+values.Waste)*unitCost;actual.ConsumedQuantity=values.Consumed;actual.ReturnedQuantity=values.Returned;actual.WasteQuantity=values.Waste;actual.WasteReason=values.WasteReason;actual.Notes=values.Notes;actual.UpdateDate=now;actual.UpdateUserID=user;var requirement=requirements[actual.MaterialRequirementId];requirement.ConsumedQuantity+=executionConverter.ConvertQuantity(actual.MaterialId,actual.UnitId,requirement.UnitId,values.Consumed);requirement.ReturnedQuantity+=executionConverter.ConvertQuantity(actual.MaterialId,actual.UnitId,requirement.UnitId,values.Returned);requirement.WasteQuantity+=executionConverter.ConvertQuantity(actual.MaterialId,actual.UnitId,requirement.UnitId,values.Waste);requirement.UpdateDate=now;requirement.UpdateUserID=user;
             if(values.Returned>0&&returnDocument!=null){var lot=lots[actual.StockLotId];var total=values.Returned*unitCost;var line=new PrdInventoryDocumentLine{InventoryDocumentId=returnDocument.ID,Sequence=++returnSequence,MaterialId=actual.MaterialId,UnitId=actual.UnitId,TargetStockLotId=lot.ID,LotNumber=lot.LotNumber,ProductionDate=lot.ProductionDate,ExpirationDate=lot.ExpirationDate,Quantity=values.Returned,OriginalUnitCost=unitCost,CurrencyCode="TRY",ExchangeRate=1,UnitCost=unitCost,TotalCost=total,CostSource=PrdStockCostSource.Production,Notes=order.OrderNumber,IsActive=true,IsDelete=false,CreateDate=now,CreateUserID=user};_context.PrdInventoryDocumentLines.Add(line);await _context.SaveChangesAsync(ct);_context.PrdStockMovements.Add(CreateProductionStockMovement(returnDocument,line,order.ProductionWarehouseId,lot.ID,PrdStockDirection.In,PrdStockMovementType.ProductionReturn,order.ID,now,user));returnTotal+=total;}
         }
         if(returnDocument!=null)returnDocument.TotalCost=returnTotal;
@@ -1465,10 +1581,16 @@ public sealed class UretimYonetimiController : Controller
 
     private async Task<List<ReservableLotBalance>> GetReservableLotsAsync(int sourceWarehouseId,int productionWarehouseId,List<int> materialIds,CancellationToken ct)
     {
-        var warehouseIds=new[]{sourceWarehouseId,productionWarehouseId};var today=DateTime.Today;
-        var rows=await(from movement in _context.PrdStockMovements.AsNoTracking() join lot in _context.PrdStockLots.AsNoTracking() on movement.StockLotId equals lot.ID where movement.StockLotId.HasValue&&materialIds.Contains(movement.MaterialId)&&warehouseIds.Contains(movement.WarehouseId)&&movement.IsDelete!=true&&lot.IsDelete!=true&&(lot.ExpirationDate==null||lot.ExpirationDate.Value.Year<=1900||lot.ExpirationDate>=today) select new{StockLotId=lot.ID,movement.MaterialId,movement.WarehouseId,movement.UnitId,lot.ExpirationDate,movement.Direction,movement.Quantity}).ToListAsync(ct);
-        var lotIds=rows.Select(x=>x.StockLotId).Distinct().ToList();var reserved=await _context.PrdStockReservations.AsNoTracking().Where(x=>lotIds.Contains(x.StockLotId)&&x.IsDelete!=true&&(x.Status==PrdReservationStatus.Active||x.Status==PrdReservationStatus.PartiallyUsed)).GroupBy(x=>x.StockLotId).Select(g=>new{StockLotId=g.Key,Quantity=g.Sum(x=>x.ReservedQuantity-x.UsedQuantity-x.ReleasedQuantity)}).ToDictionaryAsync(x=>x.StockLotId,x=>x.Quantity,ct);
-        return rows.GroupBy(x=>new{x.StockLotId,x.MaterialId,x.WarehouseId,x.UnitId,x.ExpirationDate}).Select(g=>new ReservableLotBalance{StockLotId=g.Key.StockLotId,MaterialId=g.Key.MaterialId,WarehouseId=g.Key.WarehouseId,UnitId=g.Key.UnitId,ExpirationDate=g.Key.ExpirationDate,AvailableQuantity=Math.Max(0,g.Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity)-(reserved.TryGetValue(g.Key.StockLotId,out var quantity)?quantity:0))}).Where(x=>x.AvailableQuantity>0).ToList();
+        var result=new List<ReservableLotBalance>();
+        foreach(var warehouse in new[]{sourceWarehouseId,productionWarehouseId}.Distinct())
+            foreach(var row in await ProductionStockLotReader.LoadAsync(_context,warehouse,ct,materialIds:materialIds))
+            {
+                if(row.Lot.ExpirationDate is DateTime expiry&&expiry.Year>1900&&expiry.Date<DateTime.Today)continue;
+                CheckFlowLot(row);
+                var available=Math.Max(0,row.PhysicalQuantity-row.ReservedQuantity);
+                if(available>0)result.Add(new ReservableLotBalance{StockLotId=row.Lot.ID,MaterialId=row.Material.ID,WarehouseId=warehouse,UnitId=row.UnitId,ExpirationDate=row.Lot.ExpirationDate,AvailableQuantity=available});
+            }
+        return result;
     }
 
     private async Task<PrdStockLot> GetOrCreateProductionTargetLotAsync(PrdStockLot sourceLot,int targetWarehouseId,DateTime now,string? user,CancellationToken ct)
@@ -1533,14 +1655,18 @@ public sealed class UretimYonetimiController : Controller
         if(requirements.Count==0)return;
         var warehouseIds=selectedWarehouseIds.Where(x=>x>0).Distinct().ToList();var materialIds=requirements.Select(x=>x.MaterialId).Distinct().ToList();var unitIds=requirements.Select(x=>x.UnitId).Distinct().ToList();
         if(warehouseIds.Count==0){foreach(var item in requirements){item.PhysicalStockQuantity=0;item.ReservedQuantity=0;item.AvailableStockQuantity=0;}return;}
-        var targetUnits=await _context.PrdUnits.AsNoTracking().Where(x=>unitIds.Contains(x.ID)).Select(x=>new{x.ID,x.Code,x.Name}).ToDictionaryAsync(x=>x.ID,ct);var today=DateTime.Today;
-        var stocks=await(from movement in _context.PrdStockMovements.AsNoTracking() join unit in _context.PrdUnits.AsNoTracking() on movement.UnitId equals unit.ID join lot0 in _context.PrdStockLots.AsNoTracking() on movement.StockLotId equals lot0.ID into lotJoin from lot in lotJoin.DefaultIfEmpty() where materialIds.Contains(movement.MaterialId)&&warehouseIds.Contains(movement.WarehouseId)&&movement.IsDelete!=true&&(movement.StockLotId==null||lot.ExpirationDate==null||lot.ExpirationDate.Value.Year<=1900||lot.ExpirationDate>=today) group movement by new{movement.MaterialId,movement.UnitId,unit.Code,unit.Name} into g select new{g.Key.MaterialId,g.Key.UnitId,UnitCode=g.Key.Code,UnitName=g.Key.Name,Quantity=g.Sum(x=>x.Direction==PrdStockDirection.In?x.Quantity:-x.Quantity)}).ToListAsync(ct);
-        var reservations=await(from reservation in _context.PrdStockReservations.AsNoTracking() join lot in _context.PrdStockLots.AsNoTracking() on reservation.StockLotId equals lot.ID join material in _context.PrdMaterials.AsNoTracking() on reservation.MaterialId equals material.ID join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID where materialIds.Contains(reservation.MaterialId)&&warehouseIds.Contains(reservation.WarehouseId)&&reservation.IsDelete!=true&&(reservation.Status==PrdReservationStatus.Active||reservation.Status==PrdReservationStatus.PartiallyUsed)&&(lot.ExpirationDate==null||lot.ExpirationDate.Value.Year<=1900||lot.ExpirationDate>=today) group reservation by new{reservation.MaterialId,material.UnitId,unit.Code,unit.Name} into g select new{g.Key.MaterialId,g.Key.UnitId,UnitCode=g.Key.Code,UnitName=g.Key.Name,Quantity=g.Sum(x=>x.ReservedQuantity-x.UsedQuantity-x.ReleasedQuantity)}).ToListAsync(ct);
+        var converter=await ProductionStockUnitConverter.LoadAsync(_context,materialIds,ct);
+        var balances=new List<ProductionStockLotBalance>();
+        foreach(var warehouseId in warehouseIds)
+            foreach(var balance in await ProductionStockLotReader.LoadAsync(_context,warehouseId,ct,materialIds:materialIds))
+            {
+                if(balance.Lot.ExpirationDate is DateTime expiry&&expiry.Year>1900&&expiry.Date<DateTime.Today)continue;
+                CheckFlowLot(balance);balances.Add(balance);
+            }
         foreach(var item in requirements)
         {
-            if(!targetUnits.TryGetValue(item.UnitId,out var targetUnit))continue;
-            item.PhysicalStockQuantity=stocks.Where(x=>x.MaterialId==item.MaterialId).Sum(x=>ConvertProductionQuantity(x.Quantity,x.UnitId,x.UnitCode,x.UnitName,item.UnitId,targetUnit.Code,targetUnit.Name));
-            item.ReservedQuantity=reservations.Where(x=>x.MaterialId==item.MaterialId).Sum(x=>ConvertProductionQuantity(x.Quantity,x.UnitId,x.UnitCode,x.UnitName,item.UnitId,targetUnit.Code,targetUnit.Name));
+            item.PhysicalStockQuantity=converter.ConvertQuantity(item.MaterialId,converter.BaseUnitId(item.MaterialId),item.UnitId,balances.Where(x=>x.Material.ID==item.MaterialId).Sum(x=>x.PhysicalQuantity));
+            item.ReservedQuantity=converter.ConvertQuantity(item.MaterialId,converter.BaseUnitId(item.MaterialId),item.UnitId,balances.Where(x=>x.Material.ID==item.MaterialId).Sum(x=>x.ReservedQuantity));
             item.AvailableStockQuantity=Math.Max(0,item.PhysicalStockQuantity-item.ReservedQuantity);
         }
     }

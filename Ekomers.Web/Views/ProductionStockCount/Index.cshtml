@@ -3,6 +3,8 @@
 @{ViewData["Title"]="Depo Sayımı";var entryCount=Model.Rows.Sum(x=>x.Entries.Count);}
 @if(TempData["error"] is string error){<div class="alert alert-danger">@error</div>}
 @if(TempData["success"] is string success){<div class="alert alert-success">@success</div>}
+@if(Model.Error!=null){<div class="alert alert-danger" role="alert">@Model.Error Sayım girişleri korunmuştur; birim tanımlarını kontrol edip sayfayı yenileyiniz.</div>}
+<div class="alert alert-light-primary">Sistem stokları tanımlı dönüşümlerle ürünün ana biriminde hesaplanır. Sayım miktarını ana stok biriminde giriniz. Dönüşüm tanımı değişirse sistem stok referanslarını yenileyip farkları kontrol ediniz.</div>
 <div class="card card-custom mb-5">
     <div class="card-header flex-wrap py-3"><div class="card-title"><h3 class="card-label">@(Model.IsCorrection?"Depo Sayımı Düzeltmesi":"Depo Sayımı")<span class="d-block text-muted pt-2 font-size-sm">Kalıcı taslak #@Model.DraftId · @(Model.Status==PrdWarehouseCountDraftStatus.Draft?"Taslak":Model.Status==PrdWarehouseCountDraftStatus.Posted?"Tamamlandı":"İptal") · @Model.Rows.Count ürün / @entryCount sayım girişi</span></h3></div>
     <div class="card-toolbar"><a asp-controller="ProductionInventory" asp-action="Index" class="btn btn-light-primary">Stok Hareketleri</a><a asp-action="Index" asp-route-warehouseId="@Model.WarehouseId" class="btn btn-light ml-2">Aktif Sayıma Dön</a></div></div>
@@ -14,7 +16,7 @@
     </div>
 </div>
 @if(Model.WarehouseId==0){<div class="alert alert-warning">Aktif depo bulunamadı.</div>}
-else{
+else if(Model.DraftId>0){
     @if(!Model.IsReadOnly){
         <div class="card card-custom mb-5"><div class="card-header"><div class="card-title"><h3 class="card-label">Sayım Girişi Ekle</h3></div></div><div class="card-body">
             <form asp-action="AddItem" method="post" class="count-add-form">
@@ -35,11 +37,12 @@ else{
             <thead><tr><th>Ürün / Tür</th><th class="text-right">Güncel Sistem Stoku</th><th class="text-right">Rezerve</th><th class="text-right">Sayım Toplamı</th><th class="text-right">Güncel Fark</th><th></th></tr></thead><tbody>
             @foreach(var row in Model.Rows){
                 var counted=decimal.TryParse(row.CountedQuantity,NumberStyles.Number,CultureInfo.GetCultureInfo("tr-TR"),out var parsed)?(decimal?)parsed:null;
-                var diff=counted.HasValue?counted.Value-row.CurrentQuantity:(decimal?)null;
+                var diff=counted.HasValue&&row.Error==null?counted.Value-row.CurrentQuantity:(decimal?)null;
                 <tr class="@(row.StockChanged?"table-warning":"")"><td><strong>@row.MaterialCode</strong><div>@row.MaterialName</div><span class="text-muted">@row.MaterialType</span>
                     @if(row.StockChanged){<div class="text-warning">Stok değişti · İlk referans: @row.SnapshotCurrentQuantity.ToString("0.######") @row.Unit</div>}
                     @if(row.CriticalQuantity.HasValue){<div class="text-muted">Kritik: @row.CriticalQuantity.Value.ToString("0.######") @row.Unit</div>}
-                </td><td class="text-right">@row.CurrentQuantity.ToString("0.######") @row.Unit</td><td class="text-right">@row.ReservedQuantity.ToString("0.######") @row.Unit</td>
+                    @if(row.Error!=null){<div class="text-danger" role="alert">@row.Error Girişleriniz korunmuştur.</div>}
+                </td><td class="text-right">@(row.Error==null?row.CurrentQuantity.ToString("0.######")+" "+row.Unit:"Hesaplanamadı")</td><td class="text-right">@(row.Error==null?row.ReservedQuantity.ToString("0.######")+" "+row.Unit:"—")</td>
                 <td class="text-right"><strong class="text-primary">@(row.CountedQuantity??"Sayılmadı") @(counted.HasValue?row.Unit:"")</strong><div class="text-muted">@row.Entries.Count ayrı giriş</div></td>
                 <td class="text-right @(diff<0?"text-danger":"text-success")">@(diff.HasValue?diff.Value.ToString("+0.######;-0.######;0"):"-") @row.Unit</td>
                 <td>@if(!Model.IsReadOnly){<form asp-action="RemoveProduct" method="post" onsubmit="return confirm('Bu ürünün bütün sayım girişleri kaldırılsın mı? Diğer ürünler korunacak.');"><partial name="_DraftFields" model="Model" /><input type="hidden" name="materialId" value="@row.MaterialId" /><button class="btn btn-sm btn-light-danger">Ürünü Kaldır</button></form>}</td></tr>
@@ -69,7 +72,7 @@ else{
         <div class="card card-custom mb-5"><div class="card-body">
             <form asp-action="Save" method="post" id="warehouseCountFinalForm"><partial name="_DraftFields" model="Model" />
                 <div class="row"><div class="col-md-3 form-group"><label>Sayım Tarihi</label><input asp-for="CountDate" type="date" class="form-control" max="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div><div class="col-md-9 form-group"><label>Sayım Notu</label><input asp-for="Notes" class="form-control" maxlength="500" /></div></div>
-                <div class="d-flex flex-wrap"><button class="btn btn-light-primary mr-3 mb-2" formaction="@Url.Action("UpdateDraft")">Taslak Bilgilerini Kaydet</button><button class="btn btn-success mb-2 count-post" disabled="@(entryCount==0)">@(Model.IsCorrection?"Sayım Düzeltmesini Stoka İşle":"Sayımı Stoka İşle")</button></div>
+                <div class="d-flex flex-wrap"><button class="btn btn-light-primary mr-3 mb-2" formaction="@Url.Action("UpdateDraft")">Taslak Bilgilerini Kaydet</button><button class="btn btn-success mb-2 count-post" disabled="@(entryCount==0||Model.Error!=null||Model.Rows.Any(r=>r.Error!=null))">@(Model.IsCorrection?"Sayım Düzeltmesini Stoka İşle":"Sayımı Stoka İşle")</button></div>
             </form>
             <div class="d-flex flex-wrap mt-3">
                 <form asp-action="RefreshSnapshots" method="post" class="mr-3 mb-2" onsubmit="return confirm('Sistem stok referansları güncel stokla değiştirilecek; sayım miktarları korunacak. Farkları yeniden kontrol etmelisiniz. Devam edilsin mi?');"><partial name="_DraftFields" model="Model" /><button class="btn btn-light-warning">Sistem Stok Referanslarını Yenile</button></form>

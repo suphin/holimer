@@ -23,6 +23,7 @@ public class ProductionWarehouseTaskListVM
 
 public sealed class ProductionWarehouseTaskDetailVM : ProductionWarehouseTaskListVM
 {
+    public string? UnitError { get; set; }
     public DateTime? PreparedDate { get; set; }
     public DateTime? ShippedDate { get; set; }
     public DateTime? DeliveredDate { get; set; }

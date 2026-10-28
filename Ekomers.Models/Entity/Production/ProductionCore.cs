@@ -396,6 +396,10 @@ public class PrdMaterialRequirement : BaseEntity
 
 public class PrdStockReservation : BaseEntity
 {
+    // Null only for legacy rows: never infer a physical conversion for ambiguous historical reservations.
+    public int? UnitId { get; set; }
+    public int? RequirementUnitId { get; set; }
+    public decimal? RequirementUnitFactor { get; set; }
     public int MaterialRequirementId { get; set; }
     public int MaterialId { get; set; }
     public int WarehouseId { get; set; }

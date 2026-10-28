@@ -106,16 +106,16 @@ public sealed partial class ProductionStockCountController
             .Select(x => new { x.ID, x.UnitId }).ToDictionaryAsync(x => x.ID, x => x.UnitId, ct);
         var movements = await _context.PrdStockMovements.AsNoTracking().Where(x => x.WarehouseId == warehouseId && materialIds.Contains(x.MaterialId) && x.IsDelete != true)
             .Select(x => new { x.MaterialId, x.UnitId }).Distinct().ToListAsync(ct);
-        var unitIds = entries.Select(x => x.UnitId).Concat(materialUnits.Values).Concat(movements.Select(x => x.UnitId)).Distinct().ToList();
-        var units = await _context.PrdUnits.AsNoTracking().Where(x => unitIds.Contains(x.ID)).ToDictionaryAsync(x => x.ID, ct);
+        var converter = await ProductionStockUnitConverter.LoadAsync(_context, materialIds, ct);
         foreach (var group in entries.GroupBy(x => x.MaterialId))
         {
-            if (!materialUnits.TryGetValue(group.Key, out var currentId) || !units.TryGetValue(currentId, out var current))
+            if (!materialUnits.ContainsKey(group.Key))
                 throw new InvalidOperationException($"{group.First().MaterialCode}: aktif malzeme veya stok birimi bulunamadı.");
-            var canonical = ProductionUnitNormalizer.CanonicalCode(current.Code, current.Name);
-            if (group.Any(x => !units.TryGetValue(x.UnitId, out var unit) || ProductionUnitNormalizer.CanonicalCode(unit.Code, unit.Name) != canonical) ||
-                movements.Where(x => x.MaterialId == group.Key).Any(x => !units.TryGetValue(x.UnitId, out var unit) || ProductionUnitNormalizer.CanonicalCode(unit.Code, unit.Name) != canonical))
-                throw new InvalidOperationException($"{group.First().MaterialCode}: sayım veya stok hareketlerinde farklı fiziksel birimler var. Birimleri düzeltiniz; birimi değişen ürünü yeniden sayınız.");
+            converter.BaseUnitName(group.Key);
+            // Do not silently reinterpret numbers already counted in a different base unit.
+            if (group.Any(x => !converter.IsBaseUnitEquivalent(group.Key, x.UnitId)))
+                throw new InvalidOperationException($"{group.First().MaterialCode}: malzemenin ana birimi sayım başladıktan sonra değişmiş. Bu ürünü taslaktan kaldırıp yeni ana biriminde yeniden sayınız.");
+            foreach (var movement in movements.Where(x => x.MaterialId == group.Key)) converter.Factor(group.Key, movement.UnitId);
         }
     }
 }

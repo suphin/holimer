@@ -52,7 +52,8 @@ builder.Services.Configure<SmsSettings>(builder.Configuration.GetSection("SmsSet
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.Configure<FileSettings>(builder.Configuration.GetSection("FileSettings")); 
 builder.Services.Configure<PageSettings>(builder.Configuration.GetSection("PageSettings"));
-builder.Services.Configure<ELogoOptions>(builder.Configuration.GetSection("ELogo"));
+builder.Services.Configure<ELogoOptions>(ELogoPostboxClient.HolimerProfile,builder.Configuration.GetSection("ELogo"));
+builder.Services.Configure<ELogoOptions>(ELogoPostboxClient.FwProfile,builder.Configuration.GetSection("ELogoFw"));
  
 
 //builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
@@ -295,6 +296,8 @@ builder.Services.AddAuthorization(options =>
 
 	options.AddPolicy("HammaddeSarfYonet", policy => policy.RequireAssertion(context =>
 		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "HammaddeSarfYonet")));
+	options.AddPolicy("FasonHammaddeYonet", policy => policy.RequireAssertion(context => context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "FasonHammaddeYonet")));
+	options.AddPolicy("FasonHammaddeGeriAl", policy => policy.RequireAssertion(context => context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "FasonHammaddeGeriAl")));
 	options.AddPolicy("HammaddeSarfGeriAl", policy => policy.RequireAssertion(context =>
 		context.User.IsInRole("Admin") || context.User.HasClaim("Authorize", "HammaddeSarfGeriAl")));
 
@@ -440,6 +443,7 @@ builder.Services.AddScoped<IIadeService, IadeService>();
 builder.Services.AddScoped<ISmsSender, SmsSenderTuraCell>();
 builder.Services.AddScoped<IEmailSenderService, EmailSenderService>(); 
 builder.Services.AddScoped<LogoBankMovementReportService>();
+builder.Services.AddScoped<Ekomers.Data.Services.PortalLogoCompanyService>();
 builder.Services.AddScoped<LogoBankMovementReportJob>();
 builder.Services.AddScoped<ScheduledSqlTaskJob>();
 builder.Services.AddScoped<LogoClientReadService>();
@@ -458,6 +462,7 @@ builder.Services.AddScoped<ISirketlerService, SirketlerService>();
 builder.Services.AddScoped<IUserShortCutFieldService, UserShortCutFieldService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<Ekomers.Data.Services.Reports.ILogoCustomerStatementService, Ekomers.Data.Services.Reports.LogoCustomerStatementService>();
+builder.Services.AddScoped<Ekomers.Data.Services.Reports.ILogoPivotService, Ekomers.Data.Services.Reports.LogoPivotService>();
 builder.Services.AddScoped<ISalesProfitabilityReportService, SalesProfitabilityReportService>();
 builder.Services.AddScoped<IAccountingExpenseService, AccountingExpenseService>();
 builder.Services.AddScoped<ICustomerReceivablesService, CustomerReceivablesService>();
@@ -473,7 +478,9 @@ builder.Services.AddScoped<ProductionCatalogSyncService>();
 builder.Services.AddScoped<IProductionOrderCleanupService, ProductionOrderCleanupService>();
 builder.Services.AddScoped<PurchasingSupplierImportService>();
 builder.Services.AddScoped<Ekomers.Web.Services.PurchasingInventoryReversalService>();
+builder.Services.AddScoped<Ekomers.Web.Services.PurchasingSearchService>();
 builder.Services.AddScoped<Ekomers.Web.Services.RawMaterialConsumptionService>();
+builder.Services.AddScoped<Ekomers.Web.Services.FasonStockService>();
 builder.Services.AddScoped<IMalzemeFiyatService, MalzemeFiyatService>();
 builder.Services.AddScoped<ISiparisService, SiparisService>();
 builder.Services.AddScoped<ISiparisIadeService, SiparisIadeService>();

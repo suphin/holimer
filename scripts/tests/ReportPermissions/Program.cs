@@ -56,6 +56,10 @@ foreach(var action in new[]{"BankaKredileri","KrediOdemePlani"}) Add("Reports",a
 Add("LogoBankaHareketleri","Index",ReportPermissions.LogoBankaHareketleri);
 foreach(var action in new[]{"PlanKaydet","PlanDurum","PlanSil","SimdiGonder"}) Add("LogoBankaHareketleri",action,ReportPermissions.LogoBankaHareketleri,"POST",true);
 foreach(var action in new[]{"Index","Ekstre","BelgeDetay","FaturaGorseli"}) Add("LogoCariEkstre",action,ReportPermissions.LogoCariEkstre);
+foreach(var action in new[]{"Index","Rapor"}) Add("PivotRaporlar",action,ReportPermissions.PivotRaporlar);
+Add("PivotRaporlar","Veri",ReportPermissions.PivotRaporlar,"POST");
+foreach(var action in new[]{"Yonetim","Alanlar","Duzenle"}) Add("PivotRaporlar",action,ReportPermissions.PivotRaporlarYonet);
+Add("PivotRaporlar","Duzenle",ReportPermissions.PivotRaporlarYonet,"POST");
 foreach(var action in new[]{"Index","Receivables","ReceivableDetail","ChannelBalance"}) Add("SatisKarlilik",action,ReportPermissions.SatisKarlilik);
 foreach(var action in new[]{"Index","Gecmis"}) Add("UrunMaliyetleri",action,ReportPermissions.UrunMaliyetleri);
 foreach(var action in new[]{"Yeni","Toplu"}) { Add("UrunMaliyetleri",action,ReportPermissions.UrunMaliyetleriYonet);Add("UrunMaliyetleri",action,ReportPermissions.UrunMaliyetleriYonet,"POST"); }
@@ -71,7 +75,8 @@ foreach(var route in routes) foreach(var actor in actors) {
     // Independent expectation, not the production helper used by the registered policies.
     var allowed=actor.Key=="admin"||actor.Key==route.Policy||
         (route.Policy==ReportPermissions.UrunMaliyetleri&&actor.Key==ReportPermissions.UrunMaliyetleriYonet)||
-        (route.Policy==ReportPermissions.MuhasebeGiderleri&&actor.Key==ReportPermissions.MuhasebeGiderleriYonet);
+        (route.Policy==ReportPermissions.MuhasebeGiderleri&&actor.Key==ReportPermissions.MuhasebeGiderleriYonet)||
+        (route.Policy==ReportPermissions.PivotRaporlar&&actor.Key==ReportPermissions.PivotRaporlarYonet);
     allowed=allowed&&(!route.AdminOnly||actor.Key=="admin");
     var expected=allowed?204:actor.Key=="anonymous"?401:403;
     if((int)response.StatusCode!=expected) throw new Exception($"FAIL {route.Controller}/{route.Action} {route.Method} actor={actor.Key}: expected {expected}, got {response.StatusCode}");
@@ -128,10 +133,13 @@ try {
         """);
     var migration=new AddReportPagePermissions();
     foreach(var op in migration.UpOperations.Cast<SqlOperation>()) { await db.ExecuteAsync(op.Sql);await db.ExecuteAsync(op.Sql); }
+    // Schema/initial report definition is covered by the pivot fixture; permission SQL is idempotent.
+    foreach(var op in new AddPivotReports().UpOperations.OfType<SqlOperation>().Skip(1)) { await db.ExecuteAsync(op.Sql);await db.ExecuteAsync(op.Sql); }
     var definitions=(await db.QueryAsync<string>("SELECT PolicyName FROM Yetkilendirme WHERE IsActive=1 AND IsDelete=0 AND ClaimType=N'Rapor'")).Order().ToList();
     Check(definitions.SequenceEqual(ReportPermissions.Policies.Order()),"Idempotent migration definitions exactly match registered policies");
     Check(await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM ExistingUserClaims WHERE ClaimType=N'Rapor' AND ClaimValue=N'Bankalar'")==1&&await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM ExistingUserClaims")==1,"Migration preserves assignments and grants no new claims");
     foreach(var op in migration.DownOperations.Cast<SqlOperation>()) await db.ExecuteAsync(op.Sql);
+    foreach(var op in new AddPivotReports().DownOperations.OfType<SqlOperation>()) await db.ExecuteAsync(op.Sql);
     Check(await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Yetkilendirme WHERE ClaimType=N'Rapor' AND ClaimName=N'Bankalar' AND IsDelete=0")==1,"Rollback preserves existing Bankalar permission");
 } finally {
     if(created&&name.StartsWith(prefix)&&Guid.TryParseExact(name[prefix.Length..],"N",out _)) {

@@ -12,7 +12,17 @@ Adres `/ProductionStockCount`, menü **Üretim Yönetimi → Depo Sayımı**. Me
 - Sayım sırasında sistem stoku değişirse işlem engellenir ve girişler korunur. **Sistem Stok Referanslarını Yenile** sayım miktarlarını değiştirmeden sistem referanslarını günceller. Farkları kontrol edip sonuçlandırın; arada gelen/giden malları fiziksel sayımınıza dahil edip etmediğinizi değerlendirin.
 - Düzeltme ekranında önceki belgedeki ürünler başlangıçta **Sayılmadı** görünür. Yalnızca yeni sayım girişi yapılan ürünler işlenir; mevcut stok yanlışlıkla ek bir sayım girişi olarak toplanmaz. Önceki belge değiştirilmez.
 
-Bu ekran ürün toplamı sayımıdır. Raf/alan stok yeri tanımı veya lot bazlı sayım değildir; sayım farkının lotlara dağıtımı mevcut akıştaki gibi devam eder. Farklı fiziksel birimler (KG/GRAM gibi) doğrudan toplanmaz; sayım/stok birimleri tutarsızsa işlem engellenir. Aynı birimin eşanlamlıları kabul edilir. Miktar sıfır olabilir; en fazla 6 ondalık ve veritabanının desteklediği miktar aralığı kullanılır.
+Bu ekran ürün toplamı sayımıdır. Raf/alan stok yeri tanımı veya lot bazlı sayım değildir; sayım farkının lotlara dağıtımı mevcut akıştaki gibi devam eder. Miktar sıfır olabilir; en fazla 6 ondalık ve veritabanının desteklediği miktar aralığı kullanılır.
+
+## Stok birimi dönüşümü (23.10.2026)
+
+- Stok raporu, lot bakiyeleri, Excel ve depo sayımı ortak `ProductionStockUnitConverter` ile **malzeme kartındaki ana birimde** hesaplanır. Koli/adet gibi farklı birimlerdeki geçmiş hareketler `PrdUnitConversion` katsayılarıyla çevrilip toplanır. Sayım giriş miktarı ana birimde girilir; sayım fark hareketleri de ana birimde oluşur.
+- Aktif, silinmemiş ürün bazlı doğrudan **veya ters** dönüşüm genel dönüşümden önceliklidir. Ürün bazlı tanım yoksa genel doğrudan/ters tanım kullanılır. Zincirleme dönüşüm uygulanmaz: hareket biriminden ana birime bir çift tanımlayın. Aynı fiziksel birimin eşanlamlıları 1:1; KG/GRAM ve LITRE/ML standart fiziksel katsayılarıyla çevrilir. Birden fazla çelişkili aktif katsayı, eksik tanım, geçersiz katsayı veya hassasiyet/aralık aşımı açıklayıcı hata verir; keyfi bir tanım seçilmez.
+- Tarihsel hareketlerin miktarı, UnitId'si ve **TotalCost** değeri değiştirilmez. Rapor birim maliyeti korunmuş toplam değerin dönüştürülmüş bakiyeye bölümüdür. Sayım lot dağıtımı ve maliyet hesabı da dönüştürülmüş miktarlarla yapılır; geçmiş birim maliyetinden alınan yedek maliyet ters katsayıyla ölçeklenir. Miktarı sıfır ama değeri kalan kayıtlar rapordan gizlenmez.
+- Son 10 hareketin başlık toplamı ana birimdedir; hareket satırları denetim için özgün miktar/birim/maliyetini gösterir. Dolayısıyla geçmişteki bir koli hareketinin burada hâlâ koli görünmesi normaldir.
+- Açık taslakta dönüşüm tanımı değişince **Sistem Stok Referanslarını Yenile** kullanılıp fark kontrol edilmelidir. Referans yenileme sayılan miktarı değiştirmez. Ana birim fiziksel olarak değişmişse (ör. Adet → KG) kayıtlı sayım değerleri otomatik yorumlanmaz; ürünü taslaktan kaldırıp yeniden sayın. Hatalı dönüşümde girişler korunur, sonuçlandırma engellenir. Bu kod değişikliği yeni migration veya geçmiş stoklara SQL güncellemesi gerektirmez.
+
+Test: `dotnet run --project scripts/tests/StockUnitConversions/StockUnitConversions.csproj -p:StaticWebAssetsEnabled=false -p:UseAppHost=false`. Testler rastgele isimli, işlem sonunda silinen LocalDB veritabanını kullanır; canlı stoklara bağlanmaz.
 
 ## Tekrar ve eşzamanlılık
 

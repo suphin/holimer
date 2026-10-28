@@ -15,6 +15,15 @@ public class InventoryDocumentListVM
     public int LineCount { get; set; }
     public decimal TotalCost { get; set; }
     public bool CanDeleteFromInventory { get; set; }
+    public List<InventoryDocumentMatchedProductVM> MatchingProducts { get; set; } = [];
+}
+
+public sealed class InventoryDocumentMatchedProductVM
+{
+    public string MaterialCode { get; set; } = string.Empty;
+    public string MaterialName { get; set; } = string.Empty;
+    public decimal Quantity { get; set; }
+    public string Unit { get; set; } = string.Empty;
 }
 
 public sealed class InventoryDocumentCreateVM
@@ -29,6 +38,7 @@ public sealed class InventoryDocumentCreateVM
     public List<SelectListItem> Warehouses { get; set; } = [];
     public List<SelectListItem> Materials { get; set; } = [];
     public List<SelectListItem> SourceLots { get; set; } = [];
+    public List<string> LotWarnings { get; set; } = [];
     public List<InventoryDocumentCreateLineVM> Lines { get; set; } = [];
 }
 
@@ -46,6 +56,8 @@ public sealed class InventoryDocumentCreateLineVM
 
 public sealed class InventoryDocumentDetailVM : InventoryDocumentListVM
 {
+    public bool CanDeleteLines { get; set; }
+    public int? ReversalDocumentId { get; set; }
     public DateTime? PostingDate { get; set; }
     public string? PostedUserId { get; set; }
     public string CurrencyCode { get; set; } = "TRY";
@@ -58,6 +70,7 @@ public sealed class InventoryDocumentDetailVM : InventoryDocumentListVM
 
 public sealed class InventoryDocumentDetailLineVM
 {
+    public int Id { get; set; }
     public int Sequence { get; set; }
     public string MaterialCode { get; set; } = string.Empty;
     public string MaterialName { get; set; } = string.Empty;
@@ -74,6 +87,7 @@ public sealed class InventoryDocumentDetailLineVM
 public sealed class InventoryDocumentEditVM
 {
     public int Id { get; set; }
+    public int? EditLineId { get; set; }
     public string DocumentNumber { get; set; } = string.Empty;
     public PrdInventoryDocumentType Type { get; set; }
     public PrdInventoryDocumentStatus Status { get; set; }
@@ -85,6 +99,7 @@ public sealed class InventoryDocumentEditVM
     public string? Notes { get; set; }
     public string? EditReason { get; set; }
     public bool CanDeleteLines { get; set; }
+    public bool CanChangeUnits { get; set; }
     public List<InventoryDocumentEditLineVM> Lines { get; set; } = [];
 }
 
@@ -95,6 +110,8 @@ public sealed class InventoryDocumentEditLineVM
     public string MaterialCode { get; set; } = string.Empty;
     public string MaterialName { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
+    public int UnitId { get; set; }
+    public List<SelectListItem> UnitOptions { get; set; } = [];
     public string? LotNumber { get; set; }
     public DateTime? ProductionDate { get; set; }
     public DateTime? ExpirationDate { get; set; }
@@ -105,6 +122,7 @@ public sealed class InventoryDocumentEditLineVM
 
 public sealed class InventoryLotBalanceVM
 {
+    public string? BlockReason { get; set; }
     public int StockLotId { get; set; }
     public int MaterialId { get; set; }
     public int UnitId { get; set; }

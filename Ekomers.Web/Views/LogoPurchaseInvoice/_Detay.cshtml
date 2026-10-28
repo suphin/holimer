@@ -10,6 +10,7 @@ else if (Model.Lines.Count == 0)
 }
 else
 {
+    <div class="alert alert-light-primary">Logo Firması: <strong>@Model.FirmNumber.ToString("000") · @Model.FirmName</strong></div>
     <div class="row mb-6">
         <div class="col-lg-3 col-md-6 mb-3">
             <span class="text-muted d-block">Fatura</span>
@@ -62,7 +63,7 @@ else
                     <button type="button"
                             class="btn btn-primary js-logo-invoice-pdf"
                             data-title="@Model.InvoiceNumber - @Model.SupplierName"
-                            data-url="@Url.Action("FaturaGorseli", new { invoiceNumber = Model.InvoiceNumber, invoiceDate = Model.InvoiceDate.ToString("yyyy-MM-dd"), supplierCode = Model.SupplierCode })">
+                            data-url="@Url.Action("FaturaGorseli", new { firmNumber=Model.FirmNumber, invoiceNumber = Model.InvoiceNumber, invoiceDate = Model.InvoiceDate.ToString("yyyy-MM-dd"), supplierCode = Model.SupplierCode })">
                         <i class="flaticon2-document"></i> Fatura Görselini Göster
                     </button>
                     <span class="text-muted ml-3">PDF eLogo servisinden anlık olarak alınır.</span>

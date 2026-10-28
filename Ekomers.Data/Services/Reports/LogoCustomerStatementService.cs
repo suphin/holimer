@@ -15,7 +15,7 @@ public interface ILogoCustomerStatementService
 }
 
 /// <summary>SELECT-only Logo report. Identifiers are built only from bounded numeric firm/period ids.</summary>
-public sealed partial class LogoCustomerStatementService(LogoContext logo) : ILogoCustomerStatementService
+public sealed partial class LogoCustomerStatementService(LogoContext logo,PortalLogoCompanyService portalCompanies) : ILogoCustomerStatementService
 {
     private readonly System.Data.Common.DbConnection connection = logo.Database.GetDbConnection();
     private CommandDefinition Command(string sql, object? args, CancellationToken ct) => new(sql, args, commandTimeout: 60, cancellationToken: ct);
@@ -25,8 +25,13 @@ public sealed partial class LogoCustomerStatementService(LogoContext logo) : ILo
     private static string FirmTable(int firm, string suffix) { ValidateFirm(firm); return $"dbo.[LG_{firm:000}_{suffix}]"; }
     private static string Table(LogoCariScopeVM s, string suffix) { ValidatePeriod(s.Period.Number); return FirmTable(s.Company.Number, $"{s.Period.Number:00}_{suffix}"); }
 
-    public async Task<List<LogoCariFirmaVM>> CompaniesAsync(CancellationToken ct) =>
-        (await connection.QueryAsync<LogoCariFirmaVM>(Command("SELECT NR AS Number,COALESCE(NAME,N'') AS Name,COALESCE(LOCALCTYP,0) AS LocalCurrency FROM dbo.L_CAPIFIRM WHERE NR BETWEEN 1 AND 999 ORDER BY NR", null, ct))).ToList();
+    public async Task<List<LogoCariFirmaVM>> CompaniesAsync(CancellationToken ct)
+    {
+        var configured=await portalCompanies.ListAsync(ct);
+        if(configured.Count==0)return [];
+        var metadata=(await connection.QueryAsync<LogoCariFirmaVM>(Command("SELECT NR AS Number,COALESCE(LOCALCTYP,0) AS LocalCurrency FROM dbo.L_CAPIFIRM WHERE NR IN @numbers AND NR BETWEEN 1 AND 999 ORDER BY NR",new{numbers=configured.Select(x=>x.Number).ToArray()},ct))).ToDictionary(x=>x.Number);
+        return configured.Where(x=>metadata.ContainsKey(x.Number)).Select(x=>new LogoCariFirmaVM{Number=x.Number,Name=x.Name,LocalCurrency=metadata[x.Number].LocalCurrency}).ToList();
+    }
     public async Task<List<LogoCariDonemVM>> PeriodsAsync(int firm, CancellationToken ct)
     {
         ValidateFirm(firm);
@@ -35,7 +40,7 @@ public sealed partial class LogoCustomerStatementService(LogoContext logo) : ILo
     public async Task<LogoCariScopeVM> ScopeAsync(int firm, int period, DateTime? start, DateTime? end, CancellationToken ct)
     {
         ValidateFirm(firm);
-        var company = (await CompaniesAsync(ct)).SingleOrDefault(x => x.Number == firm) ?? throw new KeyNotFoundException("Logo firması bulunamadı.");
+        var company = (await CompaniesAsync(ct)).SingleOrDefault(x => x.Number == firm) ?? throw new KeyNotFoundException("Seçilen firma portal Şirketler listesinde tanımlı veya aktif değil ya da Logo'da bulunamadı.");
         var periods = await PeriodsAsync(firm, ct);
         var chosen = period == 0 ? periods.FirstOrDefault() : periods.SingleOrDefault(x => x.Number == period);
         if (chosen == null) throw new KeyNotFoundException("Seçilen firma için Logo dönemi bulunamadı.");

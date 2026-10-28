@@ -5,6 +5,7 @@ namespace Ekomers.Models.ViewModels.Production;
 
 public sealed class WarehouseCountVM
 {
+    public string? Error { get; set; }
     public int DraftId { get; set; }
     public int Revision { get; set; }
     public Guid RequestId { get; set; } = Guid.NewGuid();
@@ -29,6 +30,7 @@ public sealed class WarehouseCountVM
 
 public sealed class WarehouseCountRowVM
 {
+    public string? Error { get; set; }
     public List<WarehouseCountEntryVM> Entries { get; set; } = [];
     public int MaterialId { get; set; }
     public string MaterialCode { get; set; } = string.Empty;
@@ -39,7 +41,7 @@ public sealed class WarehouseCountRowVM
     public decimal ReservedQuantity { get; set; }
     public decimal? CriticalQuantity { get; set; }
     public decimal SnapshotCurrentQuantity { get; set; }
-    public bool StockChanged => CurrentQuantity != SnapshotCurrentQuantity;
+    public bool StockChanged => Error == null && CurrentQuantity != SnapshotCurrentQuantity;
     public string SnapshotQuantity { get; set; } = string.Empty;
     public string? CountedQuantity { get; set; }
 }

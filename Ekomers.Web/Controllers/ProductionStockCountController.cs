@@ -1,4 +1,5 @@
 using Ekomers.Data;
+using Ekomers.Data.Services;
 using Ekomers.Models.Entity.Production;
 using Ekomers.Models.Enums;
 using Ekomers.Models.ViewModels.Production;
@@ -94,7 +95,9 @@ public sealed partial class ProductionStockCountController : Controller
         if (!warehouseId.HasValue)
             return View(model);
 
-        var draft = selectedDraft ?? await GetOrCreateCountDraftAsync(warehouseId.Value, sourceDocument?.ID, correctionMaterialIds, ct);
+        PrdWarehouseCountDraft draft;
+        try { draft = selectedDraft ?? await GetOrCreateCountDraftAsync(warehouseId.Value, sourceDocument?.ID, correctionMaterialIds, ct); }
+        catch (InvalidOperationException ex) { _context.ChangeTracker.Clear(); model.Error = ex.Message; return View(model); }
         model.DraftId = draft.ID; model.Revision = draft.Revision; model.Status = draft.Status;
         model.CountDate = draft.CountDate; model.Notes = draft.Notes; model.InventoryDocumentId = draft.InventoryDocumentId;
         var entries = await _context.PrdWarehouseCountEntries.AsNoTracking().Where(x => x.DraftId == draft.ID && x.IsDelete != true).OrderBy(x => x.ID).ToListAsync(ct);
@@ -411,12 +414,13 @@ public sealed partial class ProductionStockCountController : Controller
         {
             await ValidateCountUnitsAsync(entries, warehouse.ID, ct);
 
-            var stockMovements = await _context.PrdStockMovements
+            var rawStockMovements = await _context.PrdStockMovements
                 .AsNoTracking()
                 .Where(x => x.WarehouseId == warehouse.ID && materialIds.Contains(x.MaterialId) && x.IsDelete != true)
                 .Select(x => new
                 {
                     x.MaterialId,
+                    x.UnitId,
                     x.StockLotId,
                     x.Direction,
                     x.Quantity,
@@ -426,6 +430,14 @@ public sealed partial class ProductionStockCountController : Controller
                     x.ID
                 })
                 .ToListAsync(ct);
+
+            var converter = await ProductionStockUnitConverter.LoadAsync(_context, materialIds, ct);
+            var stockMovements = rawStockMovements.Select(x => new
+            {
+                x.MaterialId, x.StockLotId, x.Direction, x.TotalCost, x.MovementDate, x.ID,
+                Quantity = converter.Quantity(x.MaterialId, x.UnitId, x.Quantity),
+                UnitCost = converter.UnitCost(x.MaterialId, x.UnitId, x.UnitCost)
+            }).ToList();
 
             var currentByMaterial = stockMovements
                 .GroupBy(x => x.MaterialId)
@@ -637,6 +649,11 @@ public sealed partial class ProductionStockCountController : Controller
             await transaction.RollbackAsync(ct); _context.ChangeTracker.Clear();
             return CountError(model, ex.Message);
         }
+        catch (OverflowException)
+        {
+            await transaction.RollbackAsync(ct); _context.ChangeTracker.Clear();
+            return CountError(model, "Dönüştürülmüş miktar veya maliyet desteklenen aralığı aşıyor; sayım girişleri korunmuştur.");
+        }
     }
 
     private async Task<List<WarehouseCountRowVM>> BuildRowsAsync(
@@ -647,22 +664,11 @@ public sealed partial class ProductionStockCountController : Controller
         if (sessionRows.Count == 0) return [];
 
         var materialIds = sessionRows.Select(x => x.MaterialId).Distinct().ToList();
-        var materials = await (
-            from material in _context.PrdMaterials.AsNoTracking()
-            join unit in _context.PrdUnits.AsNoTracking() on material.UnitId equals unit.ID
-            where materialIds.Contains(material.ID)
-            select new
-            {
-                material.ID,
-                material.Code,
-                material.Name,
-                material.Type,
-                material.CriticalQuantity,
-                Unit = unit.Name
-            })
-            .ToDictionaryAsync(x => x.ID, ct);
+        var materials = await _context.PrdMaterials.AsNoTracking()
+            .Where(material => materialIds.Contains(material.ID)).ToDictionaryAsync(x => x.ID, ct);
 
-        var balances = await CurrentBalancesAsync(warehouseId, materialIds, ct);
+        var resolved = await ResolveCountBalancesAsync(warehouseId, materialIds, ct);
+        var balances = resolved.Values;
         var reservations = await _context.PrdStockReservations
             .AsNoTracking()
             .Where(x => x.WarehouseId == warehouseId &&
@@ -681,11 +687,22 @@ public sealed partial class ProductionStockCountController : Controller
         foreach (var group in sessionRows.GroupBy(x => x.MaterialId).OrderBy(g => g.First().MaterialCode))
         {
             var sessionRow = group.First();
-            if (!materials.TryGetValue(sessionRow.MaterialId, out var material)) continue;
+            // Broken master references must not hide saved physical count entries.
+            var material = materials.GetValueOrDefault(sessionRow.MaterialId) ?? new PrdMaterial
+                { ID = sessionRow.MaterialId, Code = sessionRow.MaterialCode, Name = sessionRow.MaterialName, UnitId = sessionRow.UnitId };
             var current = balances.GetValueOrDefault(material.ID);
             var snapshot = sessionRow.SnapshotQuantity;
+            var unitError = resolved.Errors.GetValueOrDefault(material.ID);
+            try
+            {
+                resolved.Converter.BaseUnitName(material.ID);
+                if (group.Any(x => !resolved.Converter.IsBaseUnitEquivalent(material.ID, x.UnitId)))
+                    unitError = $"{material.Code}: ana birim sayım başladıktan sonra değişmiş; bu ürünü kaldırıp yeni ana biriminde yeniden sayınız.";
+            }
+            catch (InvalidOperationException ex) { unitError = ex.Message; }
             rows.Add(new WarehouseCountRowVM
             {
+                Error = unitError,
                 MaterialId = material.ID,
                 MaterialCode = material.Code,
                 MaterialName = material.Name,
@@ -710,16 +727,31 @@ public sealed partial class ProductionStockCountController : Controller
         CancellationToken ct)
     {
         if (materialIds.Count == 0) return [];
-        return await _context.PrdStockMovements
+        var resolved = await ResolveCountBalancesAsync(warehouseId, materialIds, ct);
+        if (resolved.Errors.Count > 0) throw new InvalidOperationException(resolved.Errors.First().Value);
+        return resolved.Values;
+    }
+
+    private async Task<(Dictionary<int,decimal> Values, Dictionary<int,string> Errors, ProductionStockUnitConverter Converter)> ResolveCountBalancesAsync(
+        int warehouseId, IReadOnlyCollection<int> materialIds, CancellationToken ct)
+    {
+        var movements = await _context.PrdStockMovements
             .AsNoTracking()
             .Where(x => x.WarehouseId == warehouseId && materialIds.Contains(x.MaterialId) && x.IsDelete != true)
-            .GroupBy(x => x.MaterialId)
-            .Select(group => new
+            .Select(x => new { x.MaterialId, x.UnitId, x.Direction, x.Quantity }).ToListAsync(ct);
+        var converter = await ProductionStockUnitConverter.LoadAsync(_context, materialIds, ct);
+        var values = new Dictionary<int,decimal>();var errors = new Dictionary<int,string>();
+        foreach (var group in movements.GroupBy(x => x.MaterialId))
+        {
+            try
             {
-                MaterialId = group.Key,
-                Quantity = group.Sum(x => x.Direction == PrdStockDirection.In ? x.Quantity : -x.Quantity)
-            })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity, ct);
+                values[group.Key] = group.Sum(x => (x.Direction == PrdStockDirection.In ? 1 : -1) * converter.Quantity(x.MaterialId, x.UnitId, x.Quantity));
+                if (Math.Abs(values[group.Key]) > MaximumCount) throw new InvalidOperationException("Dönüştürülmüş stok bakiyesi sayımın desteklediği miktar aralığını aşıyor.");
+            }
+            catch (InvalidOperationException ex) { errors[group.Key] = ex.Message; }
+            catch (OverflowException) { errors[group.Key] = "Dönüştürülmüş stok toplamı desteklenen aralığı aşıyor."; }
+        }
+        return (values,errors,converter);
     }
 
     private Task<bool> IsActiveWarehouseAsync(int warehouseId, CancellationToken ct) =>

@@ -1,0 +1,81 @@
+@model Ekomers.Models.ViewModels.Purchasing.PurchasingSearchVM
+@using Ekomers.Models.ViewModels.Purchasing
+@{
+    ViewData["Title"]="Satınalma Arama ve Geçmiş";
+    var tr=CultureInfo.GetCultureInfo("tr-TR");
+    string PageLink(int page,int summaryPage)=>Url.Action("Index","SatinalmaArama",new {Model.Search,Model.Product,Model.Supplier,Model.MaterialId,Model.SupplierId,startDate=Model.StartDate?.ToString("yyyy-MM-dd"),endDate=Model.EndDate?.ToString("yyyy-MM-dd"),Model.Stage,Model.IncludeCancelled,run=true,page,summaryPage})!;
+}
+<div class="card card-custom mb-5">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Satınalma Arama ve Geçmiş<span class="d-block text-muted pt-2 font-size-sm">Ürün ve tedarikçi bazında talep, teklif, sipariş, teslimat ve işlem geçmişi</span></h3></div></div>
+    <div class="card-body">
+        <form asp-controller="SatinalmaArama" asp-action="Index" method="get">
+            <input type="hidden" name="Run" value="true" />
+            @if(Model.MaterialId.HasValue){<input asp-for="MaterialId" type="hidden"/>}
+            @if(Model.SupplierId.HasValue){<input asp-for="SupplierId" type="hidden"/>}
+            <div asp-validation-summary="All" class="text-danger mb-4" role="alert"></div>
+            @if(Model.MaterialId.HasValue||Model.SupplierId.HasValue){<div class="alert alert-light-info">Seçilen ürün/firma ile sınırlandırılmış görünüm. Yeni bir arama için <a asp-action="Index">filtreleri temizleyin</a>.</div>}
+            <div class="row">
+                <div class="col-lg-4 form-group"><label asp-for="Search">Genel arama</label><input asp-for="Search" class="form-control" maxlength="100" placeholder="Ürün, firma, belge veya lot numarası"/></div>
+                <div class="col-lg-4 form-group"><label asp-for="Product">Ürün kodu / adı</label><input asp-for="Product" class="form-control" maxlength="100" placeholder="Örn. 150HM veya C vitamini"/></div>
+                <div class="col-lg-4 form-group"><label asp-for="Supplier">Tedarikçi firma kodu / unvanı</label><input asp-for="Supplier" class="form-control" maxlength="100" placeholder="Cari kod veya firma adı"/></div>
+                <div class="col-lg-3 form-group"><label asp-for="StartDate">Başlangıç</label><input asp-for="StartDate" type="date" class="form-control"/></div>
+                <div class="col-lg-3 form-group"><label asp-for="EndDate">Bitiş</label><input asp-for="EndDate" type="date" class="form-control"/></div>
+                <div class="col-lg-3 form-group"><label asp-for="Stage">Geçmişte gösterilecek işlem</label><select asp-for="Stage" class="form-control"><option value="">Tüm işlemler</option>@foreach(var stage in Enum.GetValues<PurchasingSearchStage>()){<option value="@stage">@(new PurchasingSearchEventVM{Stage=stage}.StageName)</option>}</select></div>
+                <div class="col-lg-3 form-group d-flex align-items-center pt-lg-6"><label class="checkbox"><input asp-for="IncludeCancelled"/> İptal kayıtlarını geçmişte göster<span></span></label></div>
+            </div>
+            <div class="d-flex justify-content-end"><a asp-action="Index" class="btn btn-light mr-2">Temizle</a><button type="submit" class="btn btn-primary">Satınalmada Ara</button></div>
+        </form>
+        <div class="text-muted mt-4">Portalın Yeni Satınalma kayıtları aranır. Logo faturaları ayrı <a asp-controller="LogoPurchaseInvoice" asp-action="Index">Logo Alım Faturaları</a> ekranındadır. Tarihler her işlemin kendi tarihine uygulanır. Ürün ve firma filtreleri birlikte kullanılabilir.</div>
+    </div>
+</div>
+@if(!Model.Run){<div class="alert alert-light-info">Bir ürünün kimden ve ne zaman alındığını veya bir firmanın hangi ürünleri tedarik ettiğini görmek için arama yapın.</div>}
+else if(ViewData.ModelState.IsValid)
+{
+    <div class="row mb-5">
+        @foreach(var card in new[]{("Bağlantılı talep",Model.RequestCount),("Sipariş",Model.OrderCount),("Mal kabul",Model.ReceiptCount),("Firma / ürün / birim",Model.SummaryCount)}){
+            <div class="col-md-3 mb-3"><div class="card card-custom h-100"><div class="card-body py-5"><div class="text-muted">@card.Item1</div><div class="font-size-h3 font-weight-bold mt-2">@card.Item2.ToString("N0",tr)</div></div></div></div>
+        }
+    </div>
+    <div class="card card-custom mb-5">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">Firma / Ürün Özeti<span class="d-block text-muted pt-2 font-size-sm">Sipariş ve mal kabul satırları ayrı toplanır. İptaller toplamlara dahil edilmez; farklı birimler ayrı satırlardır.</span></h3></div></div>
+        <div class="card-body">
+            <div class="text-muted mb-4">Özet ve üst sayılar arama/tarih filtrelerinin tamamını kapsar; işlem türü yalnızca aşağıdaki geçmişi süzer. Teslim alınan miktar iadelerden önceki mal kabul miktarıdır; kullanılabilir stok değildir.</div>
+            @if(Model.Summaries.Count==0){<div class="alert alert-light-info">Bu aramada firmaya bağlı fiyat isteği, teklif, sipariş veya mal kabul yok. Bağımsız talepler işlem geçmişinde görünebilir.</div>}
+            else{
+                <div class="table-responsive"><table class="table table-head-custom table-hover"><thead><tr><th>Firma</th><th>Ürün</th><th>Birim</th><th class="text-right">Sipariş edilen</th><th class="text-right">Teslim alınan</th><th>İlk / Son teslimat</th><th>Talep / Teklif</th><th></th></tr></thead><tbody>
+                @foreach(var row in Model.Summaries){<tr>
+                    <td><a asp-action="Index" asp-route-run="true" asp-route-supplierId="@row.SupplierId" asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")">@row.SupplierCode</a><div>@row.SupplierName</div></td>
+                    <td><a asp-action="Index" asp-route-run="true" asp-route-materialId="@row.MaterialId" asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")">@row.ProductCode</a><div class="text-muted">@row.ProductName</div></td>
+                    <td>@row.Unit</td><td class="text-right font-weight-bold">@row.OrderedQuantity.ToString("#,##0.######",tr)</td><td class="text-right font-weight-bold">@row.ReceivedQuantity.ToString("#,##0.######",tr)</td>
+                    <td>@(row.FirstReceiptDate?.ToString("dd.MM.yyyy")??"-")<div class="text-muted">@(row.LastReceiptDate?.ToString("dd.MM.yyyy")??"-")</div></td>
+                    <td>@(row.HasRequest?"Bağlantılı talep var":"Bağlantılı talep yok")<div class="text-muted">@row.QuotationCount teklif</div></td>
+                    <td><a asp-action="Index" asp-route-run="true" asp-route-materialId="@row.MaterialId" asp-route-supplierId="@row.SupplierId" asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")" class="btn btn-sm btn-light-primary">Geçmiş</a></td>
+                </tr>}
+                </tbody></table></div>
+                <div class="d-flex justify-content-between align-items-center mt-4"><span>@Model.SummaryCount kayıt · Sayfa @Model.SummaryPage / @Model.SummaryPageCount</span><div>@if(Model.SummaryPage>1){<a href="@PageLink(Model.Page,Model.SummaryPage-1)" class="btn btn-sm btn-light mr-2">Önceki özet</a>}@if(Model.SummaryPage<Model.SummaryPageCount){<a href="@PageLink(Model.Page,Model.SummaryPage+1)" class="btn btn-sm btn-light">Sonraki özet</a>}</div></div>
+            }
+        </div>
+    </div>
+    <div class="card card-custom">
+        <div class="card-header"><div class="card-title"><h3 class="card-label">İşlem Geçmişi <span class="d-block text-muted pt-2 font-size-sm">Yeni tarihten eskiye · Talep, fiyat isteği, teklif, sipariş, mal kabul, onay, depo girişi ve kalite kararları</span></h3></div></div>
+        <div class="card-body">
+            <div class="text-muted mb-4">Durumlar kayıtların güncel durumudur; onay ve kalite kararlarında karar anındaki durum gösterilir. Geçmiş satırları ayrı aşamalardır, miktarları birbiriyle toplanmaz.</div>
+            @if(Model.Events.Count==0){<div class="alert alert-light-info">Seçilen filtrelerde işlem bulunamadı.</div>}
+            else{
+                <div class="table-responsive"><table class="table table-head-custom table-hover"><thead><tr><th>Tarih / İşlem</th><th>Belge / Talep</th><th>Ürün / Firma</th><th class="text-right">Miktar</th><th>Lot / Tarihler</th><th>Durum / Açıklama</th><th></th></tr></thead><tbody>
+                @foreach(var row in Model.Events){<tr>
+                    <td class="text-nowrap">@row.Date.ToString("dd.MM.yyyy HH:mm")<div class="font-weight-bold mt-2">@row.StageName</div><div class="text-muted">@row.Actor</div></td>
+                    <td>@row.DocumentNumber@if(row.RequestId.HasValue){<div class="mt-2"><a asp-controller="SatinalmaYonetimi" asp-action="TalepDetay" asp-route-id="@row.RequestId">@row.RequestNumber</a></div>}else{<div class="text-muted">Bağlantılı talep yok</div>}
+                        @if(!string.IsNullOrEmpty(row.DispatchNumber)){<div class="text-muted">İrsaliye: @row.DispatchNumber</div>}@if(!string.IsNullOrEmpty(row.InvoiceNumber)){<div class="text-muted">Fatura: @row.InvoiceNumber</div>}</td>
+                    <td><strong>@row.ProductCode</strong><div>@row.ProductName</div><div class="text-muted mt-2">@(row.SupplierId.HasValue?row.SupplierCode+" · "+row.SupplierName:"Talep aşamasında firma atanmaz")</div></td>
+                    <td class="text-right text-nowrap">@row.Quantity.ToString("#,##0.######",tr) @row.Unit</td>
+                    <td>@(row.LotNumber??"-")@if(row.ProductionDate.HasValue){<div class="text-muted text-nowrap">Üretim: @row.ProductionDate.Value.ToString("dd.MM.yyyy")</div>}@if(row.ExpirationDate.HasValue){<div class="text-muted text-nowrap">SKT: @row.ExpirationDate.Value.ToString("dd.MM.yyyy")</div>}</td>
+                    <td><span class="label label-inline @(row.Cancelled?"label-light-danger":"label-light-info")">@row.StatusName</span>@if(row.Cancelled){<div class="text-danger">İptal kayıt</div>}<div class="mt-2" style="white-space:pre-wrap;overflow-wrap:anywhere">@row.Notes</div></td>
+                    <td><a asp-controller="@row.DetailController" asp-action="@row.DetailAction" asp-route-id="@row.DocumentId" class="btn btn-sm btn-light-primary">Detay</a></td>
+                </tr>}
+                </tbody></table></div>
+                <div class="d-flex justify-content-between align-items-center mt-4"><span>@Model.EventCount işlem · Sayfa @Model.Page / @Model.PageCount</span><div>@if(Model.Page>1){<a href="@PageLink(Model.Page-1,Model.SummaryPage)" class="btn btn-sm btn-light mr-2">Önceki</a>}@if(Model.Page<Model.PageCount){<a href="@PageLink(Model.Page+1,Model.SummaryPage)" class="btn btn-sm btn-light">Sonraki</a>}</div></div>
+            }
+        </div>
+    </div>
+}

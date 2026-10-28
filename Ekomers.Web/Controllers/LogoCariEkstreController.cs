@@ -27,7 +27,7 @@ public sealed class LogoCariEkstreController(ILogoCustomerStatementService repor
         try
         {
             model.Companies=await reports.CompaniesAsync(ct);
-            if(model.Companies.Count==0) { model.Error="Logo'da raporlanacak firma bulunamadı.";return View(model); }
+            if(model.Companies.Count==0) { model.Error="Portal Şirketler sayfasında geçerli Logo firma kodu bulunan aktif şirket tanımlı değil veya tanımlı firma Logo'da bulunamadı.";return View(model); }
             if(firmNumber==0) firmNumber=model.Companies[0].Number;
             model.FirmNumber=firmNumber;
             if(!model.Companies.Any(x=>x.Number==firmNumber)) return NotFound();
@@ -83,7 +83,7 @@ public sealed class LogoCariEkstreController(ILogoCustomerStatementService repor
                 return ImageError("Bu hareket için görüntülenebilir e-Fatura ETTN/UUID bilgisi bulunamadı veya kaynak fatura iptal edilmiş.",StatusCodes.Status404NotFound);
 
             // Reuse the PDF service already used by LogoPurchaseInvoiceController.
-            var document=await eLogoPostboxClient.GetIncomingInvoicePdfAsync(invoice.EInvoiceGuid,ct);
+            var document=await eLogoPostboxClient.GetIncomingInvoicePdfAsync(firmNumber,invoice.EInvoiceGuid,ct);
             var disposition=new ContentDispositionHeaderValue("inline");
             disposition.SetHttpFileName(document.FileName);
             Response.Headers.ContentDisposition=disposition.ToString();
@@ -94,6 +94,11 @@ public sealed class LogoCariEkstreController(ILogoCustomerStatementService repor
         catch(ArgumentException) { return ImageError("Fatura filtre bilgileri geçersiz.",StatusCodes.Status400BadRequest); }
         catch(KeyNotFoundException) { return ImageError("Seçilen firma, dönem, cari ve tarih aralığında fatura bulunamadı.",StatusCodes.Status404NotFound); }
         catch(SqlException ex) { logger.LogError(ex,"Cari ekstre fatura görseli için Logo kaydı okunamadı; firma {Firm}, hareket {Movement}",firmNumber,movementRef);return ImageError("Logo fatura kaydı okunamadı. Lütfen tekrar deneyiniz.",StatusCodes.Status503ServiceUnavailable); }
+        catch(ELogoConfigurationException ex)
+        {
+            logger.LogWarning("Cari ekstre için eLogo hesabı kullanılamıyor; firma {Firm}",firmNumber);
+            return ImageError(ex.Message,StatusCodes.Status502BadGateway);
+        }
         catch(Exception ex) when(ex is not OperationCanceledException)
         {
             logger.LogError(ex,"Cari ekstre fatura PDF'i eLogo üzerinden alınamadı; firma {Firm}, hareket {Movement}",firmNumber,movementRef);

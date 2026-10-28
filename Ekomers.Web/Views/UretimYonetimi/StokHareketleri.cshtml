@@ -16,12 +16,16 @@
         </div>
     </div>
     <div class="card-body">
+        @if(Model.Error!=null){<div class="alert alert-danger" role="alert">@Model.Error Stok toplamları hesaplanamadı; aşağıdaki geçmiş hareketler orijinal kayıtlarıdır.</div>}
+        else{
         <div class="row">
             <div class="col-lg-3 col-md-6 mb-4"><span class="text-muted d-block">Depo</span><strong>@Model.WarehouseCode - @Model.WarehouseName</strong></div>
             <div class="col-lg-3 col-md-6 mb-4"><span class="text-muted d-block">Toplam Giriş</span><strong class="text-success">@Model.IncomingQuantity.ToString("N2") @Model.Unit</strong></div>
             <div class="col-lg-3 col-md-6 mb-4"><span class="text-muted d-block">Toplam Çıkış</span><strong class="text-danger">@Model.OutgoingQuantity.ToString("N2") @Model.Unit</strong></div>
             <div class="col-lg-3 col-md-6 mb-4"><span class="text-muted d-block">Güncel Bakiye</span><strong class="text-primary">@Model.RemainingQuantity.ToString("N2") @Model.Unit</strong></div>
         </div>
+        <p class="text-muted">Toplamlar ürünün ana stok birimindedir. Aşağıdaki hareketler, denetim için kaydedildikleri orijinal birim ve miktarla gösterilir.</p>
+        }
     </div>
 </div>
 

@@ -4,7 +4,7 @@ Adres: `/LogoCariEkstre`. Menü: Raporlar → Cari Hesaplar → Cari Ekstre · F
 
 ## Kapsam ve yetki
 
-- Firmalar portal şirket tanımlarından değil, LogoConnection üzerindeki `L_CAPIFIRM` kayıtlarından gelir. Dönemler `L_CAPIPERIOD` üzerinden firmaya göre seçilir.
+- Satınalma faturaları ve cari ekstrede firma listesi portalın `Sirketler` tablosundan gelir: silinmemiş ve pasif olmayan şirketlerin `LogoTigerSirketKodu` değeri kullanılır; ad için `SirketKisaAdi`, boşsa `SirketAdi` alınır. Yalnızca 1–999 arası geçerli ve Logo'da karşılığı bulunan kodlar listelenir. Aynı Logo koduna bağlı portal kartları tek rapor kapsamıdır; farklı adları tek seçenekte birlikte gösterilir. `L_CAPIFIRM` şirket listesinin kaynağı değildir; sadece eşleme doğrulaması ve yerel para birimi için okunur. Dönemler `L_CAPIPERIOD` üzerinden firmaya göre seçilir. Portalda tanımlı/aktif olmayan firmalar doğrudan URL ile de sorgulanamaz; banka raporundaki mevcut şirket tanımları kullanılır.
 - Tek firma ve tek dönem raporlanır. Farklı dönemlerin devir kayıtları üst üste eklenmez. Tarihler seçilen dönemin içinde olmalıdır.
 - Tüm uç noktalar oturum ve `Rapor=LogoCariEkstre` sayfa yetkisini gerektirir. Admin erişimi korunur; menü görünürlüğü de aynı politikaya bağlıdır. `Rapor=BorcAlacak` sadece eski Borç/Alacak raporunu açar.
 - Logo tarafında yalnızca parametreli SELECT çalışır. Tablo adları sınırlandırılmış sayısal firma/dönemden üretilir. Raporun veri tablosu migration'ı yoktur; sayfa yetki tanımları için `20261020120000_AddReportPagePermissions` uygulanmalıdır.
@@ -38,12 +38,15 @@ Detay pencereleri sayfalanır. Yetki/oturum hatası, yönlendirilmiş giriş say
 
 Fatura detayındaki **Fatura Görselini Aç** bağlantısı PDF'yi yeni sekmede açar. `LogoPurchaseInvoiceController` ile aynı `IELogoPostboxClient` ve mevcut eLogo ayarları kullanılır; yeni entegrasyon veya migration gerekmez. Kağıt faturalar, e-Arşiv veya geçerli e-Fatura ETTN/UUID bilgisi olmayan kayıtlar için açıklama gösterilir.
 
+Satınalma ve cari ekstre fatura görsellerinde seçilen Logo firması servise aktarılır: **100 (Holimer) → `ELogo`**, **103 (FW) → `ELogoFw`** ayar bölümü. Her bölüm kendi `ServiceUrl`, `Username`, `Password` ve varsa `AppName`, `Source`, `Version` değerleriyle kullanılır. Kullanıcı bilgileri bu belgeye yazılmaz. Hesabı tanımlı olmayan firma veya eksik `ELogoFw` ayarı için diğer firmanın hesabına geçilmez. Giriş, belge okuma ve çıkış aynı firma hesabıyla yapılır; eşzamanlı istekler hesap/oturum paylaşmaz. Mevcut ayarların yeniden yayımlamada korunması gerekir; migration yoktur.
+
 `/LogoCariEkstre/FaturaGorseli` de `Rapor=LogoCariEkstre` yetkisine bağlıdır. URL yalnızca firma/dönem/cari/hareket ve tarih kapsamını taşır; UUID tarayıcıdan kabul edilmez. Hareket ve kaynak fatura tekrar doğrulandıktan sonra seçilen firmanın INVOICE kaydındaki GUID okunur. İptal faturalar açılmaz. Mevcut eLogo hesabının ilgili şirket belgesine erişememesi durumunda açıklayıcı hata gösterilir; başka firmadaki aynı fatura numarası denenmez. PDF yanıtı inline ve no-store'dur. Testlerde eLogo taklidi kullanılır; dış servisten gerçek belge talep edilmez.
 
 ## Doğrulama
 
 ```powershell
 node scripts/tests/logo-cari-ekstre-modal.test.cjs
+dotnet run --project scripts/tests/ELogoProfiles/ELogoProfiles.csproj -p:StaticWebAssetsEnabled=false -p:UseAppHost=false
 dotnet run --project scripts/tests/LogoCustomerStatement/LogoCustomerStatement.csproj -p:StaticWebAssetsEnabled=false -p:UseAppHost=false -p:OutputPath=$env:TEMP/ekomers-cari-ekstre-tests
 ```
 

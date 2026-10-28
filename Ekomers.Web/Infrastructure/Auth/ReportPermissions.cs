@@ -16,10 +16,13 @@ public static class ReportPermissions
     public const string UrunMaliyetleriYonet = "Rapor.UrunMaliyetleriYonet";
     public const string MuhasebeGiderleri = "Rapor.MuhasebeGiderleri";
     public const string MuhasebeGiderleriYonet = "Rapor.MuhasebeGiderleriYonet";
+    public const string PivotRaporlar = "Rapor.PivotRaporlar";
+    public const string PivotRaporlarYonet = "Rapor.PivotRaporlarYonet";
 
     public static IReadOnlyList<string> Policies { get; } = Array.AsReadOnly(new[] {
         Bankalar, BankaKredileri, LogoBankaHareketleri, BorcAlacak, LogoCariEkstre,
-        SatisKarlilik, UrunMaliyetleri, UrunMaliyetleriYonet, MuhasebeGiderleri, MuhasebeGiderleriYonet
+        SatisKarlilik, UrunMaliyetleri, UrunMaliyetleriYonet, MuhasebeGiderleri, MuhasebeGiderleriYonet,
+        PivotRaporlar, PivotRaporlarYonet
     });
 
     public static bool CanAccess(ClaimsPrincipal user, string policy)
@@ -31,6 +34,7 @@ public static class ReportPermissions
         return policy switch {
             UrunMaliyetleri => user.HasClaim("Rapor", "UrunMaliyetleriYonet"),
             MuhasebeGiderleri => user.HasClaim("Rapor", "MuhasebeGiderleriYonet"),
+            PivotRaporlar => user.HasClaim("Rapor", "PivotRaporlarYonet"),
             _ => false
         };
     }

@@ -51,6 +51,7 @@ public sealed class LegacyStockImportLineVM
 
 public sealed class ProductionStockReportVM
 {
+    public string? Error { get; set; }
     public string? Code { get; set; }
     public string? Name { get; set; }
     public int? WarehouseId { get; set; }
@@ -91,6 +92,7 @@ public sealed class ProductionStockUnitSummaryVM
 
 public sealed class ProductionStockMovementHistoryVM
 {
+    public string? Error { get; set; }
     public int MaterialId { get; set; }
     public int WarehouseId { get; set; }
     public string MaterialCode { get; set; } = string.Empty;

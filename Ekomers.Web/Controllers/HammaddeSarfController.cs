@@ -76,7 +76,8 @@ public sealed class HammaddeSarfController(ApplicationDbContext context, RawMate
             TempData["success"] = "Sarf taslağı oluşturuldu. Henüz stok düşmedi; detay ekranından Stoktan Düş işlemini uygulayınız.";
             return RedirectToAction(nameof(Detay), new { id = document.ID });
         }
-        catch (InvalidOperationException e) { ModelState.AddModelError(string.Empty, e.Message); await FillFormAsync(model, ct); return View(model); }
+        catch (InvalidOperationException e) { context.ChangeTracker.Clear(); ModelState.AddModelError(string.Empty, e.Message); await FillFormAsync(model, ct); return View(model); }
+        catch (OverflowException) { context.ChangeTracker.Clear(); ModelState.AddModelError(string.Empty, "Dönüştürülmüş miktar veya maliyet desteklenen aralığı aşıyor."); await FillFormAsync(model, ct); return View(model); }
     }
 
     [HttpGet]
@@ -122,14 +123,12 @@ public sealed class HammaddeSarfController(ApplicationDbContext context, RawMate
             var lines = await context.PrdInventoryDocumentLines.Where(x => x.InventoryDocumentId == id && x.IsDelete != true).OrderBy(x => x.Sequence).ToListAsync(ct);
             var prepared = await consumption.PrepareLinesAsync(document.SourceWarehouseId.Value, lines.Select(x => new RawMaterialConsumptionInputVM
             { StockLotId = x.SourceStockLotId, Quantity = x.Quantity.ToString(CultureInfo.InvariantCulture), Notes = x.Notes }).ToList(), ct);
-            var unitIds = lines.Select(x => x.UnitId).Concat(prepared.Select(x => x.UnitId)).Distinct().ToList();
-            var units = await context.PrdUnits.AsNoTracking().Where(x => unitIds.Contains(x.ID)).ToDictionaryAsync(x => x.ID, ct);
+            var converter = await ProductionStockUnitConverter.LoadAsync(context, lines.Select(x => x.MaterialId).Distinct().ToList(), ct);
             var now = DateTime.Now;
             for (var i = 0; i < lines.Count; i++)
             {
                 var line = lines[i]; var current = prepared[i];
-                if (line.MaterialId != current.MaterialId || !units.TryGetValue(line.UnitId, out var oldUnit) || !units.TryGetValue(current.UnitId, out var newUnit) ||
-                    ProductionUnitNormalizer.CanonicalCode(oldUnit.Code, oldUnit.Name) != ProductionUnitNormalizer.CanonicalCode(newUnit.Code, newUnit.Name))
+                if (line.MaterialId != current.MaterialId || !converter.IsBaseUnitEquivalent(line.MaterialId, line.UnitId))
                     throw new InvalidOperationException("Taslak oluşturulduktan sonra malzeme/birim bilgisi değişmiş. Taslağı iptal edip yeniden hazırlayınız.");
                 line.UnitId = current.UnitId; line.UnitCost = current.UnitCost; line.OriginalUnitCost = current.OriginalUnitCost; line.TotalCost = current.TotalCost;
                 line.LotNumber = current.LotNumber; line.ProductionDate = current.ProductionDate; line.ExpirationDate = current.ExpirationDate;
@@ -150,7 +149,8 @@ public sealed class HammaddeSarfController(ApplicationDbContext context, RawMate
             await context.SaveChangesAsync(ct); await tx.CommitAsync(ct);
             TempData["success"] = "Hammaddeler seçilen depo ve lotların stoklarından düşüldü. Üretim emri veya Logo fişi oluşturulmadı.";
         }
-        catch (InvalidOperationException e) { await tx.RollbackAsync(ct); TempData["error"] = e.Message; }
+        catch (InvalidOperationException e) { await tx.RollbackAsync(ct); context.ChangeTracker.Clear(); TempData["error"] = e.Message; }
+        catch (OverflowException) { await tx.RollbackAsync(ct); context.ChangeTracker.Clear(); TempData["error"] = "Dönüştürülmüş miktar veya maliyet desteklenen aralığı aşıyor; stok düşülmedi."; }
         return RedirectToAction(nameof(Detay), new { id });
     }
 

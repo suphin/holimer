@@ -2,6 +2,9 @@ namespace Ekomers.Models.ViewModels.Purchasing;
 
 public sealed class LogoPurchaseInvoiceQueryVM
 {
+    public int FirmNumber { get; set; } = 100;
+    public string FirmName { get; set; } = "";
+    public List<LogoPurchaseInvoiceCompanyVM> Companies { get; set; } = [];
     public string? ProductSearch { get; set; }
     public string? InvoiceNumber { get; set; }
     public string? SupplierSearch { get; set; }
@@ -37,6 +40,8 @@ public sealed class LogoPurchaseInvoiceResultRowVM
 
 public sealed class LogoPurchaseInvoiceDetailVM
 {
+    public int FirmNumber { get; set; } = 100;
+    public string FirmName { get; set; } = "";
     public DateTime InvoiceDate { get; set; }
     public string InvoiceNumber { get; set; } = string.Empty;
     public string DocumentNumber { get; set; } = string.Empty;
@@ -54,6 +59,14 @@ public sealed class LogoPurchaseInvoiceDetailVM
     public string DocumentTrackingNumber { get; set; } = string.Empty;
     public string? Error { get; set; }
     public List<LogoPurchaseInvoiceDetailRowVM> Lines { get; set; } = [];
+}
+
+public sealed class LogoPurchaseInvoiceCompanyVM
+{
+    public int Number { get; set; }
+    public string Name { get; set; } = "";
+    public string? ViewName { get; set; }
+    public bool HasInvoiceView => ViewName != null;
 }
 
 public sealed class LogoPurchaseInvoiceDetailRowVM

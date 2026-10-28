@@ -7,6 +7,8 @@
     var hazirlikTamamlanabilir = Model.Items.SelectMany(x => x.Lots).Any(x => x.PreparedQuantity > x.ShippedQuantity);
     var lotIndex = 0;
 }
+@if(Model.UnitError!=null){<div class="alert alert-danger" role="alert">@Model.UnitError Birimler doğrulanamadığı için hazırlama/sevk kapatıldı; kayıtlı miktarlar değiştirilmedi.</div>}
+<div class="alert alert-light-info">Rezervasyon ve lot miktarları kayıtlı stok birimindedir. Reçete/ihtiyaç birimi farklıysa karşılığı ayrıca gösterilir. Hazırlanan gerçek miktarı girişin yanında yazan birimde giriniz.</div>
 
 <div class="card card-custom mb-5">
     <div class="card-header flex-wrap py-3">
@@ -31,28 +33,28 @@
         </div>
     </div>
     <div class="card-footer d-flex flex-wrap">
-        @if ((Model.Status == PrdWarehouseTaskStatus.Waiting || Model.Status == PrdWarehouseTaskStatus.Shortage) && toplanabilir)
+        @if (Model.UnitError==null&&(Model.Status == PrdWarehouseTaskStatus.Waiting || Model.Status == PrdWarehouseTaskStatus.Shortage) && toplanabilir)
         {
             <form asp-action="DepoGoreviHazirlamayaBasla" method="post" class="mr-2">
                 <input type="hidden" name="id" value="@Model.Id" />
                 <button class="btn btn-primary">Hazırlamaya Başla</button>
             </form>
         }
-        @if ((Model.Status == PrdWarehouseTaskStatus.Ready || Model.Status == PrdWarehouseTaskStatus.Shortage) && sevkEdilebilir)
+        @if (Model.UnitError==null&&(Model.Status == PrdWarehouseTaskStatus.Ready || Model.Status == PrdWarehouseTaskStatus.Shortage) && sevkEdilebilir)
         {
             <form asp-action="DepoGoreviSevkEt" method="post" class="mr-2" onsubmit="return confirm('Girilen gerçek hazırlama miktarları ana depodan çıkarılıp üretim deposuna sevk edilsin mi?');">
                 <input type="hidden" name="id" value="@Model.Id" />
                 <button class="btn btn-info">Hazırlananları Sevk Et</button>
             </form>
         }
-        @if (Model.Status == PrdWarehouseTaskStatus.Shipped)
+        @if (Model.UnitError==null&&Model.Status == PrdWarehouseTaskStatus.Shipped)
         {
             <form asp-action="DepoGoreviTeslimAl" method="post" class="mr-2" onsubmit="return confirm('Sevk edilen malzemeler üretim deposunda teslim alındı mı?');">
                 <input type="hidden" name="id" value="@Model.Id" />
                 <button class="btn btn-success">Üretim Deposunda Teslim Al</button>
             </form>
         }
-        @if (Model.Items.Any(x => x.ShortageQuantity > 0))
+        @if (Model.UnitError==null&&Model.Items.Any(x => x.ShortageQuantity > 0))
         {
             <form asp-action="DepoGoreviOlustur" method="post">
                 <input type="hidden" name="id" value="@Model.ProductionOrderId" />
@@ -137,7 +139,7 @@
                                         </td>
                                         <td>
                                             <input type="hidden" name="Lots[@lotIndex].Id" value="@lot.Id" />
-                                            @if (Model.Status == PrdWarehouseTaskStatus.Preparing)
+                                            @if (Model.UnitError==null&&Model.Status == PrdWarehouseTaskStatus.Preparing)
                                             {
                                                 <div class="input-group input-group-sm">
                                                     <input type="text" inputmode="decimal" class="form-control warehouse-prepared-input" name="Lots[@lotIndex].PreparedQuantityInput" value="@lot.PreparedQuantity.ToString("0.######", CultureInfo.InvariantCulture)" data-factor="@lot.TaskUnitConversionFactor.ToString(CultureInfo.InvariantCulture)" data-shipped="@lot.ShippedQuantity.ToString(CultureInfo.InvariantCulture)" autocomplete="off" />
@@ -178,7 +180,7 @@
                 </table>
             </div>
         </div>
-        @if (Model.Status == PrdWarehouseTaskStatus.Preparing)
+        @if (Model.UnitError==null&&Model.Status == PrdWarehouseTaskStatus.Preparing)
         {
             <div class="card-footer d-flex flex-wrap justify-content-end align-items-center">
                 <span id="preparation-complete-hint" class="text-muted mr-4 @(hazirlikTamamlanabilir ? "d-none" : string.Empty)">Tamamlamak için en az bir lotta sevk edilmemiş gerçek miktar girin.</span>
@@ -189,7 +191,7 @@
     </div>
 </form>
 
-@if (Model.Status == PrdWarehouseTaskStatus.Preparing)
+@if (Model.UnitError==null&&Model.Status == PrdWarehouseTaskStatus.Preparing)
 {
     <script>
         (function () {

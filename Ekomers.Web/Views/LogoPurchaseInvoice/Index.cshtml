@@ -20,21 +20,31 @@
             <input type="hidden" name="run" value="true" />
             <div class="row align-items-end">
                 <div class="col-xl-4 col-lg-6 mb-4">
+                    <label class="font-weight-bold" for="firmNumber">Logo Firması</label>
+                    <select id="firmNumber" name="firmNumber" class="form-control" required>
+                        @foreach(var company in Model.Companies)
+                        {
+                            <option value="@company.Number" selected="@(company.Number==Model.FirmNumber)" disabled="@(!company.HasInvoiceView)">@company.Number.ToString("000") · @company.Name@(!company.HasInvoiceView?" (fatura view'ı yok)":"")</option>
+                        }
+                    </select>
+                    <span class="form-text text-muted">Portal Şirketler listesindeki aktif şirketler ve Logo firma kodları</span>
+                </div>
+                <div class="col-xl-5 col-lg-6 mb-4">
                     <label class="font-weight-bold" for="productSearch">Ürün Kodu veya Adı</label>
                     <input id="productSearch" name="productSearch" value="@Model.ProductSearch" class="form-control" placeholder="Örn. 150HM.01 veya kakao..." autofocus />
                     <span class="form-text text-muted">Kod ve açıklama içinde arama yapar.</span>
                 </div>
-                <div class="col-xl-2 col-lg-3 mb-4">
+                <div class="col-xl-3 col-lg-6 mb-4">
                     <label class="font-weight-bold" for="invoiceNumber">Fatura Numarası</label>
                     <input id="invoiceNumber" name="invoiceNumber" value="@Model.InvoiceNumber" class="form-control" placeholder="Fatura / belge no" />
                <span class="form-text text-muted">&nbsp;</span>
                 </div>
-                <div class="col-xl-3 col-lg-3 mb-4">
+                <div class="col-xl-6 col-lg-6 mb-4">
                     <label class="font-weight-bold" for="supplierSearch">Tedarikçi</label>
                     <input id="supplierSearch" name="supplierSearch" value="@Model.SupplierSearch" class="form-control" placeholder="Cari kod veya unvan" />
                <span class="form-text text-muted">&nbsp;</span>
                 </div>
-                <div class="col-xl-3 col-lg-6 mb-4">
+                <div class="col-xl-6 col-lg-6 mb-4">
                     <div class="row">
                         <div class="col-6">
                             <label class="font-weight-bold" for="startDate">Başlangıç</label>
@@ -50,7 +60,7 @@
                 </div>
             </div>
             <div class="d-flex justify-content-end">
-                <a asp-action="Index" class="btn btn-light mr-2">Temizle</a>
+                <a asp-action="Index" asp-route-firmNumber="@Model.FirmNumber" class="btn btn-light mr-2">Temizle</a>
                 <button type="submit" class="btn btn-primary">
                     <i class="flaticon2-search-1"></i> Faturaları Sorgula
                 </button>
@@ -71,7 +81,7 @@
                 Sorgu Sonuçları
                 @if (Model.HasSearched && string.IsNullOrWhiteSpace(Model.Error))
                 {
-                    <span class="d-block text-muted pt-2 font-size-sm">@Model.TotalCount satınalma faturası bulundu</span>
+                    <span class="d-block text-muted pt-2 font-size-sm">@Model.FirmNumber.ToString("000") · @Model.FirmName · @Model.TotalCount satınalma faturası bulundu</span>
                 }
             </h3>
         </div>
@@ -80,7 +90,7 @@
         @if (!Model.HasSearched)
         {
             <div class="alert alert-light-primary mb-0">
-                Logo sorgusu sayfa açılırken otomatik çalıştırılmaz. Ürün kodunu veya adını yazıp <strong>Faturaları Sorgula</strong> düğmesine basın.
+                Fatura sorgusu sayfa açılırken otomatik çalıştırılmaz. Logo firmasını ve diğer filtreleri seçip <strong>Faturaları Sorgula</strong> düğmesine basın.
             </div>
         }
         else if (string.IsNullOrWhiteSpace(Model.Error) && Model.Rows.Count == 0)
@@ -138,7 +148,7 @@
                             <td class="text-right">
                                 <button type="button"
                                         class="btn btn-sm btn-light-primary js-logo-invoice-detail"
-                                        data-url="@Url.Action("Detay", new { invoiceNumber = row.InvoiceNumber, invoiceDate = row.InvoiceDate.ToString("yyyy-MM-dd"), supplierCode = row.SupplierCode })">
+                                        data-url="@Url.Action("Detay", new { firmNumber=Model.FirmNumber, invoiceNumber = row.InvoiceNumber, invoiceDate = row.InvoiceDate.ToString("yyyy-MM-dd"), supplierCode = row.SupplierCode })">
                                     Detay
                                 </button>
                             </td>
@@ -157,6 +167,7 @@
                         {
                             <a class="btn btn-light-primary mr-2"
                                asp-action="Index" asp-route-run="true"
+                               asp-route-firmNumber="@Model.FirmNumber"
                                asp-route-productSearch="@Model.ProductSearch" asp-route-invoiceNumber="@Model.InvoiceNumber"
                                asp-route-supplierSearch="@Model.SupplierSearch"
                                asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")"
@@ -166,6 +177,7 @@
                         {
                             <a class="btn btn-light-primary"
                                asp-action="Index" asp-route-run="true"
+                               asp-route-firmNumber="@Model.FirmNumber"
                                asp-route-productSearch="@Model.ProductSearch" asp-route-invoiceNumber="@Model.InvoiceNumber"
                                asp-route-supplierSearch="@Model.SupplierSearch"
                                asp-route-startDate="@Model.StartDate?.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.EndDate?.ToString("yyyy-MM-dd")"

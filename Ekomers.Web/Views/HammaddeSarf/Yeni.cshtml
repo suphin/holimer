@@ -9,12 +9,12 @@
         </div></form>
     </div>
 </div>
-<form asp-action="Yeni" method="post">
+<form asp-action="Yeni" method="post" id="rawMaterialConsumptionForm">
     <input asp-for="WarehouseId" type="hidden" />
     <div class="card card-custom">
         <div class="card-body">
             <div asp-validation-summary="All" class="text-danger mb-4"></div>
-            <div class="alert alert-light-info">Yalnızca aktif “Hammadde” kartlarının kullanılabilir lotları seçilebilir. Birim ve maliyet stok kayıtlarından alınır. Taslak kaydı stok düşmez veya rezervasyon oluşturmaz.</div>
+            <div class="alert alert-light-info">Yalnızca aktif “Hammadde” kartlarının kullanılabilir lotları seçilebilir. Stok miktarı tanımlı dönüşümlerle ürünün ana biriminde hesaplanır; sarf miktarını bu birimde giriniz. Maliyet korunur. Taslak kaydı stok düşmez veya rezervasyon oluşturmaz.</div>
             <div class="row">
                 <div class="col-md-4 form-group"><label>Seçilen Depo</label><div class="form-control bg-light">@(Model.Warehouses.FirstOrDefault(x=>x.Value==Model.WarehouseId?.ToString())?.Text??"Depo seçilmedi")</div></div>
                 <div class="col-md-3 form-group"><label asp-for="DocumentDate">Sarf Tarihi</label><input asp-for="DocumentDate" type="date" class="form-control" max="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
@@ -26,9 +26,13 @@
             }
             <div class="table-responsive"><table class="table table-separate"><thead><tr><th style="min-width:420px">Hammadde / Lot</th><th style="min-width:180px">Kullanılabilir Stok</th><th style="min-width:140px">Sarf Miktarı</th><th style="min-width:200px">Satır Notu</th><th></th></tr></thead><tbody id="sarfLines">
             @for(var i=0;i<Model.Lines.Count;i++){
-                <tr class="sarf-row"><td><select asp-for="Lines[i].StockLotId" class="form-control sarf-lot"><option value="">Hammadde / lot seçiniz</option>
+                <tr class="sarf-row"><td><select asp-for="Lines[i].StockLotId" class="form-control sarf-lot" aria-label="Hammadde / lot" data-placeholder="Kod, ad veya lot numarasıyla arayın"><option value="">Hammadde / lot seçiniz</option>
                     @foreach(var lot in available){<option value="@lot.StockLotId" data-available="@lot.AvailableQuantity.ToString("0.######")" data-unit="@lot.Unit">@lot.MaterialCode - @lot.MaterialName | Lot: @lot.LotNumber | @lot.AvailableQuantity.ToString("0.######") @lot.Unit | SKT: @(lot.ExpirationDate?.ToString("dd.MM.yyyy")??"-")</option>}
-                </select></td><td class="sarf-info text-muted">Lot seçiniz</td><td><input asp-for="Lines[i].Quantity" class="form-control" inputmode="decimal" placeholder="0,00" /></td><td><input asp-for="Lines[i].Notes" class="form-control" maxlength="250" /></td><td><button type="button" class="btn btn-sm btn-light-danger sarf-remove">Kaldır</button></td></tr>
+                    @if(Model.Lines[i].StockLotId is int oldId&&!available.Any(x=>x.StockLotId==oldId)){
+                        var oldLot=Model.Lots.FirstOrDefault(x=>x.StockLotId==oldId);
+                        <option value="@oldId" disabled data-unavailable="true">@(oldLot==null?$"Lot #{oldId}":oldLot.MaterialCode+" / "+oldLot.LotNumber) · Artık kullanılamıyor; başka lot seçiniz</option>
+                    }
+                </select></td><td class="sarf-info text-muted" aria-live="polite">Lot seçiniz</td><td><input asp-for="Lines[i].Quantity" class="form-control sarf-quantity" inputmode="decimal" placeholder="0,00" aria-label="Sarf miktarı" /></td><td><input asp-for="Lines[i].Notes" class="form-control" maxlength="250" aria-label="Satır notu" /></td><td><button type="button" class="btn btn-sm btn-light-danger sarf-remove">Kaldır</button></td></tr>
             }
             </tbody></table></div>
             <button type="button" id="addSarfLine" class="btn btn-sm btn-light-primary" disabled="@(available.Count==0)">Satır Ekle</button>
@@ -36,19 +40,9 @@
         <div class="card-footer d-flex justify-content-between"><a asp-action="Index" class="btn btn-light">Vazgeç</a><button type="submit" class="btn btn-primary" disabled="@(available.Count==0)">Sarf Taslağını Kaydet</button></div>
     </div>
 </form>
-<template id="sarfLineTemplate"><tr class="sarf-row"><td><select name="Lines[__index__].StockLotId" class="form-control sarf-lot"><option value="">Hammadde / lot seçiniz</option>
+<template id="sarfLineTemplate"><tr class="sarf-row"><td><select name="Lines[__index__].StockLotId" class="form-control sarf-lot" aria-label="Hammadde / lot" data-placeholder="Kod, ad veya lot numarasıyla arayın"><option value="">Hammadde / lot seçiniz</option>
 @foreach(var lot in available){<option value="@lot.StockLotId" data-available="@lot.AvailableQuantity.ToString("0.######")" data-unit="@lot.Unit">@lot.MaterialCode - @lot.MaterialName | Lot: @lot.LotNumber | @lot.AvailableQuantity.ToString("0.######") @lot.Unit | SKT: @(lot.ExpirationDate?.ToString("dd.MM.yyyy")??"-")</option>}
-</select></td><td class="sarf-info text-muted">Lot seçiniz</td><td><input name="Lines[__index__].Quantity" class="form-control" inputmode="decimal" placeholder="0,00" /></td><td><input name="Lines[__index__].Notes" class="form-control" maxlength="250" /></td><td><button type="button" class="btn btn-sm btn-light-danger sarf-remove">Kaldır</button></td></tr></template>
-<script>
-(function(){
-    var body=document.getElementById('sarfLines');
-    function refresh(row){var option=row.querySelector('select').selectedOptions[0];row.querySelector('.sarf-info').textContent=option&&option.value?option.dataset.available+' '+option.dataset.unit:'Lot seçiniz';}
-    function reindex(){body.querySelectorAll('.sarf-row').forEach(function(row,index){row.querySelectorAll('[name]').forEach(function(input){input.name=input.name.replace(/Lines\[[^\]]+\]/,'Lines['+index+']');});});}
-    body.addEventListener('change',function(e){if(e.target.classList.contains('sarf-lot'))refresh(e.target.closest('tr'));});
-    body.addEventListener('click',function(e){if(e.target.classList.contains('sarf-remove')){e.target.closest('tr').remove();reindex();}});
-    document.getElementById('addSarfLine').addEventListener('click',function(){if(body.children.length>=100){alert('En fazla 100 satır eklenebilir.');return;}var fragment=document.getElementById('sarfLineTemplate').content.cloneNode(true);body.appendChild(fragment);reindex();});
-    body.querySelectorAll('.sarf-row').forEach(refresh);
-    var selectedWarehouse=document.querySelector('input[name="WarehouseId"]').value;
-    document.getElementById('warehouseFilter').value=selectedWarehouse;
-})();
-</script>
+</select></td><td class="sarf-info text-muted" aria-live="polite">Lot seçiniz</td><td><input name="Lines[__index__].Quantity" class="form-control sarf-quantity" inputmode="decimal" placeholder="0,00" aria-label="Sarf miktarı" /></td><td><input name="Lines[__index__].Notes" class="form-control" maxlength="250" aria-label="Satır notu" /></td><td><button type="button" class="btn btn-sm btn-light-danger sarf-remove">Kaldır</button></td></tr></template>
+@section JSSection {
+    <script src="~/js/production/raw-material-consumption.js" asp-append-version="true"></script>
+}

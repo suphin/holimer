@@ -37,6 +37,7 @@ namespace Ekomers.Data
         public DbSet<Sokak> Sokak { get; set; }
      
         public DbSet<TableMetadata> TableMetadata { get; set; }
+        public DbSet<RptPivotReport> RptPivotReports { get; set; }
         public DbSet<Geojson> Geojson { get; set; }
         public DbSet<TtnSequence> TtnSequences { get; set; }
         public DbSet<MailNotificationUser> MailNotificationUsers { get; set; }
@@ -203,6 +204,10 @@ namespace Ekomers.Data
 		public DbSet<PrdMaterialSpecificationItem> PrdMaterialSpecificationItems { get; set; }
 		public DbSet<PrdMaterialSpecificationHistory> PrdMaterialSpecificationHistories { get; set; }
 		public DbSet<PrdWarehouse> PrdWarehouses { get; set; }
+		public DbSet<FsnWarehouse> FsnWarehouses { get; set; }
+		public DbSet<FsnReceipt> FsnReceipts { get; set; }
+		public DbSet<FsnReceiptLine> FsnReceiptLines { get; set; }
+		public DbSet<FsnStockMovement> FsnStockMovements { get; set; }
 		public DbSet<PrdStockLot> PrdStockLots { get; set; }
 		public DbSet<PrdStockMovement> PrdStockMovements { get; set; }
 		public DbSet<PrdInventoryDocument> PrdInventoryDocuments { get; set; }
@@ -309,6 +314,7 @@ namespace Ekomers.Data
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			base.OnModelCreating(modelBuilder);
+			Ekomers.Data.Services.FasonStockModel.Configure(modelBuilder);
 			modelBuilder.Entity<PurchaseRequestItem>().Property(x => x.Quantity).HasPrecision(18, 6);
 
 			modelBuilder.Entity<UserShortCut>().Property(x => x.UserID).HasMaxLength(450);
@@ -750,6 +756,7 @@ namespace Ekomers.Data
 			modelBuilder.Entity<PrdLogoConsumptionSlipLine>().HasIndex(x => new { x.SlipId, x.Sequence }).IsUnique();
 			modelBuilder.Entity<PrdLogoConsumptionSlipLine>().Property(x => x.Description).HasMaxLength(250);
 			modelBuilder.Entity<PrdStockReservation>().HasIndex(x => new { x.MaterialId, x.WarehouseId, x.StockLotId, x.Status });
+			modelBuilder.Entity<PrdStockReservation>().Property(x => x.RequirementUnitFactor).HasPrecision(38, 18);
 
 			modelBuilder.Entity<PrdMaterial>().HasOne<PrdUnit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
 			modelBuilder.Entity<PrdMaterialReferenceCost>().HasOne<PrdMaterial>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);

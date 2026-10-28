@@ -1,0 +1,31 @@
+@model Ekomers.Models.ViewModels.Production.FasonHistoryPageVM
+@{ViewData["Title"]="Fason Hareket Geçmişi";var tr=CultureInfo.GetCultureInfo("tr-TR");}
+<partial name="_Navigation"/>
+<div class="card card-custom"><div class="card-header"><div class="card-title"><h3 class="card-label">Fason Stok Hareket Geçmişi</h3></div></div><div class="card-body"><form method="get" asp-action="Gecmis" class="mb-5"><input asp-for="MaterialId" type="hidden"/><input asp-for="LotNumber" type="hidden"/><label asp-for="WarehouseId">Firma / Depo</label><div class="d-flex" style="gap:.5rem"><select asp-for="WarehouseId" asp-items="Model.Warehouses" class="form-control kt_select2"><option value="">Tüm fason firmalar</option></select><button class="btn btn-primary">Filtrele</button><a asp-action="Gecmis" class="btn btn-light">Temizle</a></div></form>
+@if(Model.Rows.Count==0){<div class="alert alert-light-primary">Hareket bulunamadı.</div>}
+else
+{
+    <div class="table-responsive"><table class="table table-head-custom">
+        <thead><tr><th>Tarih / İşlem</th><th>Firma / Depo</th><th>Malzeme / Lot</th><th>Miktar</th><th>Kullanıcı / Açıklama</th><th>Belge</th></tr></thead>
+        <tbody>
+        @foreach(var r in Model.Rows)
+        {
+            <tr>
+                <td>@r.Date.ToString("dd.MM.yyyy HH:mm")<div class="@(r.IsReversal?"text-danger":"text-success")">@(r.IsReversal?"Giriş Geri Alma":"Müşteri Emanet Girişi")</div></td>
+                <td>@r.Customer<div class="text-muted">@r.Warehouse</div></td>
+                <td>@r.Material<div class="font-weight-bold">@r.LotNumber</div>
+                    @if(r.ProductionDate.HasValue){<div class="text-muted">Üretim: @r.ProductionDate.Value.ToString("dd.MM.yyyy")</div>}
+                    @if(r.ExpirationDate.HasValue){<div class="text-muted">SKT: @r.ExpirationDate.Value.ToString("dd.MM.yyyy")</div>}
+                </td>
+                <td>@(r.IsReversal?"-":"+")@r.Quantity.ToString("#,##0.######",tr) @r.Unit</td>
+                <td>@r.User<div>@r.Reason</div>@if(!string.IsNullOrEmpty(r.LineNotes)){<div class="text-muted">Satır: @r.LineNotes</div>}</td>
+                <td><a asp-action="Detay" asp-route-id="@r.ReceiptId">@r.Number</a></td>
+            </tr>
+        }
+        </tbody></table></div>
+    <div class="d-flex justify-content-between"><span>@Model.Count hareket · Sayfa @Model.Page / @Model.PageCount</span><div>
+        @if(Model.Page>1){<a asp-action="Gecmis" asp-route-warehouseId="@Model.WarehouseId" asp-route-materialId="@Model.MaterialId" asp-route-lotNumber="@Model.LotNumber" asp-route-page="@(Model.Page-1)" class="btn btn-sm btn-light">Önceki</a>}
+        @if(Model.Page<Model.PageCount){<a asp-action="Gecmis" asp-route-warehouseId="@Model.WarehouseId" asp-route-materialId="@Model.MaterialId" asp-route-lotNumber="@Model.LotNumber" asp-route-page="@(Model.Page+1)" class="btn btn-sm btn-light">Sonraki</a>}
+    </div></div>
+}
+</div></div>

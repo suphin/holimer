@@ -1,0 +1,18 @@
+@model Ekomers.Models.ViewModels.Raporlar.PivotEditVM
+@using System.Text.Json
+@{ ViewData["Title"] = "Pivot Rapor Tanımı"; }
+<link href="~/css/reports/pivot-reports.css" rel="stylesheet" asp-append-version="true" />
+<div class="pv" id="pivotApp" data-mode="edit" data-columns-url="@Url.Action("Alanlar")">
+<div class="card card-custom"><div class="card-header"><div class="card-title"><h3>Pivot Rapor Tanımı</h3></div><div class="card-toolbar"><a asp-action="Yonetim" class="btn btn-light">Yönetime Dön</a></div></div><div class="card-body">
+<form method="post" id="pvEditForm" asp-action="Duzenle">
+<div asp-validation-summary="All" class="text-danger" role="alert"></div><input asp-for="Id" type="hidden" /><input asp-for="Version" type="hidden" /><input asp-for="SettingsJson" type="hidden" id="pvSettings" />
+<div class="pv-grid"><div><label asp-for="Name">Rapor Adı</label><input asp-for="Name" class="form-control" required maxlength="150" /></div><div><label>Bağlantı</label><input value="LogoConnection (salt okunur)" class="form-control" readonly /></div><div><label asp-for="SchemaName">Şema</label><input asp-for="SchemaName" id="pvSchema" class="form-control" required maxlength="128" /></div><div><label asp-for="ViewName">View Adı</label><input asp-for="ViewName" id="pvView" class="form-control" required maxlength="128" /></div></div>
+<div class="pv-toolbar"><button type="button" class="btn btn-light-primary" id="pvLoad">View Alanlarını Getir</button><label><input asp-for="IsActive" /> Rapor aktif</label></div>
+<p class="text-muted">Önce alanları getirin, raporda kullanılmasına izin vereceğiniz alanları işaretleyin ve varsayılan pivot düzenini belirleyin. Tarih alanları gün bazında gruplanır. Gizli alanlar rapor kullanıcısına gönderilmez.</p>
+<div class="alert alert-warning">Alanların iş anlamını kontrol ediniz: fatura başlığı toplamları satırlarda tekrar edebilir; bunların toplamını almak mükerrer tutar yaratır. Satır bazlı raporda satır matrahını kullanın. İptal, alış/satış, iade işareti, yıl, döviz ve birim ayrımları view'dan olduğu gibi gelir; gerekli filtreleri ve grupları tanımlayınız.</div>
+<p id="pvStatus" role="status" aria-live="polite"></p><div id="pvAllowed" class="pv-fields"></div>
+<div id="pvBuilder"></div><div class="pv-toolbar"><button class="btn btn-primary" id="pvSave" disabled>Tanımı Kaydet</button></div>
+</form></div></div>
+<script id="pvBootstrap" type="application/json">@Html.Raw(JsonSerializer.Serialize(new { settingsJson = Model.SettingsJson }))</script>
+</div>
+@section JSSection {<script src="~/js/reports/pivot-reports.js" asp-append-version="true"></script>}

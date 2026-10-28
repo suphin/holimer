@@ -1,0 +1,34 @@
+@model Ekomers.Models.ViewModels.Production.InventoryDocumentEditVM
+@{ ViewData["Title"]="Stok Kaydını Düzenle"; }
+<div class="card card-custom mb-5">
+    <div class="card-header flex-wrap py-3">
+        <div class="card-title"><h3 class="card-label">Stok Kaydını Düzenle<span class="d-block text-muted pt-2 font-size-sm">@Model.DocumentNumber · @Model.Lines[0].Sequence. satır · @Model.Type.ToTurkish()</span></h3></div>
+        <div class="card-toolbar"><a asp-action="Detay" asp-route-id="@Model.Id" class="btn btn-sm btn-light">Detaya Dön</a></div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light-warning">Seçilen satır ve bağlı stok hareketleri güncellenir. Birim değişikliği miktarı ve birim maliyeti otomatik çevirmez; değerleri seçtiğiniz birime göre kontrol ediniz. Lot tarihleri ve numarası aynı lotu kullanan kayıtlarda da görünür.</div>
+        @if(!Model.CanDeleteLines){<div class="alert alert-light-info">Admin birim düzeltmesi stok satırını ve bağlı hareketlerini günceller. Kaynak belgenin birim tanımları bu ekrandan değiştirilmez.</div>}
+        <form asp-action="SatirDuzenle" method="post">
+            <input asp-for="Id" type="hidden"/><input asp-for="EditLineId" type="hidden"/>
+            <input asp-for="DocumentNumber" type="hidden"/>
+            <input asp-for="Lines[0].Id" type="hidden"/>
+            <div asp-validation-summary="All" class="text-danger mb-4"></div>
+            <div class="mb-5"><strong>@Model.Lines[0].MaterialCode</strong><span class="d-block text-muted">@Model.Lines[0].MaterialName</span></div>
+            <div class="row">
+                <div class="col-md-4 form-group"><label asp-for="Lines[0].LotNumber">Lot / Seri No</label><input asp-for="Lines[0].LotNumber" class="form-control" maxlength="100"/></div>
+                <div class="col-md-4 form-group"><label asp-for="Lines[0].ProductionDate">Üretim Tarihi</label><input asp-for="Lines[0].ProductionDate" type="date" class="form-control"/></div>
+                <div class="col-md-4 form-group"><label asp-for="Lines[0].ExpirationDate">Son Kullanma Tarihi</label><input asp-for="Lines[0].ExpirationDate" type="date" class="form-control"/></div>
+                <div class="col-md-4 form-group"><label asp-for="Lines[0].Quantity">Miktar</label><input asp-for="Lines[0].Quantity" class="form-control" inputmode="decimal" required/></div>
+                <div class="col-md-4 form-group">
+                    <label asp-for="Lines[0].UnitId">Birim</label>
+                    @if(Model.CanChangeUnits){<select asp-for="Lines[0].UnitId" asp-items="Model.Lines[0].UnitOptions" class="form-control kt_select2" required></select>}
+                    else{<input asp-for="Lines[0].UnitId" type="hidden"/><div class="form-control bg-light">@Model.Lines[0].Unit</div>}
+                </div>
+                <div class="col-md-4 form-group"><label asp-for="Lines[0].UnitCost">Birim Maliyet (@Model.CurrencyCode)</label><input asp-for="Lines[0].UnitCost" class="form-control" inputmode="decimal" required/><span class="form-text text-muted">Belge kuru: @Model.ExchangeRate</span></div>
+                <div class="col-12 form-group"><label asp-for="Lines[0].Notes">Satır Notu</label><textarea asp-for="Lines[0].Notes" class="form-control" rows="2" maxlength="250"></textarea></div>
+                <div class="col-12 form-group"><label asp-for="EditReason">Düzenleme Nedeni</label><textarea asp-for="EditReason" class="form-control" rows="2" minlength="5" maxlength="500" required></textarea><span class="form-text text-muted">Değişiklik kullanıcı ve tarih bilgisiyle denetim kaydına yazılır.</span></div>
+            </div>
+            <div class="d-flex justify-content-between"><a asp-action="Detay" asp-route-id="@Model.Id" class="btn btn-light">Vazgeç</a><button type="submit" class="btn btn-primary">Kaydı Güncelle</button></div>
+        </form>
+    </div>
+</div>

@@ -17,9 +17,11 @@ public sealed class ELogoOptions
 
 public sealed record ELogoDocumentFile(byte[] Content, string FileName, string ContentType);
 
+public sealed class ELogoConfigurationException(string message) : InvalidOperationException(message);
+
 public interface IELogoPostboxClient
 {
-    Task<ELogoDocumentFile> GetIncomingInvoicePdfAsync(string uuid, CancellationToken ct = default);
+    Task<ELogoDocumentFile> GetIncomingInvoicePdfAsync(int firmNumber, string uuid, CancellationToken ct = default);
 }
 
 public sealed class ELogoPostboxClient : IELogoPostboxClient
@@ -32,25 +34,35 @@ public sealed class ELogoPostboxClient : IELogoPostboxClient
     private const int MaximumPdfSize = 50 * 1024 * 1024;
 
     private readonly HttpClient _httpClient;
-    private readonly ELogoOptions _options;
+    public const string HolimerProfile = "ELogo";
+    public const string FwProfile = "ELogoFw";
+    private readonly IOptionsMonitor<ELogoOptions> _options;
 
-    public ELogoPostboxClient(HttpClient httpClient, IOptions<ELogoOptions> options)
+    public ELogoPostboxClient(HttpClient httpClient, IOptionsMonitor<ELogoOptions> options)
     {
         _httpClient = httpClient;
-        _options = options.Value;
+        _options = options;
     }
 
-    public async Task<ELogoDocumentFile> GetIncomingInvoicePdfAsync(string uuid, CancellationToken ct = default)
+    public async Task<ELogoDocumentFile> GetIncomingInvoicePdfAsync(int firmNumber, string uuid, CancellationToken ct = default)
     {
         if (!Guid.TryParse(uuid, out var parsedUuid))
             throw new InvalidOperationException("e-Fatura ETTN/UUID bilgisi geçersiz.");
 
-        ValidateConfiguration();
+        var profile = firmNumber switch
+        {
+            100 => HolimerProfile,
+            103 => FwProfile,
+            _ => throw new ELogoConfigurationException($"{firmNumber} numaralı Logo firması için eLogo hesabı tanımlı değil.")
+        };
+        var options = _options.Get(profile);
+        ValidateConfiguration(options, profile);
         string? sessionId = null;
         try
         {
-            sessionId = await LoginAsync(ct);
+            sessionId = await LoginAsync(options, firmNumber, ct);
             var response = await SendSoapAsync(
+                options, firmNumber,
                 "GetDocumentData",
                 new XElement(ServiceNamespace + "GetDocumentData",
                     new XElement(ServiceNamespace + "sessionID", sessionId),
@@ -83,21 +95,22 @@ public sealed class ELogoPostboxClient : IELogoPostboxClient
         finally
         {
             if (!string.IsNullOrWhiteSpace(sessionId))
-                await TryLogoutAsync(sessionId, ct);
+                await TryLogoutAsync(options, firmNumber, sessionId, ct);
         }
     }
 
-    private async Task<string> LoginAsync(CancellationToken ct)
+    private async Task<string> LoginAsync(ELogoOptions options, int firmNumber, CancellationToken ct)
     {
         var response = await SendSoapAsync(
+            options, firmNumber,
             "Login",
             new XElement(ServiceNamespace + "Login",
                 new XElement(ServiceNamespace + "login",
-                    new XElement(ContractNamespace + "appStr", _options.AppName),
-                    new XElement(ContractNamespace + "passWord", _options.Password),
-                    new XElement(ContractNamespace + "source", _options.Source),
-                    new XElement(ContractNamespace + "userName", _options.Username),
-                    new XElement(ContractNamespace + "version", _options.Version))),
+                    new XElement(ContractNamespace + "appStr", options.AppName),
+                    new XElement(ContractNamespace + "passWord", options.Password),
+                    new XElement(ContractNamespace + "source", options.Source),
+                    new XElement(ContractNamespace + "userName", options.Username),
+                    new XElement(ContractNamespace + "version", options.Version))),
             ct);
 
         var loginResult = response.Descendants().FirstOrDefault(x => x.Name.LocalName == "LoginResult")?.Value;
@@ -107,11 +120,12 @@ public sealed class ELogoPostboxClient : IELogoPostboxClient
         return sessionId;
     }
 
-    private async Task TryLogoutAsync(string sessionId, CancellationToken ct)
+    private async Task TryLogoutAsync(ELogoOptions options, int firmNumber, string sessionId, CancellationToken ct)
     {
         try
         {
             await SendSoapAsync(
+                options, firmNumber,
                 "Logout",
                 new XElement(ServiceNamespace + "Logout",
                     new XElement(ServiceNamespace + "sessionID", sessionId)),
@@ -123,7 +137,7 @@ public sealed class ELogoPostboxClient : IELogoPostboxClient
         }
     }
 
-    private async Task<XDocument> SendSoapAsync(string operation, XElement body, CancellationToken ct)
+    private async Task<XDocument> SendSoapAsync(ELogoOptions options, int firmNumber, string operation, XElement body, CancellationToken ct)
     {
         var envelope = new XDocument(
             new XElement(SoapNamespace + "Envelope",
@@ -134,9 +148,9 @@ public sealed class ELogoPostboxClient : IELogoPostboxClient
                 new XElement(SoapNamespace + "Header"),
                 new XElement(SoapNamespace + "Body", body)));
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, _options.ServiceUrl);
+        using var request = new HttpRequestMessage(HttpMethod.Post, options.ServiceUrl);
         request.Options.Set(IntegrationLoggingHandler.CategoryKey, "E-Fatura");
-        request.Options.Set(IntegrationLoggingHandler.ConnectionKey, "e-Logo Postbox");
+        request.Options.Set(IntegrationLoggingHandler.ConnectionKey, $"e-Logo Postbox (Logo {firmNumber})");
         request.Options.Set(IntegrationLoggingHandler.OperationKey, operation);
         request.Headers.TryAddWithoutValidation("SOAPAction", $"\"{ActionPrefix}{operation}\"");
         request.Content = new StringContent(
@@ -220,11 +234,11 @@ public sealed class ELogoPostboxClient : IELogoPostboxClient
         return string.IsNullOrWhiteSpace(name) ? $"eFatura-{uuid:D}.pdf" : name + ".pdf";
     }
 
-    private void ValidateConfiguration()
+    private static void ValidateConfiguration(ELogoOptions options, string profile)
     {
-        if (!Uri.TryCreate(_options.ServiceUrl, UriKind.Absolute, out var serviceUri) || serviceUri.Scheme != Uri.UriSchemeHttps)
-            throw new InvalidOperationException("ELogo:ServiceUrl geçerli bir HTTPS adresi değil.");
-        if (string.IsNullOrWhiteSpace(_options.Username) || string.IsNullOrWhiteSpace(_options.Password))
-            throw new InvalidOperationException("eLogo web servis kullanıcı bilgileri tanımlı değil.");
+        if (!Uri.TryCreate(options.ServiceUrl, UriKind.Absolute, out var serviceUri) || serviceUri.Scheme != Uri.UriSchemeHttps)
+            throw new ELogoConfigurationException($"{profile}:ServiceUrl geçerli bir HTTPS adresi değil.");
+        if (string.IsNullOrWhiteSpace(options.Username) || string.IsNullOrWhiteSpace(options.Password))
+            throw new ELogoConfigurationException($"{profile} web servis kullanıcı bilgileri tanımlı değil.");
     }
 }

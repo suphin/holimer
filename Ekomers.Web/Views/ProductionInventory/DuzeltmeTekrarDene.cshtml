@@ -1,0 +1,25 @@
+@model Ekomers.Models.ViewModels.Production.InventoryDocumentEditVM
+@{ ViewData["Title"]="Stok Düzeltmesi Tamamlanamadı"; var canRetry=ViewBag.CorrectionCanRetry is true; }
+<div class="card card-custom">
+    <div class="card-header"><div class="card-title"><h3 class="card-label">Stok Düzeltmesi Tamamlanamadı<span class="d-block text-muted pt-2 font-size-sm">@Model.DocumentNumber</span></h3></div></div>
+    <div class="card-body">
+        <div class="alert alert-light-warning">@ViewBag.CorrectionMessage</div>
+        @if(canRetry)
+        {
+            <form asp-action="@((string)ViewBag.CorrectionRetryAction)" method="post">
+                <input asp-for="Id" type="hidden"/><input asp-for="EditLineId" type="hidden"/><input asp-for="DocumentNumber" type="hidden"/>
+                <input asp-for="DocumentDate" type="hidden"/><input asp-for="CurrencyCode" type="hidden"/><input asp-for="ExchangeRate" type="hidden"/>
+                <input asp-for="Notes" type="hidden"/><input asp-for="EditReason" type="hidden"/>
+                @for(var i=0;i<Model.Lines.Count;i++)
+                {
+                    <input asp-for="Lines[i].Id" type="hidden"/><input asp-for="Lines[i].UnitId" type="hidden"/><input asp-for="Lines[i].Quantity" type="hidden"/>
+                    <input asp-for="Lines[i].UnitCost" type="hidden"/><input asp-for="Lines[i].LotNumber" type="hidden"/>
+                    <input asp-for="Lines[i].ProductionDate" type="hidden"/><input asp-for="Lines[i].ExpirationDate" type="hidden"/><input asp-for="Lines[i].Notes" type="hidden"/>
+                }
+                <button type="submit" class="btn btn-primary mr-2">Aynı Değerlerle Tekrar Dene</button>
+                <a asp-action="Detay" asp-route-id="@Model.Id" class="btn btn-light">Belge Detayını Aç</a>
+            </form>
+        }
+        else{<a asp-action="Detay" asp-route-id="@Model.Id" class="btn btn-primary">Belge Detayını Aç</a>}
+    </div>
+</div>

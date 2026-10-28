@@ -13,14 +13,15 @@
     </div>
     <div class="card-body pb-0">
         <div class="alert alert-light-warning">
-            Bu ekran yalnızca Admin kullanıcıları içindir. İşlenmiş belgelerde yapılan miktar, maliyet, tarih ve lot değişiklikleri bağlı stok hareketlerine de uygulanır.
+            Bu ekran yalnızca Admin kullanıcıları içindir. İşlenmiş belgelerde yapılan miktar, birim, maliyet, tarih ve lot değişiklikleri bağlı stok hareketlerine de uygulanır.
+            <span class="d-block mt-2">Birim seçimi kayıt düzeltmesidir; miktar ve birim maliyet otomatik çevrilmez. Bu değerleri seçtiğiniz birime göre kontrol ediniz. Düzeltme malzeme kartının ana birimini veya diğer belgeleri değiştirmez.</span>
             @if(Model.CanDeleteLines)
             {
                 <span class="d-block mt-2">Satır silme, bağlı stok hareketlerini de bakiyeden çıkarır. Silmeden önce formdaki diğer değişikliklerinizi kaydediniz.</span>
             }
             else
             {
-                <span class="d-block mt-2">Kaynak sürece bağlı belgelerin satırları bu ekrandan silinemez; kaynak süreç üzerinden geri alınmalıdır.</span>
+                <span class="d-block mt-2">Kaynak sürece bağlı belgelerde Admin birim düzeltebilir; satır silme kaynak süreç üzerinden yapılmalıdır. Kaynak belgenin birim tanımları bu ekrandan değiştirilmez.</span>
             }
         </div>
     </div>
@@ -46,7 +47,7 @@
 
             <div class="table-responsive">
                 <table class="table table-separate table-head-custom">
-                    <thead><tr><th>#</th><th style="min-width:260px">Malzeme</th><th style="min-width:150px">Lot</th><th>Üretim Tarihi</th><th>SKT</th><th style="min-width:130px">Miktar</th><th style="min-width:160px">Birim Maliyet</th><th style="min-width:200px">Not</th>@if(Model.CanDeleteLines){<th>İşlem</th>}</tr></thead>
+                    <thead><tr><th>#</th><th style="min-width:260px">Malzeme</th><th style="min-width:150px">Lot</th><th>Üretim Tarihi</th><th>SKT</th><th style="min-width:130px">Miktar</th><th style="min-width:180px">Birim</th><th style="min-width:160px">Birim Maliyet</th><th style="min-width:200px">Not</th>@if(Model.CanDeleteLines){<th>İşlem</th>}</tr></thead>
                     <tbody>
                     @for(var i=0;i<Model.Lines.Count;i++)
                     {
@@ -61,6 +62,10 @@
                             <td><input asp-for="Lines[i].ProductionDate" type="date" class="form-control" /></td>
                             <td><input asp-for="Lines[i].ExpirationDate" type="date" class="form-control" /></td>
                             <td><input asp-for="Lines[i].Quantity" class="form-control" inputmode="decimal" required /></td>
+                            <td>
+                                @if(Model.CanChangeUnits){<select asp-for="Lines[i].UnitId" asp-items="Model.Lines[i].UnitOptions" class="form-control kt_select2" aria-label="@Model.Lines[i].Sequence. satır birimi" required></select>}
+                                else{<input asp-for="Lines[i].UnitId" type="hidden"/><div class="form-control bg-light">@Model.Lines[i].Unit</div>}
+                            </td>
                             <td><input asp-for="Lines[i].UnitCost" class="form-control" inputmode="decimal" required /><span class="form-text text-muted">@Model.CurrencyCode</span></td>
                             <td><input asp-for="Lines[i].Notes" class="form-control" maxlength="250" /></td>
                             @if(Model.CanDeleteLines)

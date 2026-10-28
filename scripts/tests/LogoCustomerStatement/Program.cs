@@ -2,6 +2,7 @@ using System.Net;
 using System.Security.Claims;
 using Dapper;
 using Ekomers.Data;
+using Ekomers.Data.Services;
 using Ekomers.Data.Services.Reports;
 using Ekomers.Models.ViewModels.Raporlar;
 using Ekomers.Web.Controllers;
@@ -32,6 +33,11 @@ try {
         CREATE TABLE dbo.L_CAPIFIRM(NR int PRIMARY KEY,NAME nvarchar(250),LOCALCTYP int);
         CREATE TABLE dbo.L_CAPIPERIOD(FIRMNR int,NR int,BEGDATE datetime,ENDDATE datetime);
         INSERT dbo.L_CAPIFIRM VALUES(100,N'Firma A <script>',160),(101,N'Firma B',1);
+        INSERT dbo.L_CAPIFIRM VALUES(104,N'Portalda Kullanılmayan',160),(105,N'Pasif',160),(106,N'Silinmiş',160);
+        CREATE TABLE dbo.Sirketler(ID int PRIMARY KEY,SirketAdi nvarchar(250),SirketKisaAdi nvarchar(250),LogoTigerSirketKodu nvarchar(100),IsDelete bit NULL,IsActive bit NULL);
+        INSERT dbo.Sirketler VALUES(1,N'Firma A Portal <script>',NULL,' 0100 ',0,1),(2,N'Firma B Portal',N'Firma B','101',0,NULL),
+            (3,N'Pasif',NULL,'105',0,0),(4,N'Silinmiş',NULL,'106',1,1),(5,N'Geçersiz',NULL,'xyz',0,1),
+            (6,N'Tekrar',N'Firma B','00101',0,1),(7,N'Logo kaydı olmayan',NULL,'107',0,1);
         INSERT dbo.L_CAPIPERIOD VALUES(100,1,'20250101','20261231'),(100,2,'20270101','20271231'),(101,1,'20250101','20261231');
         """);
     foreach(var firm in new[]{100,101}) await fixture.ExecuteAsync(Schema(firm));
@@ -70,8 +76,11 @@ try {
         """);
     for(var i=1;i<=52;i++) await fixture.ExecuteAsync("INSERT dbo.LG_100_01_CLFLINE(LOGICALREF,CLIENTREF,DATE_,MODULENR,TRCODE,SIGN,AMOUNT,FTIME) VALUES(@id,10,'20261001',99,1,0,1,0)",new{id=2000+i});
     await using var logo=new LogoContext(new DbContextOptionsBuilder<LogoContext>().UseSqlServer(cs).Options);
-    var service=new LogoCustomerStatementService(logo);var companies=await service.CompaniesAsync(default);
-    Check(companies.Count==2&&companies[0].Name=="Firma A <script>","Company list comes from Logo firm master, not portal aliases");
+    await using var portal=new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlServer(cs).Options);
+    var service=new LogoCustomerStatementService(logo,new PortalLogoCompanyService(portal));var companies=await service.CompaniesAsync(default);
+    Check(companies.Count==2&&companies[0].Name=="Firma A Portal <script>"&&companies.Select(x=>x.Number).SequenceEqual(new[]{100,101}),"Company names/codes come from active portal records; unused, inactive, deleted and invalid entries are excluded and duplicates collapse");
+    Check(companies[0].LocalCurrency==160&&companies[1].LocalCurrency==1,"Local currency still comes from the matching Logo company");
+    await Reject<KeyNotFoundException>(()=>service.ScopeAsync(104,1,begin,end,default),"Logo-only firms cannot be accessed by forged report scope");
     var scope=await service.ScopeAsync(100,1,begin,end,default);
     await Reject<ArgumentException>(()=>service.ScopeAsync(-1,1,begin,end,default),"Identifier bounds reject invalid company");
     await Reject<KeyNotFoundException>(()=>service.ScopeAsync(101,2,begin,end,default),"Period is validated within selected company");
@@ -125,10 +134,10 @@ try {
     Check(await controller.Ekstre(100,1,10,begin,end,0) is BadRequestResult,"Bad pagination rejected before querying");
     Check(invoice.CanOpenInvoiceImage&&invoice.EInvoiceGuid=="11111111-1111-1111-1111-111111111111"&&otherDoc.EInvoiceGuid=="22222222-2222-2222-2222-222222222222","e-Fatura UUID is read from the exact company's linked invoice");
     var image=await controller.FaturaGorseli(100,1,10,3001,begin,end);
-    Check(image is FileContentResult pdf&&pdf.ContentType=="application/pdf"&&pdf.FileContents.SequenceEqual(FakeInvoicePdfClient.Pdf)&&pdfClient.Calls.Single()==invoice.EInvoiceGuid,"Statement invoice image reuses eLogo PDF client with server-resolved UUID");
+    Check(image is FileContentResult pdf&&pdf.ContentType=="application/pdf"&&pdf.FileContents.SequenceEqual(FakeInvoicePdfClient.Pdf)&&pdfClient.Calls.Single()==invoice.EInvoiceGuid&&pdfClient.Firms.Single()==100,"Statement invoice image passes selected firm and server-resolved UUID to eLogo");
     Check(http.Response.Headers.ContentDisposition.ToString().StartsWith("inline;")&&http.Response.Headers.CacheControl.ToString().Contains("no-store")&&http.Response.Headers["X-Content-Type-Options"]=="nosniff","PDF is inline, non-cacheable and sent with safe content headers");
     await controller.FaturaGorseli(101,1,10,3001,begin,end);
-    Check(pdfClient.Calls.Last()==otherDoc.EInvoiceGuid,"Same movement/invoice refs in another company resolve that company's UUID, not firm 100");
+    Check(pdfClient.Calls.Last()==otherDoc.EInvoiceGuid&&pdfClient.Firms.Last()==101,"Same movement/invoice refs pass the actual company and its UUID without falling back to 100");
     var callsBefore=pdfClient.Calls.Count;
     foreach(var target in new[]{(client:20,movement:3001),(client:10,movement:3002),(client:10,movement:3009),(client:10,movement:3008),(client:10,movement:3007)})
         Check(await controller.FaturaGorseli(100,1,target.client,target.movement,begin,end) is ContentResult { StatusCode:404 },"Missing/cancelled/wrong-client/non-invoice image is rejected before eLogo call");
@@ -197,7 +206,8 @@ sealed class MemoryTempData:ITempDataProvider { public IDictionary<string,object
 sealed class FakeInvoicePdfClient:IELogoPostboxClient {
     public static readonly byte[] Pdf=System.Text.Encoding.ASCII.GetBytes("%PDF-1.4\nfixture");
     public List<string> Calls {get;}=[]; public Exception? Failure {get;set;}
-    public Task<ELogoDocumentFile> GetIncomingInvoicePdfAsync(string uuid,CancellationToken ct=default) {
-        Calls.Add(uuid);return Failure==null?Task.FromResult(new ELogoDocumentFile(Pdf,"fatura.pdf","application/pdf")):Task.FromException<ELogoDocumentFile>(Failure);
+    public List<int> Firms {get;}=[];
+    public Task<ELogoDocumentFile> GetIncomingInvoicePdfAsync(int firmNumber,string uuid,CancellationToken ct=default) {
+        Firms.Add(firmNumber);Calls.Add(uuid);return Failure==null?Task.FromResult(new ELogoDocumentFile(Pdf,"fatura.pdf","application/pdf")):Task.FromException<ELogoDocumentFile>(Failure);
     }
 }
